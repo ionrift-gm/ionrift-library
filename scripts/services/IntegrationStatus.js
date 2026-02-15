@@ -1,3 +1,5 @@
+import { Logger } from "./Logger.js";
+
 export class IntegrationStatus {
     constructor() {
         this.apps = new Map(); // Registered Apps: { id: { checkStatus, interval, ... } }
@@ -32,7 +34,7 @@ export class IntegrationStatus {
 
     /**
      * Registers a module/app for status tracking.
-     * @param {string} appId - Unique ID (e.g. 'ionrift-sounds')
+     * @param {string} appId - Unique ID (e.g. 'ionrift-resonance')
      * @param {object} options 
      * @param {function} options.checkStatus - Async fn returning { status: 'connected'|'offline'|'warning', label, message }
      */
@@ -237,7 +239,7 @@ export class IntegrationStatus {
      * @param {string} appId - The registered appId to track
      */
     injectStatusBar(app, html, appId) {
-        console.log(`Ionrift Integration | Attempting Injection for ${appId}`, html);
+        Logger.log("Integration", `Attempting Injection for ${appId}`);
         let content = html.closest('.window-app').find('.window-content');
         if (content.length === 0) content = html.closest('.window-content');
         if (content.length === 0 && html.hasClass('window-content')) content = html;

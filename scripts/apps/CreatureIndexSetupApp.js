@@ -1,6 +1,7 @@
 
 import { AbstractWelcomeApp } from "./AbstractWelcomeApp.js";
 import { getClassifierData } from "../data/classifierData.js";
+import { Logger } from "../services/Logger.js";
 import { classifyCreature } from "../creatureClassifier.js";
 
 /**
@@ -9,7 +10,7 @@ import { classifyCreature } from "../creatureClassifier.js";
  */
 export class CreatureIndexSetupApp extends AbstractWelcomeApp {
     constructor(options = {}) {
-        super("Attunement Protocol", "indexSetupVersion", game.modules.get("ionrift-lib").version);
+        super("Attunement Protocol", "indexSetupVersion", game.modules.get("ionrift-library").version);
         this.indexData = {
             dnd5e: {}, // Manual overrides or extra monsters
             packs: [] // List of packs to auto-scan on load
@@ -19,10 +20,10 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-creature-index-setup",
-            template: "modules/ionrift-lib/templates/creature-index-setup.hbs",
+            template: "modules/ionrift-library/templates/creature-index-setup.hbs",
             width: 600,
             classes: ["ionrift", "ionrift-window", "welcome-window"],
-            moduleId: "ionrift-lib",
+            moduleId: "ionrift-library",
             title: "Attunement Protocol"
         });
     }
@@ -59,8 +60,8 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         const data = await super.getData();
 
         // Check if already verified
-        const currentVersion = game.modules.get("ionrift-lib").version;
-        const storedVersion = game.settings.get("ionrift-lib", "indexSetupVersion");
+        const currentVersion = game.modules.get("ionrift-library").version;
+        const storedVersion = game.settings.get("ionrift-library", "indexSetupVersion");
         data.alreadyVerified = (storedVersion === currentVersion);
 
         // If verified, mark all steps as completed for UI
@@ -117,7 +118,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         // Simulation for now
         count = index.size;
 
-        console.log(`Ionrift | Scanned ${count} SRD monsters.`);
+        Logger.log("Library", `Scanned ${count} SRD monsters.`);
         ui.notifications.info(`Imported ${count} standard creature definitions.`);
     }
 
@@ -136,12 +137,12 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
             return;
         }
 
-        console.log(`Ionrift | Indexing packs: ${selectedPackIds.join(", ")}`);
+        Logger.log("Library", `Indexing packs: ${selectedPackIds.join(", ")}`);
 
         // Simulate Indexing
         ui.notifications.info(`Indexing ${selectedPackIds.length} packs...`);
         await new Promise(resolve => setTimeout(resolve, 500 * selectedPackIds.length));
-        console.log("Ionrift | Pack Indexing Complete.");
+        Logger.log("Library", "Pack Indexing Complete.");
     }
 
     async _runSystemCheck() {
@@ -152,7 +153,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         await new Promise(resolve => setTimeout(resolve, 800));
 
         // Use the library's internal self-test
-        const { runSelfTests } = game.ionrift.lib;
+        const { runSelfTests } = game.ionrift.library;
         const { passed, results } = runSelfTests({ limit: 5, random: true });
 
         // Store results for template rendering
@@ -166,7 +167,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         html.find(".reset-btn").click(async (ev) => {
             ev.preventDefault();
             // Clear version to force re-run logic
-            await game.settings.set("ionrift-lib", "indexSetupVersion", "0.0.0");
+            await game.settings.set("ionrift-library", "indexSetupVersion", "0.0.0");
 
             // Re-render as if new
             // We can just reload the window logic or reset internal state

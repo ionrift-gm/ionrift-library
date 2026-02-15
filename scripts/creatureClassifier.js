@@ -1,3 +1,4 @@
+import { Logger } from "./services/Logger.js";
 import { getClassifierData } from "./data/classifierData.js";
 
 /**
@@ -178,7 +179,7 @@ export function classifyCreature(actorOrName) {
  * @returns {object} { passed: boolean, results: Array<{input, status: "pass"|"fail"|"warn", details}> }
  */
 export function runSelfTests({ limit = 0, random = false } = {}) {
-    console.log(`Ionrift Lib | Running Classifier Self-Tests for ${game.system.id}...`);
+    Logger.log("Library", `Running Classifier Self-Tests for ${game.system.id}...`);
 
     let tests = [];
     if (game.system.id === "dnd5e") {
@@ -234,16 +235,28 @@ export function runSelfTests({ limit = 0, random = false } = {}) {
             { input: "Giant Weasel", expectId: "beast_mustelid", sound: "MONSTER_BEAST" },
             { input: "Tribal Warrior", expectId: "humanoid_tribal", sound: "MONSTER_HUMANOID" }
         ];
+    } else if (game.system.id === "daggerheart") {
+        tests = [
+            // Standard Ancestries
+            { input: "Katari Duelist", expectId: "humanoid_katari", tags: ["cat-like"] },
+            { input: "Ribbet Scout", expectId: "humanoid_ribbet", tags: ["amphibious"] },
+            { input: "Galapa Defender", expectId: "humanoid_galapa", tags: ["shell"] },
+            { input: "Faerie Trickster", expectId: "humanoid_faerie", tags: ["wings", "small"] },
+            { input: "Drakona Warrior", expectId: "humanoid_drakona", tags: ["scales", "breath-weapon"] },
+            { input: "Fungril Shaman", expectId: "humanoid_fungril", tags: ["fungus"] },
+
+            // Monsters
+            { input: "Skeleton", expectId: "undead_skeleton", sound: "MONSTER_SKELETON" },
+            { input: "Zombie", expectId: "undead_zombie", sound: "MONSTER_ZOMBIE" },
+            { input: "Bear", expectId: "beast_ursine", sound: "MONSTER_BEAR" },
+            { input: "Fire Elemental", expectId: "elemental_fire", sound: "SFX_FIRE" }
+        ];
     } else {
         tests = [
             { input: "Zombie", expectId: "undead_zombie", minConf: 0.6 },
             { input: "Cave Bear", expectId: "beast_ursine", tags: ["claws"] },
             { input: "Flameskull", expectId: "undead_construct", tags: ["no_limbs"], exactConf: 1.0 },
-            { input: "Ancient Red Dragon", expectId: "dragon_chromatic", tags: ["wings", "breath-weapon"] },
-            // New Race Tests
-            { input: "Wood Elf", expectId: "humanoid_elf", tags: ["ears"] },
-            { input: "Duergar", expectId: "humanoid_dwarf", tags: ["underground"] },
-            { input: "Katari Duelist", expectId: "humanoid_katari", tags: ["cat-like"] }
+            { input: "Ancient Red Dragon", expectId: "dragon_chromatic", tags: ["wings", "breath-weapon"] }
         ];
     }
 
@@ -292,7 +305,7 @@ export function runSelfTests({ limit = 0, random = false } = {}) {
         }
     });
 
-    console.log(`Ionrift Lib | Tests Complete. ${passedCount}/${tests.length} Passed.`);
+    Logger.log("Library", `Tests Complete. ${passedCount}/${tests.length} Passed.`);
 
     return {
         passed: passedCount === tests.length,

@@ -1,6 +1,8 @@
+import { Logger } from "./services/Logger.js";
+
 export class RuntimeValidator {
     /**
-     * @param {string} moduleId - The ID of the module (e.g., "ionrift-sounds")
+     * @param {string} moduleId - The ID of the module (e.g., "ionrift-resonance")
      */
     constructor(moduleId) {
         this.moduleId = moduleId;
@@ -127,7 +129,7 @@ export class RuntimeValidator {
                 ui.notifications.warn(`${title}: Issues found. Check console (F12).`);
             }
         } else {
-            console.log(`${title} ✅ Passed`);
+            Logger.log("Library", `${title} ✅ Passed`);
         }
     }
 }

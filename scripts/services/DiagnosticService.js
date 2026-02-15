@@ -1,3 +1,4 @@
+import { Logger } from "./Logger.js";
 import { ReportBuilder } from "./ReportBuilder.js";
 import { DiagnosticApp } from "../apps/DiagnosticApp.js";
 
@@ -27,17 +28,17 @@ export class DiagnosticService {
         // For now, we'll keep it simple and synchronous-ish as hooks are synchronous unless async is explicitly handled manually.
         // Foundry hooks are generally synchronous.
 
-        console.log("Ionrift | Starting Diagnostics...");
+        Logger.log("Library", "Starting Diagnostics...");
         Hooks.callAll("ionrift.runDiagnostics", builder);
 
         // Await any async tests registered by modules
         if (builder.pending.length > 0) {
-            console.log(`Ionrift | Awaiting ${builder.pending.length} async diagnostic tests...`);
+            Logger.log("Library", `Awaiting ${builder.pending.length} async diagnostic tests...`);
             await Promise.allSettled(builder.pending);
         }
 
         const results = builder.getResults();
-        console.log(`Ionrift | Diagnostics Complete. Collected ${results.length} reports.`);
+        Logger.log("Library", `Diagnostics Complete. Collected ${results.length} reports.`);
         return results;
     }
 

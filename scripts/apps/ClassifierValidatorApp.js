@@ -14,7 +14,7 @@ export class ClassifierValidatorApp extends FormApplication {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-classifier-validator",
             title: "Entity Manifest",
-            template: "modules/ionrift-lib/templates/classifier-validator.hbs",
+            template: "modules/ionrift-library/templates/classifier-validator.hbs",
             width: 800,
             height: 600,
             resizable: true,
@@ -124,18 +124,39 @@ export class ClassifierValidatorApp extends FormApplication {
             actors = actors.concat(worldActors);
         }
 
-        // 2. SRD Compendium (Lightweight Index)
-        const pack = game.packs.get("dnd5e.monsters");
-        if (pack) {
-            // Fetch necessary fields for classification context if possible, 
-            // though standard index mainly gives name/img/type/uuid
-            const index = await pack.getIndex({ fields: ["system.details.type", "system.details.alignment"] });
-            const srdActors = index.map(i => ({
-                ...this._classifyData(i), // Pass index entry (has .name)
-                source: "SRD",
+        // 2. Compendium Scan (Smart & Robust)
+        const sysId = game.system.id;
+        const targetPacks = game.packs.filter(p => {
+            if (p.documentName !== "Actor") return false;
+            const id = p.metadata.id;
+            const label = p.metadata.label.toLowerCase();
+
+            // DnD5e: Standard SRD
+            if (sysId === "dnd5e" && id === "dnd5e.monsters") return true;
+
+            // Daggerheart: Look for standard "adversaries" pack
+            if (sysId === "daggerheart" && (id.includes("adversaries") || label.includes("adversaries"))) return true;
+
+            return false;
+        });
+
+        for (const pack of targetPacks) {
+            // Fetch necessary fields including system-specific details
+            const index = await pack.getIndex({
+                fields: [
+                    "system.details.type",
+                    "system.details.alignment",
+                    "system.details.biography",
+                    "system.ancestry",      // Daggerheart
+                    "system.description"    // Common
+                ]
+            });
+            const packActors = index.map(i => ({
+                ...this._classifyData(i),
+                source: pack.metadata.label,
                 uuid: i.uuid
             }));
-            actors = actors.concat(srdActors);
+            actors = actors.concat(packActors);
         }
 
         // Exclude Players/Characters

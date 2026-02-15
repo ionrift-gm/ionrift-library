@@ -1,3 +1,5 @@
+import { Logger } from "./services/Logger.js";
+
 export class SidebarHelper {
     /**
      * Injects a button into a Sidebar Directory header.
@@ -31,7 +33,7 @@ export class SidebarHelper {
             options.onClick(ev);
         });
 
-        console.log(`Ionrift Lib | SidebarHelper: Attempting to inject button for ${options.id}`);
+
 
         // Logic to locate and inject the button
         const findAndInject = () => {
@@ -48,7 +50,7 @@ export class SidebarHelper {
                 // Prevent adding custom CSS to ensure consistency with standard Foundry buttons
                 // and other module buttons sharing this space.
 
-                console.log(`Ionrift Lib | SidebarHelper: Injected ${options.id} INTO .header-actions`);
+                Logger.log("Library", `SidebarHelper: Injected ${options.id} INTO .header-actions`);
             } else {
                 // Fallback: Append to directory header if actions block is missing.
                 const header = $html.find(".directory-header");

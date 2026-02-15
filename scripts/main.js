@@ -19,7 +19,7 @@ import { Logger } from "./services/Logger.js";
 Hooks.once('init', () => {
     // LogRecorder & CommandListener moved to ionrift-devtools
 
-    console.log("Ionrift Library | Initializing Shared Library");
+    Logger.log("Library", "Initializing Shared Library");
 
     // Expose API
     game.ionrift = game.ionrift || {};

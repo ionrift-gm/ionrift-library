@@ -1,10 +1,5 @@
 const Parent = globalThis.FormApplication || globalThis.Application;
 export class AbstractWelcomeApp extends Parent {
-    /**
-     * @param {string} moduleTitle - Display title.
-     * @param {string} settingsKey - Key for storing last setup version (e.g. "lastSetupVersion").
-     * @param {string} currentVersion - The current module version (e.g. "1.0.0").
-     */
     constructor(moduleTitle, settingsKey, currentVersion) {
         super();
         this.moduleTitle = moduleTitle;
@@ -14,6 +9,26 @@ export class AbstractWelcomeApp extends Parent {
         this.steps = this.getSteps().filter(s => !s.condition || s.condition());
         this.currentStepIndex = 0;
         this.completedSteps = new Set();
+        this._scrollPosition = 0;
+    }
+
+    /** @override */
+    async _render(force, options) {
+        // 1. Save Scroll Position logic
+        if (this.element && this.element.length) {
+            const body = this.element.find(".welcome-body");
+            if (body.length) this._scrollPosition = body.scrollTop();
+        }
+
+        await super._render(force, options);
+
+        // 2. Restore Scroll Position logic
+        if (this._scrollPosition !== undefined && this.element && this.element.length) {
+            const body = this.element.find(".welcome-body");
+            if (body && body.length) {
+                body.scrollTop(this._scrollPosition);
+            }
+        }
     }
 
     static get defaultOptions() {

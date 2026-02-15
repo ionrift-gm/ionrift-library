@@ -1,5 +1,6 @@
 export class Logger {
     static get debugEnabled() {
+        if (!game.settings.settings.has("ionrift-library.debug")) return false;
         return game.settings.get("ionrift-library", "debug");
     }
 

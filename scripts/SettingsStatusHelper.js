@@ -2,18 +2,20 @@
  * A helper class for managing status icons in the Foundry VTT Settings Config window.
  * used to provide immediate visual feedback (Green/Yellow/Red) without full re-renders.
  */
+import { Logger } from "./services/Logger.js";
+
 export class SettingsStatusHelper {
 
     /**
      * Updates the status icon for a specific module's Setup button.
      * Uses a global selector strategy to find the button regardless of window state.
      * 
-     * @param {string} buttonKey - The data-key or data-action of the button (e.g. "ionrift-sounds.setupGuide")
+     * @param {string} buttonKey - The data-key or data-action of the button (e.g. "ionrift-resonance.setupGuide")
      * @param {boolean} hasToken - Whether the auth token exists
      * @param {boolean} isVerified - Whether the token is verified
      */
     static update(buttonKey, hasToken, isVerified) {
-        console.log(`Ionrift Lib | Updating Status Icon for: ${buttonKey} (Token: ${hasToken}, Verified: ${isVerified})`);
+        Logger.log("Library", `Updating Status Icon for: ${buttonKey} (Token: ${hasToken}, Verified: ${isVerified})`);
 
         // Global Selector: Find button anywhere in DOM
         let globalButton = $(`button[data-key="${buttonKey}"]`);
@@ -42,7 +44,7 @@ export class SettingsStatusHelper {
 
                 label.append(icon);
             });
-            console.log(`Ionrift Lib | Icon updated successfully.`);
+
         } else {
             console.warn(`Ionrift Lib | Could not find Settings Setup button: ${buttonKey}`);
         }
