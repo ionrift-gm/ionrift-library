@@ -1,0 +1,74 @@
+name: Release Creation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Zip Module
+        # Zips current directory, excluding git/github/dev files
+        run: |
+          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            module.zip
+            module.json
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Notify Foundry VTT
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+        with:
+          script: |
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('module.json', 'utf8'));
+            
+            // Construct the payload matching Foundry's API expectations
+            const payload = {
+              id: manifest.id,
+              release: {
+                version: manifest.version,
+                manifest: `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/latest/download/module.json`,
+                notes: `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/v${manifest.version}`,
+                compatibility: manifest.compatibility
+              }
+            };
+            
+            console.log("Sending payload:", JSON.stringify(payload, null, 2));
+            
+            // Send to Foundry API
+            const response = await fetch("https://foundryvtt.com/_api/packages/release_version/", {
+              method: "POST",
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': process.env.FOUNDRY_TOKEN
+              },
+              body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            console.log("Response:", data);
+            
+            if (!response.ok) {
+              core.setFailed(`Foundry API Error: ${JSON.stringify(data)}`);
+            }

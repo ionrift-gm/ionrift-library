@@ -2,9 +2,7 @@
     "name": "ionrift-library",
     "version": "1.3.0",
     "description": "Shared logic for Ionrift modules.",
-    "scripts": {
-        "build:public": "node scripts/build-public.js"
-    },
+    "scripts": {},
     "author": "Ionrift",
     "license": "SEE LICENSE IN LICENSE.md"
 }
