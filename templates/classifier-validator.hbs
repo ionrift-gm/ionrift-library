@@ -1,0 +1,109 @@
+<div class="ionrift-app-container" style="display:flex; flex-direction:column; height:100%;">
+
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <div class="dashboard-stat">
+            <div class="dashboard-gauge" style="--pct: {{stats.integrity}}%">
+                <span>{{stats.mean}}%</span>
+            </div>
+            <div class="dashboard-text">
+                <span class="label">Manifest Integrity</span>
+                <span class="value">{{stats.identified}} / {{stats.total}}</span>
+                <span class="label" style="margin-top:2px;">
+                    <span class="ionrift-status {{stats.integrityClass}}">{{stats.integrityLabel}}</span>
+                </span>
+            </div>
+        </div>
+
+        <div class="ionrift-search-container">
+            <i class="fas fa-search"></i>
+            <input type="text" id="validator-search" class="ionrift-search-input"
+                placeholder="Search entity manifest..." value="{{filters.query}}">
+        </div>
+
+        <div style="display:flex; gap: 10px;">
+            <select id="confidence-filter" style="width: 150px;">
+                <option value="all">All Entities</option>
+                <option value="low">Needs Review (Low Confidence)</option>
+                <option value="med">Uncertain (Medium Confidence)</option>
+            </select>
+            <button id="refresh-validator" title="Re-scan Manifest"><i class="fas fa-sync"></i></button>
+        </div>
+    </div>
+
+    <!-- Results List -->
+    <div class="ionrift-list">
+        {{#each results}}
+        <div class="ionrift-list-item" data-conf="{{this.confidence}}">
+            <img src="{{this.img}}" class="avatar" alt="{{this.name}}" onerror="this.src='icons/svg/mystery-man.svg'">
+
+            <div class="content">
+                <div class="title">
+                    <a class="actor-link" data-id="{{this.actorId}}" data-uuid="{{this.uuid}}"
+                        style="color: var(--ionrift-accent);">{{this.name}}</a>
+                </div>
+                <div class="subtitle">
+                    <i class="fas fa-database"></i> {{this.source}}
+                    <!-- Optional: Tags if relevant, but often noisy -->
+                </div>
+            </div>
+
+            <div class="badges">
+                <!-- Class Badge -->
+                <span class="ionrift-badge {{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}"
+                    title="Detected Class">
+                    <i class="fas fa-chess-piece"></i> {{this.classId}}
+                </span>
+
+                <!-- Sound Badge -->
+                <span class="ionrift-badge {{#if (eq this.soundKey 'Generic Monster')}}warning{{else}}success{{/if}}"
+                    title="Assigned Sound">
+                    <i class="fas fa-music"></i> {{this.soundKey}}
+                </span>
+
+                <!-- Score Pill -->
+                <span class="score-pill {{this.scoreClass}}" title="Confidence: {{this.confidencePct}}%">
+                    {{this.confidencePct}}%
+                </span>
+            </div>
+        </div>
+        {{else}}
+        <div class="no-results" style="padding: 40px; text-align: center; color: #888;">
+            <i class="fas fa-search" style="font-size: 3em; margin-bottom: 20px; opacity: 0.5;"></i>
+            <p>No entities found matching your criteria.</p>
+        </div>
+        {{/each}}
+    </div>
+
+    <!-- Footer -->
+    <div class="glass-footer"
+        style="padding: 10px 20px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+
+        <!-- Left: Source Info (Fixed width to prevent squish) -->
+        <div style="font-size: 0.85em; color: #666; flex: 0 0 auto; white-space: nowrap;">
+            <i class="fas fa-info-circle"></i> Source: World & SRD
+        </div>
+
+        <!-- Center: Pagination (Flex 1 to take varied space) -->
+        <div style="display:flex; align-items:center; justify-content: center; gap: 15px; flex: 1;">
+            <button class="page-prev icon-only" title="Previous Page" {{#unless pagination.hasPrev}}disabled{{/unless}}
+                style="width: 32px;">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <span style="color:#aaa; font-size: 0.9em; min-width: 100px; text-align: center;">
+                {{pagination.startItem}} - {{pagination.endItem}} of {{pagination.totalItems}}
+            </span>
+            <button class="page-next icon-only" title="Next Page" {{#unless pagination.hasNext}}disabled{{/unless}}
+                style="width: 32px;">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Right: Actions -->
+        <div style="flex: 0 0 auto;">
+            <button id="export-json" class="export-btn ionrift-save-btn">
+                <i class="fas fa-file-export"></i> Export Report
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,51 @@
+<form class="{{cssClass}}" autocomplete="off"
+    style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+    <header class="diagnostic-header" style="flex: 0 0 auto;">
+        <h1><i class="fas fa-heartbeat"></i> System Diagnostics</h1>
+        <p class="summary">
+            Passed: <span class="count pass">{{summary.pass}}</span> |
+            Warnings: <span class="count warn">{{summary.warn}}</span> |
+            Failed: <span class="count fail">{{summary.fail}}</span>
+        </p>
+    </header>
+
+    <div class="diagnostic-results ionrift-list" style="flex: 1; overflow-y: auto; overflow-x: hidden;">
+        {{#each results as |module|}}
+        <div class="module-group">
+            <h2 class="module-title"
+                style="border-bottom: 2px solid var(--ionrift-accent, #8b5cf6); margin-bottom: 5px; padding-bottom: 2px;">
+                {{module.name}}</h2>
+            <ul class="test-list" style="list-style: none; margin: 0; padding: 0;">
+                {{#each module.tests as |test|}}
+                <li class="test-item {{test.statusClass}}"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; max-width: 100%;">
+                    <!-- Icon Status -->
+                    <span class="status-icon"
+                        style="flex: 0 0 32px; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+                        {{#if (eq test.status "PASS")}}<i class="fas fa-check-circle"
+                            style="color: #4ade80; font-size: 1.1em;"></i>{{/if}}
+                        {{#if (eq test.status "WARN")}}<i class="fas fa-exclamation-triangle"
+                            style="color: #facc15; font-size: 1.1em;"></i>{{/if}}
+                        {{#if (eq test.status "FAIL")}}<i class="fas fa-times-circle"
+                            style="color: #f87171; font-size: 1.1em;"></i>{{/if}}
+                    </span>
+                    <!-- Name -->
+                    <span class="test-name"
+                        style="flex: 0 0 140px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;">{{test.name}}</span>
+                    <!-- Message -->
+                    <span class="test-message"
+                        style="flex: 1; font-style: italic; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{test.message}}</span>
+                </li>
+                {{/each}}
+            </ul>
+        </div>
+        {{else}}
+        <p class="no-results" style="text-align: center; padding: 20px; color: #777;">No diagnostic results reported.
+            Are the modules active?</p>
+        {{/each}}
+    </div>
+
+    <footer class="sheet-footer">
+        <button type="button" name="refresh"><i class="fas fa-sync"></i> Re-Run Diagnostics</button>
+    </footer>
+</form>

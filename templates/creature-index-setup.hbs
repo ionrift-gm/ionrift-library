@@ -1,0 +1,126 @@
+<form class="ionrift welcome-container">
+    <header class="welcome-header glass-header">
+        <h1><i class="fas fa-crosshairs"></i> Ionrift Library: Creature Index</h1>
+        <p>Global Entity Indexing Protocol</p>
+    </header>
+
+    <div class="welcome-body glass-body">
+
+        {{#if alreadyVerified}}
+        <div class="already-verified"
+            style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 209, 55, 0.1); border: 1px solid #4cd137; border-radius: 4px;">
+            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> Protocol Complete</h3>
+            <p style="margin: 0; opacity: 0.9;">The entity index is up-to-date with current module versions.</p>
+            <button class="reset-btn"
+                style="margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #4cd137; color: #fff;">
+                <i class="fas fa-redo"></i> Re-Run Protocol
+            </button>
+        </div>
+        {{else}}
+        <p class="intro-text">
+            This protocol indexes all creatures in your world to support features like <strong>Adaptive Sounds</strong>.
+            The library scans your installed content to build a local classification map.
+        </p>
+        {{/if}}
+
+        <div class="step-list">
+            {{#each steps}}
+            <div class="step-item {{#if this.isCompleted}}completed{{/if}} {{#if this.isCurrent}}current{{/if}}">
+                <div class="step-icon">
+                    {{#if this.isCompleted}}
+                    <i class="fas fa-check-circle success"></i>
+                    {{else}}
+                    <i class="{{this.icon}}"></i>
+                    {{/if}}
+                </div>
+
+                <div class="step-content">
+                    <h3>
+                        {{#if (eq this.id "system_check")}}
+                        Integrity Verification (Spot Check)
+                        {{else}}
+                        {{this.title}}
+                        {{/if}}
+                    </h3>
+                    <p>{{this.description}}</p>
+
+                    {{#if (eq this.id "scan_packs")}}
+                    {{#if this.isCurrent}}
+                    <div class="pack-list"
+                        style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 5px; margin: 10px 0; border: 1px solid var(--ionrift-border);">
+                        {{#each ../packs}}
+                        <div class="form-group" style="display: flex; align-items: center; gap: 5px;">
+                            <input type="checkbox" name="pack_{{this.id}}" id="pack_{{this.id}}">
+                            <label for="pack_{{this.id}}">{{this.label}} <span
+                                    style="opacity: 0.6; font-size: 0.8em;">({{this.package}})</span></label>
+                        </div>
+                        {{else}}
+                        <p style="opacity: 0.6; font-style: italic;">No additional compendiums detected.</p>
+                        {{/each}}
+                    </div>
+                    {{else}}
+                    {{#if this.isCompleted}}
+                    <p style="font-style: italic; opacity: 0.7; margin-top: 5px;"><i class="fas fa-check"></i> Expansion
+                        Packs Configured</p>
+                    {{/if}}
+                    {{/if}}
+                    {{/if}}
+
+                    {{#if (eq this.id "system_check")}}
+                    <div id="system-check-results" style="margin-top: 10px;">
+                        {{#if ../testResult}}
+                        <div class="results-list"
+                            style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;">
+                            {{#each ../testResult.results}}
+                            <div class="result-item"
+                                style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: {{#if (eq this.status 'pass')}}rgba(76, 209, 55, 0.1){{else}}rgba(231, 76, 60, 0.1){{/if}}; border-left: 3px solid {{#if (eq this.status 'pass')}}#4cd137{{else}}#e74c3c{{/if}}; border-radius: 4px; font-size: 0.9em;">
+                                <span style="font-weight: 600; color: #fff;">{{this.input}}</span>
+                                <span style="color: {{#if (eq this.status 'pass')}}#4cd137{{else}}#e74c3c{{/if}};">
+                                    <i class="fas {{#if (eq this.status 'pass')}}fa-check{{else}}fa-times{{/if}}"></i>
+                                    <span style="opacity: 0.8; font-size: 0.9em;">{{this.details}}</span>
+                                </span>
+                            </div>
+                            {{/each}}
+                        </div>
+
+                        {{#if ../testResult.passed}}
+                        <div class="check-success"
+                            style="margin-top: 15px; color: #4cd137; text-align: center; padding: 10px;">
+                            <strong><i class="fas fa-check-circle"></i> System Operational</strong><br>
+                            <span style="font-size: 0.9em; opacity: 0.8;">All classifier logic verified.</span>
+                        </div>
+                        {{else}}
+                        <div class="check-fail"
+                            style="margin-top: 15px; color: #e74c3c; text-align: center; padding: 10px;">
+                            <strong><i class="fas fa-exclamation-triangle"></i> Calibration Warning</strong><br>
+                            <span style="font-size: 0.9em; opacity: 0.8;">Some tests failed. Check console for
+                                details.</span>
+                        </div>
+                        {{/if}}
+                        {{/if}}
+                    </div>
+                    {{/if}}
+                </div>
+
+                <div class="step-action">
+                    {{#if this.isCompleted}}
+                    <span class="status-done"><i class="fas fa-check-circle success"></i> Done</span>
+                    {{else}}
+                    <button class="step-action-btn" data-step="{{this.id}}" {{#if this.isPending}}disabled{{/if}}>
+                        {{this.actionLabel}}
+                    </button>
+                    {{/if}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+
+    <footer class="welcome-footer">
+        {{#if isFinished}}
+        <button class="finish-btn"><i class="fas fa-check"></i> Finish Attunement</button>
+        {{else}}
+        <button class="skip-btn"><i class="fas fa-forward"></i> Skip Setup</button>
+        {{/if}}
+    </footer>
+</form>
