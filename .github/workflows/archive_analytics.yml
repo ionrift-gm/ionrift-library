@@ -19,7 +19,7 @@ jobs:
 
       - name: Fetch GitHub Analytics
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ANALYTICS_TOKEN }}
           REPO_NAME: ${{ github.repository }}
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
