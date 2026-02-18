@@ -37,7 +37,7 @@ jobs:
         if: success()
         uses: actions/github-script@v7
         env:
-          FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+          FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
         with:
           script: |
             const fs = require('fs');
@@ -66,9 +66,17 @@ jobs:
               body: JSON.stringify(payload)
             });
             
-            const data = await response.json();
-            console.log("Response:", data);
+            const text = await response.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch {
+              data = text;
+            }
+            console.log("Response:", typeof data === 'string' ? data : JSON.stringify(data, null, 2));
             
             if (!response.ok) {
-              core.setFailed(`Foundry API Error: ${JSON.stringify(data)}`);
+              core.setFailed(`Foundry API Error (${response.status}): ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+            } else {
+              console.log("Foundry VTT notified successfully.");
             }
