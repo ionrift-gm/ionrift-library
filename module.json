@@ -3,7 +3,7 @@
     "title": "Ionrift Library",
     "description": "Shared logic and classification engine for Ionrift modules.",
     "readme": "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "compatibility": {
         "minimum": "12",
         "verified": "13"

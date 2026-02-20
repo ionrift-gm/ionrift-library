@@ -120,22 +120,31 @@ Hooks.once('ready', async () => {
     runSelfTests();
 
     if (game.user.isGM) {
+        // Static protocol version — only bump when indexing steps change,
+        // NOT on every module patch release.
+        const INDEXING_PROTOCOL_VERSION = "1";
+        const storedVersion = game.settings.get("ionrift-library", "indexSetupVersion");
+
+        // Backward compatibility: existing users have semver strings (e.g. "1.4.0").
+        // Silently migrate them without re-prompting.
+        if (storedVersion.includes(".") && storedVersion !== "0.0.0") {
+            game.settings.set("ionrift-library", "indexSetupVersion", INDEXING_PROTOCOL_VERSION);
+        }
+
         // Register Status Indicator for Indexing Protocol
         if (game.ionrift.integration) {
             game.ionrift.integration.registerApp("ionrift-library", {
                 settingsKey: ["ionrift-library.setupWizard"],
                 checkStatus: async () => {
-                    // Check if current version matches stored version
-                    const currentVersion = game.modules.get("ionrift-library").version;
-                    const storedVersion = game.settings.get("ionrift-library", "indexSetupVersion");
+                    const currentStored = game.settings.get("ionrift-library", "indexSetupVersion");
 
-                    if (storedVersion === currentVersion) {
+                    if (currentStored === INDEXING_PROTOCOL_VERSION) {
                         return {
                             status: game.ionrift.integration.STATUS.CONNECTED,
                             label: "Indexed",
                             message: "Creature Index Up-to-Date"
                         };
-                    } else if (storedVersion && storedVersion !== "0.0.0") {
+                    } else if (currentStored && currentStored !== "0.0.0") {
                         return {
                             status: game.ionrift.integration.STATUS.WARNING,
                             label: "Outdated",
@@ -152,9 +161,8 @@ Hooks.once('ready', async () => {
             });
         }
 
-        // Check for First-Time Setup
-        // Ensure AbstractWelcomeApp is available or copied locally if needed
-        if (AbstractWelcomeApp.shouldShow("ionrift-library", "indexSetupVersion", game.modules.get("ionrift-library").version)) {
+        // Check for First-Time Setup — only for fresh installs or protocol bumps
+        if (storedVersion === "0.0.0" || (!storedVersion.includes(".") && storedVersion !== INDEXING_PROTOCOL_VERSION)) {
             new CreatureIndexSetupApp().render(true);
         }
     }
