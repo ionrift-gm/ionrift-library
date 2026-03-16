@@ -1,5 +1,4 @@
 import { classifyCreature, runSelfTests } from "./creatureClassifier.js";
-import { TokenArtResolver } from "./services/TokenArtResolver.js";
 import { SidebarHelper } from "./SidebarHelper.js";
 import { DiagnosticApp } from "./apps/DiagnosticApp.js";
 import { DiagnosticService } from "./services/DiagnosticService.js";
@@ -35,12 +34,9 @@ Hooks.once('init', () => {
         RuntimeValidator, // Expose Class
         AbstractWelcomeApp, // Expose Class
         DiagnosticService, // Expose Class
-        TokenArtResolver, // Token art folder convention + lookup
         Logger, // Expose Class
         SupportHelper, // Expose Class
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
-        getTokenPath: (species, role) => TokenArtResolver.getTokenPath(species, role), // Shortcut
-        warmArtCache: () => TokenArtResolver.warmCache(), // Lazy-warm for consuming modules
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults()
     };
@@ -128,10 +124,6 @@ Hooks.once('ready', async () => {
     runSelfTests();
 
     if (game.user.isGM) {
-        // Scaffold Token Art Folders (non-blocking, only creates if missing)
-        TokenArtResolver.scaffoldFolders().catch(e =>
-            console.warn("Ionrift Library | Folder scaffold skipped:", e.message)
-        );
         // Static protocol version — only bump when indexing steps change,
         // NOT on every module patch release.
         const INDEXING_PROTOCOL_VERSION = "1";

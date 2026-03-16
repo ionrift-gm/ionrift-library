@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.4] - Hotfix (supersedes 1.4.3)
+*   **Fix**: Removed unreleased `TokenArtResolver` import that caused module crash on load.
+
 ## [1.4.3] - Discord Support Link
 *   **Feature**: Added "Get Support" button to module settings. Opens the Ionrift Discord server.
 *   **Feature**: New `SupportHelper` utility class for ecosystem-wide support link registration.
