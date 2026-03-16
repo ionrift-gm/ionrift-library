@@ -1,4 +1,5 @@
 import { classifyCreature, runSelfTests } from "./creatureClassifier.js";
+import { TokenArtResolver } from "./services/TokenArtResolver.js";
 import { SidebarHelper } from "./SidebarHelper.js";
 import { DiagnosticApp } from "./apps/DiagnosticApp.js";
 import { DiagnosticService } from "./services/DiagnosticService.js";
@@ -6,6 +7,7 @@ import { ClassifierValidatorApp } from "./apps/ClassifierValidatorApp.js";
 import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js"; // Import Setup App
 import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
 import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
+import { SupportHelper } from "./SupportHelper.js";
 import { IntegrationStatus } from "./services/IntegrationStatus.js";
 // import { StatusIndicatorManager } from "./services/StatusIndicatorManager.js"; // Removed
 
@@ -28,14 +30,17 @@ Hooks.once('init', () => {
         classifyCreature,
         runSelfTests,
         SettingsStatusHelper, // Expose Class
-        SettingsStatusHelper, // Expose Class
 
         WorldSchema, // Expose Schema
         RuntimeValidator, // Expose Class
         AbstractWelcomeApp, // Expose Class
         DiagnosticService, // Expose Class
+        TokenArtResolver, // Token art folder convention + lookup
         Logger, // Expose Class
+        SupportHelper, // Expose Class
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
+        getTokenPath: (species, role) => TokenArtResolver.getTokenPath(species, role), // Shortcut
+        warmArtCache: () => TokenArtResolver.warmCache(), // Lazy-warm for consuming modules
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults()
     };
@@ -99,6 +104,9 @@ Hooks.once('init', () => {
         restricted: true
     });
 
+    // Support Link
+    SupportHelper.register("ionrift-library");
+
 
 
     // Self-Reporting Diagnostic Hook
@@ -120,6 +128,10 @@ Hooks.once('ready', async () => {
     runSelfTests();
 
     if (game.user.isGM) {
+        // Scaffold Token Art Folders (non-blocking, only creates if missing)
+        TokenArtResolver.scaffoldFolders().catch(e =>
+            console.warn("Ionrift Library | Folder scaffold skipped:", e.message)
+        );
         // Static protocol version — only bump when indexing steps change,
         // NOT on every module patch release.
         const INDEXING_PROTOCOL_VERSION = "1";

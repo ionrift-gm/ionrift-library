@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.3] - Discord Support Link
+*   **Feature**: Added "Get Support" button to module settings. Opens the Ionrift Discord server.
+*   **Feature**: New `SupportHelper` utility class for ecosystem-wide support link registration.
+*   **Improvement**: Added `bugs` field to `module.json` pointing to Discord.
 ## [1.4.0] - Public Launch
 *   **Release**: First public release alongside Ionrift Resonance v2.0.0.
 *   **Improvement**: Updated copyright to 2026.

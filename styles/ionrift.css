@@ -1620,3 +1620,10 @@
     transform: translateY(-1px);
     box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
 }
+
+/* Support Link Separator (Settings Panel) */
+.form-group:has(button[data-key$=".supportLink"]) {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+}
