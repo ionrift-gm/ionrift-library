@@ -20,7 +20,7 @@ First-time setup walks you through:
 2. Configuring integration status checks
 3. Verifying creature classifier data
 
-For detailed installation steps, troubleshooting, and FAQ see the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup:-Core-Library)**.
+For detailed installation steps, troubleshooting, and FAQ see the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Core-Library)**.
 
 ## Features
 
@@ -61,11 +61,20 @@ To use this in your module, add it to your `module.json` dependencies:
 
 ---
 
+## Documentation
+
+Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**:
+
+- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Core-Library)** - Installation and creature indexing
+- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Resonance)** - Sound configuration and presets
+- **[Resonance Calibration](https://github.com/ionrift-gm/ionrift-library/wiki/Resonance-Calibration)** - Fine-tuning sound bindings
+- **[Advanced Diagnostics](https://github.com/ionrift-gm/ionrift-library/wiki/Advanced-Diagnostics)** - Manifest inspection and troubleshooting
+
 ## Bug Reports
 
 If something isn't working:
 
-1. Check the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup:-Core-Library)** for common fixes.
+1. Check the **[wiki](https://github.com/ionrift-gm/ionrift-library/wiki)** for common fixes.
 2. Post to the **[Ionrift Discord](https://discord.gg/YmgdNNu4)** with your Foundry version, module versions, and any console errors (F12).
 3. Or open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
 
