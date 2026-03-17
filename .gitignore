@@ -26,3 +26,7 @@ audit_*.json
 audit_*.txt
 debug_*.js
 debug_*.log
+*.lock
+
+# Unreleased cross-module files (prevent accidental commit)
+scripts/services/TokenArtResolver.js

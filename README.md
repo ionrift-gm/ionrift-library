@@ -20,6 +20,8 @@ First-time setup walks you through:
 2. Configuring integration status checks
 3. Verifying creature classifier data
 
+For detailed installation steps, troubleshooting, and FAQ see the **[Setup Guide](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Guide)**.
+
 ## Features
 
 ### Creature Classifier
@@ -59,8 +61,17 @@ To use this in your module, add it to your `module.json` dependencies:
 
 ---
 
+## Bug Reports
+
+If something isn't working:
+
+1. Check the **[Setup Guide](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Guide)** for common fixes.
+2. Post to the **[Ionrift Discord](https://discord.gg/YmgdNNu4)** with your Foundry version, module versions, and any console errors (F12).
+3. Or open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
+
 ## License
 MIT License. See [LICENSE](./LICENSE) for details.
 
 ---
-*Part of the [Ionrift Module Suite](https://github.com/ionrift-gm).*
+*Part of the [Ionrift Module Suite](https://github.com/ionrift-gm).* 💜 **[Support on Patreon](https://www.patreon.com/ionrift)**
+

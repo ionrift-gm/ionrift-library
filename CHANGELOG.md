@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.5] - Resonance v2.2.2 Advisory
+*   **Advisory**: One-time GM notification alerting Linux-hosted users about the Resonance v2.2.2 case-sensitivity fix. Users who had a broken Resonance module are prompted to update.
+
 ## [1.4.4] - Hotfix (supersedes 1.4.3)
 *   **Fix**: Removed unreleased `TokenArtResolver` import that caused module crash on load.
 

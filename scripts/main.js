@@ -70,6 +70,14 @@ Hooks.once('init', () => {
         default: {}
     });
 
+    // One-time advisory flag (Resonance v2.2.2 case-sensitivity fix)
+    game.settings.register("ionrift-library", "resonanceAdvisory222Shown", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
     // Register Setup Button (Priority: Top)
     game.settings.registerMenu("ionrift-library", "setupWizard", {
         name: "Attunement Protocol",
@@ -168,6 +176,23 @@ Hooks.once('ready', async () => {
         // Check for First-Time Setup — only for fresh installs or protocol bumps
         if (storedVersion === "0.0.0" || (!storedVersion.includes(".") && storedVersion !== INDEXING_PROTOCOL_VERSION)) {
             new CreatureIndexSetupApp().render(true);
+        }
+
+        // One-time advisory: Resonance v2.2.2 case-sensitivity fix
+        try {
+            const shown = game.settings.get("ionrift-library", "resonanceAdvisory222Shown");
+            if (!shown) {
+                const resonance = game.modules.get("ionrift-resonance");
+                if (resonance) {
+                    ui.notifications.warn(
+                        "Ionrift Resonance v2.2.2 fixes a critical bug that prevented the module from loading on Linux-hosted servers (Molten, Forge, etc). If Resonance wasn't working for you before, update it in the package manager. (Settings > Manage Modules > Update)",
+                        { permanent: true }
+                    );
+                }
+                game.settings.set("ionrift-library", "resonanceAdvisory222Shown", true);
+            }
+        } catch (e) {
+            // Graceful fail — don't block startup for an advisory
         }
     }
 });
