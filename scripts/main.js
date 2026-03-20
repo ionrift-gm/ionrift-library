@@ -6,7 +6,7 @@ import { ClassifierValidatorApp } from "./apps/ClassifierValidatorApp.js";
 import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js"; // Import Setup App
 import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
 import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
-import { SupportHelper } from "./SupportHelper.js";
+import { SettingsLayout } from "./SettingsLayout.js";
 import { IntegrationStatus } from "./services/IntegrationStatus.js";
 // import { StatusIndicatorManager } from "./services/StatusIndicatorManager.js"; // Removed
 
@@ -35,7 +35,7 @@ Hooks.once('init', () => {
         AbstractWelcomeApp, // Expose Class
         DiagnosticService, // Expose Class
         Logger, // Expose Class
-        SupportHelper, // Expose Class
+        SettingsLayout, // Expose Class
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults()
@@ -78,27 +78,13 @@ Hooks.once('init', () => {
         default: false
     });
 
-    // Register Setup Button (Priority: Top)
-    game.settings.registerMenu("ionrift-library", "setupWizard", {
-        name: "Attunement Protocol",
-        label: "Begin Attunement",
+    // HEADER
+    SettingsLayout.registerHeader("ionrift-library", CreatureIndexSetupApp, {
         hint: "Initialize the creature database for the first time.",
-        icon: "fas fa-database",
-        type: CreatureIndexSetupApp,
-        restricted: true
+        icon: "fas fa-database"
     });
 
-    // Register Diagnostic Menu
-    game.settings.registerMenu("ionrift-library", "diagnosticMenu", {
-        name: "System Diagnostics",
-        label: "Run System Diagnostics",
-        hint: "Check the health of all Ionrift modules.",
-        icon: "fas fa-heartbeat",
-        type: DiagnosticApp,
-        restricted: true
-    });
-
-    // Register Validator Menu
+    // BODY: Logic Inspector (library-specific tool)
     game.settings.registerMenu("ionrift-library", "validatorMenu", {
         name: "Logic Inspector",
         label: "Inspect Logic",
@@ -108,8 +94,10 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Support Link
-    SupportHelper.register("ionrift-library");
+    // FOOTER
+    SettingsLayout.registerFooter("ionrift-library", {
+        diagnostics: DiagnosticApp
+    });
 
 
 
