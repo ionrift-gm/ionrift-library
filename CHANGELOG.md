@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.6] - Settings Layout and Wiki Links
+*   **Feature**: Standardised settings layout with header/body/footer structure. Attunement at the top, module settings in the middle, support and diagnostics at the bottom with a visual divider.
+*   **Feature**: Wiki / Guides button in module settings footer. Opens the Ionrift wiki directly from Foundry.
+*   **Fix**: Wiki links in README updated to numbered URLs.
+*   **Docs**: Standardised README footer with wiki, Discord, and Patreon links.
+
 ## [1.4.5] - Resonance v2.2.2 Advisory
 *   **Advisory**: One-time GM notification alerting Linux-hosted users about the Resonance v2.2.2 case-sensitivity fix. Users who had a broken Resonance module are prompted to update.
 
