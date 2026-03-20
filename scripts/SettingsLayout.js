@@ -115,6 +115,9 @@ export class SettingsLayout {
             margin: 0.75rem 0;
         ">`);
         $group.before(divider);
+
+        // Remove Foundry's native border-top on the first footer form-group
+        $group.css("border-top", "none");
     }
 
     /** Returns the current Discord invite URL. */

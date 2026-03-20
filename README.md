@@ -4,7 +4,7 @@
 ![Foundry Version](https://img.shields.io/badge/Foundry-v12-333333?style=flat&logo=foundryvirtualtabletop)
 ![Systems](https://img.shields.io/badge/systems-dnd5e%20%7C%20daggerheart-blue)
 
-💜 **[Support on Patreon](https://www.patreon.com/ionrift)**
+
 
 **The Core Library for Ionrift modules.**
 
@@ -20,7 +20,7 @@ First-time setup walks you through:
 2. Configuring integration status checks
 3. Verifying creature classifier data
 
-For detailed installation steps, troubleshooting, and FAQ see the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Core-Library)**.
+For detailed installation steps, troubleshooting, and FAQ see the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)**.
 
 ## Features
 
@@ -65,10 +65,11 @@ To use this in your module, add it to your `module.json` dependencies:
 
 Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**:
 
-- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Core-Library)** - Installation and creature indexing
-- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/Setup-Resonance)** - Sound configuration and presets
-- **[Resonance Calibration](https://github.com/ionrift-gm/ionrift-library/wiki/Resonance-Calibration)** - Fine-tuning sound bindings
-- **[Advanced Diagnostics](https://github.com/ionrift-gm/ionrift-library/wiki/Advanced-Diagnostics)** - Manifest inspection and troubleshooting
+- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)** - Installation and creature indexing
+- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/2-Setup-Resonance)** - Sound configuration and presets
+- **[Resonance Calibration](https://github.com/ionrift-gm/ionrift-library/wiki/3-Resonance-Calibration)** - Fine-tuning sound bindings
+- **[Advanced Diagnostics](https://github.com/ionrift-gm/ionrift-library/wiki/4-Advanced-Diagnostics)** - Manifest inspection and troubleshooting
+- **[Targeting Sounds Per Creature](https://github.com/ionrift-gm/ionrift-library/wiki/5-Targeting-Sounds-Per-Creature)** - Per-item and per-actor sound scoping
 
 ## Bug Reports
 
@@ -78,9 +79,9 @@ If something isn't working:
 2. Post to the **[Ionrift Discord](https://discord.gg/YmgdNNu4)** with your Foundry version, module versions, and any console errors (F12).
 3. Or open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
 
-## License
-MIT License. See [LICENSE](./LICENSE) for details.
-
 ---
-*Part of the [Ionrift Module Suite](https://github.com/ionrift-gm).* 💜 **[Support on Patreon](https://www.patreon.com/ionrift)**
+
+**Part of the [Ionrift Module Suite](https://github.com/ionrift-gm)**
+
+[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Discord](https://discord.gg/YmgdNNu4) · [Patreon](https://patreon.com/ionrift)
 
