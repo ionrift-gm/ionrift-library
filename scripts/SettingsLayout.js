@@ -136,4 +136,5 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     // Inject dividers for all known Ionrift modules
     SettingsLayout.injectDivider(html, "ionrift-library");
     SettingsLayout.injectDivider(html, "ionrift-resonance");
+    SettingsLayout.injectDivider(html, "ionrift-respite");
 });
