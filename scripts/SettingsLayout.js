@@ -10,7 +10,7 @@
  * Call registerHeader first, then module body settings, then registerFooter.
  */
 
-const DISCORD_INVITE = "https://discord.gg/YmgdNNu4";
+const DISCORD_INVITE = "https://discord.gg/8p9Fp6wa";
 const WIKI_DEFAULT   = "https://github.com/ionrift-gm/ionrift-library/wiki";
 
 export class SettingsLayout {
@@ -90,7 +90,14 @@ export class SettingsLayout {
     }
 
     /**
-     * Injects a visible divider between body and footer items in the settings panel.
+     * Reorders footer elements to the bottom of the module's settings section
+     * and injects a visible divider between body and footer items.
+     *
+     * Foundry v12 renders all registerMenu items above all register items,
+     * regardless of code registration order. This method physically moves
+     * footer groups (Discord, Wiki, Diagnostics) and the Debug setting to
+     * the end of the module section in the DOM after render.
+     *
      * Called automatically via the renderSettingsConfig hook.
      * @param {jQuery} html - The settings config HTML
      * @param {string} moduleId - The module ID to inject dividers for
@@ -99,25 +106,51 @@ export class SettingsLayout {
         const $html = $(html);
 
         // Find the first footer button (supportLink) by its data-key
-        const $btn = $html.find(`button[data-key="${moduleId}.supportLink"]`);
-        if (!$btn.length) return;
+        const $supportBtn = $html.find(`button[data-key="${moduleId}.supportLink"]`);
+        if (!$supportBtn.length) return;
 
-        // Walk up to the .form-group container
-        const $group = $btn.closest(".form-group");
-        if (!$group.length) return;
+        const $supportGroup = $supportBtn.closest(".form-group");
+        if (!$supportGroup.length) return;
 
-        // Only inject once
-        if ($group.prev(".ionrift-settings-divider").length) return;
+        // Already processed
+        if ($supportGroup.prev(".ionrift-settings-divider").length) return;
 
-        const divider = $(`<hr class="ionrift-settings-divider" style="
-            border: none;
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            margin: 0.75rem 0;
-        ">`);
-        $group.before(divider);
+        // Find the module's settings container
+        const $container = $supportGroup.parent();
 
-        // Remove Foundry's native border-top on the first footer form-group
-        $group.css("border-top", "none");
+        // Collect footer menu groups to move to bottom
+        const footerKeys = ["supportLink", "diagnosticMenu", "wikiLink"];
+        const footerGroups = [];
+        for (const key of footerKeys) {
+            const $btn = $html.find(`button[data-key="${moduleId}.${key}"]`);
+            if ($btn.length) {
+                footerGroups.push($btn.closest(".form-group"));
+            }
+        }
+
+        // Find the debug setting to move to very bottom
+        const $debug = $container.find(`[name="${moduleId}.debug"]`);
+        const $debugGroup = $debug.length ? $debug.closest(".form-group") : null;
+
+        // Physically reorder: move footer groups to end of container
+        for (const $fg of footerGroups) {
+            $container.append($fg);
+        }
+        if ($debugGroup) {
+            $container.append($debugGroup);
+        }
+
+        // Inject divider before the first footer group
+        const $firstFooter = footerGroups[0];
+        if ($firstFooter) {
+            const divider = $(`<hr class="ionrift-settings-divider" style="
+                border: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                margin: 0.75rem 0;
+            ">`);
+            $firstFooter.before(divider);
+            $firstFooter.css("border-top", "none");
+        }
     }
 
     /** Returns the current Discord invite URL. */
