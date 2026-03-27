@@ -124,7 +124,7 @@ export class ClassifierValidatorApp extends FormApplication {
             actors = actors.concat(worldActors);
         }
 
-        // 2. Compendium Scan (Smart & Robust)
+        // 2. Compendium Scan (Thorough)
         const sysId = game.system.id;
         const targetPacks = game.packs.filter(p => {
             if (p.documentName !== "Actor") return false;

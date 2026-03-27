@@ -120,7 +120,7 @@ Hooks.once('ready', async () => {
     runSelfTests();
 
     if (game.user.isGM) {
-        // Static protocol version — only bump when indexing steps change,
+        // Static protocol version - only bump when indexing steps change,
         // NOT on every module patch release.
         const INDEXING_PROTOCOL_VERSION = "1";
         const storedVersion = game.settings.get("ionrift-library", "indexSetupVersion");
@@ -161,7 +161,7 @@ Hooks.once('ready', async () => {
             });
         }
 
-        // Check for First-Time Setup — only for fresh installs or protocol bumps
+        // Check for First-Time Setup - only for fresh installs or protocol bumps
         if (storedVersion === "0.0.0" || (!storedVersion.includes(".") && storedVersion !== INDEXING_PROTOCOL_VERSION)) {
             new CreatureIndexSetupApp().render(true);
         }
@@ -180,7 +180,7 @@ Hooks.once('ready', async () => {
                 game.settings.set("ionrift-library", "resonanceAdvisory222Shown", true);
             }
         } catch (e) {
-            // Graceful fail — don't block startup for an advisory
+            // Graceful fail - don't block startup for an advisory
         }
     }
 });
