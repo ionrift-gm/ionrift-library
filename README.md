@@ -76,12 +76,12 @@ Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://gi
 If something isn't working:
 
 1. Check the **[wiki](https://github.com/ionrift-gm/ionrift-library/wiki)** for common fixes.
-2. Post to the **[Ionrift Discord](https://discord.gg/8p9Fp6wa)** with your Foundry version, module versions, and any console errors (F12).
+2. Post to the **[Ionrift Discord](https://discord.gg/vFGXf7Fncj)** with your Foundry version, module versions, and any console errors (F12).
 3. Or open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
 
 ---
 
 **Part of the [Ionrift Module Suite](https://github.com/ionrift-gm)**
 
-[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Discord](https://discord.gg/8p9Fp6wa) · [Patreon](https://patreon.com/ionrift)
+[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Discord](https://discord.gg/vFGXf7Fncj) · [Patreon](https://patreon.com/ionrift)
 

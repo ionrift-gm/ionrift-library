@@ -85,11 +85,11 @@ When reporting errors, include:
 2. What you were doing when it happened
 3. Your module versions (see Checking Versions above)
 
-Post to the [Ionrift Discord](https://discord.gg/8p9Fp6wa) or open a [GitHub Issue](https://github.com/ionrift-gm/ionrift-resonance/issues).
+Post to the [Ionrift Discord](https://discord.gg/vFGXf7Fncj) or open a [GitHub Issue](https://github.com/ionrift-gm/ionrift-resonance/issues).
 
 ## Getting Help
 
-- **Discord**: [discord.gg/8p9Fp6wa](https://discord.gg/8p9Fp6wa) - bug reports, questions, feature requests
+- **Discord**: [discord.gg/vFGXf7Fncj](https://discord.gg/vFGXf7Fncj) - bug reports, questions, feature requests
 - **Patreon**: [patreon.com/ionrift](https://patreon.com/ionrift) - dev updates, early access
 
 ---
