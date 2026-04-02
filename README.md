@@ -1,5 +1,5 @@
 # Ionrift Library
-![Downloads](https://img.shields.io/github/downloads/ionrift-gm/ionrift-library/total?color=violet&label=Downloads)
+![Downloads](https://img.shields.io/github/downloads/ionrift-gm/ionrift-library/latest/total?color=violet&label=Downloads)
 ![Latest Release](https://img.shields.io/github/v/release/ionrift-gm/ionrift-library?color=violet&label=Latest%20Version)
 ![Foundry Version](https://img.shields.io/badge/Foundry-v12-333333?style=flat&logo=foundryvirtualtabletop)
 ![Systems](https://img.shields.io/badge/systems-dnd5e%20%7C%20daggerheart-blue)
