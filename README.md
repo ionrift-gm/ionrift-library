@@ -13,7 +13,7 @@ Shared utilities for the Ionrift ecosystem supporting **DnD5e** and **[Daggerhea
 ### Support Ionrift
 
 [![Patreon](https://img.shields.io/badge/Patreon-ionrift-ff424d?logo=patreon&logoColor=white)](https://patreon.com/ionrift)
-[![Discord](https://img.shields.io/discord/1483208289507479725?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/vFGXf7Fncj)
+[![Discord](https://img.shields.io/badge/Discord-Ionrift-5865F2?logo=discord&logoColor=white)](https://discord.gg/vFGXf7Fncj)
 
 > Documentation, setup guides, and troubleshooting: **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**
 
