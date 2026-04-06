@@ -111,6 +111,8 @@ export class ZipImporterService {
         const entries = [];
         zip.forEach((relativePath, entry) => {
             if (entry.dir) return;
+            // Normalize backslashes (Windows .NET ZipFile may produce these)
+            relativePath = relativePath.replace(/\\/g, "/");
             if (SKIP_PATTERNS.some(p => relativePath.includes(p))) return;
 
             const ext = "." + relativePath.split(".").pop().toLowerCase();
@@ -126,6 +128,7 @@ export class ZipImporterService {
         }
 
         // Schema validation
+        console.log(`ZipImporter | ${entries.length} entries after filtering:`, entries.map(e => e.path));
         if (schemaValidator) {
             const entryMeta = entries.map(e => ({
                 path: e.path,

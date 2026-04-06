@@ -10,7 +10,7 @@
  * Call registerHeader first, then module body settings, then registerFooter.
  */
 
-const DISCORD_INVITE = "https://discord.gg/8p9Fp6wa";
+const DISCORD_INVITE = "https://discord.gg/vFGXf7Fncj";
 const WIKI_DEFAULT   = "https://github.com/ionrift-gm/ionrift-library/wiki";
 
 export class SettingsLayout {

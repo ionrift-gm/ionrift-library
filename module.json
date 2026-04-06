@@ -4,7 +4,7 @@
     "description": "Core dependency for the Ionrift module suite. Provides shared utilities, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules. Supports DnD5e and Daggerheart.",
     "readme": "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
     "version": "1.5.0",
-    "bugs": "https://discord.gg/8p9Fp6wa",
+    "bugs": "https://discord.gg/vFGXf7Fncj",
     "compatibility": {
         "minimum": "12",
         "verified": "13"
