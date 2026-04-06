@@ -15,6 +15,7 @@ import { IntegrationStatus } from "./services/IntegrationStatus.js";
 import { RuntimeValidator } from "./RuntimeValidator.js";
 import { WorldSchema } from "./data/WorldSchema.js";
 import { Logger } from "./services/Logger.js";
+import { DialogHelper } from "./DialogHelper.js";
 
 // Initialize Library
 Hooks.once('init', () => {
@@ -36,6 +37,7 @@ Hooks.once('init', () => {
         DiagnosticService, // Expose Class
         Logger, // Expose Class
         SettingsLayout, // Expose Class
+        confirm: DialogHelper.confirm, // Centralized confirm dialog utility
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults()
