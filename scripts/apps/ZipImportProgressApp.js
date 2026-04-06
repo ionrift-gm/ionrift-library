@@ -85,6 +85,30 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
                 </div>
                 <div class="zip-progress-status cancelled">${context.statusMessage}</div>
             `;
+        } else if (context.totalFiles === 0) {
+            // Preparing phase — no file count yet
+            el.innerHTML = `
+                <div class="zip-progress-header">
+                    <i class="fas fa-file-archive"></i>
+                    <span class="zip-filename">${context.fileName}</span>
+                </div>
+                <div class="zip-progress-preparing">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>${context.statusMessage}</span>
+                </div>
+                <div class="zip-progress-actions">
+                    <button type="button" class="zip-cancel-btn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            `;
+
+            const cancelBtn = el.querySelector(".zip-cancel-btn");
+            cancelBtn?.addEventListener("click", () => {
+                this.cancelled = true;
+                this.#statusMessage = "Cancelled.";
+                this.render({ force: true });
+            });
         } else {
             el.innerHTML = `
                 <div class="zip-progress-header">
@@ -128,6 +152,24 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
         this.#currentFile = current;
         this.#currentFileName = fileName;
         this.#statusMessage = `Uploading ${fileName}...`;
+        this.render({ force: true });
+    }
+
+    /**
+     * Update the status message (used during parse/validate phases).
+     * @param {string} msg
+     */
+    setStatus(msg) {
+        this.#statusMessage = msg;
+        this.render({ force: true });
+    }
+
+    /**
+     * Set the total file count once known (after filtering).
+     * @param {number} total
+     */
+    setTotal(total) {
+        this.#totalFiles = total;
         this.render({ force: true });
     }
 

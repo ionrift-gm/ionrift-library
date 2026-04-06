@@ -90,24 +90,33 @@ export class ZipImporterService {
             return { imported: 0, skipped: 0, errors: [msg] };
         }
 
+        // Show progress modal early so user sees feedback during parse
+        const { ZipImportProgressApp } = await import("../apps/ZipImportProgressApp.js");
+        const progressApp = new ZipImportProgressApp(file.name, 0);
+        progressApp.render({ force: true });
+
         // Load JSZip dynamically (vendored)
         const JSZip = await this._loadJSZip();
         if (!JSZip) {
+            progressApp.close();
             return { imported: 0, skipped: 0, errors: ["Failed to load JSZip library."] };
         }
 
         // Parse the ZIP
         let zip;
         try {
+            progressApp.setStatus("Reading archive...");
             const buffer = await file.arrayBuffer();
             zip = await JSZip.loadAsync(buffer);
         } catch (e) {
             const msg = `Failed to parse ZIP: ${e.message}`;
             ui.notifications.error(msg);
+            progressApp.close();
             return { imported: 0, skipped: 0, errors: [msg] };
         }
 
         // Filter entries
+        progressApp.setStatus("Scanning files...");
         const entries = [];
         zip.forEach((relativePath, entry) => {
             if (entry.dir) return;
@@ -124,12 +133,14 @@ export class ZipImporterService {
         if (entries.length === 0) {
             const msg = "ZIP contains no files matching the allowed extensions.";
             ui.notifications.warn(msg);
+            progressApp.close();
             return { imported: 0, skipped: 0, errors: [msg] };
         }
 
         // Schema validation
         console.log(`ZipImporter | ${entries.length} entries after filtering:`, entries.map(e => e.path));
         if (schemaValidator) {
+            progressApp.setStatus("Validating structure...");
             const entryMeta = entries.map(e => ({
                 path: e.path,
                 dir: e.path.includes("/") ? e.path.substring(0, e.path.lastIndexOf("/")) : "",
@@ -139,14 +150,13 @@ export class ZipImporterService {
             if (!validation.valid) {
                 const msg = `Schema validation failed: ${(validation.errors || []).join(", ")}`;
                 ui.notifications.error(msg);
+                progressApp.close();
                 return { imported: 0, skipped: 0, errors: [msg] };
             }
         }
 
-        // Show progress modal
-        const { ZipImportProgressApp } = await import("../apps/ZipImportProgressApp.js");
-        const progressApp = new ZipImportProgressApp(file.name, entries.length);
-        progressApp.render({ force: true });
+        // Update progress with actual file count now that we know it
+        progressApp.setTotal(entries.length);
 
         // Create directory structure
         const dirsToCreate = new Set();
