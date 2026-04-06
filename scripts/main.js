@@ -16,6 +16,7 @@ import { RuntimeValidator } from "./RuntimeValidator.js";
 import { WorldSchema } from "./data/WorldSchema.js";
 import { Logger } from "./services/Logger.js";
 import { DialogHelper } from "./DialogHelper.js";
+import { ZipImporterService } from "./services/ZipImporterService.js";
 
 // Initialize Library
 Hooks.once('init', () => {
@@ -38,6 +39,9 @@ Hooks.once('init', () => {
         Logger, // Expose Class
         SettingsLayout, // Expose Class
         confirm: DialogHelper.confirm, // Centralized confirm dialog utility
+        importZipPack: (opts) => ZipImporterService.importZipPack(opts),
+        importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
+        getZipTargetDir: (moduleId, assetType) => ZipImporterService.getTargetDir(moduleId, assetType),
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults()

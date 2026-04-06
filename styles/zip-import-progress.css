@@ -1,0 +1,122 @@
+/* Zip Import Progress Modal */
+
+.zip-import-progress {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.zip-progress-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #fff;
+}
+
+.zip-progress-header i {
+    color: var(--ionrift-accent, #8b5cf6);
+    font-size: 1.2em;
+}
+
+.zip-complete-icon {
+    color: #4ade80 !important;
+    text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
+}
+
+.zip-cancel-icon {
+    color: #f87171 !important;
+    text-shadow: 0 0 8px rgba(248, 113, 113, 0.4);
+}
+
+.zip-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Progress bar */
+.zip-progress-bar-container {
+    position: relative;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.zip-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.7), rgba(167, 139, 250, 0.9));
+    border-radius: 3px;
+    transition: width 0.2s ease;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.zip-progress-bar-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.5px;
+}
+
+/* Current file indicator */
+.zip-progress-current {
+    font-size: 0.85em;
+    color: #aaa;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: "Consolas", "Courier New", monospace;
+    padding: 0 4px;
+}
+
+/* Status message */
+.zip-progress-status {
+    font-size: 0.95em;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.zip-progress-status.complete {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.zip-progress-status.cancelled {
+    color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+/* Actions */
+.zip-progress-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.zip-cancel-btn {
+    background: rgba(248, 113, 113, 0.2) !important;
+    border: 1px solid rgba(248, 113, 113, 0.5) !important;
+    color: #f87171 !important;
+    padding: 4px 14px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.zip-cancel-btn:hover {
+    background: rgba(248, 113, 113, 0.4) !important;
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
+}
