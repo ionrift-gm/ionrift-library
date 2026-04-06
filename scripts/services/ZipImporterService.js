@@ -29,6 +29,9 @@ const SKIP_PATTERNS = [
 const DEFAULT_MAX_SIZE_MB = 50;
 const DATA_ROOT = "ionrift-data";
 
+// Foundry v13 namespaced FilePicker; fall back to global for v12
+const FP = foundry.applications?.apps?.FilePicker ?? FilePicker;
+
 export class ZipImporterService {
 
     /**
@@ -182,7 +185,7 @@ export class ZipImporterService {
                     : targetDir;
 
                 const uploadFile = new File([blob], fileName);
-                await FilePicker.upload("data", subDir, uploadFile, {});
+                await FP.upload("data", subDir, uploadFile, {});
                 imported++;
                 progressApp.update(i + 1, fileName);
             } catch (e) {
@@ -274,10 +277,10 @@ export class ZipImporterService {
      */
     static async _ensureDirectory(dirPath) {
         try {
-            await FilePicker.browse("data", dirPath);
+            await FP.browse("data", dirPath);
         } catch {
             try {
-                await FilePicker.createDirectory("data", dirPath);
+                await FP.createDirectory("data", dirPath);
             } catch (e) {
                 // Directory may already exist or be blocked by platform
                 console.warn(`ZipImporter | Could not create directory ${dirPath}:`, e.message);
