@@ -17,6 +17,7 @@ import { WorldSchema } from "./data/WorldSchema.js";
 import { Logger } from "./services/Logger.js";
 import { DialogHelper } from "./DialogHelper.js";
 import { ZipImporterService } from "./services/ZipImporterService.js";
+import { SessionTracker } from "./services/SessionTracker.js";
 
 // Initialize Library
 Hooks.once('init', () => {
@@ -44,7 +45,8 @@ Hooks.once('init', () => {
         getZipTargetDir: (moduleId, assetType) => ZipImporterService.getTargetDir(moduleId, assetType),
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
-        runDiagnostics: () => DiagnosticService.instance.showResults()
+        runDiagnostics: () => DiagnosticService.instance.showResults(),
+        sessions: SessionTracker
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -58,6 +60,14 @@ Hooks.once('init', () => {
         config: true,
         type: Boolean,
         default: false
+    });
+
+    // Session Log
+    game.settings.register("ionrift-library", "sessionLog", {
+        scope: "world",
+        config: false,
+        type: Array, // Expected: [{ id, date, number, players }]
+        default: []
     });
 
     // Register Setup Version
@@ -124,6 +134,9 @@ Hooks.once('init', () => {
 Hooks.once('ready', async () => {
     // Run Startup System Check (Unit Tests)
     runSelfTests();
+
+    // Init Session Tracker
+    SessionTracker.init();
 
     if (game.user.isGM) {
         // Static protocol version - only bump when indexing steps change,
