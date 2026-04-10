@@ -18,6 +18,15 @@ import { Logger } from "./services/Logger.js";
 import { DialogHelper } from "./DialogHelper.js";
 import { ZipImporterService } from "./services/ZipImporterService.js";
 import { SessionTracker } from "./services/SessionTracker.js";
+import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
+
+// ── Item Enrichment: wire hooks at top-level so they are never missed
+// regardless of script load order or hot-reloads. Item sheets don't
+// render until after ready, so early registration is always safe.
+const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
+Hooks.on("renderItemSheet",    _onEnrichSheet); // legacy dnd5e v2 / AppV1
+Hooks.on("renderItemSheet5e",  _onEnrichSheet); // dnd5e v3 (ApplicationV2)
+Hooks.on("renderItemSheet5e2", _onEnrichSheet); // dnd5e v3 alternate class
 
 // Initialize Library
 Hooks.once('init', () => {
@@ -46,7 +55,9 @@ Hooks.once('init', () => {
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults(),
-        sessions: SessionTracker
+        sessions: SessionTracker,
+        /** Item Enrichment Engine — register module-specific enrichments here. */
+        enrichment: ItemEnrichmentEngine
     };
 
     // Expose Service Globally (outside lib namespace)

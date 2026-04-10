@@ -1627,3 +1627,21 @@
     padding-top: 0.75rem;
     margin-top: 0.5rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Item Enrichment Block (injected into Foundry item sheets)          */
+/* ─────────────────────────────────────────────────────────────────── */
+.ionrift-enrichment {
+    margin: 8px 0 12px;
+    padding: 8px 10px;
+    background: rgba(155, 89, 182, 0.10);
+    border-left: 3px solid rgba(155, 89, 182, 0.6);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.ionrift-enrichment i.fa-campground {
+    color: rgba(155, 89, 182, 0.9);
+    margin-right: 2px;
+}
