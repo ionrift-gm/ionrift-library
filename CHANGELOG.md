@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.5.2] - 2026-04-11
+## [1.5.3] - 2026-04-11
 
 *   **Fix**: Item Enrichment Engine registry key normalisation. Unicode apostrophe variants (curly quotes, prime) are now collapsed to a plain ASCII apostrophe before lookup, so SRD items like "Cook's Utensils" match enrichments registered with a straight apostrophe and vice versa. Resolves silent enrichment misses on items sourced from the 2024 SRD compendium.
 *   **Feature**: System Adapter exposed on the public API as `game.ionrift.library.system`. Provides system-agnostic actor queries (character level, spell slots, class list) used by Workshop and future consumer modules.
