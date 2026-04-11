@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      dry_run_discord:
+        description: 'Post Discord notification only (no release artifact)'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   build:
@@ -19,10 +25,10 @@ jobs:
       - name: Zip Module
         # Zips current directory, excluding git/github/dev files
         run: |
-          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt"
+          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             module.zip
@@ -30,11 +36,12 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
           generate_release_notes: true
+          make_latest: ${{ !(contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha')) }}
 
       - name: Notify Foundry VTT
-        if: success()
+        if: success() && !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-alpha')
         uses: actions/github-script@v7
         env:
           FOUNDRY_TOKEN: ${{ secrets.FOUNDRY_PACKAGE_TOKEN }}
@@ -42,8 +49,7 @@ jobs:
           script: |
             const fs = require('fs');
             const manifest = JSON.parse(fs.readFileSync('module.json', 'utf8'));
-            
-            // Construct the payload matching Foundry's API expectations
+
             const payload = {
               id: manifest.id,
               release: {
@@ -53,10 +59,9 @@ jobs:
                 compatibility: manifest.compatibility
               }
             };
-            
+
             console.log("Sending payload:", JSON.stringify(payload, null, 2));
-            
-            // Send to Foundry API
+
             const response = await fetch("https://foundryvtt.com/_api/packages/release_version/", {
               method: "POST",
               headers: {
@@ -65,7 +70,7 @@ jobs:
               },
               body: JSON.stringify(payload)
             });
-            
+
             const text = await response.text();
             let data;
             try {
@@ -74,9 +79,88 @@ jobs:
               data = text;
             }
             console.log("Response:", typeof data === 'string' ? data : JSON.stringify(data, null, 2));
-            
+
             if (!response.ok) {
               core.setFailed(`Foundry API Error (${response.status}): ${typeof data === 'string' ? data : JSON.stringify(data)}`);
             } else {
               console.log("Foundry VTT notified successfully.");
             }
+
+  notify-discord:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    needs: build
+    if: >
+      success() &&
+      !contains(github.ref_name, '-rc') &&
+      !contains(github.ref_name, '-beta') &&
+      !contains(github.ref_name, '-alpha')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract changelog entry
+        id: changelog
+        run: |
+          # Extract the block from the first ## heading to just before the second ## heading.
+          # Strips leading/trailing blank lines and converts Markdown ### sub-headers to bold.
+          BODY=$(awk '
+            /^## / { if (found) exit; found=1; next }
+            found && /^### / { printf "\n**%s**\n", substr($0,5); next }
+            found { print }
+          ' CHANGELOG.md | sed '/^[[:space:]]*$/d' | head -80)
+
+          # Grab the version number from the first ## line
+          VERSION=$(awk '/^## / { match($0, /\[([^]]+)\]/, a); print a[1]; exit }' CHANGELOG.md)
+
+          # Truncate body to 3900 chars (Discord embed description limit is 4096)
+          BODY_TRIMMED=$(echo "$BODY" | head -c 3900)
+          if [ "${#BODY}" -gt 3900 ]; then
+            BODY_TRIMMED="${BODY_TRIMMED}\n\n_...see full notes on GitHub_"
+          fi
+
+          # Escape for JSON: newlines → \n, quotes → \"
+          BODY_JSON=$(echo "$BODY_TRIMMED" | python3 -c "
+import sys, json
+print(json.dumps(sys.stdin.read()))
+" | sed 's/^"//;s/"$//')
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post to Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          VERSION="${{ steps.changelog.outputs.version }}"
+          BODY="${{ steps.changelog.outputs.body }}"
+          REPO_URL="https://github.com/${{ github.repository }}"
+          RELEASE_URL="${REPO_URL}/releases/tag/${{ github.ref_name }}"
+
+          PAYLOAD=$(python3 -c "
+import json, sys
+
+version = sys.argv[1]
+body    = sys.argv[2]
+url     = sys.argv[3]
+
+data = {
+  \"embeds\": [{
+    \"title\": f\"\U0001f4da Ionrift Library \u2014 v{version}\",
+    \"description\": body,
+    \"color\": 0x6B4FA0,
+    \"url\": url,
+    \"footer\": {\"text\": \"The Austere Maker \u2022 ionrift.com\"},
+    \"thumbnail\": {\"url\": \"https://raw.githubusercontent.com/${{ github.repository }}/main/assets/module-icon.png\"}
+  }]
+}
+print(json.dumps(data))
+" "$VERSION" "$BODY" "$RELEASE_URL")
+
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$DISCORD_WEBHOOK" | grep -qE '^2' || { echo "Discord webhook POST failed"; exit 1; }

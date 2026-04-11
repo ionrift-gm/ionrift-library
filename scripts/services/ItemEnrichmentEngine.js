@@ -8,8 +8,9 @@
  * enrichment data via `register()` or `registerBatch()`. The engine
  * handles all hook wiring, DOM targeting, and rendering.
  *
- * The registry is name-based (case-insensitive) rather than UUID-based
- * so it works regardless of which compendium the item originated from.
+ * Registry keys are normalised (curly apostrophes collapsed, lowercased)
+ * so lookups work for SRD items regardless of smart-quote variants.
+ * Example: "Cook\u2019s Utensils" and "Cook's Utensils" resolve identically.
  *
  * Hook support:
  *   - renderItemSheet       (legacy dnd5e v2 / AppV1)
@@ -26,6 +27,25 @@ export class ItemEnrichmentEngine {
     static _registry = new Map();
 
     // ──────────────────────────────────────────────────────────────────
+    // Internal helpers
+    // ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Normalise an item name for use as a registry key.
+     * Collapses Unicode apostrophe variants (\u2018 \u2019 \u201A \u2032)
+     * and typographic single-quotes to a plain ASCII apostrophe, then
+     * lowercases. This ensures SRD items like \u201cCook\u2019s Utensils\u201d
+     * match a registration that used a straight apostrophe, and vice versa.
+     * @param {string} name
+     * @returns {string}
+     */
+    static _normalize(name) {
+        return name
+            .replace(/[\u2018\u2019\u201A\u2032]/g, "'")
+            .toLowerCase();
+    }
+
+    // ──────────────────────────────────────────────────────────────────
     // Registration API
     // ──────────────────────────────────────────────────────────────────
 
@@ -39,7 +59,7 @@ export class ItemEnrichmentEngine {
             console.warn("ItemEnrichmentEngine | register() called with invalid data:", itemName, data);
             return;
         }
-        this._registry.set(itemName.toLowerCase(), data);
+        this._registry.set(this._normalize(itemName), data);
     }
 
     /**
@@ -64,7 +84,7 @@ export class ItemEnrichmentEngine {
      */
     static get(itemName) {
         if (!itemName) return null;
-        return this._registry.get(itemName.toLowerCase()) ?? null;
+        return this._registry.get(this._normalize(itemName)) ?? null;
     }
 
     /**

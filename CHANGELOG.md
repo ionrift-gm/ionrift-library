@@ -1,7 +1,17 @@
 # Changelog
 
-## [1.5.0] - Zip Pack Importer
-*   **Feature**: Shared utility for importing ZIP archives (art, SFX) through the Foundry UI. Consumer modules call `game.ionrift.library.importZipPack()` with module ID, asset type, and optional validators.
+## [1.5.1] - 2026-04-11
+
+*   **Fix**: Item Enrichment Engine registry key normalisation. Unicode apostrophe variants (curly quotes, prime) are now collapsed to a plain ASCII apostrophe before lookup, so SRD items like "Cook's Utensils" match enrichments registered with a straight apostrophe and vice versa. Resolves silent enrichment misses on items sourced from the 2024 SRD compendium.
+*   **Feature**: System Adapter exposed on the public API as `game.ionrift.library.system`. Provides system-agnostic actor queries (character level, spell slots, class list) used by Workshop and future consumer modules.
+*   **Infra**: Discord patch notes workflow. A `notify-discord` job fires on every stable release, parsing the top CHANGELOG entry and posting a formatted embed to `#patch-notes` (Library purple `#7C5CBF`).
+
+## [1.5.0] - Item Enrichment Engine, Session Tracker, Zip Pack Importer
+
+*   **Feature**: Item Enrichment Engine (`ItemEnrichmentEngine`). Kernel-level service that injects styled mechanical-notes blocks into Foundry item sheets. Any Ionrift module can register enrichment data via `game.ionrift.library.enrichment.register()` or `registerBatch()`. Registry is name-keyed and normalises Unicode apostrophe variants so SRD items match regardless of smart-quote encoding. Hook wiring covers AppV1 (`renderItemSheet`) and AppV2 (`renderItemSheet5e`, `renderItemSheet5e2`). Respite is the first consumer; Workshop will follow.
+*   **Feature**: Session Tracker (`SessionTracker`). Records session metadata (date, session number, player list) to world settings across restarts. Exposed as `game.ionrift.library.sessions`. Required dependency for Workshop Phase 4.
+*   **Style**: `.ionrift-enrichment` CSS block moved to library `ionrift.css`. Consumer modules no longer need to carry their own copy.
+*   **Feature**: Zip Pack Importer. Shared utility for importing ZIP archives (art, SFX) through the Foundry UI. Consumer modules call `game.ionrift.library.importZipPack()` with module ID, asset type, and optional validators.
 *   **Feature**: Ionrift Glass styled progress modal with cancel support and auto-close on completion.
 *   **Convention**: Imported assets land in `ionrift-data/{module}/{type}/` at the Data root. Survives module updates.
 *   **Dependency**: Vendored JSZip v3.10.1 (MIT, ~100KB minified). No external CDN calls.

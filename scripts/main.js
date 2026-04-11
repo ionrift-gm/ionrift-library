@@ -19,6 +19,7 @@ import { DialogHelper } from "./DialogHelper.js";
 import { ZipImporterService } from "./services/ZipImporterService.js";
 import { SessionTracker } from "./services/SessionTracker.js";
 import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
+import { SystemAdapter } from "./services/SystemAdapter.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -56,6 +57,8 @@ Hooks.once('init', () => {
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults(),
         sessions: SessionTracker,
+        /** System Adapter — system-agnostic actor queries (level, spells, classes). */
+        system: SystemAdapter,
         /** Item Enrichment Engine — register module-specific enrichments here. */
         enrichment: ItemEnrichmentEngine
     };
