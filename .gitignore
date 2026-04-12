@@ -30,3 +30,6 @@ debug_*.log
 
 # Unreleased cross-module files (prevent accidental commit)
 scripts/services/TokenArtResolver.js
+
+# Dev documents (canonical copies live in ionrift-brand)
+BACKLOG.md
