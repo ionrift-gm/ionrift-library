@@ -1,0 +1,45 @@
+{
+    "env": {
+        "browser": true,
+        "es2022": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "module"
+    },
+    "globals": {
+        "Application": "readonly",
+        "canvas": "readonly",
+        "ChatMessage": "readonly",
+        "CONFIG": "readonly",
+        "console": "readonly",
+        "Dialog": "readonly",
+        "document": "readonly",
+        "DOMParser": "readonly",
+        "FilePicker": "readonly",
+        "Folder": "readonly",
+        "FormApplication": "readonly",
+        "foundry": "readonly",
+        "game": "readonly",
+        "Handlebars": "readonly",
+        "Hooks": "readonly",
+        "jQuery": "readonly",
+        "loadTemplates": "readonly",
+        "MutationObserver": "readonly",
+        "renderTemplate": "readonly",
+        "TextEditor": "readonly",
+        "ui": "readonly",
+        "window": "readonly",
+        "$": "readonly"
+    },
+    "rules": {
+        "eqeqeq": "error",
+        "no-unused-vars": [
+            "warn",
+            {
+                "argsIgnorePattern": "^_"
+            }
+        ],
+        "no-var": "error"
+    }
+}
