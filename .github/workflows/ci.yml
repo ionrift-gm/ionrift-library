@@ -338,7 +338,7 @@ jobs:
   fan-out:
     name: Trigger Consumer CIs
     runs-on: ubuntu-latest
-    needs: [eslint, inclusion-scan, import-integrity, case-sensitivity, artifact-hygiene, vitest]
+    needs: [eslint, inclusion-scan, import-integrity, case-sensitivity, signal-check, artifact-hygiene, module-manifest, vitest]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger ionrift-respite CI
