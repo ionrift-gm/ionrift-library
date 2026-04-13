@@ -334,3 +334,37 @@ jobs:
 
       - name: Run Vitest
         run: npm test
+
+  fan-out:
+    name: Trigger Consumer CIs
+    runs-on: ubuntu-latest
+    needs: [eslint, inclusion-scan, import-integrity, case-sensitivity, artifact-hygiene, vitest]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger ionrift-respite CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-respite
+          event-type: lib-updated
+
+      - name: Trigger ionrift-workshop CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-workshop
+          event-type: lib-updated
+
+      - name: Trigger ionrift-arbiter CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-arbiter
+          event-type: lib-updated
+
+      - name: Trigger ionrift-resonance CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-resonance
+          event-type: lib-updated
