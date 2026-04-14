@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PackRegistryService } from "../scripts/services/PackRegistryService.js";
+import { CloudRelayService } from "../scripts/services/CloudRelayService.js";
 
 const REGISTRY_WITH_UPDATE = {
     schemaVersion: 1,
@@ -202,5 +203,160 @@ describe("cache behavior", () => {
         await PackRegistryService.checkForUpdates();
 
         expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    });
+});
+
+// ── Module Updates & Early Access (schema v2) ───────────────────
+
+const REGISTRY_V2 = {
+    schemaVersion: 2,
+    packs: {},
+    modules: {
+        "ionrift-workshop": {
+            latest: "1.0.0",
+            earlyAccess: {
+                version: "1.1.0-beta.1",
+                tier: "Acolyte",
+                publishedAt: "2026-04-20T00:00:00Z",
+                publicAt: "2026-05-04T00:00:00Z"
+            }
+        }
+    }
+};
+
+function setupModuleGlobals(settingsOverrides = {}, installedModules = new Map()) {
+    const settings = makeSettingsStore(settingsOverrides);
+
+    globalThis.game = {
+        system: { id: "dnd5e" },
+        user: { isGM: true },
+        settings,
+        modules: installedModules,
+        ionrift: { library: {} }
+    };
+
+    globalThis.ui = {
+        notifications: {
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn()
+        }
+    };
+
+    return { settings };
+}
+
+describe("_checkModuleUpdates()", () => {
+    beforeEach(() => vi.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
+
+    it("calls _showModuleUpdateNotification when installed version is behind", () => {
+        const modules = new Map([["ionrift-workshop", { version: "0.9.0" }]]);
+        setupModuleGlobals({}, modules);
+
+        const spy = vi.spyOn(PackRegistryService, "_showModuleUpdateNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkModuleUpdates(REGISTRY_V2);
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        expect(spy).toHaveBeenCalledWith("ionrift-workshop", "0.9.0", REGISTRY_V2.modules["ionrift-workshop"]);
+    });
+
+    it("does not notify when installed version matches latest", () => {
+        const modules = new Map([["ionrift-workshop", { version: "1.0.0" }]]);
+        setupModuleGlobals({}, modules);
+
+        const spy = vi.spyOn(PackRegistryService, "_showModuleUpdateNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkModuleUpdates(REGISTRY_V2);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("does not notify when module is not installed", () => {
+        setupModuleGlobals({}, new Map());
+
+        const spy = vi.spyOn(PackRegistryService, "_showModuleUpdateNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkModuleUpdates(REGISTRY_V2);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+});
+
+describe("_checkEarlyAccess()", () => {
+    beforeEach(() => vi.restoreAllMocks());
+    afterEach(() => vi.restoreAllMocks());
+
+    it("notifies when user tier qualifies and publicAt is in the future", () => {
+        setupModuleGlobals({}, new Map());
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue("Acolyte");
+        vi.spyOn(PackRegistryService, "_isPackSnoozed").mockReturnValue(false);
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkEarlyAccess(REGISTRY_V2);
+
+        expect(spy).toHaveBeenCalledTimes(1);
+        expect(spy).toHaveBeenCalledWith("ionrift-workshop", REGISTRY_V2.modules["ionrift-workshop"].earlyAccess);
+    });
+
+    it("stays silent when user tier is below required tier", () => {
+        setupModuleGlobals({}, new Map());
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue("Initiate");
+        vi.spyOn(PackRegistryService, "_isPackSnoozed").mockReturnValue(false);
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkEarlyAccess(REGISTRY_V2);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("stays silent when publicAt is in the past", () => {
+        const expiredRegistry = structuredClone(REGISTRY_V2);
+        expiredRegistry.modules["ionrift-workshop"].earlyAccess.publicAt = "2020-01-01T00:00:00Z";
+
+        setupModuleGlobals({}, new Map());
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue("Acolyte");
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkEarlyAccess(expiredRegistry);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("stays silent when module is already installed at the EA version", () => {
+        const modules = new Map([["ionrift-workshop", { version: "1.1.0-beta.1" }]]);
+        setupModuleGlobals({}, modules);
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue("Acolyte");
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkEarlyAccess(REGISTRY_V2);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("stays silent when no sigil is stored (getTierClaim returns null)", () => {
+        setupModuleGlobals({}, new Map());
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue(null);
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        PackRegistryService._checkEarlyAccess(REGISTRY_V2);
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("does not crash when registry has no modules key (v1 schema)", () => {
+        setupModuleGlobals({}, new Map());
+        vi.spyOn(CloudRelayService, "getTierClaim").mockReturnValue("Acolyte");
+
+        const spy = vi.spyOn(PackRegistryService, "_showEarlyAccessNotification").mockImplementation(() => {});
+
+        expect(() => PackRegistryService._checkEarlyAccess({ schemaVersion: 1, packs: {} })).not.toThrow();
+        expect(spy).not.toHaveBeenCalled();
     });
 });
