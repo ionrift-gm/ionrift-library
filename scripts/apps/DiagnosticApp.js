@@ -1,4 +1,6 @@
 import { DiagnosticService } from "../services/DiagnosticService.js";
+import { TestHarnessRunner } from "../services/TestHarnessRunner.js";
+import { TestReportApp } from "./TestReportApp.js";
 
 export class DiagnosticApp extends FormApplication {
     constructor(results) {
@@ -63,7 +65,7 @@ export class DiagnosticApp extends FormApplication {
     activateListeners(html) {
         super.activateListeners(html);
         html.find("button[name='refresh']").click(async (event) => {
-            event.preventDefault(); // Just in case
+            event.preventDefault();
             console.log("Ionrift | Diagnostic Refresh Clicked");
             try {
                 const newResults = await DiagnosticService.instance.runDiagnostics();
@@ -72,6 +74,23 @@ export class DiagnosticApp extends FormApplication {
                 this.render();
             } catch (err) {
                 console.error("Ionrift | Diagnostic Refresh Failed:", err);
+            }
+        });
+
+        html.find("button[name='run-tests']").click(async (event) => {
+            event.preventDefault();
+            const btn = event.currentTarget;
+            btn.disabled = true;
+            btn.querySelector("span")?.textContent && (btn.querySelector("span").textContent = "Running...");
+            try {
+                const report = await TestHarnessRunner.runAll();
+                new TestReportApp(report).render(true);
+            } catch (err) {
+                console.error("Ionrift | Test run failed:", err);
+                ui.notifications.error("Test run failed. See console.");
+            } finally {
+                btn.disabled = false;
+                if (btn.querySelector("span")) btn.querySelector("span").textContent = "Run All Tests";
             }
         });
     }

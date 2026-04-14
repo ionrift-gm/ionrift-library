@@ -63,6 +63,29 @@ export class SystemAdapter {
     }
 
     /**
+     * Normalised trait tags for item synergy / filtering (dnd5e senses & traits).
+     * @param {Actor} actor
+     * @returns {Set<string>}
+     */
+    static getTraits(actor) {
+        const traits = new Set();
+        if (!actor) return traits;
+        if (this.systemId === "dnd5e") {
+            if ((actor.system?.attributes?.senses?.darkvision ?? 0) > 0) {
+                traits.add("darkvision");
+            }
+            for (const dr of actor.system?.traits?.dr?.value ?? []) {
+                traits.add(`${dr}-resistance`);
+            }
+            for (const ci of actor.system?.traits?.ci?.value ?? []) {
+                traits.add(`${ci}-immunity`);
+            }
+        }
+        // Daggerheart: trait-driven synergy not yet modelled; extend when DH data paths exist.
+        return traits;
+    }
+
+    /**
      * Whether this actor is a player-owned character.
      * @param {Actor} actor
      * @returns {boolean}

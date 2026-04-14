@@ -31,5 +31,14 @@ debug_*.log
 # Unreleased cross-module files (prevent accidental commit)
 scripts/services/TokenArtResolver.js
 
+# Test vectors (IP-sensitive — classifier mapping data)
+scripts/data/classifierTestVectors.js
+
 # Dev documents (canonical copies live in ionrift-brand)
 BACKLOG.md
+
+# Agent handoff specs (ephemeral — see DEV_PROTOCOLS.md §30)
+.cursor/
+CURSOR_TASK_*
+CURSOR_SPEC_*
+CURSOR_PLAN_*

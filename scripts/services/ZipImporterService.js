@@ -17,6 +17,8 @@
  *   });
  */
 
+import { PackManifestSchema } from "../data/PackManifestSchema.js";
+
 // OS-generated junk files to skip during extraction
 const SKIP_PATTERNS = [
     "__MACOSX",
@@ -45,7 +47,7 @@ export class ZipImporterService {
      * @param {number} [options.maxSizeMB]    Max zip file size in MB (default: 50)
      * @param {Function} [options.schemaValidator]    Validates extracted entries
      * @param {boolean} [options.overwriteExisting]   Overwrite files (default: true)
-     * @returns {Promise<{imported: number, skipped: number, errors: string[]}|null>}
+     * @returns {Promise<{imported: number, skipped: number, errors: string[], manifest: Record<string, unknown>|null}|null>}
      */
     static async importZipPack(options = {}) {
         if (!game.user.isGM) {
@@ -65,9 +67,10 @@ export class ZipImporterService {
      *
      * @param {File} file               The ZIP file to import
      * @param {Object} options           Same options as importZipPack
-     * @returns {Promise<{imported: number, skipped: number, errors: string[]}>}
+     * @returns {Promise<{imported: number, skipped: number, errors: string[], manifest: Record<string, unknown>|null}>}
      */
     static async importFromFile(file, options = {}) {
+        const hasAllowedExtensionsOption = Object.prototype.hasOwnProperty.call(options, "allowedExtensions");
         const {
             moduleId,
             assetType = "assets",
@@ -87,7 +90,7 @@ export class ZipImporterService {
         if (file.size > maxBytes) {
             const msg = `Pack exceeds the ${maxSizeMB} MB limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`;
             ui.notifications.error(msg);
-            return { imported: 0, skipped: 0, errors: [msg] };
+            return { imported: 0, skipped: 0, errors: [msg], manifest: null };
         }
 
         // Show progress modal early so user sees feedback during parse
@@ -99,7 +102,7 @@ export class ZipImporterService {
         const JSZip = await this._loadJSZip();
         if (!JSZip) {
             progressApp.close();
-            return { imported: 0, skipped: 0, errors: ["Failed to load JSZip library."] };
+            return { imported: 0, skipped: 0, errors: ["Failed to load JSZip library."], manifest: null };
         }
 
         // Parse the ZIP
@@ -112,7 +115,39 @@ export class ZipImporterService {
             const msg = `Failed to parse ZIP: ${e.message}`;
             ui.notifications.error(msg);
             progressApp.close();
-            return { imported: 0, skipped: 0, errors: [msg] };
+            return { imported: 0, skipped: 0, errors: [msg], manifest: null };
+        }
+
+        let validManifest = null;
+        const manifestEntry = this._findManifestEntry(zip);
+        if (manifestEntry) {
+            try {
+                const manifestText = await manifestEntry.async("text");
+                const manifestJson = JSON.parse(manifestText);
+                const validation = PackManifestSchema.validate(manifestJson);
+                if (validation.valid) {
+                    validManifest = manifestJson;
+                } else {
+                    console.warn("ZipImporter | manifest.json is invalid:", validation.errors);
+                }
+            } catch (error) {
+                console.warn("ZipImporter | Failed to read manifest.json:", error);
+            }
+        } else {
+            console.warn("ZipImporter | No manifest.json found in archive.");
+        }
+
+        let effectiveAllowedExtensions = allowedExtensions;
+        if (!hasAllowedExtensionsOption && validManifest?.packType && Array.isArray(validManifest.contentTypes)) {
+            const manifestExtensions = validManifest.contentTypes
+                .filter((value) => typeof value === "string")
+                .map((value) => value.trim().toLowerCase())
+                .filter((value) => value.length > 0)
+                .map((value) => (value.startsWith(".") ? value : `.${value}`));
+            if (manifestExtensions.length > 0) {
+                effectiveAllowedExtensions = manifestExtensions;
+                console.log("ZipImporter | Using manifest contentTypes as allowedExtensions:", effectiveAllowedExtensions);
+            }
         }
 
         // Filter entries
@@ -125,7 +160,7 @@ export class ZipImporterService {
             if (SKIP_PATTERNS.some(p => relativePath.includes(p))) return;
 
             const ext = "." + relativePath.split(".").pop().toLowerCase();
-            if (allowedExtensions.length > 0 && !allowedExtensions.includes(ext)) return;
+            if (effectiveAllowedExtensions.length > 0 && !effectiveAllowedExtensions.includes(ext)) return;
 
             entries.push({ path: relativePath, entry });
         });
@@ -134,7 +169,7 @@ export class ZipImporterService {
             const msg = "ZIP contains no files matching the allowed extensions.";
             ui.notifications.warn(msg);
             progressApp.close();
-            return { imported: 0, skipped: 0, errors: [msg] };
+            return { imported: 0, skipped: 0, errors: [msg], manifest: validManifest };
         }
 
         // Schema validation
@@ -151,7 +186,7 @@ export class ZipImporterService {
                 const msg = `Schema validation failed: ${(validation.errors || []).join(", ")}`;
                 ui.notifications.error(msg);
                 progressApp.close();
-                return { imported: 0, skipped: 0, errors: [msg] };
+                return { imported: 0, skipped: 0, errors: [msg], manifest: validManifest };
             }
         }
 
@@ -207,6 +242,29 @@ export class ZipImporterService {
             }
         }
 
+        if (validManifest) {
+            try {
+                const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
+                const updated = {
+                    ...installedPacks,
+                    [validManifest.packId]: {
+                        version: validManifest.version,
+                        tier: validManifest.tier,
+                        packType: validManifest.packType,
+                        format: "zip",
+                        installedAt: new Date().toISOString(),
+                        fileCount: imported
+                    }
+                };
+                await game.settings.set("ionrift-library", "installedPacks", updated);
+                console.log(`ZipImporter | Stored manifest metadata for packId "${validManifest.packId}".`);
+            } catch (error) {
+                console.warn("ZipImporter | Failed to persist installed pack metadata:", error);
+            }
+        } else if (manifestEntry) {
+            console.warn("ZipImporter | manifest.json present but invalid. Continuing without metadata.");
+        }
+
         // Complete
         progressApp.complete(imported, skipped, errors);
 
@@ -217,7 +275,7 @@ export class ZipImporterService {
         }
 
         console.log(`ZipImporter | Complete: ${imported} imported, ${skipped} skipped, ${errors.length} errors.`);
-        return { imported, skipped, errors };
+        return { imported, skipped, errors, manifest: validManifest };
     }
 
     /**
@@ -299,6 +357,24 @@ export class ZipImporterService {
                 console.warn(`ZipImporter | Could not create directory ${dirPath}:`, e.message);
             }
         }
+    }
+
+    /**
+     * Locates manifest.json at the archive root (case-insensitive).
+     * @param {Object} zip
+     * @returns {Object|null}
+     */
+    static _findManifestEntry(zip) {
+        const directMatch = zip.file("manifest.json");
+        if (directMatch) return directMatch;
+
+        let fallback = null;
+        zip.forEach((relativePath, entry) => {
+            if (fallback || entry.dir) return;
+            const normalized = relativePath.replace(/\\/g, "/").toLowerCase();
+            if (normalized === "manifest.json") fallback = entry;
+        });
+        return fallback;
     }
 
     /** @private JSZip library cache */

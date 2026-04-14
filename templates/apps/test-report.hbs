@@ -1,0 +1,62 @@
+<form class="{{cssClass}}" autocomplete="off"
+    style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
+    <header class="test-report-header" style="flex: 0 0 auto;">
+        <h1><i class="fas fa-flask"></i> Test Report</h1>
+        <p class="summary">
+            Passed: <span class="count pass">{{overall.passed}}</span> |
+            Failed: <span class="count fail">{{overall.failed}}</span> |
+            Total: <span class="count">{{overall.total}}</span> |
+            <span class="meta-duration">{{meta.duration}}ms</span>
+        </p>
+    </header>
+
+    <div class="test-report-body ionrift-list" style="flex: 1; overflow-y: auto; overflow-x: hidden;">
+        {{#each suites as |suite|}}
+        <div class="suite-group">
+            <div class="suite-header"
+                style="display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; cursor: pointer; border-bottom: 2px solid var(--ionrift-accent, #8b5cf6); margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas {{suite.statusIcon}}" style="color: {{suite.statusColor}}; font-size: 1.1em;"></i>
+                    <h2 style="margin: 0; font-size: 1em;">{{suite.name}}</h2>
+                </div>
+                <span style="color: #aaa; font-size: 0.85em;">
+                    {{suite.passed}}/{{suite.total}} — {{suite.duration}}ms
+                    <i class="fas fa-chevron-down" style="margin-left: 6px; font-size: 0.75em;"></i>
+                </span>
+            </div>
+
+            <ul class="test-list" style="list-style: none; margin: 0; padding: 0;">
+                {{#if suite.skipped}}
+                <li style="padding: 6px 8px 6px 32px; color: #aaa; font-style: italic;">
+                    <i class="fas fa-forward" style="color: #facc15; margin-right: 6px;"></i>
+                    Skipped (vectors not available)
+                </li>
+                {{else}}
+                {{#each suite.results as |test|}}
+                <li class="test-item {{test.statusClass}}"
+                    style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px 5px 32px; border-bottom: 1px solid rgba(255,255,255,0.05); box-sizing: border-box; max-width: 100%;">
+                    <span class="status-icon"
+                        style="flex: 0 0 24px; display: flex; align-items: center; justify-content: center; margin-right: 8px;">
+                        <i class="fas {{test.statusIcon}}" style="color: {{test.statusColor}};"></i>
+                    </span>
+                    <span class="test-name"
+                        style="flex: 0 0 200px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; font-size: 0.9em;">{{test.name}}</span>
+                    <span class="test-message"
+                        style="flex: 1; font-style: italic; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.85em;">{{test.message}}</span>
+                </li>
+                {{/each}}
+                {{/if}}
+            </ul>
+        </div>
+        {{else}}
+        <p class="no-results" style="text-align: center; padding: 20px; color: #777;">
+            No test suites registered. Are the modules active?
+        </p>
+        {{/each}}
+    </div>
+
+    <footer class="sheet-footer" style="display: flex; gap: 8px;">
+        <button type="button" name="rerun"><i class="fas fa-sync"></i> <span>Re-Run All Tests</span></button>
+        <button type="button" name="copy-report"><i class="fas fa-clipboard"></i> Copy Report</button>
+    </footer>
+</form>
