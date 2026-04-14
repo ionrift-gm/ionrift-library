@@ -35,7 +35,9 @@ jobs:
 
   vitest:
     uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
-    # Library uses default `npm test` — no override needed.
+    with:
+      # Committed package.json has no 'test' script — invoke vitest directly.
+      vitest_command: 'npx vitest run --config tests/vitest.config.js'
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Fan-out — trigger consumer CIs after all library checks pass.
