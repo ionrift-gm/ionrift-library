@@ -1,4 +1,4 @@
-name: CI - Lint & Static Analysis
+name: CI — Lint & Static Analysis
 
 on:
   push:
@@ -9,336 +9,42 @@ on:
 
   workflow_dispatch:
 
+# ionrift-library does NOT receive repository_dispatch — it IS the library.
+# It triggers fan-out to consumers after all checks pass.
+
 jobs:
-  # ---------------------------------------------------------------------------
-  # JOB 1 - ESLint
-  # ---------------------------------------------------------------------------
-  eslint:
-    name: ESLint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+  lint:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/lint.yml@main
+    with:
+      # Library scans scripts/ + styles/ (CSS). No lang/ directory.
+      include_html: false
+      include_styles: true
+      inclusion_scan_dirs: 'scripts/ styles/'
+      # Vendor exclusion — library ships a bundled vendor copy.
+      eslint_extra_args: "--ignore-pattern 'scripts/vendor/**'"
+      eslint_max_warnings: 50
+      # signal_check.js is optional in library (guard in place upstream).
+      signal_check_required: false
 
-      - name: Install ESLint
-        run: npm install --no-save eslint@8
+  hygiene:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/hygiene.yml@main
 
-      - name: Run ESLint
-        env:
-          ESLINT_USE_FLAT_CONFIG: 'false'
-        run: |
-          npx eslint scripts/ \
-            --ext .js \
-            --ignore-pattern 'scripts/vendor/**' \
-            --config .eslintrc.json \
-            --max-warnings 50
-
-  # ---------------------------------------------------------------------------
-  # JOB 2 - Inclusion Scan
-  # ---------------------------------------------------------------------------
-  inclusion-scan:
-    name: Inclusion Terminology Scan
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Scan for prohibited terms
-        run: |
-          MATCHES=$(grep -rn --include='*.js' --include='*.css' \
-            -E '\b(Male|Female|Sex|Gender)\b' scripts/ styles/ 2>/dev/null || true)
-          if [ -n "$MATCHES" ]; then
-            echo "Prohibited identity terminology detected:"
-            echo "$MATCHES"
-            echo ""
-            echo "Use: Masculine / Feminine / Identity"
-            exit 1
-          fi
-          echo "Inclusion scan passed."
-
-  # ---------------------------------------------------------------------------
-  # JOB 3 - Import Integrity Check
-  # ---------------------------------------------------------------------------
-  import-integrity:
-    name: Import Integrity Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Check relative imports resolve
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const ROOT = path.resolve('scripts');
-          const importRe = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
-          let failed = false;
-
-          function sourceWithoutLineComments(src) {
-            return src
-              .split('\n')
-              .filter((line) => !/^\s*\/\//.test(line))
-              .join('\n');
-          }
-
-          function collectImports(src) {
-            const out = [];
-            let m;
-            importRe.lastIndex = 0;
-            while ((m = importRe.exec(src)) !== null) out.push(m[1]);
-            return out;
-          }
-
-          function check(dir) {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const full = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                check(full);
-                continue;
-              }
-              if (!entry.name.endsWith('.js')) continue;
-              const src = sourceWithoutLineComments(
-                fs.readFileSync(full, 'utf8')
-              );
-              for (const imp of collectImports(src)) {
-                const resolved = path.resolve(path.dirname(full), imp);
-                const candidates = [resolved, resolved + '.js'];
-                if (!candidates.some((c) => fs.existsSync(c))) {
-                  console.error(
-                    'Broken import in ' + path.relative(ROOT, full) + ': ' + imp
-                  );
-                  failed = true;
-                }
-              }
-            }
-          }
-
-          if (!fs.existsSync(ROOT)) {
-            console.error('scripts/ missing');
-            process.exit(1);
-          }
-          check(ROOT);
-          if (failed) process.exit(1);
-          console.log('Import integrity passed.');
-          NODE
-
-  # ---------------------------------------------------------------------------
-  # JOB 4 - Case-Sensitivity Check
-  # ---------------------------------------------------------------------------
-  case-sensitivity:
-    name: Case-Sensitivity Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build lowercase file manifest and check imports
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const ROOT = path.resolve('scripts');
-          const importRe = /(?:import|from)\s+['"](\.[^'"]+)['"]/g;
-          let failed = false;
-
-          function sourceWithoutLineComments(src) {
-            return src
-              .split('\n')
-              .filter((line) => !/^\s*\/\//.test(line))
-              .join('\n');
-          }
-
-          const manifest = new Map();
-          function index(dir) {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const full = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                index(full);
-                continue;
-              }
-              manifest.set(full.toLowerCase(), full);
-            }
-          }
-
-          function collectImports(src) {
-            const out = [];
-            let m;
-            importRe.lastIndex = 0;
-            while ((m = importRe.exec(src)) !== null) out.push(m[1]);
-            return out;
-          }
-
-          function check(dir) {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const full = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                check(full);
-                continue;
-              }
-              if (!entry.name.endsWith('.js')) continue;
-              const src = sourceWithoutLineComments(
-                fs.readFileSync(full, 'utf8')
-              );
-              for (const imp of collectImports(src)) {
-                let resolved = path.resolve(path.dirname(full), imp);
-                if (!resolved.endsWith('.js')) resolved += '.js';
-                const real = manifest.get(resolved.toLowerCase());
-                if (real && real !== resolved) {
-                  console.error(
-                    'Case mismatch in ' +
-                      path.relative(ROOT, full) +
-                      ': imported as ' +
-                      imp +
-                      ' but real path is ' +
-                      path.relative(ROOT, real)
-                  );
-                  failed = true;
-                }
-              }
-            }
-          }
-
-          if (!fs.existsSync(ROOT)) {
-            console.error('scripts/ missing');
-            process.exit(1);
-          }
-          index(ROOT);
-          check(ROOT);
-          if (failed) process.exit(1);
-          console.log('Case-sensitivity check passed.');
-          NODE
-
-  # ---------------------------------------------------------------------------
-  # JOB 5 - Signal Check
-  # ---------------------------------------------------------------------------
-  signal-check:
-    name: Signal Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Run signal check
-        run: |
-          if [[ -f tools/signal_check.js ]]; then
-            node tools/signal_check.js scripts/
-          else
-            echo "No tools/signal_check.js; skipping signal check."
-          fi
-
-  # ---------------------------------------------------------------------------
-  # JOB 6 - Artifact Hygiene Gate
-  # ---------------------------------------------------------------------------
-  artifact-hygiene:
-    name: Artifact Hygiene Gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Dev document sweep
-        run: |
-          MATCHES=$(git ls-files | grep -iE 'BACKLOG|DESIGN|CHECKLIST|CONTENT_GUIDE|scenarios/' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "Dev documents found in tracked files:"
-            echo "$MATCHES"
-            exit 1
-          fi
-          echo "Dev document sweep passed."
-
-      - name: Dev tooling sweep
-        run: |
-          MATCHES=$(git ls-files | grep -iE 'scripts/tests/|scripts/utils/|dev-link|compendiumBuilder' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "Dev tooling found in tracked files:"
-            echo "$MATCHES"
-            exit 1
-          fi
-          echo "Dev tooling sweep passed."
-
-      - name: LevelDB runtime sweep
-        run: |
-          MATCHES=$(git ls-files | grep -iE 'packs/.*\.(LOCK|LOG|LOG\.old|log)$' || true)
-          if [ -n "$MATCHES" ]; then
-            echo "LevelDB runtime files found in tracked files:"
-            echo "$MATCHES"
-            exit 1
-          fi
-          echo "LevelDB sweep passed."
-
-  # ---------------------------------------------------------------------------
-  # JOB 7 - Module manifest (no Vitest in this package yet)
-  # ---------------------------------------------------------------------------
   module-manifest:
-    name: Module Manifest Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    uses: ionrift-gm/ionrift-ci/.github/workflows/module-manifest.yml@main
 
-      - name: Validate module.json
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const raw = fs.readFileSync('module.json', 'utf8');
-          let data;
-          try {
-            data = JSON.parse(raw);
-          } catch (e) {
-            console.error('Invalid module.json:', e.message);
-            process.exit(1);
-          }
-          for (const key of ['id', 'title', 'version']) {
-            if (!data[key] || typeof data[key] !== 'string') {
-              console.error('Missing or invalid string field:', key);
-              process.exit(1);
-            }
-          }
-          console.log('Module manifest OK.');
-          NODE
-
-  # ---------------------------------------------------------------------------
-  # JOB 8 - Unit Tests (Vitest)
-  # Headless creature classifier tests. No Foundry runtime required.
-  # ---------------------------------------------------------------------------
   vitest:
-    name: Unit Tests (Vitest)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
+    # Library uses default `npm test` — no override needed.
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run Vitest
-        run: npm test
-
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Fan-out — trigger consumer CIs after all library checks pass.
+  # Gated on every check; any failure blocks propagation.
+  # ─────────────────────────────────────────────────────────────────────────────
   fan-out:
     name: Trigger Consumer CIs
     runs-on: ubuntu-latest
-    needs: [eslint, inclusion-scan, import-integrity, case-sensitivity, signal-check, artifact-hygiene, module-manifest, vitest]
+    needs: [lint, hygiene, module-manifest, vitest]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger ionrift-respite CI
