@@ -90,6 +90,104 @@ export class SettingsLayout {
     }
 
     /**
+     * Injects a warning badge next to the Respite "Manage Packs" settings button
+     * when pack updates are pending (as detected by the last PackRegistryService run).
+     *
+     * Reads the static PackRegistryService.pendingUpdateCount — no network calls.
+     * No-ops silently if the button isn't present or the count is zero.
+     *
+     * @param {jQuery|Element} [html] - The settings config element (optional; defaults to document)
+     */
+    static injectPackUpdateBadge(html) {
+        // Resolve pendingUpdateCount without a hard import dependency
+        const count = game?.ionrift?.library?._pendingPackUpdates ?? 0;
+        if (count === 0) return;
+
+        const root = html instanceof Element ? html : (html ? html[0] : document);
+        const btn = root?.querySelector?.(`button[data-key="ionrift-respite.contentPacks"]`);
+        if (!btn) return;
+
+        // Avoid double-injecting on re-render
+        if (btn.querySelector(".ionrift-pack-update-badge")) return;
+
+        // Build per-pack tooltip from the full updates list
+        const updates = game?.ionrift?.library?._packUpdates ?? [];
+        const packLines = updates.map(u => `• ${u.packId}  (v${u.installed?.version} to v${u.available?.latest})`).join("\n");
+        const tooltip = packLines
+            ? `${count} pack update${count === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Manage Packs to update.`
+            : `${count} pack update${count === 1 ? "" : "s"} available — open Manage Packs to update`;
+
+        const badge = document.createElement("span");
+        badge.className = "ionrift-pack-update-badge";
+        badge.title = tooltip;
+        badge.style.cssText = [
+            "display: inline-flex",
+            "align-items: center",
+            "gap: 4px",
+            "margin-left: 6px",
+            "padding: 1px 6px",
+            "background: rgba(251, 191, 36, 0.18)",
+            "border: 1px solid rgba(251, 191, 36, 0.5)",
+            "border-radius: 10px",
+            "color: #fbbf24",
+            "font-size: 0.75em",
+            "font-weight: 600",
+            "line-height: 1.4",
+            "vertical-align: middle",
+            "cursor: default"
+        ].join(";");
+        badge.innerHTML = `<i class="fas fa-exclamation-triangle" style="font-size:0.85em"></i> ${count}`;
+
+        btn.appendChild(badge);
+    }
+
+    /**
+     * Injects a subtle info badge on the Patreon Connection button when there
+     * are early access modules the GM snoozed ("Later") that are still available.
+     *
+     * Reads game.ionrift.library._pendingEarlyAccess, set by PackRegistryService
+     * after each checkForUpdates() run. No network calls.
+     *
+     * @param {jQuery|Element} [html]
+     */
+    static injectEarlyAccessBadge(html) {
+        const offers = game?.ionrift?.library?._pendingEarlyAccess ?? [];
+        if (offers.length === 0) return;
+
+        const root = html instanceof Element ? html : (html ? html[0] : document);
+        const btn = root?.querySelector?.(`button[data-key="ionrift-library.patreonMenu"]`);
+        if (!btn) return;
+
+        if (btn.querySelector(".ionrift-ea-badge")) return;
+
+        const lines = offers.map(o => `\u2022 ${o.moduleId}  v${o.version} (${o.tier}+)`).join("\n");
+        const tooltip = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available:\n${lines}\n\nReload Foundry to be prompted again.`;
+
+        const badge = document.createElement("span");
+        badge.className = "ionrift-ea-badge";
+        badge.title = tooltip;
+        badge.style.cssText = [
+            "display: inline-flex",
+            "align-items: center",
+            "gap: 4px",
+            "margin-left: 6px",
+            "padding: 1px 6px",
+            "background: rgba(79, 255, 255, 0.12)",
+            "border: 1px solid rgba(79, 255, 255, 0.4)",
+            "border-radius: 10px",
+            "color: #4ff",
+            "font-size: 0.75em",
+            "font-weight: 600",
+            "line-height: 1.4",
+            "vertical-align: middle",
+            "cursor: default"
+        ].join(";");
+        badge.innerHTML = `<i class="fas fa-info-circle" style="font-size:0.85em"></i> ${offers.length} early access`;
+
+        btn.appendChild(badge);
+    }
+
+    /**
      * Reorders footer elements to the bottom of the module's settings section
      * and injects a visible divider between body and footer items.
      *
@@ -152,15 +250,86 @@ export class SettingsLayout {
             $firstFooter.css("border-top", "none");
         }
     }
+    /**
+     * Dynamically updates the Patreon Connection row in settings to reflect
+     * current connection state: icon, button label, and hint text.
+     *
+     * Uses global document selectors by default — safe to call from any context
+     * (renderSettingsConfig hook or post-action refresh).
+     *
+     * @param {Object} [overrides]               Test overrides
+     * @param {Element} [overrides.root]          Root element to search within (default: document)
+     * @param {boolean} [overrides.isConnected]   Override connection state
+     * @param {string}  [overrides.tier]          Override tier label
+     */
+    static injectPatreonStatus(overrides = {}) {
+        const root = overrides.root ?? document;
+        const btn = root.querySelector(`button[data-key="ionrift-library.patreonMenu"]`);
+        if (!btn) return;
 
-    /** Returns the current Discord invite URL. */
-    static get discordUrl() {
-        return DISCORD_INVITE;
-    }
+        const group = btn.closest(".form-group");
+        if (!group) return;
+        const label = group.querySelector("label");
+        const hint = group.querySelector(".notes") || group.querySelector("p.notes");
 
-    /** Returns the default wiki URL. */
-    static get wikiUrl() {
-        return WIKI_DEFAULT;
+        // Read current state (or use overrides for testing)
+        let isConnected = overrides.isConnected ?? false;
+        let tier = overrides.tier ?? null;
+
+        if (!("isConnected" in overrides)) {
+            try {
+                const sigil = game.settings.get("ionrift-library", "sigil") || "";
+                isConnected = !!sigil;
+                if (sigil) {
+                    try {
+                        const payload = JSON.parse(atob(sigil.split(".")[1]));
+                        tier = payload.tier ?? null;
+                    } catch { /* ignore */ }
+                }
+            } catch { /* settings not ready */ }
+        }
+
+        // Clear any previously injected status icon
+        const oldIcon = label?.querySelector(".ionrift-patreon-status");
+        if (oldIcon) oldIcon.remove();
+
+        // Button inner structure: <i class="..."></i> <span>Label</span>
+        const btnIcon = btn.querySelector("i");
+        const btnSpan = btn.querySelector("span");
+
+        if (isConnected) {
+            const tierLabel = tier || "Free";
+
+            // Status icon on label
+            if (label) {
+                label.insertAdjacentHTML("beforeend",
+                    `<i class="fas fa-check-circle ionrift-patreon-status" style="color: #4ff; margin-left: 8px;" title="Connected (${tierLabel})"></i>`);
+            }
+
+            // Button: unlink icon + "Manage Connection"
+            if (btnIcon) btnIcon.className = "fas fa-unlink";
+            if (btnSpan) btnSpan.textContent = "Manage Connection";
+
+            // Hint text
+            if (hint) {
+                hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Click to manage.`;
+            }
+        } else {
+            // Status icon on label
+            if (label) {
+                label.insertAdjacentHTML("beforeend",
+                    `<i class="fas fa-exclamation-circle ionrift-patreon-status" style="color: #ef4444; margin-left: 8px;" title="Not connected"></i>`);
+            }
+
+            // Button: link icon + "Connect Patreon"
+            if (btnIcon) btnIcon.className = "fas fa-link";
+            if (btnSpan) btnSpan.textContent = "Connect Patreon";
+
+            // Hint text
+            if (hint) {
+                hint.textContent = "Link your Patreon account for content updates and early access.";
+            }
+        }
     }
 }
 
@@ -170,4 +339,11 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     SettingsLayout.injectDivider(html, "ionrift-library");
     SettingsLayout.injectDivider(html, "ionrift-resonance");
     SettingsLayout.injectDivider(html, "ionrift-respite");
+
+    // Inject live Patreon connection status
+    SettingsLayout.injectPatreonStatus();
+
+    // Inject update badge next to Respite "Manage Packs" button if updates are pending
+    SettingsLayout.injectPackUpdateBadge(html);
+    SettingsLayout.injectEarlyAccessBadge(html);
 });

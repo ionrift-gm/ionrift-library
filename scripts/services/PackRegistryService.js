@@ -336,22 +336,30 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
+        const pendingEarlyAccess = [];
+
         for (const [moduleId, entry] of Object.entries(modules)) {
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
 
-            // Check if the early access window has passed
             if (ea.publicAt && new Date(ea.publicAt) <= new Date()) continue;
 
-            // Check tier eligibility
             const reqRank = this.TIER_ORDER.indexOf(ea.tier);
             if (reqRank === -1 || userRank < reqRank) continue;
 
-            // Check if already installed at this version
             const installed = game.modules.get(moduleId);
             if (installed && this._compareVersions(installed.version, ea.version) >= 0) continue;
 
-            this._showEarlyAccessNotification(moduleId, ea);
+            const snoozed = this._isPackSnoozed(`ea:${moduleId}`);
+            if (!snoozed) {
+                this._showEarlyAccessNotification(moduleId, ea);
+            } else {
+                pendingEarlyAccess.push({ moduleId, version: ea.version, tier: ea.tier });
+            }
+        }
+
+        if (game?.ionrift?.library) {
+            game.ionrift.library._pendingEarlyAccess = pendingEarlyAccess;
         }
     }
 
