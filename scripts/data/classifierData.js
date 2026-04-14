@@ -315,8 +315,8 @@ export function getClassifierData() {
         return DAGGERHEART_DATA;
     }
 
-    console.warn(`Ionrift Lib | Unsupported system: '${game.system.id}'. Creature classification disabled.`);
-    return {};
+    console.warn(`Ionrift Lib | Unsupported system: '${game.system.id}'. Using generic classifier data.`);
+    return DAGGERHEART_DATA;
 }
 
 export { DAGGERHEART_DATA };
