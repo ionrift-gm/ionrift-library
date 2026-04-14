@@ -218,22 +218,69 @@ export class PackRegistryService {
         const urlData = await CloudRelayService.requestDownload(packId, version);
         if (!urlData?.url) return null;
 
-        ui.notifications.info(`Downloading ${packId} v${version}...`);
+        const fileName = `${packId}-v${version}.${registryEntry?.format === "json" ? "json" : "zip"}`;
 
+        // Open progress app for the download phase
+        const { ZipImportProgressApp } = await import("../apps/ZipImportProgressApp.js");
+        const progressApp = new ZipImportProgressApp(fileName, 0);
+        progressApp.render({ force: true });
+        progressApp.setStatus("Connecting...");
+
+        let blob;
         try {
             const response = await fetch(urlData.url);
             if (!response.ok) throw new Error(`Download failed: HTTP ${response.status}`);
 
-            const blob = await response.blob();
-            const format = registryEntry.format ?? "zip";
-            const moduleId = registryEntry.moduleId ?? packId.split("-")[0];
+            const contentLength = parseInt(response.headers.get("content-length") ?? "0", 10);
+            progressApp.setTotal(contentLength || 1);
+            progressApp.setStatus("Downloading...");
 
+            if (contentLength > 0 && response.body) {
+                // Stream with byte-level progress
+                const reader = response.body.getReader();
+                const chunks = [];
+                let received = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    if (progressApp.cancelled) {
+                        reader.cancel();
+                        progressApp.close();
+                        ui.notifications.warn(`Download of ${packId} cancelled.`);
+                        return null;
+                    }
+                    chunks.push(value);
+                    received += value.length;
+                    progressApp.update(received, "Downloading pack...");
+                }
+
+                blob = new Blob(chunks);
+            } else {
+                // No content-length (chunked transfer) — fall back to buffered fetch
+                blob = await response.blob();
+                progressApp.update(1, "Download complete.");
+            }
+
+            progressApp.complete(1, 0, []);
+        } catch (error) {
+            progressApp.close();
+            console.error(`PackRegistry | Download failed for ${packId}:`, error);
+            ui.notifications.error(`Failed to download ${packId}: ${error.message}`);
+            return null;
+        }
+
+        // Hand off to ZipImporterService — it opens its own progress app for extraction
+        try {
+            const format = registryEntry?.format ?? "zip";
+            const moduleId = registryEntry?.moduleId ?? packId.split("-")[0];
             let result = null;
+
             if (format === "json") {
-                const file = new File([blob], `${packId}-v${version}.json`, { type: "application/json" });
+                const file = new File([blob], fileName, { type: "application/json" });
                 result = await game.ionrift.library.importJsonFromFile(file, { moduleId });
             } else {
-                const file = new File([blob], `${packId}-v${version}.zip`, { type: "application/zip" });
+                const file = new File([blob], fileName, { type: "application/zip" });
                 result = await game.ionrift.library.importZipFromFile(file, { moduleId });
             }
 
@@ -243,8 +290,8 @@ export class PackRegistryService {
             }
             return result;
         } catch (error) {
-            console.error(`PackRegistry | Download failed for ${packId}:`, error);
-            ui.notifications.error(`Failed to download ${packId}: ${error.message}`);
+            console.error(`PackRegistry | Install failed for ${packId}:`, error);
+            ui.notifications.error(`Failed to install ${packId}: ${error.message}`);
             return null;
         }
     }
