@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.6.1] - 2026-04-15
+
+### Fixed
+- JSON pack importer now accepts packs that predate the manifest schema. Previously any pack without a `_manifest` block was rejected with a schema error. Legacy packs now import in a compatibility mode - the `onImport` callback still runs, no version metadata is stored.
+
 ## [1.6.0] - 2026-04-15
 
 ### Added

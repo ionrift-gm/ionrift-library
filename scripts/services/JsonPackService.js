@@ -71,6 +71,7 @@ export class JsonPackService {
             return { success: false, packId: null, version: null, errors: manifestErrors };
         }
 
+        const isLegacy = extracted.legacy === true;
         const manifest = extracted.manifest;
         const packId = typeof manifest.packId === "string" ? manifest.packId : null;
         const version = typeof manifest.version === "string" ? manifest.version : null;
@@ -104,28 +105,33 @@ export class JsonPackService {
             }
         }
 
-        try {
-            const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
-            const updated = {
-                ...installedPacks,
-                [manifest.packId]: {
-                    version: manifest.version,
-                    tier: manifest.tier,
-                    packType: manifest.packType,
-                    format: "json",
-                    installedAt: new Date().toISOString(),
-                    fileCount: 1
-                }
-            };
-            await game.settings.set("ionrift-library", "installedPacks", updated);
-            console.log(`JsonPackImporter | Stored manifest metadata for packId "${manifest.packId}".`);
-        } catch (error) {
-            const msg = `Failed to store installed pack metadata: ${error.message}`;
-            console.warn("JsonPackImporter | Metadata storage failed:", error);
-            return { success: false, packId, version, errors: [msg] };
+        if (isLegacy) {
+            console.log("JsonPackImporter | Legacy pack imported (no metadata stored).");
+        } else {
+            try {
+                const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
+                const updated = {
+                    ...installedPacks,
+                    [manifest.packId]: {
+                        version: manifest.version,
+                        tier: manifest.tier,
+                        packType: manifest.packType,
+                        format: "json",
+                        installedAt: new Date().toISOString(),
+                        fileCount: 1
+                    }
+                };
+                await game.settings.set("ionrift-library", "installedPacks", updated);
+                console.log(`JsonPackImporter | Stored manifest metadata for packId "${manifest.packId}".`);
+            } catch (error) {
+                const msg = `Failed to store installed pack metadata: ${error.message}`;
+                console.warn("JsonPackImporter | Metadata storage failed:", error);
+                return { success: false, packId, version, errors: [msg] };
+            }
         }
 
-        console.log(`JsonPackImporter | Complete: imported JSON pack "${manifest.packId}" (${manifest.version}).`);
+        const label = isLegacy ? "legacy JSON pack" : `JSON pack "${manifest.packId}" (${manifest.version})`;
+        console.log(`JsonPackImporter | Complete: imported ${label}.`);
         return { success: true, packId, version, errors };
     }
 

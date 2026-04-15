@@ -9,6 +9,15 @@ export class PackManifestSchema {
   /** @type {string[]} */
   static FORMATS = ["zip", "json"];
 
+  /** @type {Readonly<Record<string, string>>} */
+  static #LEGACY_STUB = Object.freeze({
+    packId: "legacy-import",
+    version: "0.0.0",
+    tier: "public",
+    packType: "data",
+    format: "json"
+  });
+
   /**
    * Validate a pack manifest object.
    * @param {unknown} manifest
@@ -143,8 +152,10 @@ export class PackManifestSchema {
 
   /**
    * Extract and validate the `_manifest` block from a JSON pack payload.
+   * Falls back to a synthetic legacy manifest when `_manifest` is absent,
+   * allowing packs that predate the manifest schema to import.
    * @param {unknown} jsonData
-   * @returns {{ valid: boolean, manifest: Record<string, unknown> | null, errors: string[] }}
+   * @returns {{ valid: boolean, manifest: Record<string, unknown> | null, errors: string[], legacy?: boolean }}
    */
   static extractFromJson(jsonData) {
     /** @type {string[]} */
@@ -159,16 +170,31 @@ export class PackManifestSchema {
       }
     }
 
-    if (!root || typeof root !== "object" || Array.isArray(root)) {
-      return { valid: false, manifest: null, errors: ["jsonData must be an object or JSON object string."] };
+    if (!root || typeof root !== "object") {
+      return { valid: false, manifest: null, errors: ["jsonData must be an object, array, or JSON string."] };
+    }
+
+    if (Array.isArray(root)) {
+      console.warn("PackManifestSchema | No _manifest found (top-level array). Importing in legacy mode.");
+      return {
+        valid: true,
+        manifest: { ...this.#LEGACY_STUB },
+        errors: [],
+        legacy: true
+      };
     }
 
     const record = /** @type {Record<string, unknown>} */ (root);
     const manifest = record._manifest;
 
     if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
-      errors.push("Missing or invalid _manifest object.");
-      return { valid: false, manifest: null, errors };
+      console.warn("PackManifestSchema | No _manifest block found. Importing in legacy mode.");
+      return {
+        valid: true,
+        manifest: { ...this.#LEGACY_STUB },
+        errors: [],
+        legacy: true
+      };
     }
 
     const validation = this.validate(manifest);
