@@ -33,6 +33,7 @@ scripts/services/TokenArtResolver.js
 
 # Test suites (IP-sensitive — housed in private ionrift-testharness)
 tests/
+scripts/tests/
 package-lock.json
 
 # Test vectors (IP-sensitive — classifier mapping data)
