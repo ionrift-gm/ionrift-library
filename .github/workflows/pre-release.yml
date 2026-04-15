@@ -14,4 +14,7 @@ jobs:
       eslint_max_warnings: 50
       signal_check_required: false
       run_module_manifest: true
-      vitest_command: 'npx vitest run --config tests/vitest.config.js'
+      testharness_repo: 'ionrift-gm/ionrift-testharness'
+      testharness_config: 'vitest/library/vitest.config.js'
+    secrets:
+      CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}

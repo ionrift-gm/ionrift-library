@@ -36,8 +36,10 @@ jobs:
   vitest:
     uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
     with:
-      # Committed package.json has no 'test' script — invoke vitest directly.
-      vitest_command: 'npx vitest run --config tests/vitest.config.js'
+      testharness_repo: 'ionrift-gm/ionrift-testharness'
+      testharness_config: 'vitest/library/vitest.config.js'
+    secrets:
+      CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Fan-out — trigger consumer CIs after all library checks pass.

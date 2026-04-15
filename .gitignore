@@ -31,6 +31,10 @@ debug_*.log
 # Unreleased cross-module files (prevent accidental commit)
 scripts/services/TokenArtResolver.js
 
+# Test suites (IP-sensitive — housed in private ionrift-testharness)
+tests/
+package-lock.json
+
 # Test vectors (IP-sensitive — classifier mapping data)
 scripts/data/classifierTestVectors.js
 
