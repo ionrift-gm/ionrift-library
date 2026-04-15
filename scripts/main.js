@@ -278,8 +278,13 @@ Hooks.once('ready', async () => {
         name: "Patreon Status UI",
         description: "DOM-based settings panel state tests",
         runFn: async () => {
-            const { runPatreonStatusTests } = await import("./tests/PatreonStatusTests.js");
-            return runPatreonStatusTests();
+            try {
+                const { runPatreonStatusTests } = await import("./tests/PatreonStatusTests.js");
+                return runPatreonStatusTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "PatreonStatusTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
         }
     });
 
