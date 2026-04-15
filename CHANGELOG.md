@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.6.0] - 2026-04-15
+
+### Added
+*   **Content Pack Versioning.** Packs now embed version manifests. Installed pack versions are tracked and checked against a public registry on startup (GM only, once per day max).
+*   **Pack Update Notifications.** When a newer version is available, GMs see a notification with a Patreon download link. If Ionrift Cloud is connected, a one-click update button appears instead.
+*   **Cloud Pack Downloads.** Authenticated downloads via presigned URLs with streaming progress bar and cancel support.
+*   **JSON Pack Importer.** Content packs can ship as standalone JSON files. Consumer modules call `game.ionrift.library.importJsonPack()` with a schema validator callback.
+*   **Module Installer.** Early-access module previews can be installed from cloud with automatic backup of the existing version.
+*   **Settings Layout.** Standardised settings panel with visual dividers and support section, shared across all Ionrift modules.
+
+### Changed
+*   Zip Importer reads pack manifests automatically when present. Falls back to manual options if no manifest.
+*   Pack registry checks cached to prevent redundant network calls.
+
+### Fixed
+*   FilePicker guard for headless test environments.
+
 ## [1.5.5] - 2026-04-11
 
 *   **Fix**: Item Enrichment Engine registry key normalisation. Unicode apostrophe variants (curly quotes, prime) are now collapsed to a plain ASCII apostrophe before lookup, so SRD items like "Cook's Utensils" match enrichments registered with a straight apostrophe and vice versa. Resolves silent enrichment misses on items sourced from the 2024 SRD compendium.
