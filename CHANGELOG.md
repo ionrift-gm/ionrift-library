@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.6] - 2026-04-16
+
+### Fixed
+- Forge installation dialog now shows the correct steps: **Summon Import Wizard** instead of the old "Manage Modules" path, and step 3 clarifies the ZIP File tab and Analyze button. If you followed the v1.7.5 dialog, you probably figured it out, but the instructions are accurate now.
+
+## [1.7.5] - 2026-04-16
+
+### Added
+- **Managed hosting support.** Installing early-access modules on The Forge (and other managed platforms) now shows a guided download dialog instead of attempting file extraction that fails silently. Download the ZIP, import it through The Forge's Import Wizard, restart your server. Full walkthrough on the [wiki](https://github.com/ionrift-gm/ionrift-library/wiki/Early-Access-on-The-Forge).
+- **Check for Updates** button in the Patreon Connection panel. Forces a fresh registry fetch without waiting for the 24-hour cache.
+
+### Fixed
+- File upload throttle during module extraction. Self-hosted installs no longer flood the server with parallel FilePicker calls; uploads are batched to prevent timeouts on slower connections.
+
 ## [1.7.4] - 2026-04-16
 
 ### Fixed

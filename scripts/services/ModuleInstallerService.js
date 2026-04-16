@@ -113,11 +113,11 @@ export class ModuleInstallerService {
                     </a>
                     <div class="ionrift-forge-step">
                         <span class="ionrift-forge-step-num">2</span>
-                        <span>Go to <strong>The Forge</strong> → <strong>My Foundry</strong> → <strong>Manage Modules</strong></span>
+                        <span>Go to <strong>The Forge</strong> → <strong>My Foundry</strong> → <strong>Summon Import Wizard</strong></span>
                     </div>
                     <div class="ionrift-forge-step">
                         <span class="ionrift-forge-step-num">3</span>
-                        <span>Upload the ZIP or drag it into the module installer</span>
+                        <span>Select the <strong>ZIP File</strong> tab, browse for the downloaded ZIP, then <strong>Analyze</strong></span>
                     </div>
                     <div class="ionrift-forge-step">
                         <span class="ionrift-forge-step-num">4</span>
