@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.7.3] - 2026-04-16
+
+### Fixed
+- Patreon tier checks now work correctly even when the tier name in the token has a trailing space. Some Patreon tier names were being stored with extra whitespace, which caused the access check to fail silently and show a lock to patrons who fully qualified.
+
 ## [1.7.2] - 2026-04-16
 
 ### Fixed

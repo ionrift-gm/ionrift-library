@@ -49,7 +49,7 @@ export class CloudRelayService {
         if (!sigil) return null;
         try {
             const payload = JSON.parse(atob(sigil.split(".")[1]));
-            return payload.tier ?? null;
+            return payload.tier?.trim() ?? null;
         } catch {
             return null;
         }
