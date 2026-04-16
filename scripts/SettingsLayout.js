@@ -354,7 +354,7 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     SettingsLayout.injectDivider(html, "ionrift-library");
     SettingsLayout.injectDivider(html, "ionrift-resonance");
     SettingsLayout.injectDivider(html, "ionrift-respite");
-    SettingsLayout.injectDivider(html, "ionrift-workshop");
+    SettingsLayout.injectDivider(html, "ionrift-quartermaster");
 
     // Inject live Patreon connection status
     SettingsLayout.injectPatreonStatus();

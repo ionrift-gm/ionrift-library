@@ -306,7 +306,7 @@ export class PackRegistryService {
      * Falls back to module manifest title/description if not listed here.
      */
     static MODULE_DISPLAY_META = {
-        "ionrift-workshop": {
+        "ionrift-quartermaster": {
             title: "Ionrift Quartermaster",
             icon:  "fas fa-treasure-chest",
             desc:  "The GM's loot engine. Terrain-aware cache generation, scroll management, and campaign item planning."
@@ -515,10 +515,10 @@ export class PackRegistryService {
     /**
      * Preview the EA dialog in a running Foundry instance.
      * Call from console: `game.ionrift.library.previewEADialog()`
-     * @param {string} [moduleId="ionrift-workshop"]
+     * @param {string} [moduleId="ionrift-quartermaster"]
      * @param {Object} [overrides]  Partial earlyAccess fields
      */
-    static previewEADialog(moduleId = "ionrift-workshop", overrides = {}) {
+    static previewEADialog(moduleId = "ionrift-quartermaster", overrides = {}) {
         const earlyAccess = {
             version:    overrides.version    ?? "1.1.0-ea.1",
             tier:       overrides.tier       ?? "Acolyte",
