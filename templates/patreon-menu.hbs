@@ -1,0 +1,59 @@
+<form class="ionrift patreon-menu-form">
+    <header class="ionrift-patreon-header">
+        <div class="ionrift-patreon-title">
+            <i class="fab fa-patreon"></i>
+            <span>Patreon Connection</span>
+        </div>
+        {{#if userTier}}
+        <span class="ionrift-patreon-tier-badge">{{userTier}}</span>
+        {{/if}}
+    </header>
+
+    <div class="ionrift-ea-divider"></div>
+
+    {{#if earlyAccessOffers.length}}
+    <div class="ionrift-patreon-body">
+        <h4 class="ionrift-ea-section-heading"><i class="fas fa-bolt"></i> Early Access</h4>
+
+        {{#each earlyAccessOffers}}
+        <div class="ionrift-ea-card {{#unless isQualified}}ionrift-ea-card--locked{{/unless}}">
+            <div class="ionrift-ea-card-icon"><i class="{{icon}}"></i></div>
+            <div class="ionrift-ea-card-body">
+                <div class="ionrift-ea-card-name">
+                    {{title}}
+                    <span class="ionrift-ea-version-pill">v{{version}}</span>
+                    <span class="ionrift-ea-tier-pill">{{requiredTier}}+</span>
+                </div>
+                {{#unless isQualified}}
+                <div class="ionrift-ea-card-hint">Upgrade your tier to unlock early access</div>
+                {{/unless}}
+            </div>
+            <div class="ionrift-ea-card-action">
+                {{#if isQualified}}
+                    {{#if isInstalled}}
+                    <span class="ionrift-ea-installed"><i class="fas fa-check"></i> Installed</span>
+                    {{else}}
+                    <button data-action="install-ea" data-module-id="{{moduleId}}" data-version="{{version}}">
+                        <i class="fas fa-download"></i> Install Now
+                    </button>
+                    {{/if}}
+                {{else}}
+                <span class="ionrift-ea-lock"><i class="fas fa-lock"></i> {{requiredTier}}+ required</span>
+                {{/if}}
+            </div>
+        </div>
+        {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="ionrift-ea-divider"></div>
+
+    <footer class="ionrift-patreon-footer">
+        <button type="button" class="ionrift-patreon-btn-disconnect" data-action="disconnect">
+            <i class="fas fa-unlink"></i> Disconnect
+        </button>
+        <button type="button" class="ionrift-patreon-btn-cancel" data-action="cancel">
+            <i class="fas fa-times"></i> Cancel
+        </button>
+    </footer>
+</form>

@@ -161,7 +161,7 @@ export class SettingsLayout {
         if (btn.querySelector(".ionrift-ea-badge")) return;
 
         const lines = offers.map(o => `\u2022 ${o.moduleId}  v${o.version} (${o.tier}+)`).join("\n");
-        const tooltip = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available:\n${lines}\n\nReload Foundry to be prompted again.`;
+        const tooltip = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available:\n${lines}\n\nEarly access available \u2014 click to view`;
 
         const badge = document.createElement("span");
         badge.className = "ionrift-ea-badge";
@@ -180,11 +180,17 @@ export class SettingsLayout {
             "font-weight: 600",
             "line-height: 1.4",
             "vertical-align: middle",
-            "cursor: default"
+            "cursor: pointer"
         ].join(";");
         badge.innerHTML = `<i class="fas fa-info-circle" style="font-size:0.85em"></i> ${offers.length} early access`;
 
         btn.appendChild(badge);
+
+        badge.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const { PatreonMenu } = await import("./apps/PatreonMenu.js");
+            new PatreonMenu().render(true);
+        });
     }
 
     /**
@@ -238,16 +244,25 @@ export class SettingsLayout {
             $container.append($debugGroup);
         }
 
+        // Strip Foundry default border-top from ALL footer groups + debug
+        for (const $fg of footerGroups) {
+            $fg.css("border-top", "none");
+        }
+        if ($debugGroup) {
+            $debugGroup.css("border-top", "none");
+        }
+
         // Inject divider before the first footer group
         const $firstFooter = footerGroups[0];
         if ($firstFooter) {
-            const divider = $(`<hr class="ionrift-settings-divider" style="
-                border: none;
-                border-top: 1px solid rgba(255, 255, 255, 0.15);
+            const divider = $(`<div class="ionrift-settings-divider" style="
+                height: 2px;
+                min-height: 2px;
+                flex-shrink: 0;
+                background: rgba(255, 255, 255, 0.15);
                 margin: 0.75rem 0;
-            ">`);
+            "></div>`);
             $firstFooter.before(divider);
-            $firstFooter.css("border-top", "none");
         }
     }
     /**
@@ -339,6 +354,7 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     SettingsLayout.injectDivider(html, "ionrift-library");
     SettingsLayout.injectDivider(html, "ionrift-resonance");
     SettingsLayout.injectDivider(html, "ionrift-respite");
+    SettingsLayout.injectDivider(html, "ionrift-workshop");
 
     // Inject live Patreon connection status
     SettingsLayout.injectPatreonStatus();

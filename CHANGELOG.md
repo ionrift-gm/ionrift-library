@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.7.1] - 2026-04-16
+
+### Added
+- **Patreon Connection panel.** The settings menu button now opens a full panel showing your tier and any available early-access modules. Modules you qualify for show an Install Now button; modules that need a higher tier are visible but locked, so you can see what's coming with an upgrade.
+- **Early-access badge** on the Patreon Connection settings button. Appears when an early-access offer was snoozed and is still waiting. Clicking it opens the panel directly.
+- `PackRegistryService.clearSnooze()` — internal utility for resetting a snoozed offer when the GM acts on it.
+
+### Changed
+- Disconnect now styled in amber across the Patreon Connection panel for clarity.
+
 ## [1.6.1] - 2026-04-15
 
 ### Fixed

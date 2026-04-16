@@ -22,9 +22,11 @@ import { SessionTracker } from "./services/SessionTracker.js";
 import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
 import { SystemAdapter } from "./services/SystemAdapter.js";
 import { PackRegistryService } from "./services/PackRegistryService.js";
+import { AbstractPackRegistryApp } from "./apps/AbstractPackRegistryApp.js";
 import { CloudRelayService } from "./services/CloudRelayService.js";
 import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
 import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
+import { PatreonMenu } from "./apps/PatreonMenu.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -102,7 +104,11 @@ Hooks.once('init', () => {
             const update = PackRegistryService.pendingUpdates.find(u => u.packId === packId);
             if (!update) { console.warn(`Ionrift | No pending update found for ${packId}`); return null; }
             return PackRegistryService.downloadAndInstall(packId, update.available.latest, update.available);
-        }
+        },
+        /** Preview the EA notification dialog. Console: game.ionrift.library.previewEADialog() */
+        previewEADialog: (moduleId, overrides) => PackRegistryService.previewEADialog(moduleId, overrides),
+        /** Base class for pack management UIs. Consumer modules extend this. */
+        AbstractPackRegistryApp
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -204,31 +210,7 @@ Hooks.once('init', () => {
         label: "Connect Patreon",
         hint: "Link your Patreon account for content updates and early access.",
         icon: "fas fa-link",
-        type: class PatreonConnectShim extends FormApplication {
-            async _updateObject() {}
-            async render() {
-                if (CloudRelayService.isConnected()) {
-                    const confirmed = await DialogHelper.confirm({
-                        title: "Patreon Connection",
-                        content: `<p>Connected as <strong>${CloudRelayService.getTierClaim() || "Free"}</strong>.</p><p>Disconnect?</p>`,
-                        yesLabel: "Disconnect",
-                        yesIcon: "fas fa-unlink",
-                        noLabel: "Cancel",
-                        noIcon: "fas fa-times"
-                    });
-                    if (confirmed) {
-                        await CloudRelayService.disconnect();
-                        this._refreshSettings();
-                    }
-                } else {
-                    await CloudRelayService.connect();
-                    this._refreshSettings();
-                }
-            }
-            _refreshSettings() {
-                SettingsLayout.injectPatreonStatus();
-            }
-        },
+        type: PatreonMenu,
         restricted: true
     });
 

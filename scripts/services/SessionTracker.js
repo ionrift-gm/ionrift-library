@@ -106,7 +106,7 @@ export class SessionTracker {
             content: `
                 <div style="margin-bottom: 15px; font-family: var(--ionrift-font, inherit);">
                     <p style="margin-bottom: 10px;">Multiple players have joined and it has been more than 24 hours since your last recorded session.</p>
-                    <p style="color: var(--color-text-light-5); font-style: italic; font-size: 0.9em;">Ionrift modules (like Workshop and Respite) use this to pace milestone rewards and calculate rest frequencies.</p>
+                    <p style="color: var(--color-text-light-5); font-style: italic; font-size: 0.9em;">Ionrift modules (like Quartermaster and Respite) use this to pace milestone rewards and calculate rest frequencies.</p>
                     <h3 style="margin: 10px 0 5px 0;">Record as Session #${this.getSessionCount() + 1}?</h3>
                 </div>
             `,

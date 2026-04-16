@@ -302,6 +302,33 @@ export class PackRegistryService {
     static TIER_ORDER = ["Free", "Initiate", "Acolyte", "Weaver", "Artificer"];
 
     /**
+     * Display metadata for the EA dialog. Keyed by moduleId.
+     * Falls back to module manifest title/description if not listed here.
+     */
+    static MODULE_DISPLAY_META = {
+        "ionrift-workshop": {
+            title: "Ionrift Quartermaster",
+            icon:  "fas fa-treasure-chest",
+            desc:  "The GM's loot engine. Terrain-aware cache generation, scroll management, and campaign item planning."
+        },
+        "ionrift-respite": {
+            title: "Ionrift Respite",
+            icon:  "fas fa-campfire",
+            desc:  "Structured downtime and rest management with activities, events, and crafting."
+        },
+        "ionrift-resonance": {
+            title: "Ionrift Resonance",
+            icon:  "fas fa-waveform-lines",
+            desc:  "Dynamic item and creature sound effects for immersive gameplay."
+        },
+        "ionrift-arbiter": {
+            title: "Ionrift Arbiter",
+            icon:  "fas fa-crosshairs",
+            desc:  "Rules-driven targeting intelligence and encounter balance analysis."
+        }
+    };
+
+    /**
      * Check installed modules against registry for available updates.
      * @param {Object} registryData
      */
@@ -394,29 +421,131 @@ export class PackRegistryService {
 
     /**
      * Show notification for an available early access module.
+     * Hybrid dialog (Option 3): module identity card + Patreon announcement link + Install Now.
      * @param {string} moduleId
-     * @param {{ version: string, tier: string }} earlyAccess
+     * @param {{ version: string, tier: string, patreonUrl?: string }} earlyAccess
      */
     static _showEarlyAccessNotification(moduleId, earlyAccess) {
-        const installed = game.modules.get(moduleId);
-        const action = installed ? "update" : "install";
-        const base = `Early access: ${moduleId} v${earlyAccess.version} (${earlyAccess.tier}+).`;
-
         if (this._isPackSnoozed(`ea:${moduleId}`)) return;
 
+        const installed = game.modules.get(moduleId);
+        const action = installed ? "update" : "install";
+
         setTimeout(async () => {
+            const content = this._buildEADialogContent(moduleId, earlyAccess, action);
+
             const confirmed = await foundry.applications.api.DialogV2.confirm({
-                window: { title: `Early Access: ${moduleId}` },
-                content: `<p>${base}</p><p>${action === "install" ? "Install" : "Update to"} the early access version now?</p>`,
-                yes: { label: action === "install" ? "Install" : "Update", icon: "fas fa-bolt" },
-                no: { label: "Later", icon: "fas fa-clock" }
+                window: {
+                    title: "Early Access Available",
+                    icon:  "fas fa-bolt"
+                },
+                content,
+                yes: {
+                    label: action === "install" ? "Install Now" : "Update Now",
+                    icon:  "fas fa-download"
+                },
+                no: {
+                    label: "Later",
+                    icon:  "fas fa-clock"
+                }
             });
+
             if (confirmed) {
                 await ModuleInstallerService.installModule(moduleId, earlyAccess.version);
             } else {
                 this._snoozePack(`ea:${moduleId}`);
             }
         }, 3000);
+    }
+
+    /**
+     * Build the rich HTML content for the EA dialog.
+     * @param {string}  moduleId
+     * @param {Object}  earlyAccess  { version, tier, patreonUrl? }
+     * @param {string}  action       "install" | "update"
+     * @returns {string}
+     */
+    static _buildEADialogContent(moduleId, earlyAccess, action) {
+        const meta = this.MODULE_DISPLAY_META[moduleId] ?? {};
+        const mod  = game.modules.get(moduleId);
+        const title = meta.title || mod?.title || moduleId;
+        const icon  = meta.icon  || "fas fa-cube";
+        const desc  = meta.desc  || mod?.description || "";
+        const patreonUrl = earlyAccess.patreonUrl || "";
+
+        return `
+<div class="ionrift-ea-dialog-content">
+    <div class="ionrift-ea-identity">
+        <div class="ionrift-ea-icon"><i class="${icon}"></i></div>
+        <div class="ionrift-ea-meta">
+            <div class="ionrift-ea-name">
+                ${title}
+                <span class="ionrift-ea-version-pill">v${earlyAccess.version}</span>
+                <span class="ionrift-ea-tier-pill">${earlyAccess.tier}+</span>
+            </div>
+            ${desc ? `<div class="ionrift-ea-desc">${desc}</div>` : ""}
+        </div>
+    </div>
+
+    <div class="ionrift-ea-divider"></div>
+
+    ${patreonUrl ? `
+    <a class="ionrift-ea-patreon-link" href="${patreonUrl}" target="_blank">
+        <i class="fab fa-patreon"></i>
+        <span>Read the full announcement on Patreon</span>
+        <i class="fas fa-arrow-right ionrift-ea-arrow"></i>
+    </a>` : `
+    <div class="ionrift-ea-patreon-link ionrift-ea-patreon-link--placeholder">
+        <i class="fab fa-patreon"></i>
+        <span>Check Patreon for full details</span>
+    </div>`}
+
+    ${action === "install" ? `
+    <div class="ionrift-ea-activate-hint">
+        <i class="fas fa-info-circle"></i>
+        After install, enable the module in <strong>Settings → Manage Modules</strong>.
+    </div>` : ""}
+
+    <div class="ionrift-ea-snooze-note">
+        "Later" snoozes this for 3 days. Find it again in Module Settings.
+    </div>
+</div>`;
+    }
+
+    /**
+     * Preview the EA dialog in a running Foundry instance.
+     * Call from console: `game.ionrift.library.previewEADialog()`
+     * @param {string} [moduleId="ionrift-workshop"]
+     * @param {Object} [overrides]  Partial earlyAccess fields
+     */
+    static previewEADialog(moduleId = "ionrift-workshop", overrides = {}) {
+        const earlyAccess = {
+            version:    overrides.version    ?? "1.1.0-ea.1",
+            tier:       overrides.tier       ?? "Acolyte",
+            patreonUrl: overrides.patreonUrl ?? "https://patreon.com/ionrift",
+            ...overrides
+        };
+        const installed = game.modules.get(moduleId);
+        const action = installed ? "update" : "install";
+        const content = this._buildEADialogContent(moduleId, earlyAccess, action);
+
+        foundry.applications.api.DialogV2.confirm({
+            window: {
+                title: "Early Access Available",
+                icon:  "fas fa-bolt"
+            },
+            content,
+            yes: {
+                label: action === "install" ? "Install Now" : "Update Now",
+                icon:  "fas fa-download",
+                callback: () => ui.notifications.info("Preview only — no install triggered.")
+            },
+            no: {
+                label: "Later",
+                icon:  "fas fa-clock",
+                callback: () => ui.notifications.info("Preview only — no snooze triggered.")
+            }
+        });
     }
 
     // ── Snooze Helpers ──────────────────────────────────────────
@@ -449,6 +578,23 @@ export class PackRegistryService {
             console.log(`PackRegistry | Snoozed ${packId} for ${this.SNOOZE_DURATION_MS / 86400000} days.`);
         } catch (e) {
             console.warn("PackRegistry | Failed to record snooze:", e);
+        }
+    }
+
+    /**
+     * Remove the snooze entry for a given packId so the next EA/update
+     * check will surface it again immediately.
+     * @param {string} packId
+     */
+    static clearSnooze(packId) {
+        try {
+            const snoozed = game.settings.get("ionrift-library", "registrySnoozed") ?? {};
+            if (!(packId in snoozed)) return;
+            delete snoozed[packId];
+            game.settings.set("ionrift-library", "registrySnoozed", snoozed);
+            console.log(`PackRegistry | Cleared snooze for ${packId}.`);
+        } catch (e) {
+            console.warn("PackRegistry | Failed to clear snooze:", e);
         }
     }
 }

@@ -4,7 +4,7 @@
  * Kernel-level service that manages a registry of item enrichments and
  * injects styled mechanical-notes blocks into Foundry VTT item sheets.
  *
- * Any Ionrift module (Respite, Workshop, future modules) can register
+ * Any Ionrift module (Respite, Quartermaster, future modules) can register
  * enrichment data via `register()` or `registerBatch()`. The engine
  * handles all hook wiring, DOM targeting, and rendering.
  *
