@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.7.2] - 2026-04-16
+
+### Fixed
+- Opening the Patreon Connection panel now fetches a fresh copy of the registry rather than relying on the 24-hour cache. Patrons who connected shortly after an early-access release went live will now see their correct install button straight away, without needing to wait for the cache to expire or manually clear settings.
+
 ## [1.7.1] - 2026-04-16
 
 ### Added
