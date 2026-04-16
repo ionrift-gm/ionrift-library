@@ -32,7 +32,8 @@ export class PatreonMenu extends FormApplication {
             : null;
 
         const registryCache = game.settings.get("ionrift-library", "registryLastCheck") ?? {};
-        const registryData = registryCache.data;
+        const liveData = await PackRegistryService._fetchRegistry();
+        const registryData = liveData ?? registryCache.data;
         const modules = registryData?.modules;
 
         const earlyAccessOffers = [];

@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.7.4] - 2026-04-16
+
+### Fixed
+- Patreon Connection panel now fetches a live copy of the registry when opened, instead of relying on the 24-hour startup cache. Previously a stale cache could show outdated version numbers or missing early-access entries; this was the cause of "pack not found" errors for patrons whose cache predated the current release.
+
 ## [1.7.3] - 2026-04-16
 
 ### Fixed
