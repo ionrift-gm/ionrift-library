@@ -1621,7 +1621,21 @@
     box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
 }
 
-/* Support Link Separator — handled by SettingsLayout.injectDivider() */
+/* Settings panel divider (injected by SettingsLayout.injectLayout) */
+.ionrift-settings-divider {
+    height: 2px;
+    min-height: 2px;
+    flex-shrink: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(200, 160, 60, 0.5),
+        rgba(200, 160, 60, 0.6),
+        rgba(200, 160, 60, 0.5),
+        transparent
+    );
+    margin: 0.75rem 0;
+}
 
 /* ─────────────────────────────────────────────────────────────────── */
 /*  Item Enrichment Block (injected into Foundry item sheets)          */
@@ -1882,6 +1896,37 @@
     color: #cbd5e1;
 }
 
+
+.ionrift-patreon-footer-spacer {
+    flex: 1;
+}
+
+.ionrift-patreon-btn-refresh {
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    color: #67e8f9;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-patreon-btn-refresh:hover {
+    background: rgba(34, 211, 238, 0.2);
+    border-color: #67e8f9;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+    color: #a5f3fc;
+}
+
+.ionrift-patreon-btn-refresh:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
 /* EA Card Row */
 .ionrift-ea-card {
     display: flex;
@@ -1976,4 +2021,143 @@
     display: flex;
     align-items: center;
     gap: 5px;
+}
+/* == Armor Modal (Shared Base) ============================== */
+
+.ionrift-armor-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.ionrift-armor-modal {
+    background: rgb(22, 24, 34);
+    border: 1px solid rgba(126, 184, 218, 0.3);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    max-width: 380px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.ionrift-armor-modal h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: rgba(255, 200, 100, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ionrift-armor-modal p {
+    margin: 0 0 0.5rem;
+}
+
+.ionrift-armor-modal-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    justify-content: flex-end;
+}
+
+.ionrift-armor-modal-buttons button,
+.ionrift-armor-modal-buttons a.btn-armor-confirm {
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+}
+
+.btn-armor-confirm {
+    background: rgba(220, 120, 40, 0.25);
+    border-color: rgba(220, 120, 40, 0.5) !important;
+    color: #f0a848;
+}
+
+.btn-armor-confirm:hover {
+    background: rgba(220, 120, 40, 0.4);
+}
+
+/* == Forge Install Dialog =================================== */
+
+.ionrift-forge-install-modal {
+    max-width: 420px;
+}
+
+.ionrift-forge-install-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+
+.ionrift-forge-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ionrift-forge-step-num {
+    width: 1.4rem;
+    height: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.2);
+    color: rgba(180, 140, 255, 0.9);
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.ionrift-forge-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 4px;
+    color: #c4a7f7;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ionrift-forge-download-btn:hover {
+    background: rgba(139, 92, 246, 0.35);
+    color: #e0d4f5;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+.ionrift-forge-install-note {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+.ionrift-forge-install-note i {
+    margin-right: 0.25rem;
+    color: rgba(255, 200, 100, 0.5);
 }

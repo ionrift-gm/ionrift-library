@@ -89,6 +89,28 @@ export class PatreonMenu extends FormApplication {
             this.close();
         });
 
+        html.find("[data-action='refresh-registry']").on("click", async (event) => {
+            const btn = event.currentTarget;
+            const icon = btn.querySelector("i");
+            btn.disabled = true;
+            icon.classList.add("fa-spin");
+
+            const data = await PackRegistryService._fetchRegistry();
+            if (data) {
+                await game.settings.set("ionrift-library", "registryLastCheck", {
+                    timestamp: Date.now(),
+                    data
+                });
+                console.log("PackRegistry | Manual refresh completed.");
+            } else {
+                ui.notifications.warn("Could not reach the update registry. Try again later.");
+            }
+
+            icon.classList.remove("fa-spin");
+            btn.disabled = false;
+            this.render(true);
+        });
+
         html.find("[data-action='disconnect']").on("click", async () => {
             await CloudRelayService.disconnect();
             SettingsLayout.injectPatreonStatus();

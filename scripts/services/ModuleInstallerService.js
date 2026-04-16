@@ -23,8 +23,8 @@ export class ModuleInstallerService {
 
     /**
      * Download and install a module update.
-     * @param {string} moduleId  e.g. "ionrift-workshop"
-     * @param {string} version   e.g. "1.1.0-beta.1"
+     * @param {string} moduleId  e.g. "ionrift-quartermaster"
+     * @param {string} version   e.g. "1.1.0-ea.3"
      * @returns {Promise<boolean>} true on success
      */
     static async installModule(moduleId, version) {
@@ -46,7 +46,13 @@ export class ModuleInstallerService {
             return false;
         }
 
-        // 2. Download the zip
+        // 2. Platform branch — The Forge can't install via FilePicker
+        if (typeof ForgeVTT !== "undefined") {
+            this._showForgeInstallDialog(urlData.url, moduleId, version);
+            return true;
+        }
+
+        // 3. Self-hosted: download the zip
         ui.notifications.info(`Downloading ${moduleId} v${version}...`);
         let blob;
         try {
@@ -59,7 +65,7 @@ export class ModuleInstallerService {
             return false;
         }
 
-        // 3. Backup existing module (if installed)
+        // 4. Backup existing module (if installed)
         const currentVersion = await this._readModuleVersion(moduleId);
         if (currentVersion) {
             try {
@@ -69,14 +75,71 @@ export class ModuleInstallerService {
             }
         }
 
-        // 4. Extract into modules directory
+        // 5. Extract into modules directory
         const success = await this._extractModule(moduleId, blob);
         if (!success) return false;
 
-        // 5. Reload prompt
+        // 6. Reload prompt
         this._promptReload(moduleId, version);
         return true;
     }
+
+    // ── Forge Install Dialog ─────────────────────────────────
+
+    /**
+     * Show a dialog guiding Forge users through manual module installation.
+     * The presigned download URL is valid for ~60 minutes.
+     * @param {string} downloadUrl  Presigned GCS URL
+     * @param {string} moduleId
+     * @param {string} version
+     */
+    static _showForgeInstallDialog(downloadUrl, moduleId, version) {
+        const overlay = document.createElement("div");
+        overlay.classList.add("ionrift-armor-modal-overlay");
+        overlay.innerHTML = `
+            <div class="ionrift-armor-modal ionrift-forge-install-modal">
+                <h3><i class="fas fa-cloud-download-alt"></i> Manual Install Required</h3>
+                <p>
+                    <strong>The Forge</strong> doesn't support in-world module installation.
+                    Download the ZIP and install it through your Forge dashboard.
+                </p>
+                <div class="ionrift-forge-install-steps">
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">1</span>
+                        <span>Download <strong>${moduleId}</strong> v${version}</span>
+                    </div>
+                    <a href="${downloadUrl}" target="_blank" class="btn-armor-confirm ionrift-forge-download-btn">
+                        <i class="fas fa-download"></i> Download ZIP
+                    </a>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">2</span>
+                        <span>Go to <strong>The Forge</strong> → <strong>My Foundry</strong> → <strong>Manage Modules</strong></span>
+                    </div>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">3</span>
+                        <span>Upload the ZIP or drag it into the module installer</span>
+                    </div>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">4</span>
+                        <span>Return to your world and enable the module in <strong>Manage Modules</strong></span>
+                    </div>
+                </div>
+                <p class="ionrift-forge-install-note">
+                    <i class="fas fa-clock"></i> This download link expires in 60 minutes.
+                </p>
+                <div class="ionrift-armor-modal-buttons">
+                    <button class="btn-armor-confirm ionrift-forge-close-btn">
+                        <i class="fas fa-check"></i> Done
+                    </button>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector(".ionrift-forge-close-btn").addEventListener("click", () => {
+            overlay.remove();
+        });
+    }
+
 
     // ── Backup ───────────────────────────────────────────────
 
@@ -245,9 +308,15 @@ export class ModuleInstallerService {
             await this._ensureDirectory(dir);
         }
 
-        // Upload files
+        // Upload files — throttled to avoid hammering hosted APIs (The Forge, etc.)
+        const isForge = typeof ForgeVTT !== "undefined";
+        const BATCH_SIZE = 10;
+        const BATCH_DELAY = isForge ? 250 : 150;
+        const PROGRESS_INTERVAL = 50;
+
         let uploaded = 0;
-        for (const { outputPath, entry } of entries) {
+        for (let i = 0; i < entries.length; i++) {
+            const { outputPath, entry } = entries[i];
             try {
                 const fileBlob = await entry.async("blob");
                 const fileName = outputPath.includes("/")
@@ -262,6 +331,15 @@ export class ModuleInstallerService {
                 uploaded++;
             } catch (e) {
                 console.warn(`ModuleInstaller | Failed to extract ${outputPath}:`, e);
+            }
+
+            // Breathe between batches
+            if ((i + 1) % BATCH_SIZE === 0 && i + 1 < entries.length) {
+                await new Promise(r => setTimeout(r, BATCH_DELAY));
+            }
+            // Progress notification
+            if ((i + 1) % PROGRESS_INTERVAL === 0) {
+                ui.notifications.info(`Installing ${moduleId}: ${uploaded}/${entries.length} files...`);
             }
         }
 

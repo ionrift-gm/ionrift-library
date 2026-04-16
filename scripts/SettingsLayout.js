@@ -3,17 +3,28 @@
  *
  * Provides a consistent Header / Body / Footer structure:
  *   Header  – Attunement / Setup wizard (registerHeader)
+ *   Pack    – Content pack manager button (registerPackButton)
  *   Body    – Module-specific settings (module registers these itself)
  *   Footer  – Wiki, Discord, Diagnostics, Debug (registerFooter)
  *
  * Registration order controls render order in the Foundry settings panel.
- * Call registerHeader first, then module body settings, then registerFooter.
+ * Call registerHeader first, then registerPackButton, then module body
+ * settings, then registerFooter.
+ *
+ * The renderSettingsConfig hook auto-discovers all registered modules and
+ * applies layout injection (dividers, reordering) without a hardcoded list.
  */
 
 const DISCORD_INVITE = "https://discord.gg/vFGXf7Fncj";
 const WIKI_DEFAULT   = "https://github.com/ionrift-gm/ionrift-library/wiki";
 
 export class SettingsLayout {
+
+    /** Modules that called registerFooter. Drives auto-discovery in the hook. */
+    static _registeredModules = new Set();
+
+    /** Modules that called registerPackButton. Map of moduleId -> { key }. */
+    static _packModules = new Map();
 
     /**
      * Registers the Attunement / Setup menu button at the top of the settings panel.
@@ -33,8 +44,39 @@ export class SettingsLayout {
     }
 
     /**
+     * Registers a content pack manager button in the module's settings panel.
+     * Call after registerHeader (if any) and before body settings.
+     *
+     * @param {string} moduleId  – The module ID
+     * @param {class}  appClass  – The ApplicationV2 subclass (extends AbstractPackRegistryApp)
+     * @param {object} [options]
+     * @param {string} [options.key]   – Settings menu key (default "contentPacks")
+     * @param {string} [options.name]  – Display name (default "Content Packs")
+     * @param {string} [options.label] – Button label (default "Manage Packs")
+     * @param {string} [options.hint]  – Hint text
+     * @param {string} [options.icon]  – FA icon class (default "fas fa-box-open")
+     */
+    static registerPackButton(moduleId, appClass, options = {}) {
+        const key = options.key || "contentPacks";
+
+        game.settings.registerMenu(moduleId, key, {
+            name:       options.name  || "Content Packs",
+            label:      options.label || "Manage Packs",
+            hint:       options.hint  || "Manage content packs for this module.",
+            icon:       options.icon  || "fas fa-box-open",
+            type:       appClass,
+            restricted: true
+        });
+
+        SettingsLayout._packModules.set(moduleId, { key });
+    }
+
+    /**
      * Registers the hygiene footer: wiki link, Discord invite, diagnostics button.
      * Call this LAST so the footer items render below body settings.
+     *
+     * Also registers the module for automatic layout injection (dividers,
+     * reordering) via the renderSettingsConfig hook.
      *
      * @param {string} moduleId
      * @param {object} [options]
@@ -47,6 +89,8 @@ export class SettingsLayout {
         discord     = true,
         diagnostics = null
     } = {}) {
+
+        SettingsLayout._registeredModules.add(moduleId);
 
         // Discord
         if (discord) {
@@ -90,55 +134,61 @@ export class SettingsLayout {
     }
 
     /**
-     * Injects a warning badge next to the Respite "Manage Packs" settings button
-     * when pack updates are pending (as detected by the last PackRegistryService run).
+     * Injects a warning badge next to any registered pack button when pack
+     * updates are pending (as detected by the last PackRegistryService run).
      *
-     * Reads the static PackRegistryService.pendingUpdateCount — no network calls.
-     * No-ops silently if the button isn't present or the count is zero.
+     * Iterates all modules registered via registerPackButton.
+     * No network calls; reads cached state only.
      *
-     * @param {jQuery|Element} [html] - The settings config element (optional; defaults to document)
+     * @param {jQuery|Element} [html]
      */
     static injectPackUpdateBadge(html) {
-        // Resolve pendingUpdateCount without a hard import dependency
         const count = game?.ionrift?.library?._pendingPackUpdates ?? 0;
         if (count === 0) return;
 
         const root = html instanceof Element ? html : (html ? html[0] : document);
-        const btn = root?.querySelector?.(`button[data-key="ionrift-respite.contentPacks"]`);
-        if (!btn) return;
-
-        // Avoid double-injecting on re-render
-        if (btn.querySelector(".ionrift-pack-update-badge")) return;
-
-        // Build per-pack tooltip from the full updates list
         const updates = game?.ionrift?.library?._packUpdates ?? [];
-        const packLines = updates.map(u => `• ${u.packId}  (v${u.installed?.version} to v${u.available?.latest})`).join("\n");
-        const tooltip = packLines
-            ? `${count} pack update${count === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Manage Packs to update.`
-            : `${count} pack update${count === 1 ? "" : "s"} available — open Manage Packs to update`;
 
-        const badge = document.createElement("span");
-        badge.className = "ionrift-pack-update-badge";
-        badge.title = tooltip;
-        badge.style.cssText = [
-            "display: inline-flex",
-            "align-items: center",
-            "gap: 4px",
-            "margin-left: 6px",
-            "padding: 1px 6px",
-            "background: rgba(251, 191, 36, 0.18)",
-            "border: 1px solid rgba(251, 191, 36, 0.5)",
-            "border-radius: 10px",
-            "color: #fbbf24",
-            "font-size: 0.75em",
-            "font-weight: 600",
-            "line-height: 1.4",
-            "vertical-align: middle",
-            "cursor: default"
-        ].join(";");
-        badge.innerHTML = `<i class="fas fa-exclamation-triangle" style="font-size:0.85em"></i> ${count}`;
+        for (const [moduleId, { key }] of SettingsLayout._packModules) {
+            const btn = root?.querySelector?.(`button[data-key="${moduleId}.${key}"]`);
+            if (!btn) continue;
+            if (btn.querySelector(".ionrift-pack-update-badge")) continue;
 
-        btn.appendChild(badge);
+            const moduleUpdates = updates.filter(u =>
+                u.moduleId === moduleId || u.packId?.startsWith(moduleId.replace("ionrift-", ""))
+            );
+            const moduleCount = moduleUpdates.length || count;
+            if (moduleCount === 0) continue;
+
+            const packLines = moduleUpdates
+                .map(u => `\u2022 ${u.packId}  (v${u.installed?.version} to v${u.available?.latest})`)
+                .join("\n");
+            const tooltip = packLines
+                ? `${moduleCount} pack update${moduleCount === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Manage Packs to update.`
+                : `${moduleCount} pack update${moduleCount === 1 ? "" : "s"} available`;
+
+            const badge = document.createElement("span");
+            badge.className = "ionrift-pack-update-badge";
+            badge.title = tooltip;
+            badge.style.cssText = [
+                "display: inline-flex",
+                "align-items: center",
+                "gap: 4px",
+                "margin-left: 6px",
+                "padding: 1px 6px",
+                "background: rgba(251, 191, 36, 0.18)",
+                "border: 1px solid rgba(251, 191, 36, 0.5)",
+                "border-radius: 10px",
+                "color: #fbbf24",
+                "font-size: 0.75em",
+                "font-weight: 600",
+                "line-height: 1.4",
+                "vertical-align: middle",
+                "cursor: default"
+            ].join(";");
+            badge.innerHTML = `<i class="fas fa-exclamation-triangle" style="font-size:0.85em"></i> ${moduleCount}`;
+            btn.appendChild(badge);
+        }
     }
 
     /**
@@ -194,19 +244,22 @@ export class SettingsLayout {
     }
 
     /**
-     * Reorders footer elements to the bottom of the module's settings section
-     * and injects a visible divider between body and footer items.
+     * Reorders footer and pack elements, then injects amber dividers.
      *
      * Foundry v12 renders all registerMenu items above all register items,
      * regardless of code registration order. This method physically moves
      * footer groups (Discord, Wiki, Diagnostics) and the Debug setting to
-     * the end of the module section in the DOM after render.
+     * the end of the module section, then injects dividers:
+     *   - After the pack button's form-group (if module has one)
+     *   - Before the first footer group
      *
-     * Called automatically via the renderSettingsConfig hook.
+     * Called automatically via the renderSettingsConfig hook for every
+     * module in _registeredModules.
+     *
      * @param {jQuery} html - The settings config HTML
-     * @param {string} moduleId - The module ID to inject dividers for
+     * @param {string} moduleId - The module ID to inject layout for
      */
-    static injectDivider(html, moduleId) {
+    static injectLayout(html, moduleId) {
         const $html = $(html);
 
         // Find the first footer button (supportLink) by its data-key
@@ -252,19 +305,25 @@ export class SettingsLayout {
             $debugGroup.css("border-top", "none");
         }
 
-        // Inject divider before the first footer group
+        // Inject footer divider before the first footer group
         const $firstFooter = footerGroups[0];
         if ($firstFooter) {
-            const divider = $(`<div class="ionrift-settings-divider" style="
-                height: 2px;
-                min-height: 2px;
-                flex-shrink: 0;
-                background: rgba(255, 255, 255, 0.15);
-                margin: 0.75rem 0;
-            "></div>`);
-            $firstFooter.before(divider);
+            $(`<div class="ionrift-settings-divider"></div>`).insertBefore($firstFooter);
+        }
+
+        // Inject pack divider after the pack button (if this module registered one)
+        const packEntry = SettingsLayout._packModules.get(moduleId);
+        if (packEntry) {
+            const $packBtn = $html.find(`button[data-key="${moduleId}.${packEntry.key}"]`);
+            if ($packBtn.length) {
+                const $packGroup = $packBtn.closest(".form-group");
+                if ($packGroup.length && !$packGroup.next(".ionrift-settings-divider").length) {
+                    $(`<div class="ionrift-settings-divider"></div>`).insertAfter($packGroup);
+                }
+            }
         }
     }
+
     /**
      * Dynamically updates the Patreon Connection row in settings to reflect
      * current connection state: icon, button label, and hint text.
@@ -348,18 +407,12 @@ export class SettingsLayout {
     }
 }
 
-// Auto-register the hook to inject dividers for any module using the layout
 Hooks.on("renderSettingsConfig", (app, html, data) => {
-    // Inject dividers for all known Ionrift modules
-    SettingsLayout.injectDivider(html, "ionrift-library");
-    SettingsLayout.injectDivider(html, "ionrift-resonance");
-    SettingsLayout.injectDivider(html, "ionrift-respite");
-    SettingsLayout.injectDivider(html, "ionrift-quartermaster");
+    for (const moduleId of SettingsLayout._registeredModules) {
+        SettingsLayout.injectLayout(html, moduleId);
+    }
 
-    // Inject live Patreon connection status
     SettingsLayout.injectPatreonStatus();
-
-    // Inject update badge next to Respite "Manage Packs" button if updates are pending
     SettingsLayout.injectPackUpdateBadge(html);
     SettingsLayout.injectEarlyAccessBadge(html);
 });
