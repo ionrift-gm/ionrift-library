@@ -156,8 +156,28 @@ export class CloudRelayService {
             if (!response.ok) {
                 const msg = await response.text();
                 console.warn(`CloudRelay | Download denied (${response.status}):`, msg);
-                if (response.status === 403) {
-                    ui.notifications.warn("Your subscription tier does not include this content.");
+                if (response.status === 401) {
+                    ui.notifications.error(
+                        "Patreon connection missing. Go to <strong>Ionrift Library → Patreon</strong> and connect your account.",
+                        { permanent: true }
+                    );
+                } else if (response.status === 403) {
+                    // Auth gate returns "Invalid authentication token" for expired/bad JWTs.
+                    // Tier gate returns "Your subscription tier does not include this pack."
+                    const isAuthFailure = msg.toLowerCase().includes("invalid authentication")
+                        || msg.toLowerCase().includes("token");
+                    if (isAuthFailure) {
+                        ui.notifications.error(
+                            "Your Patreon connection has expired. Go to <strong>Ionrift Library → Patreon</strong>, disconnect, and reconnect.",
+                            { permanent: true }
+                        );
+                    } else {
+                        ui.notifications.warn("Your subscription tier does not include this content.");
+                    }
+                } else if (response.status === 404) {
+                    ui.notifications.warn(`Pack not found on the server. It may not be published yet.`);
+                } else {
+                    ui.notifications.error(`Download failed (HTTP ${response.status}). Try again later.`);
                 }
                 return null;
             }

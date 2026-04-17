@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.1] - 2026-04-17
+
+### Added
+- The Forge install dialog now includes a link to the full [setup guide](https://github.com/ionrift/ionrift-library/wiki/Installing-on-The-Forge) so you don't have to go digging for it.
+
+### Fixed
+- Content pack downloads now give specific, actionable errors. Missing Patreon connection, an expired login, a tier restriction, and a pack that hasn't published yet each get their own message — instead of everything landing as a generic failure.
+- ZIP extraction on The Forge now writes to the correct storage location. Packs were landing where Foundry couldn't find them after import.
+
 ## [1.8.0] - 2026-04-17
 
 ### Added

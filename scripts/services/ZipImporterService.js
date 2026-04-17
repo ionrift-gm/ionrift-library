@@ -233,7 +233,7 @@ export class ZipImporterService {
                     : targetDir;
 
                 const uploadFile = new File([blob], fileName);
-                await FP.upload("data", subDir, uploadFile, {});
+                await FP.upload(this._fileSource(), subDir, uploadFile, {});
                 imported++;
                 progressApp.update(i + 1, fileName);
             } catch (e) {
@@ -288,6 +288,17 @@ export class ZipImporterService {
      */
     static getTargetDir(moduleId, assetType = "assets") {
         return `${DATA_ROOT}/${moduleId}/${assetType}`;
+    }
+
+    /**
+     * Returns the FilePicker source string for the current hosting platform.
+     * The Forge uses "forgevtt" for its S3-backed Assets Library;
+     * self-hosted Foundry uses "data".
+     * @returns {string}
+     */
+    static _fileSource() {
+        return (typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
+            ? "forgevtt" : "data";
     }
 
     // ── Internal ───────────────────────────────────────────────────
@@ -347,11 +358,12 @@ export class ZipImporterService {
      * Handles The Forge's S3-backed FilePicker gracefully.
      */
     static async _ensureDirectory(dirPath) {
+        const source = this._fileSource();
         try {
-            await FP.browse("data", dirPath);
+            await FP.browse(source, dirPath);
         } catch {
             try {
-                await FP.createDirectory("data", dirPath);
+                await FP.createDirectory(source, dirPath);
             } catch (e) {
                 // Directory may already exist or be blocked by platform
                 console.warn(`ZipImporter | Could not create directory ${dirPath}:`, e.message);

@@ -125,6 +125,12 @@ export class ModuleInstallerService {
                     </div>
                 </div>
                 <p class="ionrift-forge-install-note">
+                    <i class="fas fa-book"></i> 
+                    <a href="https://github.com/ionrift/ionrift-library/wiki/Installing-on-The-Forge" target="_blank">
+                        Full installation guide →
+                    </a>
+                </p>
+                <p class="ionrift-forge-install-note">
                     <i class="fas fa-clock"></i> This download link expires in 60 minutes.
                 </p>
                 <div class="ionrift-armor-modal-buttons">
