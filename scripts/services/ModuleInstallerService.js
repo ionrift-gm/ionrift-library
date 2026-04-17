@@ -126,7 +126,7 @@ export class ModuleInstallerService {
                 </div>
                 <p class="ionrift-forge-install-note">
                     <i class="fas fa-book"></i> 
-                    <a href="https://github.com/ionrift/ionrift-library/wiki/Installing-on-The-Forge" target="_blank">
+                    <a href="https://github.com/ionrift-gm/ionrift-library/wiki/Installing-on-The-Forge" target="_blank">
                         Full installation guide →
                     </a>
                 </p>
