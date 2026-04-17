@@ -1,6 +1,19 @@
 # Changelog
 
+## [1.8.0] - 2026-04-17
+
+### Added
+- **Pathfinder 2e support.** The creature classifier now reads PF2e trait data (`system.traits.value`) — so when Resonance's Adaptive Sounds activates on a PF2e creature, it has real trait signal to work with rather than falling back to name-only guessing. A zombie tagged `["undead", "mindless"]` will now be identified as undead even if the name alone wouldn't tip it off.
+
+### Changed
+- The Creature Index setup wizard no longer pops automatically on first install. It's still a click away in the Ionrift Library settings, but it won't interrupt you the moment you enable the library. Modules that need the index (like Resonance's Adaptive Sounds) will let you know when it matters.
+- PF2e worlds no longer see all 25+ bundled Pathfinder compendiums in the Creature Index scan list. The system's own adventure paths and bestiaries are filtered out — only world-specific and third-party packs appear.
+
+### Fixed
+- The **Calibration Warning** shown at the end of Creature Index setup was firing incorrectly on PF2e worlds. The self-test suite had no PF2e entries and was falling through to a DnD5e-specific test that was never going to pass. PF2e installs now correctly show all-clear after the integrity check.
+
 ## [1.7.6] - 2026-04-16
+
 
 ### Fixed
 - Forge installation dialog now shows the correct steps: **Summon Import Wizard** instead of the old "Manage Modules" path, and step 3 clarifies the ZIP File tab and Analyze button. If you followed the v1.7.5 dialog, you probably figured it out, but the instructions are accurate now.

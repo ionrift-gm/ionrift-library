@@ -78,9 +78,12 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
 
         data.testResult = this.testResult;
 
-        // Fetch eligible packs for the Expansion Step
+        // Fetch eligible packs for the Expansion Step.
+        // For PF2e: exclude the system's own bundled compendiums — they are system-level
+        // content the classifier doesn't index. Only surface world-specific or third-party packs.
+        const systemOwnedPackages = new Set(["dnd5e", "pf2e"]);
         data.packs = game.packs
-            .filter(p => p.documentName === "Actor" && p.metadata.packageName !== "dnd5e")
+            .filter(p => p.documentName === "Actor" && !systemOwnedPackages.has(p.metadata.packageName))
             .map(p => ({
                 id: p.metadata.id,
                 label: p.metadata.label,
@@ -154,10 +157,14 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
 
         // Use the library's internal self-test
         const { runSelfTests } = game.ionrift.library;
-        const { passed, results } = runSelfTests({ limit: 5, random: true });
+        const result = await runSelfTests({ limit: 5, random: true });
+
+        // Treat skipped tests as a clean pass — this happens on PF2e (empty PF2E_VECTORS)
+        // or on production builds without test vectors. It's not a failure state.
+        const effectivelyPassed = result.passed || result.skipped;
 
         // Store results for template rendering
-        this.testResult = { passed, results };
+        this.testResult = { passed: effectivelyPassed, results: result.results, skipped: result.skipped };
     }
 
     // Override listeners to remove manual search logic

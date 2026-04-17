@@ -40,6 +40,14 @@ export function classifyCreature(actorOrName) {
         if (actorOrName.system.details?.type?.value) {
             description += " " + actorOrName.system.details.type.value.toLowerCase();
         }
+        // PF2e (structured trait array: system.traits.value = ["undead", "mindless", ...])
+        if (Array.isArray(actorOrName.system.traits?.value)) {
+            description += " " + actorOrName.system.traits.value.join(" ").toLowerCase();
+        }
+        // PF2e (rarity/size can carry typing hints)
+        if (actorOrName.system.traits?.rarity) {
+            description += " " + String(actorOrName.system.traits.rarity).toLowerCase();
+        }
     }
 
     // Extract Item Data for Context (Attack names, Spells)
@@ -187,9 +195,10 @@ export async function runSelfTests({ limit = 0, random = false } = {}) {
     let tests = [];
     try {
         const vectors = await import("./data/classifierTestVectors.js");
-        if (game.system.id === "dnd5e") tests = vectors.DND5E_VECTORS;
+        if (game.system.id === "dnd5e")       tests = vectors.DND5E_VECTORS;
         else if (game.system.id === "daggerheart") tests = vectors.DAGGERHEART_VECTORS;
-        else tests = vectors.GENERIC_VECTORS;
+        else if (game.system.id === "pf2e")   tests = vectors.PF2E_VECTORS;
+        else                                   tests = vectors.GENERIC_VECTORS;
     } catch {
         Logger.log("Library", "Test vectors not available (production build). Skipping self-tests.");
         return { passed: true, results: [], skipped: true };

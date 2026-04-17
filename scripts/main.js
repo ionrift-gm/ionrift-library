@@ -194,6 +194,15 @@ Hooks.once('init', () => {
         icon: "fas fa-database"
     });
 
+    // Patreon Connection (header slot, with amber divider beneath)
+    SettingsLayout.registerPackButton("ionrift-library", PatreonMenu, {
+        key: "patreonMenu",
+        name: "Patreon Connection",
+        label: "Connect Patreon",
+        hint: "Link your Patreon account for content updates and early access.",
+        icon: "fas fa-link"
+    });
+
     // BODY: Logic Inspector (library-specific tool)
     game.settings.registerMenu("ionrift-library", "validatorMenu", {
         name: "Logic Inspector",
@@ -201,16 +210,6 @@ Hooks.once('init', () => {
         hint: "Debug: Inspect how creatures are classified.",
         icon: "fas fa-code-branch",
         type: ClassifierValidatorApp,
-        restricted: true
-    });
-
-    // BODY: Patreon Connection (GM-only)
-    game.settings.registerMenu("ionrift-library", "patreonMenu", {
-        name: "Patreon Connection",
-        label: "Connect Patreon",
-        hint: "Link your Patreon account for content updates and early access.",
-        icon: "fas fa-link",
-        type: PatreonMenu,
         restricted: true
     });
 
@@ -315,10 +314,10 @@ Hooks.once('ready', async () => {
             });
         }
 
-        // Check for First-Time Setup - only for fresh installs or protocol bumps
-        if (storedVersion === "0.0.0" || (!storedVersion.includes(".") && storedVersion !== INDEXING_PROTOCOL_VERSION)) {
-            new CreatureIndexSetupApp().render(true);
-        }
+        // The Creature Index wizard is no longer auto-launched on startup.
+        // Consumers that need the index (e.g. Resonance for Adaptive Sounds) enforce
+        // setup through their own attunement UI. The wizard remains accessible via
+        // the Settings header button (ionrift-library settings page).
 
         // One-time advisory: Resonance v2.2.2 case-sensitivity fix
         try {
