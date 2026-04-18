@@ -3,7 +3,7 @@
     "title": "Ionrift Library",
     "description": "Core dependency for the Ionrift module suite. Provides shared utilities, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules. Supports DnD5e, Daggerheart, and Pathfinder 2e.",
     "readme": "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
-    "version": "1.8.1",
+    "version": "1.8.2",
     "bugs": "https://discord.gg/vFGXf7Fncj",
     "media": [{"type": "icon", "url": "modules/ionrift-library/assets/module-icon.png"}],
     "compatibility": {
@@ -29,6 +29,6 @@
             "url": "https://patreon.com/ionrift"
         }
     ],
-    "download": "https://github.com/ionrift-gm/ionrift-library/releases/download/v1.8.1/module.zip",
+    "download": "https://github.com/ionrift-gm/ionrift-library/releases/download/v1.8.2/module.zip",
     "license": "LICENSE"
 }

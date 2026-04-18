@@ -217,29 +217,41 @@ export class ZipImporterService {
         let imported = 0;
         let skipped = 0;
 
-        for (let i = 0; i < entries.length; i++) {
-            const { path, entry } = entries[i];
+        // Suppress per-file "saved to" toasts from FilePicker.upload;
+        // the summary notification at the end covers all files.
+        const _origInfo = ui.notifications.info.bind(ui.notifications);
+        ui.notifications.info = (msg, ...args) => {
+            if (typeof msg === "string" && msg.includes("saved to")) return;
+            return _origInfo(msg, ...args);
+        };
 
-            if (progressApp.cancelled) {
-                errors.push(`Import cancelled at file ${i + 1}/${entries.length}.`);
-                break;
+        try {
+            for (let i = 0; i < entries.length; i++) {
+                const { path, entry } = entries[i];
+
+                if (progressApp.cancelled) {
+                    errors.push(`Import cancelled at file ${i + 1}/${entries.length}.`);
+                    break;
+                }
+
+                try {
+                    const blob = await entry.async("blob");
+                    const fileName = path.includes("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
+                    const subDir = path.includes("/")
+                        ? targetDir + "/" + path.substring(0, path.lastIndexOf("/"))
+                        : targetDir;
+
+                    const uploadFile = new File([blob], fileName);
+                    await FP.upload(this._fileSource(), subDir, uploadFile, {});
+                    imported++;
+                    progressApp.update(i + 1, fileName);
+                } catch (e) {
+                    console.warn(`ZipImporter | Failed to upload ${path}:`, e);
+                    errors.push(`${path}: ${e.message}`);
+                }
             }
-
-            try {
-                const blob = await entry.async("blob");
-                const fileName = path.includes("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
-                const subDir = path.includes("/")
-                    ? targetDir + "/" + path.substring(0, path.lastIndexOf("/"))
-                    : targetDir;
-
-                const uploadFile = new File([blob], fileName);
-                await FP.upload(this._fileSource(), subDir, uploadFile, {});
-                imported++;
-                progressApp.update(i + 1, fileName);
-            } catch (e) {
-                console.warn(`ZipImporter | Failed to upload ${path}:`, e);
-                errors.push(`${path}: ${e.message}`);
-            }
+        } finally {
+            ui.notifications.info = _origInfo;
         }
 
         if (validManifest) {

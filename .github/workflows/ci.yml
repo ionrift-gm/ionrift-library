@@ -45,6 +45,14 @@ jobs:
     secrets:
       CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
 
+  forge-safety:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
+    with:
+      testharness_repo: 'ionrift-gm/ionrift-testharness'
+      testharness_config: 'vitest/forge-safety/vitest.config.js'
+    secrets:
+      CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
+
   # ─────────────────────────────────────────────────────────────────────────────
   # Fan-out — trigger consumer CIs after all library checks pass.
   # Gated on every check; any failure blocks propagation.
@@ -52,7 +60,7 @@ jobs:
   fan-out:
     name: Trigger Consumer CIs
     runs-on: ubuntu-latest
-    needs: [lint, hygiene, module-manifest, vitest]
+    needs: [lint, hygiene, module-manifest, vitest, forge-safety]
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger ionrift-respite CI

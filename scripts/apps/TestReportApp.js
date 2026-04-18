@@ -13,7 +13,7 @@ export class TestReportApp extends FormApplication {
     }
 
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-test-report",
             title: "Ionrift Test Report",
             template: "modules/ionrift-library/templates/apps/test-report.hbs",

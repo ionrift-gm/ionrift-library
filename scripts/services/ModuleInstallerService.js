@@ -126,7 +126,7 @@ export class ModuleInstallerService {
                 </div>
                 <p class="ionrift-forge-install-note">
                     <i class="fas fa-book"></i> 
-                    <a href="https://github.com/ionrift-gm/ionrift-library/wiki/Installing-on-The-Forge" target="_blank">
+                    <a href="https://github.com/ionrift-gm/ionrift-library/wiki/Early-Access-on-The-Forge" target="_blank">
                         Full installation guide →
                     </a>
                 </p>
@@ -318,35 +318,42 @@ export class ModuleInstallerService {
         const isForge = typeof ForgeVTT !== "undefined";
         const BATCH_SIZE = 10;
         const BATCH_DELAY = isForge ? 250 : 150;
-        const PROGRESS_INTERVAL = 50;
+
+        // Suppress per-file "saved to" toasts from FilePicker.upload;
+        // the summary notification at the end covers all files.
+        const _origInfo = ui.notifications.info.bind(ui.notifications);
+        ui.notifications.info = (msg, ...args) => {
+            if (typeof msg === "string" && msg.includes("saved to")) return;
+            return _origInfo(msg, ...args);
+        };
 
         let uploaded = 0;
-        for (let i = 0; i < entries.length; i++) {
-            const { outputPath, entry } = entries[i];
-            try {
-                const fileBlob = await entry.async("blob");
-                const fileName = outputPath.includes("/")
-                    ? outputPath.substring(outputPath.lastIndexOf("/") + 1)
-                    : outputPath;
-                const subDir = outputPath.includes("/")
-                    ? targetDir + "/" + outputPath.substring(0, outputPath.lastIndexOf("/"))
-                    : targetDir;
+        try {
+            for (let i = 0; i < entries.length; i++) {
+                const { outputPath, entry } = entries[i];
+                try {
+                    const fileBlob = await entry.async("blob");
+                    const fileName = outputPath.includes("/")
+                        ? outputPath.substring(outputPath.lastIndexOf("/") + 1)
+                        : outputPath;
+                    const subDir = outputPath.includes("/")
+                        ? targetDir + "/" + outputPath.substring(0, outputPath.lastIndexOf("/"))
+                        : targetDir;
 
-                const uploadFile = new File([fileBlob], fileName);
-                await FP.upload("data", subDir, uploadFile, {});
-                uploaded++;
-            } catch (e) {
-                console.warn(`ModuleInstaller | Failed to extract ${outputPath}:`, e);
-            }
+                    const uploadFile = new File([fileBlob], fileName);
+                    await FP.upload("data", subDir, uploadFile, {});
+                    uploaded++;
+                } catch (e) {
+                    console.warn(`ModuleInstaller | Failed to extract ${outputPath}:`, e);
+                }
 
-            // Breathe between batches
-            if ((i + 1) % BATCH_SIZE === 0 && i + 1 < entries.length) {
-                await new Promise(r => setTimeout(r, BATCH_DELAY));
+                // Breathe between batches
+                if ((i + 1) % BATCH_SIZE === 0 && i + 1 < entries.length) {
+                    await new Promise(r => setTimeout(r, BATCH_DELAY));
+                }
             }
-            // Progress notification
-            if ((i + 1) % PROGRESS_INTERVAL === 0) {
-                ui.notifications.info(`Installing ${moduleId}: ${uploaded}/${entries.length} files...`);
-            }
+        } finally {
+            ui.notifications.info = _origInfo;
         }
 
         console.log(`ModuleInstaller | Extracted ${uploaded}/${entries.length} files to ${targetDir}.`);

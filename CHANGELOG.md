@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2] - 2026-04-19
+
+### Fixed
+- Diagnostics panel, Patreon Connection menu, and Test Report app no longer crash on Foundry v14. All three were using a removed global that was dropped in v14.
+- Forge install dialog now links to the correct wiki page instead of a 404.
+- ZIP extraction no longer floods the notification bar with per-file "saved to" toasts during module installs and pack imports.
+
 ## [1.8.1] - 2026-04-17
 
 ### Added

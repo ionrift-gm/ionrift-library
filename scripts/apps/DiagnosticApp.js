@@ -9,7 +9,7 @@ export class DiagnosticApp extends FormApplication {
     }
 
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-diagnostics",
             title: "System Diagnostics",
             template: "modules/ionrift-library/templates/apps/diagnostic-results.hbs",
