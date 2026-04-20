@@ -1857,9 +1857,14 @@
 
 .ionrift-patreon-footer {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 12px 16px;
+}
+
+.ionrift-patreon-footer button {
+    white-space: nowrap;
 }
 
 .ionrift-patreon-btn-disconnect {

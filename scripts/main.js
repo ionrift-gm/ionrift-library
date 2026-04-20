@@ -25,6 +25,7 @@ import { PackRegistryService } from "./services/PackRegistryService.js";
 import { AbstractPackRegistryApp } from "./apps/AbstractPackRegistryApp.js";
 import { CloudRelayService } from "./services/CloudRelayService.js";
 import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
+import { PlatformHelper } from "./services/PlatformHelper.js";
 import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
 import { PatreonMenu } from "./apps/PatreonMenu.js";
 
@@ -108,7 +109,11 @@ Hooks.once('init', () => {
         /** Preview the EA notification dialog. Console: game.ionrift.library.previewEADialog() */
         previewEADialog: (moduleId, overrides) => PackRegistryService.previewEADialog(moduleId, overrides),
         /** Base class for pack management UIs. Consumer modules extend this. */
-        AbstractPackRegistryApp
+        AbstractPackRegistryApp,
+        /** Platform abstraction — FilePicker, file source, Forge detection, directory creation, JSZip, asset URL resolution. */
+        platform: PlatformHelper,
+        /** Creates a module-specific Logger proxy (log/info/warn/error). Usage: game.ionrift.library.createLogger("Respite") */
+        createLogger: (label) => Logger.createModuleProxy(label)
     };
 
     // Expose Service Globally (outside lib namespace)

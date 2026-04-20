@@ -18,6 +18,7 @@
  */
 
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
+import { PlatformHelper } from "./PlatformHelper.js";
 
 // OS-generated junk files to skip during extraction
 const SKIP_PATTERNS = [
@@ -30,12 +31,6 @@ const SKIP_PATTERNS = [
 
 const DEFAULT_MAX_SIZE_MB = 50;
 const DATA_ROOT = "ionrift-data";
-
-// Forge VTT monkey-patches the global FilePicker but NOT the v13
-// namespaced version. Use the global on Forge for browse/upload/createDirectory.
-const FP = (typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
-    ? FilePicker
-    : (foundry.applications?.apps?.FilePicker ?? FilePicker);
 
 export class ZipImporterService {
 
@@ -102,8 +97,10 @@ export class ZipImporterService {
         progressApp.render({ force: true });
 
         // Load JSZip dynamically (vendored)
-        const JSZip = await this._loadJSZip();
-        if (!JSZip) {
+        let JSZip;
+        try {
+            JSZip = await PlatformHelper.loadJSZip();
+        } catch {
             progressApp.close();
             return { imported: 0, skipped: 0, errors: ["Failed to load JSZip library."], manifest: null };
         }
@@ -213,22 +210,15 @@ export class ZipImporterService {
         }
 
         for (const dir of [...dirsToCreate].sort()) {
-            await this._ensureDirectory(dir);
+            await PlatformHelper.ensureDirectory(dir);
         }
 
         // Upload files
         let imported = 0;
         let skipped = 0;
 
-        // Suppress per-file "saved to" toasts from FilePicker.upload;
-        // the summary notification at the end covers all files.
-        const _origInfo = ui.notifications.info.bind(ui.notifications);
-        ui.notifications.info = (msg, ...args) => {
-            if (typeof msg === "string" && msg.includes("saved to")) return;
-            return _origInfo(msg, ...args);
-        };
-
-        try {
+        // Suppress per-file "saved to" toasts during batch upload.
+        await PlatformHelper.withSuppressedToasts(async () => {
             for (let i = 0; i < entries.length; i++) {
                 const { path, entry } = entries[i];
 
@@ -245,7 +235,7 @@ export class ZipImporterService {
                         : targetDir;
 
                     const uploadFile = new File([blob], fileName);
-                    await FP.upload(this._fileSource(), subDir, uploadFile, {});
+                    await PlatformHelper.FP.upload(PlatformHelper.fileSource, subDir, uploadFile, {});
                     imported++;
                     progressApp.update(i + 1, fileName);
                 } catch (e) {
@@ -253,9 +243,7 @@ export class ZipImporterService {
                     errors.push(`${path}: ${e.message}`);
                 }
             }
-        } finally {
-            ui.notifications.info = _origInfo;
-        }
+        });
 
         if (validManifest) {
             try {
@@ -305,17 +293,6 @@ export class ZipImporterService {
         return `${DATA_ROOT}/${moduleId}/${assetType}`;
     }
 
-    /**
-     * Returns the FilePicker source string for the current hosting platform.
-     * The Forge uses "forgevtt" for its S3-backed Assets Library;
-     * self-hosted Foundry uses "data".
-     * @returns {string}
-     */
-    static _fileSource() {
-        return (typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
-            ? "forgevtt" : "data";
-    }
-
     // ── Internal ───────────────────────────────────────────────────
 
     /**
@@ -337,56 +314,6 @@ export class ZipImporterService {
     }
 
     /**
-     * Dynamically loads the vendored JSZip library.
-     * Uses a module-scoped cache to avoid re-loading.
-     * @returns {Promise<Object|null>}
-     */
-    static async _loadJSZip() {
-        if (this._jszip) return this._jszip;
-
-        try {
-            // Load vendored JSZip via script tag (it exports to window.JSZip)
-            if (window.JSZip) {
-                this._jszip = window.JSZip;
-                return this._jszip;
-            }
-
-            await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = "modules/ionrift-library/scripts/vendor/jszip.min.js";
-                script.onload = resolve;
-                script.onerror = () => reject(new Error("Failed to load JSZip"));
-                document.head.appendChild(script);
-            });
-
-            this._jszip = window.JSZip;
-            return this._jszip;
-        } catch (e) {
-            console.error("ZipImporter | Failed to load JSZip:", e);
-            ui.notifications.error("Failed to load ZIP library. Check console for details.");
-            return null;
-        }
-    }
-
-    /**
-     * Creates a directory if it doesn't already exist.
-     * Handles The Forge's S3-backed FilePicker gracefully.
-     */
-    static async _ensureDirectory(dirPath) {
-        const source = this._fileSource();
-        try {
-            await FP.browse(source, dirPath);
-        } catch {
-            try {
-                await FP.createDirectory(source, dirPath);
-            } catch (e) {
-                // Directory may already exist or be blocked by platform
-                console.warn(`ZipImporter | Could not create directory ${dirPath}:`, e.message);
-            }
-        }
-    }
-
-    /**
      * Locates manifest.json at the archive root (case-insensitive).
      * @param {Object} zip
      * @returns {Object|null}
@@ -403,7 +330,4 @@ export class ZipImporterService {
         });
         return fallback;
     }
-
-    /** @private JSZip library cache */
-    static _jszip = null;
 }

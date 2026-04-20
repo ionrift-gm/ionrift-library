@@ -9,14 +9,7 @@
  */
 
 import { CloudRelayService } from "./CloudRelayService.js";
-
-// Forge VTT monkey-patches the global FilePicker but NOT the v13 namespaced version.
-// typeof guard lets headless Vitest import this module without a Foundry runtime.
-const FP = typeof foundry !== 'undefined'
-    ? ((typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
-        ? FilePicker
-        : (foundry.applications?.apps?.FilePicker ?? FilePicker))
-    : null;
+import { PlatformHelper } from "./PlatformHelper.js";
 
 export class ModuleInstallerService {
 
@@ -157,16 +150,18 @@ export class ModuleInstallerService {
      * @param {string} currentVersion
      */
     static async _backupModule(moduleId, currentVersion) {
-        const JSZip = await this._loadJSZip();
-        if (!JSZip) {
+        let JSZip;
+        try {
+            JSZip = await PlatformHelper.loadJSZip();
+        } catch {
             console.warn("ModuleInstaller | JSZip not available, skipping backup.");
             return;
         }
 
         const backupDir = `${this.BACKUP_DIR}/${moduleId}`;
-        await this._ensureDirectory("ionrift-data");
-        await this._ensureDirectory(this.BACKUP_DIR);
-        await this._ensureDirectory(backupDir);
+        await PlatformHelper.ensureDirectory("ionrift-data");
+        await PlatformHelper.ensureDirectory(this.BACKUP_DIR);
+        await PlatformHelper.ensureDirectory(backupDir);
 
         // Build a zip of the current module directory
         const zip = new JSZip();
@@ -179,7 +174,7 @@ export class ModuleInstallerService {
         const fileName = `${moduleId}-v${currentVersion}-${timestamp}.zip`;
 
         const uploadFile = new File([content], fileName, { type: "application/zip" });
-        await FP.upload("data", backupDir, uploadFile, {});
+        await PlatformHelper.FP.upload(PlatformHelper.fileSource, backupDir, uploadFile, {});
 
         console.log(`ModuleInstaller | Backup created: ${backupDir}/${fileName}`);
 
@@ -206,7 +201,7 @@ export class ModuleInstallerService {
     static async _pruneBackups(moduleId, keepCount = this.MAX_BACKUPS) {
         const backupDir = `${this.BACKUP_DIR}/${moduleId}`;
         try {
-            const result = await FP.browse("data", backupDir);
+            const result = await PlatformHelper.FP.browse(PlatformHelper.fileSource, backupDir);
             const files = (result.files || [])
                 .filter(f => f.endsWith(".zip"))
                 .sort();
@@ -238,8 +233,10 @@ export class ModuleInstallerService {
      * @returns {Promise<boolean>}
      */
     static async _extractModule(moduleId, blob) {
-        const JSZip = await this._loadJSZip();
-        if (!JSZip) {
+        let JSZip;
+        try {
+            JSZip = await PlatformHelper.loadJSZip();
+        } catch {
             ui.notifications.error("Failed to load ZIP library.");
             return false;
         }
@@ -313,24 +310,15 @@ export class ModuleInstallerService {
         }
 
         for (const dir of [...dirs].sort()) {
-            await this._ensureDirectory(dir);
+            await PlatformHelper.ensureDirectory(dir);
         }
 
         // Upload files — throttled to avoid hammering hosted APIs (The Forge, etc.)
-        const isForge = typeof ForgeVTT !== "undefined";
         const BATCH_SIZE = 10;
-        const BATCH_DELAY = isForge ? 250 : 150;
-
-        // Suppress per-file "saved to" toasts from FilePicker.upload;
-        // the summary notification at the end covers all files.
-        const _origInfo = ui.notifications.info.bind(ui.notifications);
-        ui.notifications.info = (msg, ...args) => {
-            if (typeof msg === "string" && msg.includes("saved to")) return;
-            return _origInfo(msg, ...args);
-        };
+        const BATCH_DELAY = PlatformHelper.isForge ? 250 : 150;
 
         let uploaded = 0;
-        try {
+        await PlatformHelper.withSuppressedToasts(async () => {
             for (let i = 0; i < entries.length; i++) {
                 const { outputPath, entry } = entries[i];
                 try {
@@ -343,7 +331,7 @@ export class ModuleInstallerService {
                         : targetDir;
 
                     const uploadFile = new File([fileBlob], fileName);
-                    await FP.upload("data", subDir, uploadFile, {});
+                    await PlatformHelper.FP.upload(PlatformHelper.fileSource, subDir, uploadFile, {});
                     uploaded++;
                 } catch (e) {
                     console.warn(`ModuleInstaller | Failed to extract ${outputPath}:`, e);
@@ -354,9 +342,7 @@ export class ModuleInstallerService {
                     await new Promise(r => setTimeout(r, BATCH_DELAY));
                 }
             }
-        } finally {
-            ui.notifications.info = _origInfo;
-        }
+        });
 
         console.log(`ModuleInstaller | Extracted ${uploaded}/${entries.length} files to ${targetDir}.`);
         ui.notifications.info(`Installed ${moduleId}: ${uploaded} files extracted.`);
@@ -407,7 +393,7 @@ export class ModuleInstallerService {
      */
     static async _addDirectoryToZip(zip, dirPath, zipPrefix) {
         try {
-            const result = await FP.browse("data", dirPath);
+            const result = await PlatformHelper.FP.browse(PlatformHelper.fileSource, dirPath);
 
             // Add files
             for (const filePath of (result.files || [])) {
@@ -431,40 +417,4 @@ export class ModuleInstallerService {
         }
     }
 
-    /**
-     * Create a directory if it doesn't exist.
-     * @param {string} dirPath
-     */
-    static async _ensureDirectory(dirPath) {
-        try {
-            await FP.browse("data", dirPath);
-        } catch {
-            try {
-                await FP.createDirectory("data", dirPath);
-            } catch (e) {
-                console.warn(`ModuleInstaller | Could not create ${dirPath}:`, e.message);
-            }
-        }
-    }
-
-    /**
-     * Load vendored JSZip (shared with ZipImporterService).
-     * @returns {Promise<Object|null>}
-     */
-    static async _loadJSZip() {
-        if (window.JSZip) return window.JSZip;
-        try {
-            await new Promise((resolve, reject) => {
-                const script = document.createElement("script");
-                script.src = "modules/ionrift-library/scripts/vendor/jszip.min.js";
-                script.onload = resolve;
-                script.onerror = () => reject(new Error("Failed to load JSZip"));
-                document.head.appendChild(script);
-            });
-            return window.JSZip;
-        } catch (e) {
-            console.error("ModuleInstaller | JSZip load failed:", e);
-            return null;
-        }
-    }
 }

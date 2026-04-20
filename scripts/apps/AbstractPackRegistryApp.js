@@ -162,6 +162,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
      */
     _renderPackCard(pack, bodyHtml, opts = {}) {
         const showToggle = opts.showToggle !== false;
+        const deletable = opts.deletable === true;
         const enabledClass = pack.enabled ? "enabled" : "disabled";
         const countLabel = pack.countLabel ?? "items";
 
@@ -178,6 +179,11 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
                 <span class="pack-toggle-switch"></span>
             </label>` : "";
 
+        const deleteHtml = deletable ? `
+            <button type="button" class="pack-delete-btn" data-pack-id="${pack.id}" title="Remove this pack">
+                <i class="fas fa-trash-alt"></i>
+            </button>` : "";
+
         return `
             <div class="pack-card ${enabledClass}" data-pack-id="${pack.id}">
                 <div class="pack-card-header">
@@ -187,6 +193,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
                         <span class="pack-desc">${pack.description}${pack.version ? ` <span class="pack-version">v${pack.version}</span>` : ""}</span>
                     </div>
                     ${eventCountHtml}
+                    ${deleteHtml}
                 </div>
                 <div class="pack-card-body">
                     ${bodyHtml}

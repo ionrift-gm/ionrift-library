@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0] - 2026-04-20
+
+### Added
+- **Platform API** exposed at `game.ionrift.library.platform`. Modules that need to browse directories, create folders, or detect The Forge now call one shared service instead of carrying their own copy of that logic. This won't change anything you see in-game, but it means fewer things can break when the next hosting quirk surfaces.
+- **Logger factory** at `game.ionrift.library.createLogger("YourModule")`. Gives any consumer module a ready-made log/info/warn/error proxy with the correct Ionrift prefix and debug gating, without hand-rolling a wrapper file.
+
+### Changed
+- Respite, Resonance, Quartermaster, and Cloud all delegate their platform logic to the library now. This removes roughly 200 lines of copy-pasted Forge detection, FilePicker resolution, and directory-creation helpers that had drifted out of sync across modules. The next Forge compatibility fix only needs to land in one place.
+
+### Internal
+- Added `DuplicationAudit.test.js` as a permanent static analysis guard. If a consumer module re-introduces a private copy of Forge detection or file-source branching, the library test suite will fail.
+
 ## [1.8.3] - 2026-04-20
 
 ### Fixed
