@@ -10,10 +10,12 @@
 
 import { CloudRelayService } from "./CloudRelayService.js";
 
-// Foundry v13 namespaced FilePicker; fall back to global for v12.
+// Forge VTT monkey-patches the global FilePicker but NOT the v13 namespaced version.
 // typeof guard lets headless Vitest import this module without a Foundry runtime.
 const FP = typeof foundry !== 'undefined'
-    ? (foundry.applications?.apps?.FilePicker ?? FilePicker)
+    ? ((typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
+        ? FilePicker
+        : (foundry.applications?.apps?.FilePicker ?? FilePicker))
     : null;
 
 export class ModuleInstallerService {

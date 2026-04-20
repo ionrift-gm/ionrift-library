@@ -31,8 +31,11 @@ const SKIP_PATTERNS = [
 const DEFAULT_MAX_SIZE_MB = 50;
 const DATA_ROOT = "ionrift-data";
 
-// Foundry v13 namespaced FilePicker; fall back to global for v12
-const FP = foundry.applications?.apps?.FilePicker ?? FilePicker;
+// Forge VTT monkey-patches the global FilePicker but NOT the v13
+// namespaced version. Use the global on Forge for browse/upload/createDirectory.
+const FP = (typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge)
+    ? FilePicker
+    : (foundry.applications?.apps?.FilePicker ?? FilePicker);
 
 export class ZipImporterService {
 

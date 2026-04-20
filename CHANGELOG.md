@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.8.3] - 2026-04-20
+
+### Fixed
+- File operations on The Forge now work correctly with Foundry v13. The Forge module patches the global FilePicker class to handle its S3-backed storage, but v13 introduced a second (namespaced) copy that the Forge doesn't patch. All browse, upload, and directory-creation calls now use the correct class on each platform.
+
 ## [1.8.2] - 2026-04-19
 
 ### Fixed
