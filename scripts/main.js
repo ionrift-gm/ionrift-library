@@ -28,6 +28,8 @@ import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
 import { PlatformHelper } from "./services/PlatformHelper.js";
 import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
 import { PatreonMenu } from "./apps/PatreonMenu.js";
+import { PartyRoster } from "./services/PartyRoster.js";
+import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -113,7 +115,9 @@ Hooks.once('init', () => {
         /** Platform abstraction — FilePicker, file source, Forge detection, directory creation, JSZip, asset URL resolution. */
         platform: PlatformHelper,
         /** Creates a module-specific Logger proxy (log/info/warn/error). Usage: game.ionrift.library.createLogger("Respite") */
-        createLogger: (label) => Logger.createModuleProxy(label)
+        createLogger: (label) => Logger.createModuleProxy(label),
+        /** PartyRoster service: authoritative party membership (getMembers, getRosterIds, isRostered). */
+        party: PartyRoster
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -193,6 +197,21 @@ Hooks.once('init', () => {
         default: false
     });
 
+    // Party Roster
+    game.settings.register("ionrift-library", "partyRoster", {
+        scope: "world",
+        config: false,
+        type: Array,
+        default: []
+    });
+
+    game.settings.register("ionrift-library", "partyRosterMigrated", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
     // HEADER
     SettingsLayout.registerHeader("ionrift-library", CreatureIndexSetupApp, {
         hint: "Initialize the creature database for the first time.",
@@ -208,7 +227,16 @@ Hooks.once('init', () => {
         icon: "fas fa-link"
     });
 
-    // BODY: Logic Inspector (library-specific tool)
+    // BODY
+    game.settings.registerMenu("ionrift-library", "partyRosterMenu", {
+        name: "Party Roster",
+        label: "Edit Roster",
+        hint: "Choose which characters are in the active adventuring party. Used by Respite, Workshop, and other modules.",
+        icon: "fas fa-users",
+        type: PartyRosterApp,
+        restricted: true
+    });
+
     game.settings.registerMenu("ionrift-library", "validatorMenu", {
         name: "Logic Inspector",
         label: "Inspect Logic",
@@ -276,6 +304,11 @@ Hooks.once('ready', async () => {
 
     // Init Session Tracker
     SessionTracker.init();
+
+    // Migrate party roster from Respite if needed
+    PartyRoster.migrateFromRespite().catch(e =>
+        console.warn("Ionrift | PartyRoster migration check failed:", e)
+    );
 
     if (game.user.isGM) {
         // Static protocol version - only bump when indexing steps change,
