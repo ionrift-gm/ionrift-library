@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.1] - 2026-04-21
+
+### Fixed
+- **Module installs on Foundry v14.** One-click installs from the Patreon Connection panel were silently failing on v14 — the module appeared to install but all functional files were missing. Installs now use a server-side route that works with v14's stricter upload rules. If the server route isn't available (some hosting environments), a download dialog with manual extraction steps appears instead of a silent failure.
+- Module backup before upgrade is skipped on v14 where the backup would also be blocked. The existing version stays in place until the new one extracts successfully.
+
 ## [1.9.0] - 2026-04-20
 
 ### Added
