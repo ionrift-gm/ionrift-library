@@ -41,26 +41,13 @@ export class ModuleInstallerService {
             return false;
         }
 
-        // 2. Platform branch — The Forge can't install via FilePicker
+        // 2. Platform branch: The Forge can't install via FilePicker
         if (typeof ForgeVTT !== "undefined") {
             this._showForgeInstallDialog(urlData.url, moduleId, version);
             return true;
         }
 
-        // 3. Self-hosted: download the zip
-        ui.notifications.info(`Downloading ${moduleId} v${version}...`);
-        let blob;
-        try {
-            const response = await fetch(urlData.url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            blob = await response.blob();
-        } catch (e) {
-            console.error("ModuleInstaller | Download failed:", e);
-            ui.notifications.error(`Download failed: ${e.message}`);
-            return false;
-        }
-
-        // 4. Backup existing module (if installed)
+        // 3. Backup existing module (if installed)
         const currentVersion = await this._readModuleVersion(moduleId);
         if (currentVersion) {
             try {
@@ -70,11 +57,30 @@ export class ModuleInstallerService {
             }
         }
 
-        // 5. Extract into modules directory
-        const success = await this._extractModule(moduleId, blob);
+        // 4. Install: v14+ uses the server-side setup endpoint because
+        //    FilePicker.upload() now rejects non-asset extensions (.js, .css, .hbs).
+        //    Earlier versions extract file-by-file through FilePicker.
+        let success;
+        if ((game.release?.generation ?? 0) >= 14) {
+            success = await this._installViaSetup(moduleId, version, urlData.url);
+        } else {
+            ui.notifications.info(`Downloading ${moduleId} v${version}...`);
+            let blob;
+            try {
+                const response = await fetch(urlData.url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                blob = await response.blob();
+            } catch (e) {
+                console.error("ModuleInstaller | Download failed:", e);
+                ui.notifications.error(`Download failed: ${e.message}`);
+                return false;
+            }
+            success = await this._extractModule(moduleId, blob);
+        }
+
         if (!success) return false;
 
-        // 6. Reload prompt
+        // 5. Reload prompt
         this._promptReload(moduleId, version);
         return true;
     }
@@ -142,6 +148,135 @@ export class ModuleInstallerService {
     }
 
 
+    // ── V14 Server-Side Install ─────────────────────────────
+
+    /**
+     * Install a module through Foundry's server-side package installer.
+     * Required on v14+ where FilePicker.upload() rejects code-file extensions.
+     *
+     * Stages a temporary manifest JSON (allowed by the upload whitelist) that
+     * contains the presigned download URL, then POSTs to /setup with the
+     * installPackage action. The server downloads and extracts the zip
+     * directly to the filesystem, bypassing the extension filter.
+     *
+     * Falls back to a manual-download dialog if the setup endpoint is
+     * unreachable from in-world context.
+     *
+     * @param {string} moduleId
+     * @param {string} version
+     * @param {string} downloadUrl  Presigned GCS URL for the module zip
+     * @returns {Promise<boolean>}
+     */
+    static async _installViaSetup(moduleId, version, downloadUrl) {
+        ui.notifications.info(`Installing ${moduleId} v${version}...`);
+
+        const tempDir = "ionrift-data/temp";
+        try {
+            await PlatformHelper.ensureDirectory("ionrift-data");
+            await PlatformHelper.ensureDirectory(tempDir);
+        } catch (e) {
+            console.warn("ModuleInstaller | Could not create temp directory:", e);
+        }
+
+        // Minimal manifest pointing at the presigned download URL.
+        // The server reads the real module.json from inside the zip.
+        const manifest = {
+            id: moduleId,
+            title: moduleId,
+            version: version,
+            download: downloadUrl,
+            compatibility: { minimum: "12" }
+        };
+
+        const manifestName = `${moduleId}-install.json`;
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+        const manifestFile = new File([manifestBlob], manifestName, { type: "application/json" });
+
+        try {
+            await PlatformHelper.FP.upload(PlatformHelper.fileSource, tempDir, manifestFile, {});
+        } catch (e) {
+            console.error("ModuleInstaller | Failed to stage temp manifest:", e);
+            this._showV14FallbackDialog(downloadUrl, moduleId, version);
+            return false;
+        }
+
+        const manifestUrl = `${window.location.origin}/${tempDir}/${manifestName}`;
+
+        try {
+            const response = await fetch("/setup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "installPackage",
+                    type: "module",
+                    manifest: manifestUrl
+                })
+            });
+
+            if (!response.ok) {
+                const body = await response.text().catch(() => "");
+                throw new Error(`HTTP ${response.status}${body ? `: ${body}` : ""}`);
+            }
+
+            console.log(`ModuleInstaller | Server-side install complete for ${moduleId} v${version}.`);
+            return true;
+        } catch (e) {
+            console.error("ModuleInstaller | Server-side install failed:", e);
+            this._showV14FallbackDialog(downloadUrl, moduleId, version);
+            return false;
+        }
+    }
+
+    /**
+     * Fallback dialog shown when server-side install fails on v14+.
+     * Provides a direct download link and manual extraction instructions.
+     * @param {string} downloadUrl  Presigned GCS URL
+     * @param {string} moduleId
+     * @param {string} version
+     */
+    static _showV14FallbackDialog(downloadUrl, moduleId, version) {
+        const overlay = document.createElement("div");
+        overlay.classList.add("ionrift-armor-modal-overlay");
+        overlay.innerHTML = `
+            <div class="ionrift-armor-modal ionrift-forge-install-modal">
+                <h3><i class="fas fa-cloud-download-alt"></i> Manual Install Required</h3>
+                <p>
+                    Foundry v14 restricts in-world file uploads to asset types.
+                    Download the ZIP and extract it manually.
+                </p>
+                <div class="ionrift-forge-install-steps">
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">1</span>
+                        <span>Download <strong>${moduleId}</strong> v${version}</span>
+                    </div>
+                    <a href="${downloadUrl}" target="_blank" class="btn-armor-confirm ionrift-forge-download-btn">
+                        <i class="fas fa-download"></i> Download ZIP
+                    </a>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">2</span>
+                        <span>Extract the ZIP into the <strong>modules/${moduleId}/</strong> folder in the Foundry data directory</span>
+                    </div>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">3</span>
+                        <span>Reload Foundry to pick up the new version</span>
+                    </div>
+                </div>
+                <p class="ionrift-forge-install-note">
+                    <i class="fas fa-clock"></i> This download link expires in 60 minutes.
+                </p>
+                <div class="ionrift-armor-modal-buttons">
+                    <button class="btn-armor-confirm ionrift-v14-close-btn">
+                        <i class="fas fa-check"></i> Done
+                    </button>
+                </div>
+            </div>`;
+
+        document.body.appendChild(overlay);
+        overlay.querySelector(".ionrift-v14-close-btn").addEventListener("click", () => {
+            overlay.remove();
+        });
+    }
+
     // ── Backup ───────────────────────────────────────────────
 
     /**
@@ -150,6 +285,12 @@ export class ModuleInstallerService {
      * @param {string} currentVersion
      */
     static async _backupModule(moduleId, currentVersion) {
+        // v14 restricts uploads to asset-type extensions; .zip is not in the whitelist
+        if ((game.release?.generation ?? 0) >= 14) {
+            console.log("ModuleInstaller | Backup skipped (v14 upload restrictions).");
+            return;
+        }
+
         let JSZip;
         try {
             JSZip = await PlatformHelper.loadJSZip();
