@@ -57,11 +57,12 @@ export class ModuleInstallerService {
             }
         }
 
-        // 4. Install: v14+ uses the server-side setup endpoint because
-        //    FilePicker.upload() now rejects non-asset extensions (.js, .css, .hbs).
+        // 4. Install: v13+ uses the server-side setup endpoint because
+        //    FilePicker.upload() rejects non-asset extensions (.js, .css, .hbs)
+        //    on newer V13 builds and all V14+ builds.
         //    Earlier versions extract file-by-file through FilePicker.
         let success;
-        if ((game.release?.generation ?? 0) >= 14) {
+        if ((game.release?.generation ?? 0) >= 13) {
             success = await this._installViaSetup(moduleId, version, urlData.url);
         } else {
             ui.notifications.info(`Downloading ${moduleId} v${version}...`);
