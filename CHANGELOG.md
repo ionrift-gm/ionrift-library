@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.9.2] - 2026-04-23
+
+### Fixed
+- **Module installs on newer V13 builds.** The server-side install path added in v1.9.1 was gated to V14 only, but recent V13 builds (351+) enforce the same upload restrictions. Installs via the Patreon panel now use the server-side route on V13 as well, fixing the silent failure where directories were created but no files were written.
+
 ## [1.9.1] - 2026-04-21
 
 ### Fixed
