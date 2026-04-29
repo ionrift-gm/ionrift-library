@@ -155,7 +155,7 @@ export class TestHarnessRunner {
         } else {
             for (const r of result.results) {
                 const rIcon = r.status === "pass" ? "✅" : r.status === "warn" ? "⚠️" : "❌";
-                const msg = r.message ? ` — ${r.message}` : "";
+                const msg = r.message ? `: ${r.message}` : "";
                 console.log(`  ${rIcon} ${r.name}${msg}`);
             }
         }
@@ -197,7 +197,7 @@ export class TestHarnessRunner {
         for (const suite of report.suites) {
             const icon = suite.failed > 0 ? "❌" : suite.skipped ? "⏭️" : "✅";
             lines.push(`## ${icon} ${suite.name} (${suite.moduleId})`);
-            lines.push(`${suite.passed}/${suite.total} passed — ${suite.duration}ms`);
+            lines.push(`${suite.passed}/${suite.total} passed, ${suite.duration}ms`);
             lines.push(``);
 
             if (suite.skipped) {

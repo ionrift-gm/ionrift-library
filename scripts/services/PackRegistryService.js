@@ -538,12 +538,12 @@ export class PackRegistryService {
             yes: {
                 label: action === "install" ? "Install Now" : "Update Now",
                 icon:  "fas fa-download",
-                callback: () => ui.notifications.info("Preview only — no install triggered.")
+                callback: () => ui.notifications.info("Preview only, no install triggered.")
             },
             no: {
                 label: "Later",
                 icon:  "fas fa-clock",
-                callback: () => ui.notifications.info("Preview only — no snooze triggered.")
+                callback: () => ui.notifications.info("Preview only, no snooze triggered.")
             }
         });
     }
