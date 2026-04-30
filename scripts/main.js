@@ -302,6 +302,20 @@ Hooks.once('ready', async () => {
         }
     });
 
+    TestHarnessRunner.register("ionrift-library-roster", {
+        name: "Party Roster",
+        description: "Headless unit tests for the PartyRoster kernel service",
+        runFn: async () => {
+            try {
+                const { runPartyRosterTests } = await import("./tests/PartyRosterTests.js");
+                return runPartyRosterTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "PartyRosterTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
+        }
+    });
+
     // Init Session Tracker
     SessionTracker.init();
 
