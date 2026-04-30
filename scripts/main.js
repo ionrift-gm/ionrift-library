@@ -117,7 +117,9 @@ Hooks.once('init', () => {
         /** Creates a module-specific Logger proxy (log/info/warn/error). Usage: game.ionrift.library.createLogger("Respite") */
         createLogger: (label) => Logger.createModuleProxy(label),
         /** PartyRoster service: authoritative party membership (getMembers, getRosterIds, isRostered). */
-        party: PartyRoster
+        party: PartyRoster,
+        /** PartyRosterApp: the settings-style UI for managing party membership. Available for consumer modules. */
+        PartyRosterApp
     };
 
     // Expose Service Globally (outside lib namespace)
