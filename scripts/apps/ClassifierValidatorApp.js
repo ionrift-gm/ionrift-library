@@ -199,7 +199,7 @@ export class ClassifierValidatorApp extends FormApplication {
     }
 
     _formatSoundKey(key) {
-        if (!key) return "—";
+        if (!key) return "-";
         if (key === "MONSTER_GENERIC") return "Generic Monster";
         if (key === "NPC_GENERIC") return "Generic NPC";
         // "syrinscape:element:1234" -> "Syrinscape Element"
