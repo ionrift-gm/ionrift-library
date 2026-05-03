@@ -1,13 +1,10 @@
 # Changelog
 
-## [2.0.0] - 2026-05-03
+## [2.0.1] - 2026-05-03
 
 ### Added
 - **Party Roster service.** Shared party membership tracking exposed at `game.ionrift.library.partyRoster`. Consumer modules (Respite, Quartermaster) use a single roster instead of maintaining independent party lists.
 - **PartyRosterApp** configuration UI for managing party membership from the library settings panel.
-
-### Changed
-- Em-dashes replaced with plain punctuation in all user-facing strings for consistency across platforms.
 
 ## [1.9.2] - 2026-04-23
 
