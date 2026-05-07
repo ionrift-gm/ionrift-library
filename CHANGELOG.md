@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.0.2] - 2026-05-07
+
+### Fixed
+- The Resonance v2.2.2 advisory notification has been removed. The notice was intended to appear once for users on an affected version, but was instead firing for any fresh install where the dismissal flag had never been set.
+
 ## [2.0.1] - 2026-05-03
 
 ### Added

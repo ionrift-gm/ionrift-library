@@ -191,12 +191,14 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // One-time advisory flag (Resonance v2.2.2 case-sensitivity fix)
+    // One-time advisory flag (Resonance v2.2.2) — kept for backward compat;
+    // the notification was removed in a later release. Existing worlds may have
+    // this stored; re-registering prevents a settings-load error.
     game.settings.register("ionrift-library", "resonanceAdvisory222Shown", {
         scope: "world",
         config: false,
         type: Boolean,
-        default: false
+        default: true
     });
 
     // Party Roster
@@ -372,23 +374,6 @@ Hooks.once('ready', async () => {
         // Consumers that need the index (e.g. Resonance for Adaptive Sounds) enforce
         // setup through their own attunement UI. The wizard remains accessible via
         // the Settings header button (ionrift-library settings page).
-
-        // One-time advisory: Resonance v2.2.2 case-sensitivity fix
-        try {
-            const shown = game.settings.get("ionrift-library", "resonanceAdvisory222Shown");
-            if (!shown) {
-                const resonance = game.modules.get("ionrift-resonance");
-                if (resonance) {
-                    ui.notifications.warn(
-                        "Ionrift Resonance v2.2.2 fixes a critical bug that prevented the module from loading on Linux-hosted servers (Molten, Forge, etc). If Resonance wasn't working for you before, update it in the package manager. (Settings > Manage Modules > Update)",
-                        { permanent: true }
-                    );
-                }
-                game.settings.set("ionrift-library", "resonanceAdvisory222Shown", true);
-            }
-        } catch (e) {
-            // Graceful fail - don't block startup for an advisory
-        }
 
         // Backward-compat shim: if ionrift-cloud module is NOT installed,
         // expose downloadPack on game.ionrift.cloud for any consumer still using the old path.
