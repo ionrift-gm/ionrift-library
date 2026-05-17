@@ -7,6 +7,7 @@ import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js"; // Impo
 import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
 import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
 import { SettingsLayout } from "./SettingsLayout.js";
+import * as SettingsVisibility from "./SettingsVisibility.js";
 import { IntegrationStatus } from "./services/IntegrationStatus.js";
 // import { StatusIndicatorManager } from "./services/StatusIndicatorManager.js"; // Removed
 
@@ -20,7 +21,8 @@ import { ZipImporterService } from "./services/ZipImporterService.js";
 import { JsonPackService } from "./services/JsonPackService.js";
 import { SessionTracker } from "./services/SessionTracker.js";
 import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
-import { SystemAdapter } from "./services/SystemAdapter.js";
+import { adapterRegistry } from "./services/SystemAdapterRegistry.js";
+import { IonriftSystemAdapter } from "./services/IonriftSystemAdapter.js";
 import { PackRegistryService } from "./services/PackRegistryService.js";
 import { AbstractPackRegistryApp } from "./apps/AbstractPackRegistryApp.js";
 import { CloudRelayService } from "./services/CloudRelayService.js";
@@ -30,6 +32,7 @@ import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
 import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
+import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -59,6 +62,7 @@ Hooks.once('init', () => {
         DiagnosticService, // Expose Class
         Logger, // Expose Class
         SettingsLayout, // Expose Class
+        SettingsVisibility,
         confirm: DialogHelper.confirm, // Centralized confirm dialog utility
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
@@ -77,7 +81,13 @@ Hooks.once('init', () => {
         runDiagnostics: () => DiagnosticService.instance.showResults(),
         sessions: SessionTracker,
         /** System Adapter — system-agnostic actor queries (level, spells, classes). */
-        system: SystemAdapter,
+        system: adapterRegistry,
+        adapterRegistry,
+        IonriftSystemAdapter,
+        /** Terrain registry. Canonical terrain list for all modules. */
+        terrains: terrainRegistry,
+        /** TerrainRegistry class. Exposed for consumers that need to extend or type-check. */
+        TerrainRegistry,
         /** Item Enrichment Engine — register module-specific enrichments here. */
         enrichment: ItemEnrichmentEngine,
         /** Cloud Relay — Patreon connection, tier checks, download relay. */
@@ -132,7 +142,8 @@ Hooks.once('init', () => {
         scope: "client",
         config: true,
         type: Boolean,
-        default: false
+        default: false,
+        restricted: true
     });
 
     // Session Log
@@ -320,8 +331,38 @@ Hooks.once('ready', async () => {
         }
     });
 
+    TestHarnessRunner.register("ionrift-library-adapters", {
+        name: "System Adapter Registry",
+        description: "Headless unit tests for IonriftSystemAdapter and the registry",
+        runFn: async () => {
+            try {
+                const { runAdapterTests } = await import("./tests/AdapterTests.js");
+                return runAdapterTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "AdapterTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
+        }
+    });
+
+    TestHarnessRunner.register("ionrift-library-terrains", {
+        name: "Terrain Registry",
+        description: "Headless unit tests for TerrainRegistry",
+        runFn: async () => {
+            try {
+                const { runTerrainTests } = await import("./tests/TerrainTests.js");
+                return runTerrainTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "TerrainTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
+        }
+    });
+
     // Init Session Tracker
     SessionTracker.init();
+
+    Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
     // Migrate party roster from Respite if needed
     PartyRoster.migrateFromRespite().catch(e =>

@@ -102,7 +102,7 @@ export class SettingsLayout {
                 type: class extends FormApplication {
                     render() { window.open(DISCORD_INVITE, "_blank"); return this; }
                 },
-                restricted: false
+                restricted: true
             });
         }
 
@@ -128,7 +128,7 @@ export class SettingsLayout {
                 type: class extends FormApplication {
                     render() { window.open(wiki, "_blank"); return this; }
                 },
-                restricted: false
+                restricted: true
             });
         }
     }

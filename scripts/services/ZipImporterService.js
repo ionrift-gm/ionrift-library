@@ -209,16 +209,17 @@ export class ZipImporterService {
             }
         }
 
-        for (const dir of [...dirsToCreate].sort()) {
-            await PlatformHelper.ensureDirectory(dir);
-        }
-
-        // Upload files
+        // Suppress batch toasts for both directory creation and file uploads.
+        // Foundry's createDirectory emits noisy 'does not exist' errors
+        // during recursive creation, and uploads emit per-file 'saved to' info.
         let imported = 0;
         let skipped = 0;
-
-        // Suppress per-file "saved to" toasts during batch upload.
         await PlatformHelper.withSuppressedToasts(async () => {
+            for (const dir of [...dirsToCreate].sort()) {
+                await PlatformHelper.ensureDirectory(dir);
+            }
+
+            // Upload files
             for (let i = 0; i < entries.length; i++) {
                 const { path, entry } = entries[i];
 

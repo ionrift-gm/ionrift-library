@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.0] - 2026-05-10
+
+### Added
+
+- System adapters are now registered per system instead of a single static class. Modules can register adapters for systems the library does not ship with using `game.ionrift.library.adapterRegistry.register(adapter)`. Calls on `game.ionrift.library.system` behave the same as before.
+
+- DnD5e, PF2e, and Daggerheart adapters now expose item helpers (`getRarity`, `getPrice`, `getWeight`, `requiresAttunement`, `getItemCategory`) alongside the existing actor helpers.
+
+- `game.ionrift.library.terrains` holds the shared terrain registry: the canonical terrain list for the world. Content packs and modules can register more entries with `game.ionrift.library.terrains.register(def)` from an `ionrift.terrainsReady` hook callback.
+
 ## [2.0.2] - 2026-05-07
 
 ### Fixed

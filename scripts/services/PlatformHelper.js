@@ -73,10 +73,9 @@ export class PlatformHelper {
     /**
      * Creates a directory if it doesn't already exist. Idempotent.
      *
-     * Checks for the directory via `FP.browse()` first; if that fails
-     * (directory doesn't exist), creates it via `FP.createDirectory()`.
-     * Swallows errors from createDirectory (may already exist or be
-     * platform-restricted).
+     * Walks each segment of the path from root to leaf, ensuring each
+     * ancestor exists before creating the next level. This is necessary
+     * because Foundry's createDirectory does not create parent directories.
      *
      * @param {string} dirPath - The directory path to ensure exists.
      * @param {string} [source] - Override the file source. Defaults to `this.fileSource`.
@@ -86,14 +85,19 @@ export class PlatformHelper {
         if (!FP) return;
 
         const src = source ?? this.fileSource;
+        const segments = dirPath.split("/").filter(Boolean);
+        let current = "";
 
-        try {
-            await FP.browse(src, dirPath);
-        } catch {
+        for (const segment of segments) {
+            current = current ? `${current}/${segment}` : segment;
             try {
-                await FP.createDirectory(src, dirPath);
+                await FP.browse(src, current);
             } catch {
-                // Idempotent — directory may already exist or platform may block creation.
+                try {
+                    await FP.createDirectory(src, current);
+                } catch {
+                    // Idempotent — directory may already exist or platform may block creation.
+                }
             }
         }
     }
@@ -162,11 +166,16 @@ export class PlatformHelper {
     // ─── Toast Suppression ───────────────────────────────────────
 
     /**
-     * Executes a callback with FilePicker "saved to" toast notifications
-     * suppressed. Restores the original handler even if the callback throws.
+     * Executes a callback with batch-operation toast notifications
+     * suppressed. Restores original handlers even if the callback throws.
+     *
+     * Suppresses:
+     *   - info:  "saved to" (per-file upload confirmations)
+     *   - error: "Target directory…does not exist" (Foundry's createDirectory noise)
+     *   - warn:  "Target directory…does not exist" (some Foundry versions use warn)
      *
      * Use this when performing batch uploads (zip extraction, module install)
-     * where per-file "saved to" toasts would flood the notification area.
+     * where per-file toasts would flood the notification area.
      *
      * @param {Function} fn - Async callback to execute with suppressed toasts.
      * @returns {Promise<*>} The return value of the callback.
@@ -174,16 +183,29 @@ export class PlatformHelper {
     static async withSuppressedToasts(fn) {
         if (typeof ui === "undefined" || !ui.notifications) return fn();
 
-        const original = ui.notifications.info;
+        const origInfo = ui.notifications.info;
+        const origError = ui.notifications.error;
+        const origWarn = ui.notifications.warn;
+
         ui.notifications.info = function (msg, ...args) {
             if (typeof msg === "string" && msg.includes("saved to")) return;
-            return original.call(this, msg, ...args);
+            return origInfo.call(this, msg, ...args);
+        };
+        ui.notifications.error = function (msg, ...args) {
+            if (typeof msg === "string" && msg.includes("does not exist")) return;
+            return origError.call(this, msg, ...args);
+        };
+        ui.notifications.warn = function (msg, ...args) {
+            if (typeof msg === "string" && msg.includes("does not exist")) return;
+            return origWarn.call(this, msg, ...args);
         };
 
         try {
             return await fn();
         } finally {
-            ui.notifications.info = original;
+            ui.notifications.info = origInfo;
+            ui.notifications.error = origError;
+            ui.notifications.warn = origWarn;
         }
     }
 }
