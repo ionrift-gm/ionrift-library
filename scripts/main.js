@@ -462,13 +462,9 @@ Hooks.once('ready', async () => {
         // Pack update check (daily, non-blocking)
         PackRegistryService.checkForUpdates().catch(e => console.warn("Ionrift | Registry check failed:", e));
 
-        // Overlay content check — gated by feature flag (default: false).
-        // Enable in a dev world via:
+        // Overlay checks run when the GM opens Patreon Library, not on world ready.
+        // Enable overlays in a dev world via:
         //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
-        // EA user worlds are unaffected until this is explicitly enabled.
-        if (game.settings.get("ionrift-library", "overlayDistributionEnabled")) {
-            OverlayService.checkAvailable().catch(e => console.warn("Ionrift | Overlay check failed:", e));
-        }
     }
 });
 

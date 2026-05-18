@@ -24,9 +24,6 @@ const STATUS_PRIORITY = [
     "locked"
 ];
 
-/** Debug-only: inject fake tiles to test grid scroll. Keep at 0 for release. */
-const _DEBUG_STUB_TILES = 0;
-
 /**
  * Patreon Library
  * GM-only one-stop panel for subscription benefits:
@@ -59,10 +56,20 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     /** @type {boolean} */
     _manageOpen = false;
 
+    /** @type {boolean} */
+    _overlayRegistrySynced = false;
+
     /** @override */
     async _prepareContext() {
         const isConnected = CloudRelayService.isConnected();
         const userTier = isConnected ? (CloudRelayService.getTierClaim() || "Free") : null;
+
+        if (isConnected
+            && game.settings.get("ionrift-library", "overlayDistributionEnabled")
+            && !this._overlayRegistrySynced) {
+            this._overlayRegistrySynced = true;
+            await OverlayService.refresh();
+        }
 
         if (!isConnected) {
             return {
@@ -102,7 +109,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             else status = "up-to-date";
 
             let contents = null;
-            if (hasAccess) contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
+            if (hasAccess && local) {
+                contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
+            }
 
             overlays.push({
                 overlayId,
@@ -127,7 +136,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
 
         const groups = this._buildGroups(overlays);
-        this._appendStubTiles(groups);
 
         if (this._view === "detail" && this._selectedModuleId
             && !groups.some(g => g.moduleId === this._selectedModuleId)) {
@@ -314,64 +322,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return true;
     }
 
-    /** TEMP DEBUG: append fake module groups to verify grid scroll. */
-    _appendStubTiles(groups) {
-        if (!_DEBUG_STUB_TILES) return;
-        const stubNames = [
-            ["Cartographer", "fa-map", "#5DA8C9"],
-            ["Loremaster",   "fa-book-open", "#D9A85D"],
-            ["Wayfarer",     "fa-compass", "#7BCBA4"],
-            ["Soothsayer",   "fa-eye", "#B8A4D9"],
-            ["Smithwright",  "fa-hammer", "#E07A4F"],
-            ["Veilkeeper",   "fa-mask", "#9B7BC4"],
-            ["Stargazer",    "fa-moon", "#5D8FD9"],
-            ["Herald",       "fa-bullhorn", "#D95D9B"],
-            ["Embertongue",  "fa-fire", "#E04F4F"],
-            ["Tidereader",   "fa-water", "#4FB4E0"]
-        ];
-        const tiers = ["Free", "Initiate", "Acolyte", "Artificer"];
-        for (let i = 0; i < _DEBUG_STUB_TILES; i++) {
-            const [name, icon, accent] = stubNames[i % stubNames.length];
-            const tier = tiers[i % tiers.length];
-            const status = i % 3 === 0 ? "not-installed" : i % 3 === 1 ? "up-to-date" : "module-inactive";
-            const stubEntitled = (i % 4) + 1;
-            const stubInstalled = status === "up-to-date" ? stubEntitled : Math.floor(stubEntitled / 2);
-            groups.push({
-                moduleId: `stub-${i}`,
-                moduleName: `Ionrift ${name}`,
-                moduleIcon: icon,
-                moduleAccent: accent,
-                isModuleActive: status !== "module-inactive",
-                entitledCount: stubEntitled,
-                installedCount: stubInstalled,
-                overlays: [{
-                    overlayId: `stub-${i}-overlay`,
-                    moduleId: `stub-${i}`,
-                    moduleName: `Ionrift ${name}`,
-                    moduleIcon: icon,
-                    moduleAccent: accent,
-                    tier,
-                    tierRank: 0,
-                    sublayer: tier.toLowerCase(),
-                    description: "Stub tile for scroll testing.",
-                    latestVersion: "0.1.0",
-                    installedVersion: status === "up-to-date" ? "0.1.0" : null,
-                    installedAt: null,
-                    status,
-                    hasAccess: true,
-                    isModuleActive: status !== "module-inactive",
-                    contents: null,
-                    lastError: null,
-                    hasError: false
-                }],
-                status,
-                hasError: false,
-                hasAccess: true,
-                packCount: 1
-            });
-        }
-    }
-
     /**
      * Build the early-access offers list from a registry payload.
      * @param {Object|null} registry
@@ -474,6 +424,24 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return name.replace(/^Ionrift\s+/i, "");
     }
 
+    /**
+     * Classification noun for an overlay, derived from its sublayer.
+     * Mirrors `PACK_CLASSIFICATION_POLICY.md`. Independent of audience tier.
+     * @param {string} sublayer
+     * @returns {string}
+     */
+    _packClassLabel(sublayer) {
+        switch (sublayer) {
+            case "free":      return "Core pack";
+            case "initiate":  return "Standard pack";
+            case "acolyte":
+            case "premium":   return "Premium pack";
+            case "weaver":    return "Weaver pack";
+            case "artificer": return "Artificer pack";
+            default:          return "Content pack";
+        }
+    }
+
     _renderModuleTile(group, compact = false) {
         const status = this._tileStatusDisplay(group);
         const classes = [
@@ -487,10 +455,11 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         ].filter(Boolean).join(" ");
 
         const shortName = this._shortModuleName(group.moduleName);
-        const showProgress = group.entitledCount > 1;
+        const showProgress = group.entitledCount > 0;
         const isComplete = showProgress && group.installedCount === group.entitledCount;
+        const packWord = group.entitledCount === 1 ? "pack" : "packs";
         const packMeta = showProgress
-            ? `<span class="overlay-tile-meta ${isComplete ? "is-complete" : ""}">${group.installedCount}/${group.entitledCount} packs</span>`
+            ? `<span class="overlay-tile-meta ${isComplete ? "is-complete" : ""}">${group.installedCount}/${group.entitledCount} ${packWord}</span>`
             : "";
 
         return `
@@ -576,7 +545,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         </section>`;
     }
 
-    /** Content packs section header (count + Install All + Check Now). */
+    /** Content packs section header (count + Install All + Check for updates). */
     _buildPacksSectionHead(context) {
         const modWord = context.overlayCount === 1 ? "module" : "modules";
         let summary = `${context.overlayCount} ${modWord}`;
@@ -599,7 +568,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             <span class="overlay-mgr-section-summary">${summary}</span>
             ${installAllBtn}
             <button type="button" class="overlay-mgr-check-btn" data-action="check-now">
-                <i class="fas fa-sync"></i> Check Now
+                <i class="fas fa-sync"></i> Check for updates
             </button>
         </header>`;
     }
@@ -687,7 +656,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const contents = overlay.contents;
         const summary = contents?.summary ?? overlay.description ?? "";
         const actionHtml = this._renderDetailAction(overlay);
-        const errorHtml = this._formatDetailError(overlay.lastError, overlay.status);
+        const errorHtml = this._formatDetailError(overlay.lastError, overlay.status, overlay.overlayId);
         const showBody = overlay.hasAccess && overlay.status !== "locked";
 
         let categoriesHtml = "";
@@ -713,10 +682,13 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             ? `Installed v${overlay.installedVersion}`
             : `Latest v${overlay.latestVersion}`;
 
+        const classLabel = this._packClassLabel(overlay.sublayer);
+
         return `
         <div class="overlay-tier-block overlay-tier-block--${overlay.status}">
             <div class="overlay-tier-block-head">
                 <span class="overlay-tier-pill">${overlay.tier}</span>
+                <span class="overlay-pack-class">${classLabel}</span>
                 <div class="overlay-tier-block-action">${actionHtml}</div>
             </div>
             ${lockedNote}
@@ -740,10 +712,19 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
     }
 
-    _formatDetailError(lastError, status) {
+    _formatDetailError(lastError, status, overlayId) {
         if (!lastError || (status !== "not-installed" && status !== "update-available")) return "";
-        if (lastError.stage === "fetch" || lastError.status === 404) return "Archive not on server yet. Try Check Now later.";
-        if (lastError.stage === "requestDownload") return "Download is not available right now. Try Check Now later.";
-        return "Install did not complete. Try again or use Check Now.";
+        const name = overlayId ? `<strong>${overlayId}</strong>` : "This pack";
+
+        if (lastError.stage === "requestDownload") {
+            if (lastError.status === 404) {
+                return `${name} is not on the server yet. The registry may list an id that has not been published. Use <strong>Check for updates</strong> after publish.`;
+            }
+            return `${name} could not be downloaded. Try <strong>Install</strong> again, or use <strong>Check for updates</strong>.`;
+        }
+        if (lastError.stage === "fetch") {
+            return `${name} could not be fetched from storage. The download link may have expired. Use <strong>Check for updates</strong>, then install again.`;
+        }
+        return `Install did not complete for ${name}. Try again.`;
     }
 }

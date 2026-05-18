@@ -131,6 +131,45 @@ export class PlatformHelper {
         }
     }
 
+    /**
+     * Read JSON from a data-relative path. Uses FilePicker.browse first so
+     * missing files do not spam the network console with 404 GET errors.
+     * @param {string} path - Data-relative file path
+     * @returns {Promise<Object|null>}
+     */
+    static async readDataJson(path) {
+        const normalized = path.replace(/\\/g, "/");
+        const slash = normalized.lastIndexOf("/");
+        if (slash < 0) return null;
+
+        const dir = normalized.substring(0, slash);
+        const fileName = normalized.substring(slash + 1);
+        const FP = this.FP;
+
+        if (FP) {
+            try {
+                const browse = await FP.browse(this.fileSource, dir);
+                const files = browse.files ?? [];
+                const exists = files.some((filePath) => {
+                    const base = filePath.split("/").pop();
+                    return base === fileName || filePath.endsWith(`/${fileName}`);
+                });
+                if (!exists) return null;
+            } catch {
+                return null;
+            }
+        }
+
+        try {
+            const url = await this.resolveAssetUrl(normalized);
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            return await response.json();
+        } catch {
+            return null;
+        }
+    }
+
     // ─── JSZip Loading ───────────────────────────────────────────
 
     /**

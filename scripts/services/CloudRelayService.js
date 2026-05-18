@@ -134,12 +134,15 @@ export class CloudRelayService {
      * Request a presigned download URL for a pack or module.
      * @param {string} packId
      * @param {string} version
+     * @param {{ silent?: boolean }} [options]  When true, log only; no Foundry toast.
      * @returns {Promise<{url?: string, expiresAt?: string, status?: number, error?: string}|null>}
      */
-    static async requestDownload(packId, version) {
+    static async requestDownload(packId, version, options = {}) {
+        const { silent = false } = options;
+        const label = `${packId} v${version}`;
         const sigil = this.getSigil();
         if (!sigil) {
-            console.warn("CloudRelay | No Sigil — cannot request download.");
+            console.warn(`CloudRelay | No Sigil — cannot request download for ${label}.`);
             return { status: 401, error: "Not connected to Patreon" };
         }
 
@@ -155,38 +158,59 @@ export class CloudRelayService {
 
             if (!response.ok) {
                 const msg = await response.text();
-                console.warn(`CloudRelay | Download denied (${response.status}):`, msg);
-                if (response.status === 401) {
-                    ui.notifications.error(
-                        "Patreon connection missing. Go to <strong>Ionrift Library → Patreon</strong> and connect your account.",
-                        { permanent: true }
-                    );
-                } else if (response.status === 403) {
-                    // Auth gate returns "Invalid authentication token" for expired/bad JWTs.
-                    // Tier gate returns "Your subscription tier does not include this pack."
-                    const isAuthFailure = msg.toLowerCase().includes("invalid authentication")
-                        || msg.toLowerCase().includes("token");
-                    if (isAuthFailure) {
-                        ui.notifications.error(
-                            "Your Patreon connection has expired. Go to <strong>Ionrift Library → Patreon</strong>, disconnect, and reconnect.",
-                            { permanent: true }
-                        );
-                    } else {
-                        ui.notifications.warn("Your subscription tier does not include this content.");
-                    }
-                } else if (response.status === 404) {
-                    ui.notifications.warn(`Pack not found on the server. It may not be published yet.`);
-                } else {
-                    ui.notifications.error(`Download failed (HTTP ${response.status}). Try again later.`);
+                console.warn(`CloudRelay | Download denied (${response.status}) for ${label}:`, msg);
+                if (!silent) {
+                    this._notifyDownloadFailure(response.status, msg, packId, version);
                 }
                 return { status: response.status, error: msg || `HTTP ${response.status}` };
             }
 
             return await response.json();
         } catch (e) {
-            console.error("CloudRelay | Download request failed:", e);
+            console.error(`CloudRelay | Download request failed for ${label}:`, e);
+            if (!silent) {
+                ui.notifications.error(`Download failed for ${packId} (${version}). Try again later.`);
+            }
             return { status: 0, error: e?.message ?? "Network error" };
         }
+    }
+
+    /**
+     * @param {number} status
+     * @param {string} msg
+     * @param {string} packId
+     * @param {string} version
+     * @private
+     */
+    static _notifyDownloadFailure(status, msg, packId, version) {
+        const named = `<strong>${packId}</strong> (${version})`;
+        if (status === 401) {
+            ui.notifications.error(
+                `Patreon connection missing. Connect in <strong>Ionrift Library</strong> before downloading ${named}.`,
+                { permanent: true }
+            );
+            return;
+        }
+        if (status === 403) {
+            const isAuthFailure = msg.toLowerCase().includes("invalid authentication")
+                || msg.toLowerCase().includes("token");
+            if (isAuthFailure) {
+                ui.notifications.error(
+                    "Your Patreon connection has expired. Go to <strong>Ionrift Library</strong>, disconnect, and reconnect.",
+                    { permanent: true }
+                );
+            } else {
+                ui.notifications.warn(`Your subscription tier does not include ${named}.`);
+            }
+            return;
+        }
+        if (status === 404) {
+            ui.notifications.warn(
+                `Could not download ${named}. The server has no file for that pack yet. Details are in the Patreon Library panel.`
+            );
+            return;
+        }
+        ui.notifications.error(`Download failed for ${named} (HTTP ${status}). Try again from Patreon Library.`);
     }
 
     // ── Internal ─────────────────────────────────────────────

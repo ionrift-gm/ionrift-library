@@ -690,6 +690,13 @@
     gap: 0.5rem;
 }
 
+.ionrift-window .overlay-pack-class {
+    font-size: 0.72rem;
+    color: rgba(196, 181, 253, 0.65);
+    letter-spacing: 0.01em;
+    margin-right: auto;
+}
+
 .ionrift-window .overlay-detail-summary {
     margin: 0;
     font-size: 0.78rem;

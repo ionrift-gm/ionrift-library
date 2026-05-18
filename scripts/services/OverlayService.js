@@ -61,11 +61,8 @@ export class OverlayService {
 
     /**
      * Check which overlays are available and which need updating.
-     * Called on Foundry ready hook (GM only). Does NOT download
-     * premium overlays — those are user-initiated.
-     *
-     * Free-tier overlays are auto-downloaded on first connection
-     * (the "welcome" flow).
+     * Compares the remote registry to local installs (GM only).
+     * Does not download. Patreon Library or installOverlay() handles installs.
      */
     static async checkAvailable() {
         if (!game.user.isGM) return;
@@ -109,17 +106,6 @@ export class OverlayService {
             });
         }
 
-        const freeUpdates = this.pendingOverlays.filter(p => p.sublayer === "free" && p.isNew);
-        if (freeUpdates.length > 0) {
-            Logger.info(MODULE_LABEL, `Auto-downloading ${freeUpdates.length} free overlay(s)...`);
-            for (const pending of freeUpdates) {
-                const ok = await this._downloadAndExtract(pending.overlayId, pending.entry, pending.sublayer);
-                if (ok) {
-                    this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== pending.overlayId);
-                }
-            }
-        }
-
         this._lastCheckTimestamp = Date.now();
 
         if (game?.ionrift?.library) {
@@ -146,7 +132,12 @@ export class OverlayService {
             return false;
         }
 
-        const ok = await this._downloadAndExtract(pending.overlayId, pending.entry, pending.sublayer);
+        const ok = await this._downloadAndExtract(
+            pending.overlayId,
+            pending.entry,
+            pending.sublayer,
+            { userInitiated: true }
+        );
         if (ok) {
             this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== overlayId);
         }
@@ -160,7 +151,12 @@ export class OverlayService {
     static async installAllPending() {
         let count = 0;
         for (const pending of [...this.pendingOverlays]) {
-            const ok = await this._downloadAndExtract(pending.overlayId, pending.entry, pending.sublayer);
+            const ok = await this._downloadAndExtract(
+                pending.overlayId,
+                pending.entry,
+                pending.sublayer,
+                { userInitiated: true }
+            );
             if (ok) count++;
         }
         this.pendingOverlays = [];
@@ -201,7 +197,7 @@ export class OverlayService {
             tier: entry.tier,
         };
         Logger.info(MODULE_LABEL, `Direct install requested for ${overlayId} v${entry.version} (registry bypass).`);
-        return await this._downloadAndExtract(overlayId, installEntry, sublayer);
+        return await this._downloadAndExtract(overlayId, installEntry, sublayer, { userInitiated: true });
     }
 
     /**
@@ -225,9 +221,7 @@ export class OverlayService {
             }
         }
 
-        if (data) {
-            this._manifestCache.set(cacheKey, data);
-        }
+        this._manifestCache.set(cacheKey, data ?? null);
         return data;
     }
 
@@ -251,15 +245,10 @@ export class OverlayService {
         }
 
         for (const filePath of paths) {
-            try {
-                const url = await PlatformHelper.resolveAssetUrl(filePath);
-                const response = await fetch(url);
-                if (!response.ok) continue;
-                const data = await response.json();
+            const data = await PlatformHelper.readDataJson(filePath);
+            if (data) {
                 this._contentsCache.set(cacheKey, data);
                 return data;
-            } catch {
-                // try next path
             }
         }
 
@@ -329,15 +318,11 @@ export class OverlayService {
      */
     static async readOverlayFile(moduleId, sublayer, relativePath) {
         const filePath = `${this.getOverlayPath(moduleId, sublayer)}/${relativePath}`;
-        try {
-            const url = await PlatformHelper.resolveAssetUrl(filePath);
-            const response = await fetch(url);
-            if (!response.ok) return null;
-            return await response.json();
-        } catch (e) {
-            Logger.warn(MODULE_LABEL, `Failed to read overlay file: ${filePath}`, e.message);
-            return null;
+        const data = await PlatformHelper.readDataJson(filePath);
+        if (!data) {
+            Logger.log(MODULE_LABEL, `Overlay file not present: ${filePath}`);
         }
+        return data;
     }
 
     /**
@@ -378,14 +363,7 @@ export class OverlayService {
      */
     static async _readManifestAt(moduleId, sublayer) {
         const manifestPath = `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}/overlay-manifest.json`;
-        try {
-            const url = await PlatformHelper.resolveAssetUrl(manifestPath);
-            const response = await fetch(url);
-            if (!response.ok) return null;
-            return await response.json();
-        } catch {
-            return null;
-        }
+        return await PlatformHelper.readDataJson(manifestPath);
     }
 
     /**
@@ -411,14 +389,20 @@ export class OverlayService {
      * @param {string} overlayId
      * @param {Object} entry
      * @param {string} sublayer
+     * @param {{ userInitiated?: boolean }} [options]
      * @returns {Promise<boolean>}
      * @private
      */
-    static async _downloadAndExtract(overlayId, entry, sublayer) {
+    static async _downloadAndExtract(overlayId, entry, sublayer, options = {}) {
+        const { userInitiated = false } = options;
         Logger.info(MODULE_LABEL, `Downloading overlay: ${overlayId} v${entry.latest} → ${entry.moduleId}/${sublayer}`);
 
         try {
-            const download = await CloudRelayService.requestDownload(overlayId, entry.latest);
+            const download = await CloudRelayService.requestDownload(
+                overlayId,
+                entry.latest,
+                { silent: !userInitiated }
+            );
             if (!download?.url) {
                 this._recordError(
                     overlayId,
@@ -435,7 +419,7 @@ export class OverlayService {
                 this._recordError(
                     overlayId,
                     "fetch",
-                    "Archive not found or expired",
+                    "Download file not found or link expired",
                     response.status
                 );
                 Logger.error(MODULE_LABEL, `Failed to fetch overlay ZIP (HTTP ${response.status}).`);
@@ -471,7 +455,9 @@ export class OverlayService {
 
             this._clearError(overlayId);
             Logger.info(MODULE_LABEL, `Overlay installed: ${overlayId} v${entry.latest}`);
-            ui?.notifications?.info(`Premium content updated: ${overlayId}`);
+            if (userInitiated) {
+                ui?.notifications?.info(`Content installed: ${overlayId} (${entry.latest})`);
+            }
             return true;
 
         } catch (e) {
