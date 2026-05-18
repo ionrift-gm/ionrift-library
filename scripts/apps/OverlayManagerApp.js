@@ -96,12 +96,13 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         for (const [overlayId, entry] of Object.entries(overlayMap)) {
             const mod = game.modules.get(entry.moduleId);
-            const sublayer = OverlayService.tierToSublayer(entry.tier);
+            const sublayer = OverlayService.resolveSublayer(entry);
             const meta = PackRegistryService.MODULE_DISPLAY_META[entry.moduleId] ?? {};
             const reqRank = TIER_ORDER.indexOf(entry.tier);
             const hasAccess = userRank >= 0 && userRank >= reqRank;
             const local = await OverlayService.getLocalManifest(entry.moduleId, sublayer);
             const lastError = OverlayService.getLastError(overlayId);
+            const localMatches = local && local.overlayId === overlayId;
 
             const isModuleOutdated = !!(entry.minModuleVersion && mod?.active
                 && PackRegistryService._compareVersions(mod.version, entry.minModuleVersion) < 0);
@@ -110,12 +111,12 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             if (!hasAccess) status = "locked";
             else if (!mod?.active) status = "module-inactive";
             else if (isModuleOutdated) status = "module-outdated";
-            else if (!local) status = "not-installed";
+            else if (!localMatches) status = "not-installed";
             else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) status = "update-available";
             else status = "up-to-date";
 
             let contents = null;
-            if (hasAccess && local) {
+            if (hasAccess && localMatches) {
                 contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
             }
 
@@ -128,6 +129,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 tier: entry.tier,
                 tierRank: reqRank,
                 sublayer,
+                packLabel: entry.packLabel ?? null,
                 description: entry.description ?? "",
                 latestVersion: entry.latest,
                 installedVersion: local?.version ?? null,
@@ -503,7 +505,10 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
      * @param {string} sublayer
      * @returns {string}
      */
-    _packClassLabel(sublayer) {
+    _packClassLabel(sublayer, overlayId = "") {
+        if (overlayId.includes("frost-stone") || sublayer === "frost-stone") {
+            return "Frost & Stone pack";
+        }
         switch (sublayer) {
             case "free":      return "Core pack";
             case "initiate":  return "Standard pack";
@@ -774,7 +779,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             ? `Installed v${overlay.installedVersion}`
             : `Latest v${overlay.latestVersion}`;
 
-        const classLabel = this._packClassLabel(overlay.sublayer);
+        const classLabel = overlay.packLabel
+            ?? this._packClassLabel(overlay.sublayer, overlay.overlayId);
 
         return `
         <div class="overlay-tier-block overlay-tier-block--${overlay.status}">

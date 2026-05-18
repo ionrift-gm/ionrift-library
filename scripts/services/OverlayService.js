@@ -60,6 +60,19 @@ export class OverlayService {
     }
 
     /**
+     * Filesystem sublayer for an overlay. Registry may set `sublayer` when a
+     * module ships multiple packs at the same tier (e.g. core + frost-stone).
+     * @param {{ tier?: string, sublayer?: string }} entry
+     * @returns {string}
+     */
+    static resolveSublayer(entry) {
+        if (entry?.sublayer && typeof entry.sublayer === "string") {
+            return entry.sublayer;
+        }
+        return this.tierToSublayer(entry?.tier);
+    }
+
+    /**
      * Check which overlays are available and which need updating.
      * Compares the remote registry to local installs (GM only).
      * Does not download. Patreon Library or installOverlay() handles installs.
@@ -93,16 +106,19 @@ export class OverlayService {
                 continue;
             }
 
-            const sublayer = this.tierToSublayer(entry.tier);
+            const sublayer = this.resolveSublayer(entry);
 
             const local = await this.getLocalManifest(entry.moduleId, sublayer);
-            if (local && this._compareVersions(local.version, entry.latest) >= 0) continue;
+            const isCurrent = local
+                && local.overlayId === overlayId
+                && this._compareVersions(local.version, entry.latest) >= 0;
+            if (isCurrent) continue;
 
             this.pendingOverlays.push({
                 overlayId,
                 entry,
                 sublayer,
-                isNew: !local
+                isNew: !local || local.overlayId !== overlayId
             });
         }
 
