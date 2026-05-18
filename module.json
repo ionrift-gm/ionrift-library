@@ -15,8 +15,10 @@
     ],
     "styles": [
         "styles/ionrift.css",
+        "styles/ionrift-library.css",
         "styles/zip-import-progress.css",
-        "styles/pack-registry.css"
+        "styles/pack-registry.css",
+        "styles/overlay-manager.css"
     ],
     "relationships": {
         "requires": []

@@ -1,0 +1,799 @@
+/* ── Purple Scrollbar Override (per UI handbook §2) ──────────────────
+   The library's .ionrift-window scrollbar rules lose to Foundry's
+   defaults due to CSS load order. Nuclear override scoped to the
+   Patreon Library app class to force purple on every descendant. */
+.ionrift-patreon-library,
+.ionrift-patreon-library * {
+    scrollbar-color: #6d28d9 rgba(0, 0, 0, 0.4) !important;
+    scrollbar-width: thin !important;
+}
+
+.ionrift-patreon-library ::-webkit-scrollbar,
+.ionrift-patreon-library *::-webkit-scrollbar {
+    width: 7px !important;
+    height: 7px !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.ionrift-patreon-library ::-webkit-scrollbar-track,
+.ionrift-patreon-library *::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-radius: 4px;
+}
+
+.ionrift-patreon-library ::-webkit-scrollbar-thumb,
+.ionrift-patreon-library *::-webkit-scrollbar-thumb {
+    background: #6d28d9 !important;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ionrift-patreon-library ::-webkit-scrollbar-thumb:hover,
+.ionrift-patreon-library *::-webkit-scrollbar-thumb:hover {
+    background: #8b5cf6 !important;
+}
+
+/* ── Patreon Library: subscription + EA + content overlays ──────────── */
+
+.ionrift-window .ionrift-overlay-manager {
+    padding: 0 1.1rem 0.9rem;
+    display: flex !important;
+    flex-direction: column;
+    gap: 1.35rem;
+    overflow-y: auto;
+    max-height: 78vh;
+    min-width: 0;
+}
+
+/* ── Subscription strip (top) ── */
+
+.ionrift-window .overlay-mgr-strip {
+    display: flex !important;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.85rem;
+    margin-top: 0.7rem;
+    border-radius: 8px;
+    background: rgba(139, 92, 246, 0.07);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-mgr-strip-main {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-mgr-strip-icon {
+    font-size: 1.1rem;
+    color: #f96854; /* Patreon coral */
+}
+
+.ionrift-window .overlay-mgr-strip-label {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.ionrift-window .overlay-mgr-strip-manage {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 4px;
+    padding: 0.22rem 0.65rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    flex-shrink: 0;
+    line-height: 1.35;
+}
+
+.ionrift-window .overlay-mgr-strip-manage:hover,
+.ionrift-window .overlay-mgr-strip-manage.is-open {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-mgr-manage-row {
+    display: flex !important;
+    gap: 0.4rem;
+    padding: 0 0.2rem 0.1rem;
+    margin-top: -0.4rem;
+    justify-content: flex-end;
+}
+
+.ionrift-window .overlay-mgr-manage-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 4px;
+    padding: 0.22rem 0.65rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    line-height: 1.35;
+}
+
+.ionrift-window .overlay-mgr-manage-btn:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-mgr-manage-btn--danger:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #fca5a5 !important;
+}
+
+/* ── Not-connected card ── */
+
+.ionrift-window .overlay-mgr-connect-card {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 2rem 1.5rem;
+    margin: 1rem 0.5rem;
+    border-radius: 10px;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1px solid rgba(139, 92, 246, 0.18);
+    text-align: center;
+}
+
+.ionrift-window .overlay-mgr-connect-icon {
+    font-size: 2.2rem;
+    color: #f96854;
+    margin-bottom: 0.2rem;
+}
+
+.ionrift-window .overlay-mgr-connect-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.ionrift-window .overlay-mgr-connect-body {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+    max-width: 32rem;
+}
+
+.ionrift-window .overlay-mgr-connect-btn {
+    margin-top: 0.5rem;
+    background: rgba(249, 104, 84, 0.18) !important;
+    border: 1px solid rgba(249, 104, 84, 0.7) !important;
+    color: #fecdd3 !important;
+    border-radius: 4px;
+    padding: 0.4rem 1rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: none !important;
+}
+
+.ionrift-window .overlay-mgr-connect-btn:hover {
+    background: rgba(249, 104, 84, 0.3) !important;
+    border-color: rgba(249, 104, 84, 0.9) !important;
+    color: #fff !important;
+}
+
+/* ── Generic section header (EA + Packs share this base) ── */
+
+.ionrift-window .overlay-mgr-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* The first section doesn't need a divider — the subscription strip above
+   it has its own card border, which already creates the boundary. */
+.ionrift-window .overlay-mgr-strip + .overlay-mgr-manage-row + .overlay-mgr-section,
+.ionrift-window .overlay-mgr-strip + .overlay-mgr-section {
+    /* keep the divider; it visually offsets the section from the strip's
+       coloured background. Leaving rule intact for clarity. */
+}
+
+.ionrift-window .overlay-mgr-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.1rem 0 0.2rem;
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-mgr-section-head > i {
+    font-size: 0.78rem;
+    color: var(--ionrift-accent, #8b5cf6);
+    opacity: 0.7;
+}
+
+.ionrift-window .overlay-mgr-section-title {
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.ionrift-window .overlay-mgr-section-summary {
+    flex: 1;
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin-left: 0.35rem;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-mgr-section-head--packs .overlay-mgr-check-btn,
+.ionrift-window .overlay-mgr-section-head--packs .overlay-mgr-install-all-btn {
+    margin-left: auto;
+}
+
+/* ── Early Access rows ── */
+
+.ionrift-window .overlay-ea-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.ionrift-window .overlay-ea-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.78rem;
+}
+
+.ionrift-window .overlay-ea-row--locked {
+    opacity: 0.6;
+}
+
+.ionrift-window .overlay-ea-row-icon {
+    width: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ionrift-accent, #8b5cf6);
+    opacity: 0.85;
+}
+
+.ionrift-window .overlay-ea-row-name {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-ea-row-version {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-variant-numeric: tabular-nums;
+}
+
+.ionrift-window .overlay-ea-row-action {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 6rem;
+}
+
+.ionrift-window .overlay-ea-row-installed {
+    font-size: 0.72rem;
+    color: #86efac;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-ea-row-locked {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-ea-row-btn {
+    background: rgba(139, 92, 246, 0.16) !important;
+    border: 1px solid rgba(139, 92, 246, 0.55) !important;
+    color: #ddd6fe !important;
+    border-radius: 4px;
+    padding: 0.22rem 0.7rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    font-weight: 600;
+}
+
+.ionrift-window .overlay-ea-row-btn:hover {
+    background: rgba(139, 92, 246, 0.28) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-mgr-check-btn,
+.ionrift-window .overlay-mgr-install-all-btn {
+    border-radius: 4px;
+    padding: 0.22rem 0.75rem;
+    font-size: 0.76rem;
+    cursor: pointer;
+    display: flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    flex-shrink: 0;
+    line-height: 1.35;
+}
+
+.ionrift-window .overlay-mgr-check-btn {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.ionrift-window .overlay-mgr-check-btn:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-mgr-install-all-btn {
+    background: rgba(139, 92, 246, 0.2) !important;
+    border: 1px solid rgba(139, 92, 246, 0.65) !important;
+    color: #ddd6fe !important;
+    font-weight: 600;
+}
+
+.ionrift-window .overlay-mgr-install-all-btn:hover {
+    background: rgba(139, 92, 246, 0.3) !important;
+    border-color: rgba(139, 92, 246, 0.85) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-mgr-install-all-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.ionrift-window .overlay-tier-pill {
+    font-size: 0.56rem;
+    font-weight: 700;
+    padding: 0.12rem 0.42rem;
+    border-radius: 3px;
+    background: rgba(139, 92, 246, 0.16);
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid rgba(139, 92, 246, 0.28);
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-tier-pill--user {
+    font-size: 0.64rem;
+    padding: 0.14rem 0.52rem;
+    flex-shrink: 0;
+}
+
+/* ── Tile grid: uniform 3 columns ── */
+
+.ionrift-window .overlay-tile-grid,
+.ionrift-window .overlay-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    padding: 0.35rem 0.45rem 0.45rem 0.2rem;
+    /* Cap at ~3 rows in the main grid. */
+    max-height: 22.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ionrift-window .overlay-mini-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 340px;
+    gap: 0.4rem;
+    padding: 0.3rem 0.4rem 0.35rem 0.15rem;
+}
+
+.ionrift-window .overlay-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.85rem 0.55rem 0.7rem;
+    min-height: 108px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.045);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    box-shadow: inset 0 0 0 1px transparent;
+    color: rgba(255, 255, 255, 0.92);
+    width: 100%;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-tile:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.45) !important;
+}
+
+/* Idle "ready to install" / "update available": no background colour change.
+   The violet status badge does the talking. */
+
+.ionrift-window .overlay-tile--up-to-date .overlay-tile-icon,
+.ionrift-window .overlay-tile--up-to-date .overlay-tile-name {
+    opacity: 0.72;
+}
+
+.ionrift-window .overlay-tile--error {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(251, 191, 36, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.5) !important;
+}
+
+.ionrift-window .overlay-tile--error:hover {
+    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.7) !important;
+}
+
+.ionrift-window .overlay-tile--locked,
+.ionrift-window .overlay-tile--inactive {
+    opacity: 0.5;
+}
+
+.ionrift-window .overlay-tile--selected {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.65),
+        inset 0 0 12px rgba(139, 92, 246, 0.12) !important;
+    background: rgba(139, 92, 246, 0.12);
+}
+
+.ionrift-window .overlay-tile-icon {
+    font-size: 1.3rem;
+    color: var(--ionrift-accent, #8b5cf6);
+    opacity: 0.92;
+    line-height: 1;
+}
+
+.ionrift-window .overlay-tile-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.22rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-tile-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.25;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-tile-meta {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+}
+
+.ionrift-window .overlay-tile-meta.is-complete {
+    color: rgba(134, 239, 172, 0.7);
+}
+
+.ionrift-window .overlay-tile-status {
+    position: absolute;
+    top: 0.42rem;
+    right: 0.42rem;
+    width: 1.3rem;
+    height: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(12, 10, 18, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.62rem;
+    line-height: 1;
+}
+
+.ionrift-window .overlay-tile-status.is-ok {
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.25);
+}
+
+.ionrift-window .overlay-tile-status.is-action {
+    color: #ddd6fe;
+    background: rgba(139, 92, 246, 0.35);
+    border-color: rgba(167, 139, 250, 0.6);
+    box-shadow: none;
+}
+
+.ionrift-window .overlay-tile--error .overlay-tile-status.is-action {
+    color: #fde68a;
+    background: rgba(251, 191, 36, 0.25);
+    border-color: rgba(251, 191, 36, 0.5);
+    box-shadow: none;
+}
+
+.ionrift-window .overlay-tile-status.is-muted   { color: rgba(255, 255, 255, 0.4); }
+.ionrift-window .overlay-tile-status.is-locked  { color: rgba(255, 255, 255, 0.3); }
+
+.ionrift-window .overlay-tile--compact {
+    min-height: 80px;
+    padding: 0.55rem 0.4rem 0.5rem;
+    gap: 0.3rem;
+}
+
+.ionrift-window .overlay-tile--compact .overlay-tile-icon {
+    font-size: 1rem;
+}
+
+.ionrift-window .overlay-tile--compact .overlay-tile-name {
+    font-size: 0.68rem;
+}
+
+.ionrift-window .overlay-tile--compact .overlay-tile-meta {
+    font-size: 0.55rem;
+}
+
+/* ── Split pane (state 2) ── */
+
+.ionrift-window .overlay-split {
+    display: flex;
+    gap: 0.75rem;
+    min-height: 320px;
+    align-items: stretch;
+    padding: 0.2rem 0 0.3rem;
+}
+
+.ionrift-window .overlay-split-nav {
+    flex: 0 0 38%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-back-btn {
+    align-self: flex-start;
+    background: transparent !important;
+    border: none !important;
+    color: rgba(196, 181, 253, 0.85) !important;
+    font-size: 0.78rem;
+    padding: 0.15rem 0 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    display: flex !important;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ionrift-window .overlay-back-btn:hover {
+    color: #c4b5fd !important;
+}
+
+.ionrift-window .overlay-split-detail {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.15rem 0 0.15rem 0.75rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.ionrift-window .overlay-detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.ionrift-window .overlay-detail-title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+}
+
+.ionrift-window .overlay-detail-title h3 {
+    margin: 0;
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.35;
+}
+
+.ionrift-window .overlay-detail-icon {
+    font-size: 1.25rem;
+    color: var(--ionrift-accent, #8b5cf6);
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-detail-accent {
+    height: 2px;
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+.ionrift-window .overlay-detail-muted {
+    margin: 0;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+    font-style: italic;
+}
+
+/* ── Per-tier blocks inside detail panel ── */
+
+.ionrift-window .overlay-detail-tiers {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.ionrift-window .overlay-tier-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.55rem 0.65rem 0.5rem;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-window .overlay-tier-block--locked {
+    opacity: 0.65;
+}
+
+.ionrift-window .overlay-tier-block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.ionrift-window .overlay-detail-summary {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.ionrift-window .overlay-detail-categories {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ionrift-window .overlay-detail-category {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 5px;
+    padding: 0.45rem 0.55rem;
+}
+
+.ionrift-window .overlay-detail-cat-head {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 0.25rem;
+}
+
+.ionrift-window .overlay-detail-cat-head i {
+    color: var(--ionrift-accent, #8b5cf6);
+    opacity: 0.85;
+    font-size: 0.66rem;
+}
+
+.ionrift-window .overlay-detail-category ul {
+    margin: 0;
+    padding-left: 1.05rem;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.48);
+    line-height: 1.45;
+}
+
+.ionrift-window .overlay-detail-error {
+    margin: 0;
+    font-size: 0.72rem;
+    color: rgba(251, 191, 36, 0.92);
+    line-height: 1.45;
+}
+
+.ionrift-window .overlay-detail-meta {
+    font-size: 0.62rem;
+    color: rgba(255, 255, 255, 0.3);
+    padding-top: 0.1rem;
+}
+
+.ionrift-window .overlay-detail-btn {
+    font-size: 0.74rem !important;
+    padding: 0.25rem 0.6rem !important;
+    border-radius: 4px !important;
+    border: 1px solid var(--ionrift-accent, #8b5cf6) !important;
+    background: transparent !important;
+    color: var(--ionrift-accent, #8b5cf6) !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-detail-btn:hover {
+    background: rgba(139, 92, 246, 0.15) !important;
+}
+
+.ionrift-window .overlay-detail-status-ok {
+    font-size: 0.74rem;
+    color: #86efac;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+/* ── Footer ── */
+
+.ionrift-window .overlay-mgr-footer {
+    display: flex !important;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    margin-top: 0.15rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-mgr-footer-time {
+    font-size: 0.62rem;
+    color: rgba(255, 255, 255, 0.28);
+}
+
+.ionrift-window .overlay-not-connected {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.45);
+}

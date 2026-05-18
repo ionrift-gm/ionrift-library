@@ -195,6 +195,32 @@
     outline: none;
 }
 
+/* ── Focus rings: suppress Foundry's red mouse-focus residue ──────────
+   Foundry's application stylesheet sets a warm/red outline on buttons,
+   tabs, cards, and any [tabindex] element after a click or drag-drop.
+   The outline persists until the user clicks elsewhere, creating a
+   stale red border that bleeds outside container boundaries.
+
+   Suppress mouse-triggered :focus across the .ionrift-window contract,
+   but keep keyboard focus visible via :focus-visible with a violet ring
+   for a11y compliance. Documented in IONRIFT_UI_HANDBOOK.md §3. */
+.ionrift-window button:focus,
+.ionrift-window [role="button"]:focus,
+.ionrift-window [tabindex]:focus,
+.ionrift-window a:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.ionrift-window button:focus-visible,
+.ionrift-window [role="button"]:focus-visible,
+.ionrift-window [tabindex]:focus-visible,
+.ionrift-window a:focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.85) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
 .ionrift-window input::placeholder {
     color: rgba(255, 255, 255, 0.5) !important;
 }
@@ -2349,3 +2375,224 @@
 .ionrift-party-roster .roster-save-btn i {
     font-size: 0.7rem;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Overlay Manager                                                            */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.ionrift-overlay-manager {
+    padding: 0 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.ionrift-overlay-manager .overlay-mgr-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.ionrift-overlay-manager .overlay-mgr-header-title {
+    flex: 1;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.02em;
+}
+
+.ionrift-overlay-manager .overlay-mgr-check-btn {
+    background: transparent !important;
+    border: 1px solid rgba(139,92,246,0.6) !important;
+    color: #a78bfa !important;
+    border-radius: 4px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    transition: background 0.15s;
+}
+.ionrift-overlay-manager .overlay-mgr-check-btn:hover {
+    background: rgba(139,92,246,0.12) !important;
+    box-shadow: none !important;
+}
+
+.ionrift-overlay-manager .overlay-mgr-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.ionrift-overlay-manager .overlay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* Card — horizontal flex row */
+.ionrift-overlay-manager .overlay-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.15s, border-color 0.15s;
+}
+.ionrift-overlay-manager .overlay-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(139,92,246,0.18);
+}
+.ionrift-overlay-manager .overlay-card[data-status="locked"]          { opacity: 0.45; }
+.ionrift-overlay-manager .overlay-card[data-status="module-inactive"] { opacity: 0.6; }
+
+/* Icon column */
+.ionrift-overlay-manager .overlay-card-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    color: var(--ionrift-accent, #8b5cf6);
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+/* Body column */
+.ionrift-overlay-manager .overlay-card-body {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+}
+
+.ionrift-overlay-manager .overlay-card-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #e8e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.ionrift-overlay-manager .overlay-tier-pill {
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 0.07rem 0.38rem;
+    border-radius: 3px;
+    background: rgba(139,92,246,0.18);
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(139,92,246,0.28);
+    line-height: 1.5;
+}
+
+.ionrift-overlay-manager .overlay-version-info {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.32);
+}
+
+.ionrift-overlay-manager .overlay-card-desc {
+    font-size: 0.71rem;
+    color: rgba(255,255,255,0.38);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Action column */
+.ionrift-overlay-manager .overlay-card-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 84px;
+}
+
+/* Install / Update button — override ionrift.css .ionrift-window button gradient */
+.ionrift-overlay-manager .overlay-card-action button {
+    font-size: 0.73rem !important;
+    padding: 0.25rem 0.65rem !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    border: none !important;
+    background: rgba(139,92,246,0.8) !important;
+    color: #fff !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    box-shadow: none !important;
+    line-height: 1.4;
+    transition: filter 0.15s !important;
+}
+.ionrift-overlay-manager .overlay-card-action button:hover {
+    filter: brightness(1.12);
+    background: rgba(139,92,246,0.95) !important;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3) !important;
+}
+.ionrift-overlay-manager .overlay-card-action button:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Status spans */
+.ionrift-overlay-manager .overlay-status-ok {
+    color: #86efac;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+.ionrift-overlay-manager .overlay-status-hint {
+    color: rgba(255,255,255,0.35);
+    font-size: 0.7rem;
+    font-style: italic;
+    white-space: nowrap;
+}
+.ionrift-overlay-manager .overlay-status-lock {
+    color: rgba(255,255,255,0.28);
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+/* Footer */
+.ionrift-overlay-manager .overlay-mgr-footer {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    text-align: right;
+    padding-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Not connected */
+.ionrift-overlay-manager .overlay-not-connected {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+

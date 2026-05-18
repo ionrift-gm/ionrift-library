@@ -32,6 +32,7 @@ import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
 import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
+import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";
 import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
 import { OverlayService } from "./services/OverlayService.js";
 
@@ -244,22 +245,25 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // HEADER
-    SettingsLayout.registerHeader("ionrift-library", CreatureIndexSetupApp, {
-        hint: "Initialize the creature database for the first time.",
-        icon: "fas fa-database"
-    });
-
-    // Patreon Connection (header slot, with amber divider beneath)
-    SettingsLayout.registerPackButton("ionrift-library", PatreonMenu, {
-        key: "patreonMenu",
-        name: "Patreon Connection",
-        label: "Connect Patreon",
-        hint: "Link your Patreon account for content updates and early access.",
-        icon: "fas fa-link"
+    // HEADER — Patreon Library only (single subscription funnel)
+    SettingsLayout.registerPackButton("ionrift-library", OverlayManagerApp, {
+        key: "patreonLibrary",
+        name: "Patreon Library",
+        label: "Open Library",
+        hint: "Your subscription: tier, early access modules, and content overlay packs.",
+        icon: "fab fa-patreon"
     });
 
     // BODY
+    game.settings.registerMenu("ionrift-library", "setupWizard", {
+        name: "Creature Database",
+        label: "Initialize Database",
+        hint: "Build the local creature index. Required for Resonance and other monster-aware modules.",
+        icon: "fas fa-database",
+        type: CreatureIndexSetupApp,
+        restricted: true
+    });
+
     game.settings.registerMenu("ionrift-library", "partyRosterMenu", {
         name: "Party Roster",
         label: "Edit Roster",
@@ -398,7 +402,11 @@ Hooks.once('ready', async () => {
             game.settings.set("ionrift-library", "indexSetupVersion", INDEXING_PROTOCOL_VERSION);
         }
 
-        // Register Status Indicator for Indexing Protocol
+        // Register Status Indicator for the Creature Database.
+        // Only surfaces a warning when the index is OUTDATED (mismatched protocol
+        // version after a known-good run). A fresh world with no index simply shows
+        // CONNECTED with a "Pending" label — the Initialize button itself is the
+        // call to action, no urgency badge needed.
         if (game.ionrift.integration) {
             game.ionrift.integration.registerApp("ionrift-library", {
                 settingsKey: ["ionrift-library.setupWizard"],
@@ -415,13 +423,13 @@ Hooks.once('ready', async () => {
                         return {
                             status: game.ionrift.integration.STATUS.WARNING,
                             label: "Outdated",
-                            message: "Index Version Mismatch (Re-Run Attunement)"
+                            message: "Index Version Mismatch — Re-Initialize"
                         };
                     } else {
                         return {
-                            status: game.ionrift.integration.STATUS.WARNING,
-                            label: "Pending",
-                            message: "Indexing Required"
+                            status: game.ionrift.integration.STATUS.CONNECTED,
+                            label: "Not yet built",
+                            message: "Initialize when ready."
                         };
                     }
                 }

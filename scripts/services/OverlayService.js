@@ -6,14 +6,13 @@
  * local filesystem, and expose overlay paths to consumer modules.
  *
  * Overlays are data-only packages (JSON, WebP, OGG). No .js files.
- * Each module can have up to two overlays:
- *   - free/    — Core art, sounds (available to free Patreon followers)
- *   - premium/ — Terrains, items, recipes (paid tiers)
+ * Each registry overlay installs to a per-tier sublayer directory
+ * (free, initiate, acolyte, weaver, artificer).
  *
- * Storage: ionrift-data/overlays/{moduleId}/{free|premium}/
+ * Storage: ionrift-data/overlays/{moduleId}/{sublayer}/
  * Manifest: overlay-manifest.json in each sublayer directory
  *
- * @see overlay_implementation_plan.md — Engineering spec
+ * @see CONTENT_DELIVERY_STRATEGY.md
  */
 
 import { PlatformHelper } from "./PlatformHelper.js";
@@ -23,6 +22,9 @@ import { Logger } from "./Logger.js";
 
 const MODULE_LABEL = "OverlayService";
 
+/** Legacy paid overlay installs used a single premium/ directory. */
+const LEGACY_PREMIUM_SUBLAYER = "premium";
+
 export class OverlayService {
 
     /** Root directory for all overlay content (data-relative). */
@@ -31,13 +33,31 @@ export class OverlayService {
     /** In-memory cache of local manifests. Populated on first read. */
     static _manifestCache = new Map();
 
+    /** In-memory cache of contents.json per module:sublayer. */
+    static _contentsCache = new Map();
+
     /** Pending overlay updates discovered during checkAvailable(). */
     static pendingOverlays = [];
 
     /** Timestamp of last registry check. */
     static _lastCheckTimestamp = 0;
 
+    /**
+     * Last install failure per overlayId.
+     * @type {Record<string, { stage: string, message: string, status?: number }>}
+     */
+    static _lastError = {};
+
     // ── Public API ──────────────────────────────────────────────────────
+
+    /**
+     * Map a registry tier label to a filesystem sublayer id.
+     * @param {string} tier  e.g. "Free", "Initiate", "Acolyte"
+     * @returns {string}  e.g. "free", "initiate"
+     */
+    static tierToSublayer(tier) {
+        return (tier || "Free").toLowerCase();
+    }
 
     /**
      * Check which overlays are available and which need updating.
@@ -66,23 +86,18 @@ export class OverlayService {
         this.pendingOverlays = [];
 
         for (const [overlayId, entry] of Object.entries(registry.overlays)) {
-            // Skip if the target module is not installed or not active
             const mod = game.modules.get(entry.moduleId);
             if (!mod?.active) continue;
 
-            // Skip if user's tier is insufficient
             if (!this._hasTierAccess(userTier, entry.tier)) continue;
 
-            // Skip if module version is too old for this overlay
             if (entry.minModuleVersion && this._compareVersions(mod.version, entry.minModuleVersion) < 0) {
                 Logger.log(MODULE_LABEL, `${overlayId}: module ${mod.version} < required ${entry.minModuleVersion}, skipping.`);
                 continue;
             }
 
-            // Determine sublayer: free-tier overlays go to free/, everything else to premium/
-            const sublayer = entry.tier === "Free" ? "free" : "premium";
+            const sublayer = this.tierToSublayer(entry.tier);
 
-            // Skip if already up to date
             const local = await this.getLocalManifest(entry.moduleId, sublayer);
             if (local && this._compareVersions(local.version, entry.latest) >= 0) continue;
 
@@ -94,20 +109,19 @@ export class OverlayService {
             });
         }
 
-        // Auto-download free-tier overlays on first connection (welcome flow)
         const freeUpdates = this.pendingOverlays.filter(p => p.sublayer === "free" && p.isNew);
         if (freeUpdates.length > 0) {
             Logger.info(MODULE_LABEL, `Auto-downloading ${freeUpdates.length} free overlay(s)...`);
             for (const pending of freeUpdates) {
-                await this._downloadAndExtract(pending.overlayId, pending.entry, pending.sublayer);
-                // Remove from pending list after successful download
-                this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== pending.overlayId);
+                const ok = await this._downloadAndExtract(pending.overlayId, pending.entry, pending.sublayer);
+                if (ok) {
+                    this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== pending.overlayId);
+                }
             }
         }
 
         this._lastCheckTimestamp = Date.now();
 
-        // Expose for Settings UI
         if (game?.ionrift?.library) {
             game.ionrift.library._pendingOverlays = this.pendingOverlays;
             game.ionrift.library._overlayLastCheck = this._lastCheckTimestamp;
@@ -122,9 +136,8 @@ export class OverlayService {
 
     /**
      * Download and install a specific pending overlay.
-     * Called from Settings UI "Install" button.
      * @param {string} overlayId
-     * @returns {Promise<boolean>} true if installed successfully
+     * @returns {Promise<boolean>}
      */
     static async installOverlay(overlayId) {
         const pending = this.pendingOverlays.find(p => p.overlayId === overlayId);
@@ -142,8 +155,7 @@ export class OverlayService {
 
     /**
      * Download and install ALL pending overlays.
-     * Called from Settings UI "Install All" button.
-     * @returns {Promise<number>} count of successfully installed overlays
+     * @returns {Promise<number>}
      */
     static async installAllPending() {
         let count = 0;
@@ -157,55 +169,125 @@ export class OverlayService {
 
     /**
      * Read the local overlay manifest for a module's sublayer.
-     * @param {string} moduleId  e.g. "ionrift-respite"
-     * @param {string} sublayer  "free" or "premium"
-     * @returns {Promise<Object|null>} { version, tier, installedAt, overlayId }
+     * Falls back to legacy premium/ when a paid tier sublayer is empty.
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<Object|null>}
      */
-    static async getLocalManifest(moduleId, sublayer = "premium") {
+    static async getLocalManifest(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
         const cacheKey = `${moduleId}:${sublayer}`;
         if (this._manifestCache.has(cacheKey)) {
             return this._manifestCache.get(cacheKey);
         }
 
-        const manifestPath = `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}/overlay-manifest.json`;
-        try {
-            const url = await PlatformHelper.resolveAssetUrl(manifestPath);
-            const response = await fetch(url);
-            if (!response.ok) return null;
-            const data = await response.json();
+        let data = await this._readManifestAt(moduleId, sublayer);
+        if (!data && sublayer !== "free" && sublayer !== LEGACY_PREMIUM_SUBLAYER) {
+            data = await this._readManifestAt(moduleId, LEGACY_PREMIUM_SUBLAYER);
+            if (data) {
+                this._manifestCache.set(`${moduleId}:${LEGACY_PREMIUM_SUBLAYER}`, data);
+            }
+        }
+
+        if (data) {
             this._manifestCache.set(cacheKey, data);
-            return data;
+        }
+        return data;
+    }
+
+    /**
+     * Read contents.json shipped inside an installed overlay.
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<{ summary?: string, categories?: Array }|null>}
+     */
+    static async getOverlayContents(moduleId, sublayer) {
+        const cacheKey = `${moduleId}:${sublayer}`;
+        if (this._contentsCache.has(cacheKey)) {
+            return this._contentsCache.get(cacheKey);
+        }
+
+        const paths = [
+            `${this.getOverlayPath(moduleId, sublayer)}/contents.json`,
+        ];
+        if (sublayer !== "free" && sublayer !== LEGACY_PREMIUM_SUBLAYER) {
+            paths.push(`${this.getOverlayPath(moduleId, LEGACY_PREMIUM_SUBLAYER)}/contents.json`);
+        }
+
+        for (const filePath of paths) {
+            try {
+                const url = await PlatformHelper.resolveAssetUrl(filePath);
+                const response = await fetch(url);
+                if (!response.ok) continue;
+                const data = await response.json();
+                this._contentsCache.set(cacheKey, data);
+                return data;
+            } catch {
+                // try next path
+            }
+        }
+
+        this._contentsCache.set(cacheKey, null);
+        return null;
+    }
+
+    /**
+     * List sublayer directories that have an overlay-manifest.json installed.
+     * @param {string} moduleId
+     * @returns {Promise<string[]>}
+     */
+    static async listInstalledSublayers(moduleId) {
+        const moduleRoot = `${this.OVERLAY_ROOT}/${moduleId}`;
+        const FP = PlatformHelper.FP;
+        if (!FP) return [];
+
+        try {
+            const result = await FP.browse(PlatformHelper.fileSource, moduleRoot);
+            const dirs = result.dirs ?? [];
+            const installed = [];
+
+            for (const dirPath of dirs) {
+                const sublayer = dirPath.split("/").pop();
+                const manifest = await this._readManifestAt(moduleId, sublayer);
+                if (manifest) installed.push(sublayer);
+            }
+
+            return installed.sort();
         } catch {
-            return null;
+            return [];
         }
     }
 
     /**
-     * Get the filesystem path to a module's overlay sublayer directory.
-     * @param {string} moduleId
-     * @param {string} sublayer  "free" or "premium"
-     * @returns {string} e.g. "ionrift-data/overlays/ionrift-respite/premium"
+     * Last install error for an overlay, if any.
+     * @param {string} overlayId
+     * @returns {{ stage: string, message: string, status?: number }|null}
      */
-    static getOverlayPath(moduleId, sublayer = "premium") {
+    static getLastError(overlayId) {
+        return this._lastError[overlayId] ?? null;
+    }
+
+    /**
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {string}
+     */
+    static getOverlayPath(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
         return `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}`;
     }
 
     /**
-     * Check if a module has an active overlay installed.
-     * Checks the in-memory manifest cache (populated by checkAvailable).
      * @param {string} moduleId
-     * @param {string} sublayer  "free" or "premium"
+     * @param {string} sublayer
      * @returns {boolean}
      */
-    static hasOverlay(moduleId, sublayer = "premium") {
+    static hasOverlay(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
         return this._manifestCache.has(`${moduleId}:${sublayer}`);
     }
 
     /**
-     * Read a JSON file from a module's overlay.
      * @param {string} moduleId
-     * @param {string} sublayer  "free" or "premium"
-     * @param {string} relativePath  e.g. "terrains/frost/events.json"
+     * @param {string} sublayer
+     * @param {string} relativePath
      * @returns {Promise<Object|null>}
      */
     static async readOverlayFile(moduleId, sublayer, relativePath) {
@@ -222,11 +304,9 @@ export class OverlayService {
     }
 
     /**
-     * List files in a subdirectory of a module's overlay.
-     * Uses FilePicker.browse() to enumerate.
      * @param {string} moduleId
-     * @param {string} sublayer  "free" or "premium"
-     * @param {string} subDir  e.g. "terrains"
+     * @param {string} sublayer
+     * @param {string} subDir
      * @returns {Promise<{dirs: string[], files: string[]}>}
      */
     static async listOverlayDir(moduleId, sublayer, subDir) {
@@ -245,49 +325,100 @@ export class OverlayService {
         }
     }
 
-    /**
-     * Force a re-check of overlay availability.
-     * Clears manifest cache and re-fetches from registry.
-     */
     static async refresh() {
         this._manifestCache.clear();
+        this._contentsCache.clear();
         await this.checkAvailable();
     }
 
     // ── Internal ────────────────────────────────────────────────────────
 
     /**
-     * Download an overlay ZIP via Cloud Relay and extract to the overlay directory.
-     * @param {string} overlayId  e.g. "respite-overlay"
-     * @param {Object} entry  Registry entry { latest, moduleId, tier, minModuleVersion }
-     * @param {string} sublayer  "free" or "premium"
-     * @returns {Promise<boolean>} true on success
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<Object|null>}
+     * @private
+     */
+    static async _readManifestAt(moduleId, sublayer) {
+        const manifestPath = `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}/overlay-manifest.json`;
+        try {
+            const url = await PlatformHelper.resolveAssetUrl(manifestPath);
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            return await response.json();
+        } catch {
+            return null;
+        }
+    }
+
+    /**
+     * @param {string} overlayId
+     * @param {string} stage
+     * @param {string} message
+     * @param {number} [status]
+     * @private
+     */
+    static _recordError(overlayId, stage, message, status) {
+        this._lastError[overlayId] = { stage, message, status };
+    }
+
+    /**
+     * @param {string} overlayId
+     * @private
+     */
+    static _clearError(overlayId) {
+        delete this._lastError[overlayId];
+    }
+
+    /**
+     * @param {string} overlayId
+     * @param {Object} entry
+     * @param {string} sublayer
+     * @returns {Promise<boolean>}
      * @private
      */
     static async _downloadAndExtract(overlayId, entry, sublayer) {
         Logger.info(MODULE_LABEL, `Downloading overlay: ${overlayId} v${entry.latest} → ${entry.moduleId}/${sublayer}`);
 
         try {
-            // 1. Request presigned download URL
             const download = await CloudRelayService.requestDownload(overlayId, entry.latest);
             if (!download?.url) {
+                this._recordError(
+                    overlayId,
+                    "requestDownload",
+                    download?.error ?? "Download denied by middleware",
+                    download?.status
+                );
                 Logger.warn(MODULE_LABEL, `Download denied for ${overlayId}.`);
                 return false;
             }
 
-            // 2. Fetch the ZIP blob
             const response = await fetch(download.url);
             if (!response.ok) {
+                this._recordError(
+                    overlayId,
+                    "fetch",
+                    "Archive not found or expired",
+                    response.status
+                );
                 Logger.error(MODULE_LABEL, `Failed to fetch overlay ZIP (HTTP ${response.status}).`);
                 return false;
             }
             const blob = await response.blob();
 
-            // 3. Extract to target directory
             const targetDir = `${this.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
-            await this._extractOverlayZip(blob, targetDir);
+            try {
+                await this._extractOverlayZip(blob, targetDir);
+            } catch (extractErr) {
+                this._recordError(
+                    overlayId,
+                    "extract",
+                    extractErr?.message ?? "Extract failed"
+                );
+                Logger.error(MODULE_LABEL, `Overlay extract failed for ${overlayId}:`, extractErr);
+                return false;
+            }
 
-            // 4. Write overlay manifest
             const manifest = {
                 overlayId,
                 version: entry.latest,
@@ -298,30 +429,30 @@ export class OverlayService {
             };
             await this._writeManifest(targetDir, manifest);
 
-            // 5. Update cache
             this._manifestCache.set(`${entry.moduleId}:${sublayer}`, manifest);
+            this._contentsCache.delete(`${entry.moduleId}:${sublayer}`);
 
+            this._clearError(overlayId);
             Logger.info(MODULE_LABEL, `Overlay installed: ${overlayId} v${entry.latest}`);
             ui?.notifications?.info(`Premium content updated: ${overlayId}`);
             return true;
 
         } catch (e) {
+            this._recordError(overlayId, "extract", e?.message ?? "Install failed");
             Logger.error(MODULE_LABEL, `Overlay download/extract failed for ${overlayId}:`, e);
             return false;
         }
     }
 
     /**
-     * Extract an overlay ZIP to a target directory using JSZip + FilePicker.
      * @param {Blob} blob
-     * @param {string} targetDir  e.g. "ionrift-data/overlays/ionrift-respite/premium"
+     * @param {string} targetDir
      * @private
      */
     static async _extractOverlayZip(blob, targetDir) {
         const JSZip = await PlatformHelper.loadJSZip();
         const zip = await JSZip.loadAsync(blob);
 
-        // Ensure target directory exists
         await PlatformHelper.ensureDirectory(targetDir);
 
         const FP = PlatformHelper.FP;
@@ -332,7 +463,6 @@ export class OverlayService {
             let extracted = 0;
 
             for (const [path, file] of entries) {
-                // Skip any .js files (overlays are data-only)
                 if (path.endsWith(".js")) {
                     Logger.warn(MODULE_LABEL, `Skipping .js file in overlay: ${path}`);
                     continue;
@@ -356,7 +486,6 @@ export class OverlayService {
     }
 
     /**
-     * Write the overlay-manifest.json to a target directory.
      * @param {string} targetDir
      * @param {Object} manifest
      * @private
@@ -370,13 +499,6 @@ export class OverlayService {
         await FP.upload(source, targetDir, file, {});
     }
 
-    /**
-     * Check if a user tier has access to a required tier.
-     * @param {string} userTier
-     * @param {string} requiredTier
-     * @returns {boolean}
-     * @private
-     */
     static _hasTierAccess(userTier, requiredTier) {
         const order = PackRegistryService.TIER_ORDER;
         const userRank = order.indexOf(userTier);
@@ -385,18 +507,10 @@ export class OverlayService {
         return userRank >= reqRank;
     }
 
-    /**
-     * Compare two semver strings.
-     * @param {string} a
-     * @param {string} b
-     * @returns {number} -1 if a < b, 0 if equal, 1 if a > b
-     * @private
-     */
     static _compareVersions(a, b) {
         if (typeof PackRegistryService._compareVersions === "function") {
             return PackRegistryService._compareVersions(a, b);
         }
-        // Fallback: basic semver compare
         const pa = (a || "0.0.0").split(/[-.]/).map(Number);
         const pb = (b || "0.0.0").split(/[-.]/).map(Number);
         for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
@@ -408,12 +522,6 @@ export class OverlayService {
         return 0;
     }
 
-    /**
-     * Guess MIME type from file extension for upload.
-     * @param {string} fileName
-     * @returns {string}
-     * @private
-     */
     static _mimeType(fileName) {
         const ext = (fileName.split(".").pop() || "").toLowerCase();
         const types = {

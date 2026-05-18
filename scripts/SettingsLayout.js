@@ -205,7 +205,7 @@ export class SettingsLayout {
         if (offers.length === 0) return;
 
         const root = html instanceof Element ? html : (html ? html[0] : document);
-        const btn = root?.querySelector?.(`button[data-key="ionrift-library.patreonMenu"]`);
+        const btn = root?.querySelector?.(`button[data-key="ionrift-library.patreonLibrary"]`);
         if (!btn) return;
 
         if (btn.querySelector(".ionrift-ea-badge")) return;
@@ -238,8 +238,8 @@ export class SettingsLayout {
 
         badge.addEventListener("click", async (e) => {
             e.stopPropagation();
-            const { PatreonMenu } = await import("./apps/PatreonMenu.js");
-            new PatreonMenu().render(true);
+            const { OverlayManagerApp } = await import("./apps/OverlayManagerApp.js");
+            new OverlayManagerApp().render(true);
         });
     }
 
@@ -338,7 +338,7 @@ export class SettingsLayout {
      */
     static injectPatreonStatus(overrides = {}) {
         const root = overrides.root ?? document;
-        const btn = root.querySelector(`button[data-key="ionrift-library.patreonMenu"]`);
+        const btn = root.querySelector(`button[data-key="ionrift-library.patreonLibrary"]`);
         if (!btn) return;
 
         const group = btn.closest(".form-group");
@@ -346,7 +346,6 @@ export class SettingsLayout {
         const label = group.querySelector("label");
         const hint = group.querySelector(".notes") || group.querySelector("p.notes");
 
-        // Read current state (or use overrides for testing)
         let isConnected = overrides.isConnected ?? false;
         let tier = overrides.tier ?? null;
 
@@ -363,45 +362,37 @@ export class SettingsLayout {
             } catch { /* settings not ready */ }
         }
 
-        // Clear any previously injected status icon
         const oldIcon = label?.querySelector(".ionrift-patreon-status");
         if (oldIcon) oldIcon.remove();
 
-        // Button inner structure: <i class="..."></i> <span>Label</span>
         const btnIcon = btn.querySelector("i");
         const btnSpan = btn.querySelector("span");
 
         if (isConnected) {
             const tierLabel = tier || "Free";
 
-            // Status icon on label
             if (label) {
                 label.insertAdjacentHTML("beforeend",
                     `<i class="fas fa-check-circle ionrift-patreon-status" style="color: #4ff; margin-left: 8px;" title="Connected (${tierLabel})"></i>`);
             }
 
-            // Button: unlink icon + "Manage Connection"
-            if (btnIcon) btnIcon.className = "fas fa-unlink";
-            if (btnSpan) btnSpan.textContent = "Manage Connection";
+            if (btnIcon) btnIcon.className = "fab fa-patreon";
+            if (btnSpan) btnSpan.textContent = "Open Library";
 
-            // Hint text
             if (hint) {
-                hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Click to manage.`;
+                hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Manage early access, content packs, and connection.`;
             }
         } else {
-            // Status icon on label
             if (label) {
                 label.insertAdjacentHTML("beforeend",
-                    `<i class="fas fa-exclamation-circle ionrift-patreon-status" style="color: #ef4444; margin-left: 8px;" title="Not connected"></i>`);
+                    `<i class="fas fa-link ionrift-patreon-status" style="color: rgba(255,255,255,0.5); margin-left: 8px;" title="Not connected"></i>`);
             }
 
-            // Button: link icon + "Connect Patreon"
-            if (btnIcon) btnIcon.className = "fas fa-link";
+            if (btnIcon) btnIcon.className = "fab fa-patreon";
             if (btnSpan) btnSpan.textContent = "Connect Patreon";
 
-            // Hint text
             if (hint) {
-                hint.textContent = "Link your Patreon account for content updates and early access.";
+                hint.textContent = "Link your Patreon account to unlock early access modules and bonus content packs.";
             }
         }
     }

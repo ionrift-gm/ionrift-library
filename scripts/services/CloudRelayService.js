@@ -134,13 +134,13 @@ export class CloudRelayService {
      * Request a presigned download URL for a pack or module.
      * @param {string} packId
      * @param {string} version
-     * @returns {Promise<{url: string, expiresAt: string}|null>}
+     * @returns {Promise<{url?: string, expiresAt?: string, status?: number, error?: string}|null>}
      */
     static async requestDownload(packId, version) {
         const sigil = this.getSigil();
         if (!sigil) {
             console.warn("CloudRelay | No Sigil — cannot request download.");
-            return null;
+            return { status: 401, error: "Not connected to Patreon" };
         }
 
         try {
@@ -179,13 +179,13 @@ export class CloudRelayService {
                 } else {
                     ui.notifications.error(`Download failed (HTTP ${response.status}). Try again later.`);
                 }
-                return null;
+                return { status: response.status, error: msg || `HTTP ${response.status}` };
             }
 
             return await response.json();
         } catch (e) {
             console.error("CloudRelay | Download request failed:", e);
-            return null;
+            return { status: 0, error: e?.message ?? "Network error" };
         }
     }
 
