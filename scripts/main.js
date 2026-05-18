@@ -233,6 +233,17 @@ Hooks.once('init', () => {
         default: false
     });
 
+    // Overlay distribution feature flag — GM-only, defaults false.
+    // Keeps OverlayService inert on all EA user worlds until explicitly
+    // enabled by the GM. Flip true in a dev world to test the pipeline.
+    game.settings.register("ionrift-library", "overlayDistributionEnabled", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
     // HEADER
     SettingsLayout.registerHeader("ionrift-library", CreatureIndexSetupApp, {
         hint: "Initialize the creature database for the first time.",
@@ -433,8 +444,13 @@ Hooks.once('ready', async () => {
         // Pack update check (daily, non-blocking)
         PackRegistryService.checkForUpdates().catch(e => console.warn("Ionrift | Registry check failed:", e));
 
-        // Overlay content check (non-blocking)
-        OverlayService.checkAvailable().catch(e => console.warn("Ionrift | Overlay check failed:", e));
+        // Overlay content check — gated by feature flag (default: false).
+        // Enable in a dev world via:
+        //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
+        // EA user worlds are unaffected until this is explicitly enabled.
+        if (game.settings.get("ionrift-library", "overlayDistributionEnabled")) {
+            OverlayService.checkAvailable().catch(e => console.warn("Ionrift | Overlay check failed:", e));
+        }
     }
 });
 
