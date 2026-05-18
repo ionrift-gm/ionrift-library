@@ -552,20 +552,18 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     /** Subscription status strip at the top of the panel. */
     _buildSubscriptionStrip(context) {
         const tier = context.userTier || "Free";
-        const manageRow = context.manageOpen
+        const manageTray = context.manageOpen
             ? `
-            <div class="overlay-mgr-manage-row">
-                <button type="button" class="overlay-mgr-manage-btn" data-action="check-for-updates">
-                    <i class="fas fa-sync-alt"></i> Check for Updates
-                </button>
+            <div class="overlay-mgr-manage-tray">
+                <span class="overlay-mgr-manage-tray-label">Account</span>
                 <button type="button" class="overlay-mgr-manage-btn overlay-mgr-manage-btn--danger" data-action="disconnect">
-                    <i class="fas fa-unlink"></i> Disconnect
+                    <i class="fas fa-unlink"></i> Disconnect Patreon
                 </button>
             </div>`
             : "";
 
         return `
-        <div class="overlay-mgr-strip">
+        <div class="overlay-mgr-strip ${context.manageOpen ? "is-open" : ""}">
             <div class="overlay-mgr-strip-main">
                 <i class="fab fa-patreon overlay-mgr-strip-icon"></i>
                 <span class="overlay-mgr-strip-label">Connected</span>
@@ -576,8 +574,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     title="Manage connection">
                 <i class="fas fa-cog"></i> Manage
             </button>
-        </div>
-        ${manageRow}`;
+            ${manageTray}
+        </div>`;
     }
 
     /** Early Access modules section: one thin row per offer. */

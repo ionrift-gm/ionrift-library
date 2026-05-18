@@ -49,6 +49,7 @@
 
 .ionrift-window .overlay-mgr-strip {
     display: flex !important;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.6rem;
     padding: 0.7rem 0.85rem;
@@ -57,6 +58,11 @@
     background: rgba(139, 92, 246, 0.07);
     border: 1px solid rgba(139, 92, 246, 0.18);
     flex-shrink: 0;
+    transition: background 0.18s ease;
+}
+
+.ionrift-window .overlay-mgr-strip.is-open {
+    background: rgba(139, 92, 246, 0.10);
 }
 
 .ionrift-window .overlay-mgr-strip-main {
@@ -101,12 +107,22 @@
     color: #fff !important;
 }
 
-.ionrift-window .overlay-mgr-manage-row {
-    display: flex !important;
-    gap: 0.4rem;
-    padding: 0 0.2rem 0.1rem;
-    margin-top: -0.4rem;
-    justify-content: flex-end;
+.ionrift-window .overlay-mgr-manage-tray {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    margin-top: 0.1rem;
+    border-top: 1px dashed rgba(139, 92, 246, 0.18);
+}
+
+.ionrift-window .overlay-mgr-manage-tray-label {
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.45);
+    margin-right: auto;
 }
 
 .ionrift-window .overlay-mgr-manage-btn {
@@ -205,7 +221,6 @@
 
 /* The first section doesn't need a divider — the subscription strip above
    it has its own card border, which already creates the boundary. */
-.ionrift-window .overlay-mgr-strip + .overlay-mgr-manage-row + .overlay-mgr-section,
 .ionrift-window .overlay-mgr-strip + .overlay-mgr-section {
     /* keep the divider; it visually offsets the section from the strip's
        coloured background. Leaving rule intact for clarity. */
