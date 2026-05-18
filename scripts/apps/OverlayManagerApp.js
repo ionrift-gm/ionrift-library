@@ -19,7 +19,9 @@ const MODULE_ACCENT = {
 const STATUS_PRIORITY = [
     "not-installed",
     "update-available",
+    "module-outdated",
     "up-to-date",
+    "no-content",
     "module-inactive",
     "locked"
 ];
@@ -101,9 +103,13 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             const local = await OverlayService.getLocalManifest(entry.moduleId, sublayer);
             const lastError = OverlayService.getLastError(overlayId);
 
+            const isModuleOutdated = !!(entry.minModuleVersion && mod?.active
+                && PackRegistryService._compareVersions(mod.version, entry.minModuleVersion) < 0);
+
             let status;
             if (!hasAccess) status = "locked";
             else if (!mod?.active) status = "module-inactive";
+            else if (isModuleOutdated) status = "module-outdated";
             else if (!local) status = "not-installed";
             else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) status = "update-available";
             else status = "up-to-date";
@@ -126,6 +132,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 latestVersion: entry.latest,
                 installedVersion: local?.version ?? null,
                 installedAt: local?.installedAt ?? null,
+                minModuleVersion: entry.minModuleVersion ?? null,
+                installedModuleVersion: mod?.version ?? null,
                 status,
                 hasAccess,
                 isModuleActive: !!mod?.active,
@@ -136,6 +144,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
 
         const groups = this._buildGroups(overlays);
+        this._appendModulesWithoutContent(groups, overlayMap);
 
         if (this._view === "detail" && this._selectedModuleId
             && !groups.some(g => g.moduleId === this._selectedModuleId)) {
@@ -310,6 +319,13 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 if (!OverlayService.pendingOverlays.find(p => p.overlayId === overlayId)) {
                     await OverlayService.refresh();
                 }
+                if (!OverlayService.pendingOverlays.find(p => p.overlayId === overlayId)) {
+                    ui?.notifications?.warn(
+                        `Could not start install for <strong>${overlayId}</strong>. The registry did not list it as installable. Use <strong>Check for updates</strong>, then try again.`
+                    );
+                    this.render();
+                    return;
+                }
                 await OverlayService.installOverlay(overlayId);
                 this.render();
             });
@@ -363,6 +379,40 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return offers;
     }
 
+    /**
+     * Surface every active first-party module as a tile, even when nothing
+     * is registered for it yet. Keeps the panel honest about what the
+     * user has installed and avoids the "where is my module?" surprise.
+     * @param {Array} groups   In place. Empty groups are pushed onto this list.
+     * @param {Object} overlayMap   Already processed registry.overlays map.
+     */
+    _appendModulesWithoutContent(groups, overlayMap) {
+        const knownModuleIds = new Set(Object.values(overlayMap).map(e => e.moduleId));
+        const seen = new Set(groups.map(g => g.moduleId));
+
+        for (const [moduleId, meta] of Object.entries(PackRegistryService.MODULE_DISPLAY_META)) {
+            if (seen.has(moduleId)) continue;
+            if (knownModuleIds.has(moduleId)) continue;
+            const mod = game.modules.get(moduleId);
+            if (!mod?.active) continue;
+
+            groups.push({
+                moduleId,
+                moduleName: mod.title ?? meta.title ?? moduleId,
+                moduleIcon: meta.icon ?? "fas fa-cube",
+                moduleAccent: MODULE_ACCENT[moduleId] ?? "#8B5CF6",
+                isModuleActive: true,
+                overlays: [],
+                status: "no-content",
+                hasError: false,
+                hasAccess: true,
+                packCount: 0,
+                entitledCount: 0,
+                installedCount: 0
+            });
+        }
+    }
+
     _buildGroups(overlays) {
         const map = new Map();
         for (const overlay of overlays) {
@@ -412,6 +462,10 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 return isError
                     ? { icon: "fa-rotate-right", className: "is-action", label: "Update failed last time. Try again." }
                     : { icon: "fa-download", className: "is-action", label: "Update available" };
+            case "module-outdated":
+                return { icon: "fa-arrow-up", className: "is-muted", label: "Module needs upgrade" };
+            case "no-content":
+                return { icon: "fa-circle-minus", className: "is-muted", label: "No content registered yet" };
             case "module-inactive":
                 return { icon: "fa-power-off", className: "is-muted", label: "Module off" };
             case "locked":
@@ -643,6 +697,14 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             html += `<p class="overlay-detail-muted">Enable ${shortName} in Manage Modules before installing.</p>`;
         }
 
+        if (group.status === "no-content") {
+            html += `
+            <p class="overlay-detail-muted">
+                ${shortName} is installed and active. No content packs are registered for it yet.
+                When new content ships, it will appear here automatically.
+            </p>`;
+        }
+
         html += `<div class="overlay-detail-tiers">`;
         for (const overlay of group.overlays) {
             html += this._renderTierBlock(overlay);
@@ -658,6 +720,19 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const actionHtml = this._renderDetailAction(overlay);
         const errorHtml = this._formatDetailError(overlay.lastError, overlay.status, overlay.overlayId);
         const showBody = overlay.hasAccess && overlay.status !== "locked";
+
+        let outdatedNote = "";
+        if (overlay.status === "module-outdated") {
+            const moduleName = this._shortModuleName(overlay.moduleName ?? overlay.moduleId);
+            const installed = overlay.installedModuleVersion
+                ? ` (you have v${overlay.installedModuleVersion})`
+                : "";
+            outdatedNote = `
+            <p class="overlay-detail-muted">
+                Requires ${moduleName} v${overlay.minModuleVersion} or newer${installed}.
+                Update the module first, then come back to install.
+            </p>`;
+        }
 
         let categoriesHtml = "";
         if (showBody) {
@@ -692,6 +767,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 <div class="overlay-tier-block-action">${actionHtml}</div>
             </div>
             ${lockedNote}
+            ${outdatedNote}
             ${showBody && summary ? `<p class="overlay-detail-summary">${summary}</p>` : ""}
             ${categoriesHtml}
             ${errorHtml ? `<p class="overlay-detail-error">${errorHtml}</p>` : ""}
@@ -707,6 +783,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
             case "up-to-date":
                 return `<span class="overlay-detail-status-ok"><i class="fas fa-check"></i> Up to date</span>`;
+            case "module-outdated":
+                return `<span class="overlay-detail-status-blocked"><i class="fas fa-arrow-up"></i> Update module first</span>`;
             default:
                 return "";
         }

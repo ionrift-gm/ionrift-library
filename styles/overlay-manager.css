@@ -469,8 +469,13 @@
 }
 
 .ionrift-window .overlay-tile--locked,
-.ionrift-window .overlay-tile--inactive {
-    opacity: 0.5;
+.ionrift-window .overlay-tile--inactive,
+.ionrift-window .overlay-tile--no-content {
+    opacity: 0.55;
+}
+
+.ionrift-window .overlay-tile--module-outdated {
+    opacity: 0.85;
 }
 
 .ionrift-window .overlay-tile--selected {
@@ -776,6 +781,15 @@
 .ionrift-window .overlay-detail-status-ok {
     font-size: 0.74rem;
     color: #86efac;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+.ionrift-window .overlay-detail-status-blocked {
+    font-size: 0.74rem;
+    color: rgba(252, 211, 77, 0.85);
     display: flex;
     align-items: center;
     gap: 0.3rem;

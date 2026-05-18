@@ -325,6 +325,11 @@ export class PackRegistryService {
             title: "Ionrift Arbiter",
             icon:  "fas fa-crosshairs",
             desc:  "Rules-driven targeting intelligence and encounter balance analysis."
+        },
+        "ionrift-cursewright": {
+            title: "Ionrift Cursewright",
+            icon:  "fas fa-skull-crossbones",
+            desc:  "Cursed item engine for Ionrift Quartermaster: phased recipes, crafting, and curse mechanics."
         }
     };
 
