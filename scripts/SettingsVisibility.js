@@ -1,44 +1,69 @@
 /**
  * Helpers for Foundry module settings visibility.
  *
- * A setting is player-visible in Game Settings when config is not false
- * and restricted is not true. Menus follow the same rule on registerMenu.
+ * Foundry only honors `restricted` on registerMenu, not on register.
+ * Client-scoped settings with config:true always appear for every user.
+ * World-scoped settings with config:true appear only for users who can
+ * modify configuration (typically GM).
  */
 
-/** @param {object} cfg Foundry setting or menu registration config */
-export function isPlayerVisibleInConfig(cfg) {
-    if (cfg?.config === false) return false;
+/** @param {object} cfg Foundry registerMenu config */
+export function isPlayerVisibleMenu(cfg) {
     return cfg?.restricted !== true;
 }
 
 /**
+ * Whether a registered setting appears in a non-GM Game Settings panel.
+ * @param {object} cfg Foundry register config
+ */
+export function isPlayerVisibleSetting(cfg) {
+    if (cfg?.config !== true) return false;
+    const scope = cfg?.scope ?? "client";
+    return scope === "client";
+}
+
+/**
  * @param {Array<{ key: string, cfg: object }>} registrations
- * @returns {string[]} keys visible to non-GM users in Configure Settings
+ * @returns {string[]}
  */
 export function findPlayerVisibleSettingKeys(registrations) {
     return registrations
-        .filter(({ cfg }) => isPlayerVisibleInConfig(cfg))
+        .filter(({ cfg }) => isPlayerVisibleSetting(cfg))
         .map(({ key }) => key);
 }
 
 /**
  * @param {Array<{ key: string, cfg: object }>} registrations
- * @returns {string[]} menu keys visible to non-GM users
+ * @returns {string[]}
  */
 export function findPlayerVisibleMenuKeys(registrations) {
-    return findPlayerVisibleSettingKeys(registrations);
+    return registrations
+        .filter(({ cfg }) => isPlayerVisibleMenu(cfg))
+        .map(({ key }) => key);
 }
 
 /**
- * Vitest helper: assert no player-visible config entries.
  * @param {Array<{ key: string, cfg: object }>} registrations
  * @param {string} moduleId
  */
 export function assertNoPlayerConfigEntries(registrations, moduleId) {
-    const visible = findPlayerVisibleSettingKeys(registrations);
-    if (visible.length > 0) {
+    const settings = findPlayerVisibleSettingKeys(registrations);
+    if (settings.length > 0) {
         throw new Error(
-            `${moduleId}: player-visible settings in Game Settings: ${visible.join(", ")}`
+            `${moduleId}: client settings visible in Game Settings: ${settings.join(", ")}`
+        );
+    }
+}
+
+/**
+ * @param {Array<{ key: string, cfg: object }>} menuRegistrations
+ * @param {string} moduleId
+ */
+export function assertNoPlayerMenuEntries(menuRegistrations, moduleId) {
+    const menus = findPlayerVisibleMenuKeys(menuRegistrations);
+    if (menus.length > 0) {
+        throw new Error(
+            `${moduleId}: menus visible in Game Settings: ${menus.join(", ")}`
         );
     }
 }

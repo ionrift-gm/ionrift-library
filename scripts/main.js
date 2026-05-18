@@ -33,6 +33,7 @@ import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
+import { OverlayService } from "./services/OverlayService.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -129,7 +130,13 @@ Hooks.once('init', () => {
         /** PartyRoster service: authoritative party membership (getMembers, getRosterIds, isRostered). */
         party: PartyRoster,
         /** PartyRosterApp: the settings-style UI for managing party membership. Available for consumer modules. */
-        PartyRosterApp
+        PartyRosterApp,
+        /** Overlay service: premium content check, download, and extraction. */
+        overlay: OverlayService,
+        /** Install a specific pending overlay. Usage: game.ionrift.library.installOverlay("respite-overlay") */
+        installOverlay: (overlayId) => OverlayService.installOverlay(overlayId),
+        /** Install all pending overlays. Usage: game.ionrift.library.installAllPending() */
+        installAllPending: () => OverlayService.installAllPending()
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -140,10 +147,9 @@ Hooks.once('init', () => {
         name: "Debug Mode",
         hint: "Enable verbose logging for library functions.",
         scope: "client",
-        config: true,
+        config: false,
         type: Boolean,
-        default: false,
-        restricted: true
+        default: false
     });
 
     // Session Log
@@ -426,6 +432,9 @@ Hooks.once('ready', async () => {
 
         // Pack update check (daily, non-blocking)
         PackRegistryService.checkForUpdates().catch(e => console.warn("Ionrift | Registry check failed:", e));
+
+        // Overlay content check (non-blocking)
+        OverlayService.checkAvailable().catch(e => console.warn("Ionrift | Overlay check failed:", e));
     }
 });
 
