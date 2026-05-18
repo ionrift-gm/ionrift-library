@@ -479,6 +479,25 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
+     * Audience-tier label for the pill. The registry stores "Free" so the
+     * tier-order maths stay clean, but UI surfaces the audience word so the
+     * panel reads like community access rather than a price tag. Mirrors
+     * the Patreon tier names in `TIER_SPECIFICATION.md`.
+     * @param {string} tier
+     * @returns {string}
+     */
+    _tierDisplayLabel(tier) {
+        switch (tier) {
+            case "Free":      return "Follower";
+            case "Initiate":  return "Initiate";
+            case "Acolyte":   return "Acolyte";
+            case "Weaver":    return "Weaver";
+            case "Artificer": return "Artificer";
+            default:          return tier || "Follower";
+        }
+    }
+
+    /**
      * Classification noun for an overlay, derived from its sublayer.
      * Mirrors `PACK_CLASSIFICATION_POLICY.md`. Independent of audience tier.
      * @param {string} sublayer
@@ -750,7 +769,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         let lockedNote = "";
         if (overlay.status === "locked") {
-            lockedNote = `<p class="overlay-detail-muted">Available at ${overlay.tier} tier.</p>`;
+            lockedNote = `<p class="overlay-detail-muted">Available at ${this._tierDisplayLabel(overlay.tier)} or higher.</p>`;
         }
 
         const versionMeta = overlay.installedVersion
@@ -762,7 +781,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return `
         <div class="overlay-tier-block overlay-tier-block--${overlay.status}">
             <div class="overlay-tier-block-head">
-                <span class="overlay-tier-pill">${overlay.tier}</span>
+                <span class="overlay-tier-pill">${this._tierDisplayLabel(overlay.tier)}</span>
                 <span class="overlay-pack-class">${classLabel}</span>
                 <div class="overlay-tier-block-action">${actionHtml}</div>
             </div>
