@@ -134,10 +134,20 @@ Hooks.once('init', () => {
         PartyRosterApp,
         /** Overlay service: premium content check, download, and extraction. */
         overlay: OverlayService,
-        /** Install a specific pending overlay. Usage: game.ionrift.library.installOverlay("respite-overlay") */
+        /** Install a specific pending overlay. Usage: game.ionrift.library.installOverlay("respite-supplement-overlay") */
         installOverlay: (overlayId) => OverlayService.installOverlay(overlayId),
         /** Install all pending overlays. Usage: game.ionrift.library.installAllPending() */
-        installAllPending: () => OverlayService.installAllPending()
+        installAllPending: () => OverlayService.installAllPending(),
+        /**
+         * Force-install an overlay directly by id, bypassing the daily registry check.
+         * For pre-GA testing of overlays staged in PACK_CATALOG but not yet in registry.json.
+         * Server-side tier gating still applies.
+         *
+         * Usage:
+         *   game.ionrift.library.installById("quartermaster-core-overlay",
+         *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free" });
+         */
+        installById: (overlayId, entry) => OverlayService.installById(overlayId, entry)
     };
 
     // Expose Service Globally (outside lib namespace)

@@ -168,6 +168,43 @@ export class OverlayService {
     }
 
     /**
+     * Force-install an overlay directly by id, bypassing the daily registry check.
+     *
+     * Use this for staged overlays that have a `PACK_CATALOG` entry in the middleware
+     * but are not yet advertised in `registry.json` (gated pre-GA test installs).
+     * Tier gating is still enforced server-side by the middleware against the caller's
+     * Patreon JWT — this helper does not bypass auth.
+     *
+     * Example (F12 console, GM logged in and tier-eligible):
+     *   await game.ionrift.library.overlay.installById(
+     *       "quartermaster-core-overlay",
+     *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free" }
+     *   );
+     *
+     * @param {string} overlayId
+     * @param {{ version: string, moduleId: string, tier: string, sublayer?: string }} entry
+     * @returns {Promise<boolean>}
+     */
+    static async installById(overlayId, entry = {}) {
+        if (!overlayId || typeof overlayId !== "string") {
+            Logger.warn(MODULE_LABEL, "installById: overlayId is required.");
+            return false;
+        }
+        if (!entry?.version || !entry?.moduleId || !entry?.tier) {
+            Logger.warn(MODULE_LABEL, "installById: entry must include { version, moduleId, tier }.");
+            return false;
+        }
+        const sublayer = entry.sublayer ?? this.tierToSublayer(entry.tier);
+        const installEntry = {
+            latest: entry.version,
+            moduleId: entry.moduleId,
+            tier: entry.tier,
+        };
+        Logger.info(MODULE_LABEL, `Direct install requested for ${overlayId} v${entry.version} (registry bypass).`);
+        return await this._downloadAndExtract(overlayId, installEntry, sublayer);
+    }
+
+    /**
      * Read the local overlay manifest for a module's sublayer.
      * Falls back to legacy premium/ when a paid tier sublayer is empty.
      * @param {string} moduleId
