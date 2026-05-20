@@ -32,9 +32,19 @@ console.log(`Validating: ${entryVersion}`);
 
 const errors = [];
 
+// Section headings that must never appear in a public changelog entry.
+// These are internal notes that get parsed verbatim by the Discord bot.
+const BANNED_SECTIONS = ['### Dev', '### Internal', '### Infra'];
+
 for (let i = 0; i < entryLines.length; i++) {
   const line = entryLines[i];
   const lineNum = i + 2; // +2 accounts for the ## heading line
+
+  // Banned section check: internal headings must be stripped before shipping.
+  const banned = BANNED_SECTIONS.find(s => line.trimEnd() === s);
+  if (banned) {
+    errors.push(`  Line ${lineNum}: internal section "${banned}" must not appear in a public changelog entry - strip it before committing.\n    > ${line.trimEnd()}`);
+  }
 
   // Soft-wrap check: a line starting with 2+ spaces that is not a sub-bullet
   // indicates a continuation of the previous bullet — not allowed.
