@@ -3,31 +3,17 @@
 ## [2.1.1] - 2026-05-20
 
 ### Added
-- Centralised pack-nudge banner served from the library. Consumer modules
-  register once; the banner injects into Settings with shared dismiss and
-  snooze state.
-- The Library shows your full module inventory even when not connected.
-  Modules display the packs you have installed locally and their on/off state.
-  The on/off toggle and manual zip install stay reachable.
+- Centralised pack-nudge banner served from the library. Consumer modules register once; the banner injects into Settings with shared dismiss and snooze state.
+- The Library shows your full module inventory even when not connected. Modules display the packs you have installed locally and their on/off state. The on/off toggle and manual zip install stay reachable.
 
 ### Changed
-- Library section header reads "Your Library" when disconnected, and
-  hides the actions that require a registry round-trip.
-- The connect prompt now reads "Connect your account to automatically download
-  and install content packs." It sits at the top of the panel alongside the
-  library management header.
-- Footer "Install .zip" control matches the existing primary-action palette
-  and shares the footer with a left-aligned hint and timestamp.
+- Library section header reads "Your Library" when disconnected, and hides the actions that require a registry round-trip.
+- The connect prompt now reads "Connect your account to automatically download and install content packs." It sits at the top of the panel alongside the library management header.
+- Footer "Install .zip" control matches the existing primary-action palette and shares the footer with a left-aligned hint and timestamp.
 
 ### Fixed
-- Installed content packs can now be managed in the Library even when
-  the host module is behind the version the latest pack requires, or when
-  your tier no longer entitles you to the pack. The on/off toggle and
-  the repair button stay reachable so the working installed copy is not
-  stranded.
-- Download failures now return structured error objects with status codes
-  instead of null. Modules that check downloads silently no longer pop
-  Foundry toasts; only user-initiated downloads show notifications.
+- Installed content packs can now be managed in the Library even when the host module is behind the version the latest pack requires, or when your tier no longer entitles you to the pack. The on/off toggle and the repair button stay reachable so the working installed copy is not stranded.
+- Download failures now return structured error objects with status codes instead of null. Modules that check downloads silently no longer pop Foundry toasts; only user-initiated downloads show notifications.
 
 ## [2.1.0] - 2026-05-20
 
