@@ -182,7 +182,8 @@ export class PackRegistryService {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10_000);
 
-            const response = await fetch(this.REGISTRY_URL, { signal: controller.signal });
+            const url = `${this.REGISTRY_URL}?_=${Date.now()}`;
+            const response = await fetch(url, { signal: controller.signal, cache: "no-store" });
             clearTimeout(timeout);
 
             if (!response.ok) {
