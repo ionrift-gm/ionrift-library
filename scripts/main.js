@@ -35,6 +35,7 @@ import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";
 import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
 import { OverlayService } from "./services/OverlayService.js";
+import { PackNudgeService } from "./services/PackNudgeService.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -152,7 +153,31 @@ Hooks.once('init', () => {
         isOverlayDistributionActive: () => OverlayService.isDistributionActive(),
         setOverlayActive: (overlayId, active, meta) => OverlayService.setOverlayActive(overlayId, active, meta),
         uninstallOverlay: (overlayId, moduleId, sublayer) => OverlayService.uninstallOverlay(overlayId, moduleId, sublayer),
-        getOverlayState: (overlayId, moduleId, sublayer) => OverlayService.getOverlayState(overlayId, moduleId, sublayer)
+        /** Force-reinstall: re-download and overwrite existing assets. */
+        reinstallOverlay: (overlayId) => OverlayService.reinstallOverlay(overlayId),
+        getOverlayState: (overlayId, moduleId, sublayer) => OverlayService.getOverlayState(overlayId, moduleId, sublayer),
+        /**
+         * Gather destructive-action warnings from consumer modules.
+         * Fires the `ionrift.collectDestructiveWarnings` hook synchronously.
+         */
+        collectDestructiveWarnings: (payload) => OverlayService.collectDestructiveWarnings(payload),
+        /**
+         * Show the Glass-themed destructive-action modal. Returns true when the
+         * user confirms, false when they cancel. Skips the modal entirely when
+         * no listener reports a warning, unless skipWhenEmpty: false.
+         */
+        confirmDestructiveAction: (options) => OverlayService.confirmDestructiveAction(options),
+        /**
+         * Open Patreon Library, optionally focused on a module detail panel.
+         * @param {{ moduleId?: string }} [options]
+         */
+        openPatreonLibrary: (options = {}) => OverlayManagerApp.openToModule(options.moduleId ?? "ionrift-resonance"),
+        /**
+         * Shared "install the free pack" banner. Consumer modules register a
+         * config during init and call `packNudge.inject(moduleId, $anchor)`
+         * from each surface where the banner should appear.
+         */
+        packNudge: PackNudgeService
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -268,6 +293,17 @@ Hooks.once('init', () => {
         restricted: true
     });
 
+    // Preview content access — per-user, off by default. Registry entries
+    // marked `preview: true` are hidden from the Patreon Library unless this
+    // flag is set. Toggle via console:
+    //   game.settings.set("ionrift-library", "showPreviewContent", true)
+    game.settings.register("ionrift-library", "showPreviewContent", {
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
     // HEADER — Patreon Library only (single subscription funnel)
     SettingsLayout.registerPackButton("ionrift-library", OverlayManagerApp, {
         key: "patreonLibrary",
@@ -311,6 +347,21 @@ Hooks.once('init', () => {
     });
 
 
+
+    // Settings panel: auto-inject every registered pack nudge.
+    // Deferred a microtask so SettingsLayout's reorder + footer-divider hook
+    // (registered in SettingsLayout.js) runs first, leaving the anchor groups
+    // in their final positions before banners attach.
+    Hooks.on("renderSettingsConfig", (app, html) => {
+        const inject = () => PackNudgeService.injectAllInSettings(html);
+        queueMicrotask(inject);
+
+        // Re-run when the user navigates to a different module's sidebar tab,
+        // so banners attach even if injection occurred while the tab was hidden.
+        const $html = html?.jquery ? html : $(html);
+        $html.off("click.ionriftPackNudge", ".sidebar-tabs .item");
+        $html.on("click.ionriftPackNudge", ".sidebar-tabs .item", () => queueMicrotask(inject));
+    });
 
     // Self-Reporting Diagnostic Hook
     Hooks.on("ionrift.runDiagnostics", (reportBuilder) => {
@@ -399,6 +450,20 @@ Hooks.once('ready', async () => {
             } catch {
                 return { passed: 0, failed: 0, total: 0, skipped: true,
                     results: [{ name: "TerrainTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
+        }
+    });
+
+    TestHarnessRunner.register("ionrift-library-overlays", {
+        name: "Overlay Lifecycle",
+        description: "Headless tests for overlay install, reinstall, delete, and terrain spine",
+        runFn: async () => {
+            try {
+                const { runOverlayTests } = await import("./tests/OverlayTests.js");
+                return runOverlayTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "OverlayTests", status: "skip", message: "Test file not present (production build)." }] };
             }
         }
     });

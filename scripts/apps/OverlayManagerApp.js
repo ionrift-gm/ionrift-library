@@ -4,6 +4,8 @@ import { PackRegistryService } from "../services/PackRegistryService.js";
 import { ModuleInstallerService } from "../services/ModuleInstallerService.js";
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { SettingsLayout } from "../SettingsLayout.js";
+import { ZipImporterService } from "../services/ZipImporterService.js";
+import { PlatformHelper } from "../services/PlatformHelper.js";
 
 /** Module accent stripes for detail panel (from MODULE_COLORS.md). */
 const MODULE_ACCENT = {
@@ -20,6 +22,8 @@ const STATUS_PRIORITY = [
     "not-installed",
     "update-available",
     "module-outdated",
+    "installed-outdated",
+    "installed-locked",
     "installed-inactive",
     "up-to-date",
     "no-content",
@@ -84,22 +88,52 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
 
         if (!isConnected) {
+            const localOverlays = await this._collectLocalOverlays();
+            const groups = this._buildGroups(localOverlays);
+            this._appendModulesWithoutContent(groups, {});
+
+            if (this._view === "detail" && this._selectedModuleId
+                && !groups.some(g => g.moduleId === this._selectedModuleId)) {
+                this._view = "grid";
+                this._selectedModuleId = null;
+            }
+            const selected = this._selectedModuleId
+                ? groups.find(g => g.moduleId === this._selectedModuleId) ?? null
+                : null;
+
+            const installedCount = localOverlays.length;
+            const inactiveCount = localOverlays.filter(o => o.status === "installed-inactive").length;
+
+            const lastCheck = OverlayService._lastCheckTimestamp
+                ? new Date(OverlayService._lastCheckTimestamp).toLocaleTimeString()
+                : "Not checked this session";
+
+            this._actionableOverlayIds = [];
+
             return {
                 isConnected: false,
                 userTier: null,
-                groups: [],
+                groups,
                 earlyAccess: [],
-                overlayCount: 0,
+                overlayCount: groups.length,
                 actionableCount: 0,
-                lastCheck: null,
-                view: "grid",
-                selected: null,
+                installedCount,
+                inactiveCount,
+                lastCheck,
+                view: this._view,
+                selected,
                 manageOpen: false
             };
         }
 
         const registry = await PackRegistryService._fetchRegistry();
-        const overlayMap = registry?.overlays ?? {};
+        const rawOverlayMap = registry?.overlays ?? {};
+        const showPreview = !!game.settings.get("ionrift-library", "showPreviewContent");
+        const overlayMap = {};
+        for (const [id, entry] of Object.entries(rawOverlayMap)) {
+            if (entry?.preview && !showPreview) continue;
+            overlayMap[id] = entry;
+        }
         const TIER_ORDER = PackRegistryService.TIER_ORDER;
         const userRank = TIER_ORDER.indexOf(userTier);
         const overlays = [];
@@ -119,9 +153,23 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
             let status;
             let active = false;
-            if (!hasAccess) status = "locked";
+            if (!hasAccess) {
+                if (localMatches) {
+                    status = "installed-locked";
+                    active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+                } else {
+                    status = "locked";
+                }
+            }
             else if (!mod?.active) status = "module-inactive";
-            else if (isModuleOutdated) status = "module-outdated";
+            else if (isModuleOutdated) {
+                if (localMatches) {
+                    status = "installed-outdated";
+                    active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+                } else {
+                    status = "module-outdated";
+                }
+            }
             else if (!localMatches) status = "not-installed";
             else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) {
                 status = "update-available";
@@ -132,7 +180,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             }
 
             let contents = null;
-            if (hasAccess && localMatches) {
+            if (localMatches) {
                 contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
             }
 
@@ -152,6 +200,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 installedAt: local?.installedAt ?? null,
                 minModuleVersion: entry.minModuleVersion ?? null,
                 installedModuleVersion: mod?.version ?? null,
+                preview: !!entry.preview,
                 status,
                 isActive: active,
                 hasAccess,
@@ -192,12 +241,17 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             ? new Date(OverlayService._lastCheckTimestamp).toLocaleTimeString()
             : "Not checked this session";
 
+        const INSTALLED_STATUSES = new Set([
+            "up-to-date",
+            "installed-inactive",
+            "update-available",
+            "installed-outdated",
+            "installed-locked"
+        ]);
         let installedCount = 0;
         let inactiveCount = 0;
         for (const ov of overlays) {
-            if (ov.status === "up-to-date" || ov.status === "installed-inactive" || ov.status === "update-available") {
-                installedCount += 1;
-            }
+            if (INSTALLED_STATUSES.has(ov.status)) installedCount += 1;
             if (ov.status === "installed-inactive") inactiveCount += 1;
         }
 
@@ -223,9 +277,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         el.classList.add("ionrift-overlay-manager", "ionrift-patreon-library");
         if (context.view) el.dataset.view = context.view;
 
-        if (!context.isConnected) {
-            el.innerHTML = this._buildConnectCard();
-        } else if (context.view === "detail" && context.selected) {
+        if (context.view === "detail" && context.selected) {
             el.innerHTML = this._buildDetailMarkup(context);
         } else {
             el.innerHTML = this._buildGridMarkup(context);
@@ -359,18 +411,33 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 ev.stopPropagation();
                 const overlayId = btn.dataset.overlayId;
                 const label = btn.dataset.installLabel ?? "Install";
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${label}...`;
+
                 if (!OverlayService.pendingOverlays.find(p => p.overlayId === overlayId)) {
                     await OverlayService.refresh();
                 }
-                if (!OverlayService.pendingOverlays.find(p => p.overlayId === overlayId)) {
+                const pending = OverlayService.pendingOverlays.find(p => p.overlayId === overlayId);
+                if (!pending) {
                     ui?.notifications?.warn(
                         `Could not start install for <strong>${overlayId}</strong>. The registry did not list it as installable. Use <strong>Check for updates</strong>, then try again.`
                     );
                     this.render();
                     return;
                 }
+
+                const action = label.toLowerCase().includes("update") ? "reinstall" : "install";
+                const proceed = await OverlayService.confirmDestructiveAction({
+                    moduleId: pending.entry.moduleId,
+                    action,
+                    title: action === "reinstall" ? "Update content pack?" : "Install content pack?",
+                    intro: `<strong>${overlayId}</strong> v${pending.entry.latest} will be downloaded and extracted.`,
+                    confirmLabel: action === "reinstall" ? "Update" : "Install",
+                    confirmIcon: action === "reinstall" ? "fas fa-sync" : "fas fa-download",
+                    context: { overlayId, sublayer: pending.sublayer }
+                });
+                if (!proceed) return;
+
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${label}...`;
                 await OverlayService.installOverlay(overlayId);
                 this.render();
             });
@@ -388,30 +455,242 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             });
         });
 
-        root.querySelectorAll("[data-action='uninstall-overlay']").forEach(btn => {
+        root.querySelectorAll("[data-action='reinstall-overlay']").forEach(btn => {
             btn.addEventListener("click", async (ev) => {
                 ev.stopPropagation();
                 const overlayId = btn.dataset.overlayId;
-                const moduleId = btn.dataset.moduleId;
-                const sublayer = btn.dataset.sublayer;
-                if (!overlayId || !moduleId || !sublayer) return;
+                if (!overlayId) return;
 
-                const confirmed = await game.ionrift?.library?.confirm?.({
-                    title: "Remove content pack",
-                    content: `<p>Remove <strong>${overlayId}</strong> from this world?</p><p>Files are deleted from local storage. Reinstall from Patreon Library any time.</p>`,
-                    yesLabel: "Remove",
-                    yesIcon: "fas fa-trash-alt"
+                const moduleId = this._selectedModuleId
+                    ?? this._findOverlayModuleId(overlayId);
+
+                const proceed = await OverlayService.confirmDestructiveAction({
+                    moduleId,
+                    action: "reinstall",
+                    title: "Reinstall content pack?",
+                    intro: `Fresh assets for <strong>${overlayId}</strong> will be downloaded and replace existing files.`,
+                    confirmLabel: "Reinstall",
+                    confirmIcon: "fas fa-wrench",
+                    context: { overlayId }
                 });
-                if (!confirmed) return;
+                if (!proceed) return;
 
                 btn.disabled = true;
-                const ok = await OverlayService.uninstallOverlay(overlayId, moduleId, sublayer);
-                if (!ok) {
-                    ui?.notifications?.warn(`Could not remove ${overlayId}. Check the console for details.`);
-                }
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                await OverlayService.reinstallOverlay(overlayId);
                 this.render();
             });
         });
+
+        root.querySelectorAll("[data-action='zip-import']").forEach(btn => {
+            btn.addEventListener("click", async (ev) => {
+                ev.stopPropagation();
+                await this._handleZipImport(btn);
+            });
+        });
+
+    }
+
+    /**
+     * Window-level zip-import flow. The .zip is opened first and the manifest
+     * inspected to decide which opted-in module should receive the pack. The
+     * destructive-warnings modal then runs for that module before extraction.
+     *
+     * Routing rules, evaluated in order against the manifest:
+     *   1. manifest.id or manifest.packId starts with any
+     *      MODULE_DISPLAY_META[moduleId].zipImport.match.idPrefix entry
+     *   2. manifest.packType is in match.packTypes
+     *
+     * @param {HTMLButtonElement} btn
+     */
+    async _handleZipImport(btn) {
+        const file = await this._pickZipFile();
+        if (!file) return;
+
+        let manifest = null;
+        try {
+            manifest = await this._readManifestFromZip(file);
+        } catch (e) {
+            console.warn("OverlayManagerApp | Failed to read manifest from zip:", e);
+        }
+        if (!manifest) {
+            ui.notifications?.error("This .zip is missing a manifest.json at its root.");
+            return;
+        }
+
+        const packId = typeof manifest.id === "string" && manifest.id
+            ? manifest.id
+            : (typeof manifest.packId === "string" ? manifest.packId : null);
+        if (!packId) {
+            ui.notifications?.error("The manifest.json in this .zip is missing an \"id\" (or \"packId\") field.");
+            return;
+        }
+
+        const target = this._resolveTargetForManifest(manifest);
+        if (!target) {
+            ui.notifications?.error(
+                "Could not match this .zip to an installed Ionrift module. Check that the relevant module is enabled and that the manifest declares a recognised type."
+            );
+            return;
+        }
+
+        const { moduleId, meta, zipConfig } = target;
+        const moduleLabel = meta.title ?? moduleId;
+
+        const proceed = await OverlayService.confirmDestructiveAction({
+            moduleId,
+            action: "zipImport",
+            title: `Install ${moduleLabel} content pack?`,
+            intro: `<strong>${packId}</strong> will be installed from <strong>${file.name}</strong> into ${moduleLabel}.`,
+            confirmLabel: "Install",
+            confirmIcon: "fas fa-file-import",
+            context: { packId, fileName: file.name, manifest }
+        });
+        if (!proceed) return;
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
+
+        try {
+            const importerModuleId = zipConfig.importerModuleId ?? moduleId.replace(/^ionrift-/, "");
+            const assetTypePrefix = zipConfig.assetTypePrefix ?? "packs/";
+
+            if (game.ionrift?.library?.platform) {
+                const baseAssetDir = `ionrift-data/${importerModuleId}/${assetTypePrefix.replace(/\/+$/, "")}`;
+                await PlatformHelper.withSuppressedToasts(
+                    () => PlatformHelper.ensureDirectory(baseAssetDir)
+                );
+            }
+
+            const result = await ZipImporterService.importFromFile(file, {
+                moduleId: importerModuleId,
+                assetType: `${assetTypePrefix}${packId}`,
+                allowedExtensions: zipConfig.fileExtensions,
+                maxSizeMB: zipConfig.maxSizeMB ?? 50
+            });
+
+            if (!result || result.imported === 0) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                return;
+            }
+
+            const settingKey = zipConfig.onInstalledSettingKey;
+            if (Array.isArray(settingKey) && settingKey.length === 2) {
+                try {
+                    const current = game.settings.get(settingKey[0], settingKey[1]) ?? {};
+                    current[packId] = true;
+                    await game.settings.set(settingKey[0], settingKey[1], current);
+                } catch (e) {
+                    console.warn("OverlayManagerApp | Could not auto-enable pack:", e);
+                }
+            }
+
+            const changedModuleId = zipConfig.contentChangedModuleId ?? moduleId;
+            Hooks.callAll("ionrift.overlayContentChanged", {
+                moduleId: changedModuleId,
+                source: "zipImport",
+                packId,
+                installed: true,
+                active: true
+            });
+
+            ui.notifications?.info(`Installed "${packId}" into ${moduleLabel} (${result.imported} files).`);
+        } catch (e) {
+            console.error("OverlayManagerApp | Zip import failed:", e);
+            ui.notifications?.error(`Zip import failed: ${e.message}`);
+        } finally {
+            this.render();
+        }
+    }
+
+    /**
+     * Resolve which acceptsZipImport module owns this manifest.
+     *
+     * idPrefix match takes precedence over packType match, so a pack with both
+     * `id: "ionrift-soundpack-core"` and `packType: "sfx"` lands at Resonance
+     * regardless of any other module that claims the sfx packType.
+     *
+     * @param {Object} manifest
+     * @returns {{moduleId: string, meta: Object, zipConfig: Object}|null}
+     */
+    _resolveTargetForManifest(manifest) {
+        const idCandidate = typeof manifest?.id === "string" ? manifest.id
+            : (typeof manifest?.packId === "string" ? manifest.packId : "");
+        const packType = typeof manifest?.packType === "string" ? manifest.packType : "";
+
+        const opted = Object.entries(PackRegistryService.MODULE_DISPLAY_META)
+            .filter(([, meta]) => meta?.acceptsZipImport)
+            .map(([moduleId, meta]) => ({ moduleId, meta, zipConfig: meta.zipImport ?? {} }));
+
+        if (idCandidate) {
+            for (const entry of opted) {
+                const prefixes = entry.zipConfig?.match?.idPrefix;
+                if (Array.isArray(prefixes) && prefixes.some(p => typeof p === "string" && idCandidate.startsWith(p))) {
+                    return entry;
+                }
+            }
+        }
+
+        if (packType) {
+            for (const entry of opted) {
+                const types = entry.zipConfig?.match?.packTypes;
+                if (Array.isArray(types) && types.includes(packType)) {
+                    return entry;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fallback module-id lookup when the reinstall control is invoked outside
+     * the detail view. Uses the overlay row's data-module-id if available.
+     */
+    _findOverlayModuleId(overlayId) {
+        const root = document.getElementById("ionrift-patreon-library");
+        if (!root) return null;
+        const moduleAttr = root.querySelector(
+            `[data-overlay-id="${overlayId}"] [data-module-id]`
+        )?.dataset?.moduleId;
+        return moduleAttr ?? null;
+    }
+
+    _pickZipFile() {
+        return new Promise((resolve) => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".zip";
+            input.addEventListener("change", (e) => resolve(e.target.files?.[0] ?? null));
+            input.addEventListener("cancel", () => resolve(null));
+            input.click();
+        });
+    }
+
+    /**
+     * Read manifest.json from the zip's root. Returns the parsed object or
+     * null when missing. Throws on JSZip / JSON errors so callers can surface
+     * a useful error toast.
+     * @param {File} file
+     * @returns {Promise<Object|null>}
+     */
+    async _readManifestFromZip(file) {
+        const JSZip = await PlatformHelper.loadJSZip();
+        const buffer = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(buffer);
+        let entry = zip.file("manifest.json");
+        if (!entry) {
+            zip.forEach((relativePath, candidate) => {
+                if (entry || candidate.dir) return;
+                const normalized = relativePath.replace(/\\/g, "/").toLowerCase();
+                if (normalized === "manifest.json") entry = candidate;
+            });
+        }
+        if (!entry) return null;
+        const text = await entry.async("text");
+        return JSON.parse(text);
     }
 
     _hasError(status, lastError) {
@@ -462,6 +741,61 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
+     * Scan the local data directory for installed overlay manifests across
+     * every first-party module. Used when disconnected from Patreon so the
+     * library still reflects what the user actually has on disk, including
+     * overlays whose registry entries are unreachable without an auth claim.
+     * @returns {Promise<Object[]>}
+     */
+    async _collectLocalOverlays() {
+        const overlays = [];
+
+        for (const [moduleId, meta] of Object.entries(PackRegistryService.MODULE_DISPLAY_META)) {
+            const mod = game.modules.get(moduleId);
+            const sublayers = await OverlayService.listInstalledSublayers(moduleId);
+            if (!sublayers.length) continue;
+
+            for (const sublayer of sublayers) {
+                const local = await OverlayService.getLocalManifest(moduleId, sublayer);
+                if (!local?.overlayId) continue;
+
+                const active = await OverlayService.isOverlayActive(local.overlayId, moduleId, sublayer);
+                const contents = await OverlayService.getOverlayContents(moduleId, sublayer);
+                const tier = local.tier ?? "Free";
+                const tierRank = PackRegistryService.TIER_ORDER.indexOf(tier);
+
+                overlays.push({
+                    overlayId: local.overlayId,
+                    moduleId,
+                    moduleName: mod?.title ?? meta.title ?? moduleId,
+                    moduleIcon: meta.icon ?? "fas fa-cube",
+                    moduleAccent: MODULE_ACCENT[moduleId] ?? "#8B5CF6",
+                    tier,
+                    tierRank: tierRank >= 0 ? tierRank : 0,
+                    sublayer,
+                    packLabel: local.packLabel ?? null,
+                    description: local.description ?? "",
+                    latestVersion: local.version ?? null,
+                    installedVersion: local.version ?? null,
+                    installedAt: local.installedAt ?? null,
+                    minModuleVersion: null,
+                    installedModuleVersion: mod?.version ?? null,
+                    preview: false,
+                    status: active ? "up-to-date" : "installed-inactive",
+                    isActive: active,
+                    hasAccess: true,
+                    isModuleActive: !!mod?.active,
+                    contents,
+                    lastError: null,
+                    hasError: false
+                });
+            }
+        }
+
+        return overlays;
+    }
+
+    /**
      * Surface every active first-party module as a tile, even when nothing
      * is registered for it yet. Keeps the panel honest about what the
      * user has installed and avoids the "where is my module?" surprise.
@@ -493,6 +827,19 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 installedCount: 0
             });
         }
+
+    }
+
+    /**
+     * True when at least one module has opted into the zip-import affordance.
+     * Drives whether the window-level "Install .zip" footer control is shown.
+     * @returns {boolean}
+     */
+    static hasAnyZipImportSurface() {
+        for (const meta of Object.values(PackRegistryService.MODULE_DISPLAY_META)) {
+            if (meta?.acceptsZipImport) return true;
+        }
+        return false;
     }
 
     _buildGroups(overlays) {
@@ -526,12 +873,17 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 o.status === "up-to-date"
                 || o.status === "installed-inactive"
                 || o.status === "update-available"
+                || o.status === "installed-outdated"
+                || o.status === "installed-locked"
             ).length;
             g.inactiveCount = g.overlays.filter(o => o.status === "installed-inactive").length;
-            g.activeCount = g.overlays.filter(o =>
-                o.status === "up-to-date"
-                || (o.status === "update-available" && o.isActive)
-            ).length;
+            g.activeCount = g.overlays.filter(o => {
+                if (o.status === "up-to-date") return true;
+                if (o.status === "update-available" && o.isActive) return true;
+                if (o.status === "installed-outdated" && o.isActive) return true;
+                if (o.status === "installed-locked" && o.isActive) return true;
+                return false;
+            }).length;
         }
 
         groups.sort((a, b) =>
@@ -546,7 +898,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
      */
     _tileRollupDisplay(group) {
         if (group.status === "locked" || group.status === "module-inactive"
-            || group.status === "module-outdated" || group.status === "no-content") {
+            || group.status === "module-outdated" || group.status === "no-content"
+            || group.status === "installed-outdated" || group.status === "installed-locked") {
             return this._tileStatusDisplay(group);
         }
 
@@ -586,8 +939,12 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 return isError
                     ? { icon: "fa-rotate-right", className: "is-action", label: "Update failed last time. Try again." }
                     : { icon: "fa-download", className: "is-action", label: "Update available" };
+            case "installed-outdated":
+                return { icon: "fa-circle-info", className: "is-muted", label: "Module update available" };
+            case "installed-locked":
+                return { icon: "fa-lock", className: "is-locked", label: "Installed, no longer entitled" };
             case "module-outdated":
-                return { icon: "fa-arrow-up", className: "is-muted", label: "Module needs upgrade" };
+                return { icon: "fa-arrow-up", className: "is-muted", label: "Module update required" };
             case "no-content":
                 return { icon: "fa-circle-minus", className: "is-muted", label: "No content registered yet" };
             case "module-inactive":
@@ -684,6 +1041,22 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
     /** Subscription status strip at the top of the panel. */
     _buildSubscriptionStrip(context) {
+        if (!context.isConnected) {
+            return `
+            <div class="overlay-mgr-strip overlay-mgr-strip--disconnected">
+                <div class="overlay-mgr-strip-main">
+                    <i class="fab fa-patreon overlay-mgr-strip-icon"></i>
+                    <span class="overlay-mgr-strip-label">
+                        Connect your Patreon account to automatically download content packs for your tier.
+                    </span>
+                </div>
+                <button type="button" class="overlay-mgr-strip-connect" data-action="connect-patreon"
+                        title="Link your Patreon account">
+                    <i class="fab fa-patreon"></i> Connect Patreon
+                </button>
+            </div>`;
+        }
+
         const tier = context.userTier || "Free";
         const manageTray = context.manageOpen
             ? `
@@ -771,49 +1144,43 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             </button>`
             : "";
 
+        const checkBtn = context.isConnected
+            ? `<button type="button" class="overlay-mgr-check-btn" data-action="check-now">
+                <i class="fas fa-sync"></i> Check for updates
+            </button>`
+            : "";
+
+        const title = context.isConnected ? "Content Packs" : "Your Library";
+
         return `
         <header class="overlay-mgr-section-head overlay-mgr-section-head--packs">
             <i class="fas fa-layer-group"></i>
-            <span class="overlay-mgr-section-title">Content Packs</span>
+            <span class="overlay-mgr-section-title">${title}</span>
             <span class="overlay-mgr-section-summary">${summary}</span>
             ${installAllBtn}
-            <button type="button" class="overlay-mgr-check-btn" data-action="check-now">
-                <i class="fas fa-sync"></i> Check for updates
-            </button>
+            ${checkBtn}
         </header>`;
-    }
-
-    _buildConnectCard() {
-        return `
-        <div class="overlay-mgr-connect-card">
-            <i class="fab fa-patreon overlay-mgr-connect-icon"></i>
-            <h3 class="overlay-mgr-connect-title">Unlock Subscription Content</h3>
-            <p class="overlay-mgr-connect-body">
-                Link your Patreon account to view early access modules and bonus content packs available for your tier.
-            </p>
-            <button type="button" class="overlay-mgr-connect-btn" data-action="connect-patreon">
-                <i class="fab fa-patreon"></i> Connect Patreon
-            </button>
-        </div>`;
     }
 
     _buildGridMarkup(context) {
         let html = this._buildSubscriptionStrip(context);
-        html += this._buildEarlyAccessSection(context);
 
-        html += `<section class="overlay-mgr-section overlay-mgr-section--packs">`;
-        html += this._buildPacksSectionHead(context);
-        html += `<div class="overlay-tile-grid">`;
-        for (const group of context.groups) {
-            html += this._renderModuleTile(group, false);
+        if (context.isConnected) {
+            html += this._buildEarlyAccessSection(context);
         }
-        html += `</div>`;
-        html += `</section>`;
 
-        html += `
-        <div class="overlay-mgr-footer">
-            <span class="overlay-mgr-footer-time">Last checked: ${context.lastCheck}</span>
-        </div>`;
+        if (context.groups.length) {
+            html += `<section class="overlay-mgr-section overlay-mgr-section--packs">`;
+            html += this._buildPacksSectionHead(context);
+            html += `<div class="overlay-tile-grid">`;
+            for (const group of context.groups) {
+                html += this._renderModuleTile(group, false);
+            }
+            html += `</div>`;
+            html += `</section>`;
+        }
+
+        html += this._buildLibraryFooter(context);
 
         return html;
     }
@@ -831,9 +1198,41 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             html += this._renderModuleTile(g, true);
         }
         html += `</div></div>`;
-        html += this._buildDetailPanel(group);
+        html += this._buildDetailPanel(group, context.isConnected);
         html += `</div>`;
+        html += this._buildLibraryFooter(context);
         return html;
+    }
+
+    /**
+     * Window-level footer: last-checked stamp plus the universal Install .zip
+     * control. Both grid and detail views render this so the manual install
+     * path is always reachable, regardless of which module the user is
+     * inspecting.
+     */
+    _buildLibraryFooter(context) {
+        const showZip = OverlayManagerApp.hasAnyZipImportSurface();
+        const zipBtn = showZip
+            ? `<button type="button" class="overlay-mgr-footer-zip" data-action="zip-import"
+                    title="Install a content pack from a .zip file">
+                    <i class="fas fa-file-import"></i> Install .zip
+                </button>`
+            : "";
+        const zipHint = showZip
+            ? `<span class="overlay-mgr-footer-hint">Have a .zip from Patreon? Install any content pack here.</span>`
+            : "";
+        const lastCheck = context.isConnected
+            ? `<span class="overlay-mgr-footer-time">Last checked: ${context.lastCheck}</span>`
+            : "";
+
+        return `
+        <div class="overlay-mgr-footer">
+            <div class="overlay-mgr-footer-meta">
+                ${zipHint}
+                ${lastCheck}
+            </div>
+            ${zipBtn}
+        </div>`;
     }
 
     /**
@@ -849,7 +1248,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return actionable?.overlayId ?? overlays[0].overlayId;
     }
 
-    _buildDetailPanel(group) {
+    _buildDetailPanel(group, isConnected = true) {
         const shortName = this._shortModuleName(group.moduleName);
         const useAccordion = group.overlays.length > 1;
         if (useAccordion && this._expandedOverlayId === undefined) {
@@ -875,29 +1274,31 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
 
         if (group.status === "no-content") {
-            html += `
-            <p class="overlay-detail-muted">
-                ${shortName} is installed and active. No content packs are registered for it yet.
-                When new content ships, it will appear here automatically.
-            </p>`;
+            const emptyMsg = isConnected
+                ? `${shortName} is installed and active. No content packs are registered for it yet.
+                When new content ships, it will appear here automatically.`
+                : `${shortName} is installed and active. Connect Patreon to browse and download content packs for this module, or use Install .zip below for a pack you already have.`;
+            html += `<p class="overlay-detail-muted">${emptyMsg}</p>`;
         }
 
         html += `<div class="overlay-detail-tiers ${useAccordion ? "overlay-detail-tiers--accordion" : ""}">`;
         for (const overlay of group.overlays) {
             const isExpanded = !useAccordion || overlay.overlayId === this._expandedOverlayId;
-            html += this._renderTierBlock(overlay, { isExpanded, useAccordion });
+            html += this._renderTierBlock(overlay, { isExpanded, useAccordion, isConnected });
         }
         html += `</div>`;
+
         html += `</div>`;
         return html;
     }
 
-    _renderTierBlock(overlay, { isExpanded = true, useAccordion = false } = {}) {
+    _renderTierBlock(overlay, { isExpanded = true, useAccordion = false, isConnected = true } = {}) {
         const contents = overlay.contents;
         const summary = contents?.summary ?? overlay.description ?? "";
-        const actionHtml = this._renderDetailAction(overlay);
+        const actionHtml = this._renderDetailAction(overlay, isConnected);
         const errorHtml = this._formatDetailError(overlay.lastError, overlay.status, overlay.overlayId);
-        const showBody = overlay.hasAccess && overlay.status !== "locked";
+        const showBody = (overlay.hasAccess && overlay.status !== "locked")
+            || overlay.status === "installed-locked";
 
         let outdatedNote = "";
         if (overlay.status === "module-outdated") {
@@ -907,15 +1308,39 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 : "";
             outdatedNote = `
             <p class="overlay-detail-muted">
-                Requires ${moduleName} v${overlay.minModuleVersion} or newer${installed}.
-                Update the module first, then come back to install.
+                Needs ${moduleName} v${overlay.minModuleVersion} or newer${installed}.
+            </p>`;
+        } else if (overlay.status === "installed-outdated") {
+            const moduleName = this._shortModuleName(overlay.moduleName ?? overlay.moduleId);
+            const installed = overlay.installedModuleVersion
+                ? ` (you have v${overlay.installedModuleVersion})`
+                : "";
+            const newer = overlay.installedVersion
+                && PackRegistryService._compareVersions(overlay.installedVersion, overlay.latestVersion) < 0;
+
+            if (newer) {
+                outdatedNote = `
+                <p class="overlay-detail-muted">
+                    Pack v${overlay.latestVersion} needs ${moduleName} v${overlay.minModuleVersion}+ ${installed}.
+                    Your installed v${overlay.installedVersion} still works.
+                </p>`;
+            } else {
+                outdatedNote = `
+                <p class="overlay-detail-muted">
+                    ${moduleName} v${overlay.minModuleVersion}+ recommended${installed}. The pack still works.
+                </p>`;
+            }
+        } else if (overlay.status === "installed-locked") {
+            outdatedNote = `
+            <p class="overlay-detail-muted">
+                Your current Patreon tier no longer entitles you to this pack. The installed copy keeps working.
             </p>`;
         }
 
         let categoriesHtml = "";
         if (showBody) {
-            for (const cat of (contents?.categories ?? []).slice(0, 3)) {
-                const items = (cat.items ?? []).slice(0, 5);
+            for (const cat of (contents?.categories ?? [])) {
+                const items = cat.items ?? [];
                 if (!items.length) continue;
                 categoriesHtml += `
                 <div class="overlay-detail-category">
@@ -938,9 +1363,12 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const classLabel = overlay.packLabel
             ?? this._packClassLabel(overlay.sublayer, overlay.overlayId);
         const isFollowerTier = overlay.tier === "Free";
+        const previewPill = overlay.preview
+            ? `<span class="overlay-tier-pill overlay-tier-pill--preview" title="Preview, hidden from public registry">Preview</span>`
+            : "";
         const headBadges = isFollowerTier
-            ? `<span class="overlay-tier-pill overlay-tier-pill--pack-name">${classLabel}</span>`
-            : `<span class="overlay-tier-pill">${this._tierDisplayLabel(overlay.tier)}</span>
+            ? `${previewPill}<span class="overlay-tier-pill overlay-tier-pill--pack-name">${classLabel}</span>`
+            : `${previewPill}<span class="overlay-tier-pill">${this._tierDisplayLabel(overlay.tier)}</span>
                 <span class="overlay-pack-class">${classLabel}</span>`;
 
         const panelClasses = [
@@ -986,16 +1414,18 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         </section>`;
     }
 
-    _renderDetailAction(overlay) {
+    _renderDetailAction(overlay, isConnected = true) {
         switch (overlay.status) {
             case "not-installed":
                 return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Install"><i class="fas fa-download"></i> Install</button>`;
             case "update-available":
-                return `${this._renderOverlayLifecycleControls(overlay)}
+                return `${this._renderOverlayLifecycleControls(overlay, isConnected)}
                     <button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
             case "up-to-date":
             case "installed-inactive":
-                return this._renderOverlayLifecycleControls(overlay);
+            case "installed-outdated":
+            case "installed-locked":
+                return this._renderOverlayLifecycleControls(overlay, isConnected);
             case "module-outdated":
                 return `<span class="overlay-detail-status-blocked"><i class="fas fa-arrow-up"></i> Update module first</span>`;
             default:
@@ -1003,8 +1433,17 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
     }
 
-    _renderOverlayLifecycleControls(overlay) {
+    _renderOverlayLifecycleControls(overlay, isConnected = true) {
         const checked = overlay.isActive ? "checked" : "";
+        const reinstallBtn = isConnected
+            ? `<button type="button" class="overlay-detail-btn overlay-detail-btn--icon"
+                data-action="reinstall-overlay"
+                data-overlay-id="${overlay.overlayId}"
+                title="Reinstall fresh assets"
+                aria-label="Reinstall fresh assets">
+                <i class="fas fa-wrench"></i>
+            </button>`
+            : "";
         return `
         <div class="overlay-pack-toolbar">
             <label class="pack-toggle-label overlay-pack-active-toggle"
@@ -1017,15 +1456,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     ${checked} />
                 <span class="pack-toggle-switch"></span>
             </label>
-            <button type="button" class="overlay-detail-btn overlay-detail-btn--icon overlay-detail-btn--danger"
-                data-action="uninstall-overlay"
-                data-overlay-id="${overlay.overlayId}"
-                data-module-id="${overlay.moduleId}"
-                data-sublayer="${overlay.sublayer}"
-                title="Remove installed files"
-                aria-label="Remove installed files">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+            ${reinstallBtn}
         </div>`;
     }
 
@@ -1043,5 +1474,22 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             return `${name} could not be fetched from storage. The download link may have expired. Use <strong>Check for updates</strong>, then install again.`;
         }
         return `Install did not complete for ${name}. Try again.`;
+    }
+
+    /**
+     * Open Patreon Library on a module detail view (e.g. Attunement shortcut into Resonance).
+     * @param {string} [moduleId="ionrift-resonance"]
+     * @returns {Promise<OverlayManagerApp>}
+     */
+    static async openToModule(moduleId = "ionrift-resonance") {
+        const existing = Object.values(ui.applications ?? {}).find(
+            (app) => app instanceof OverlayManagerApp
+        );
+        const app = existing ?? new OverlayManagerApp();
+        app._selectedModuleId = moduleId;
+        app._view = "detail";
+        app._expandedOverlayId = undefined;
+        await app.render(true);
+        return app;
     }
 }

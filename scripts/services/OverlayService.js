@@ -1,5 +1,5 @@
 /**
- * OverlayService — Premium Content Overlay Manager
+ * OverlayService. Premium content overlay manager.
  *
  * Manages the lifecycle of overlay content packs: check availability
  * against the registry, download via Cloud Relay, extract to the
@@ -188,7 +188,7 @@ export class OverlayService {
      * Use this for staged overlays that have a `PACK_CATALOG` entry in the middleware
      * but are not yet advertised in `registry.json` (gated pre-GA test installs).
      * Tier gating is still enforced server-side by the middleware against the caller's
-     * Patreon JWT — this helper does not bypass auth.
+     * Patreon JWT; this helper does not bypass auth.
      *
      * Example (F12 console, GM logged in and tier-eligible):
      *   await game.ionrift.library.overlay.installById(
@@ -501,11 +501,160 @@ export class OverlayService {
     }
 
     /**
+     * Force-reinstall an overlay. Downloads the latest version from the
+     * registry and extracts it over the existing files, replacing all assets.
+     * Does not require uninstall first.
+     *
+     * @param {string} overlayId
+     * @returns {Promise<boolean>}
+     */
+    static async reinstallOverlay(overlayId) {
+        const cached = await PackRegistryService._fetchRegistry();
+        const entry = cached?.overlays?.[overlayId];
+        if (!entry) {
+            Logger.warn(MODULE_LABEL, `reinstallOverlay: ${overlayId} not found in registry.`);
+            ui?.notifications?.warn(`Could not reinstall ${overlayId}. Not found in the registry.`);
+            return false;
+        }
+
+        const sublayer = this.resolveSublayer(entry);
+
+        // Clear caches so fresh manifest is read after extraction
+        this._manifestCache.delete(`${entry.moduleId}:${sublayer}`);
+        this._contentsCache.delete(`${entry.moduleId}:${sublayer}`);
+        this._clearError(overlayId);
+
+        Logger.info(MODULE_LABEL, `Reinstalling ${overlayId} v${entry.latest} (force overwrite).`);
+        const ok = await this._downloadAndExtract(overlayId, entry, sublayer, { userInitiated: true });
+        if (ok) {
+            ui?.notifications?.info(`Reinstalled: ${overlayId} v${entry.latest}`);
+        }
+        return ok;
+    }
+
+    /**
      * @param {{ overlayId: string, moduleId: string, sublayer: string, active: boolean, installed: boolean }} detail
      * @private
      */
     static _emitContentChanged(detail) {
         Hooks.callAll("ionrift.overlayContentChanged", detail);
+    }
+
+    // ── Destructive-action confirmation ────────────────────────────────
+
+    /**
+     * Collect destructive-action warnings from consumer modules.
+     *
+     * Fires the synchronous `ionrift.collectDestructiveWarnings` hook with a
+     * mutable `warnings` array. Listeners that own data for `moduleId` push
+     * warning entries describing what will be preserved vs replaced.
+     *
+     * Entry shape:
+     *   { severity: "preserved"|"replaced"|"shadowed"|"note", title: string, detail?: string }
+     *
+     * @param {{ moduleId: string, action: "install"|"reinstall"|"zipImport", context?: Object }} payload
+     * @returns {Array<{severity: string, title: string, detail?: string}>}
+     */
+    static collectDestructiveWarnings(payload) {
+        const warnings = [];
+        try {
+            Hooks.callAll("ionrift.collectDestructiveWarnings", { ...payload, warnings });
+        } catch (e) {
+            Logger.warn(MODULE_LABEL, "collectDestructiveWarnings hook threw:", e);
+        }
+        return warnings;
+    }
+
+    /**
+     * Show a Glass-themed modal listing preserved vs replaced items, gated by
+     * detected warnings. Returns true when the user confirms, false when no
+     * confirmation is needed (no warnings) or when the user cancels.
+     *
+     * When `skipWhenEmpty` is true (the default), the modal is bypassed and
+     * the helper returns true if no listener reported any warnings. Callers
+     * that always want to confirm (e.g. reinstall buttons that should ask
+     * even on a clean world) should pass `skipWhenEmpty: false`.
+     *
+     * @param {Object} options
+     * @param {string} options.moduleId
+     * @param {"install"|"reinstall"|"zipImport"} options.action
+     * @param {string} options.title
+     * @param {string} [options.intro]   Lead paragraph (HTML allowed).
+     * @param {string} [options.confirmLabel="Continue"]
+     * @param {string} [options.confirmIcon="fas fa-check"]
+     * @param {boolean} [options.skipWhenEmpty=true]
+     * @param {Object} [options.context]   Passed through to listeners.
+     * @returns {Promise<boolean>}
+     */
+    static async confirmDestructiveAction(options) {
+        const {
+            moduleId,
+            action,
+            title,
+            intro = "",
+            confirmLabel = "Continue",
+            confirmIcon = "fas fa-check",
+            skipWhenEmpty = true,
+            context = {}
+        } = options;
+
+        const warnings = this.collectDestructiveWarnings({ moduleId, action, context });
+
+        if (skipWhenEmpty && warnings.length === 0) return true;
+
+        const replaced = warnings.filter(w => w.severity === "replaced" || w.severity === "shadowed");
+        const preserved = warnings.filter(w => w.severity === "preserved");
+        const notes = warnings.filter(w => w.severity === "note" || !["replaced", "shadowed", "preserved"].includes(w.severity));
+
+        const renderRow = (w) => {
+            const detail = w.detail ? `<span class="ionrift-destructive-row-detail">${w.detail}</span>` : "";
+            return `<li><strong>${w.title}</strong>${detail}</li>`;
+        };
+
+        const sections = [];
+        if (replaced.length) {
+            sections.push(`
+                <div class="ionrift-destructive-section ionrift-destructive-section--replaced">
+                    <div class="ionrift-destructive-heading"><i class="fas fa-arrow-rotate-right"></i> Will be replaced</div>
+                    <ul>${replaced.map(renderRow).join("")}</ul>
+                </div>`);
+        }
+        if (preserved.length) {
+            sections.push(`
+                <div class="ionrift-destructive-section ionrift-destructive-section--preserved">
+                    <div class="ionrift-destructive-heading"><i class="fas fa-shield"></i> Will be preserved</div>
+                    <ul>${preserved.map(renderRow).join("")}</ul>
+                </div>`);
+        }
+        if (notes.length) {
+            sections.push(`
+                <div class="ionrift-destructive-section ionrift-destructive-section--notes">
+                    <div class="ionrift-destructive-heading"><i class="fas fa-circle-info"></i> Worth knowing</div>
+                    <ul>${notes.map(renderRow).join("")}</ul>
+                </div>`);
+        }
+
+        const content = `
+            ${intro ? `<p>${intro}</p>` : ""}
+            <div class="ionrift-destructive-warnings">
+                ${sections.join("")}
+            </div>`;
+
+        const confirmFn = game.ionrift?.library?.confirm;
+        if (typeof confirmFn !== "function") {
+            Logger.warn(MODULE_LABEL, "confirmDestructiveAction: DialogHelper.confirm unavailable; defaulting to allow.");
+            return true;
+        }
+
+        return await confirmFn({
+            title,
+            content,
+            yesLabel: confirmLabel,
+            yesIcon: confirmIcon,
+            noLabel: "Cancel",
+            noIcon: "fas fa-times",
+            defaultYes: false
+        });
     }
 
     // ── Internal ────────────────────────────────────────────────────────

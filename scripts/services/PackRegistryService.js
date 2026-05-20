@@ -320,7 +320,28 @@ export class PackRegistryService {
         "ionrift-resonance": {
             title: "Ionrift Resonance",
             icon:  "fas fa-waveform-lines",
-            desc:  "Dynamic item and creature sound effects for immersive gameplay."
+            desc:  "Dynamic item and creature sound effects for immersive gameplay.",
+            // Opts the module into Patreon Library's window-level "Install .zip"
+            // affordance. The match block routes incoming zips to this module
+            // when the manifest matches; OverlayManagerApp handles dispatch.
+            acceptsZipImport: true,
+            zipImport: {
+                match: {
+                    // Manifest.id or manifest.packId starting with any of these.
+                    idPrefix: ["ionrift-soundpack-"],
+                    // Manifest.packType in this list (PackManifestSchema PACK_TYPES).
+                    packTypes: ["sfx"]
+                },
+                fileExtensions: [".json", ".mp3", ".wav", ".ogg", ".webm", ".flac"],
+                maxSizeMB: 200,
+                // Zip importer routes to ionrift-data/resonance/packs/{packId}/
+                // (the path SoundPackLoader scans), so the kernel passes
+                // moduleId "resonance" (no "ionrift-" prefix) to the importer.
+                importerModuleId: "resonance",
+                assetTypePrefix: "packs/",
+                contentChangedModuleId: "ionrift-resonance",
+                onInstalledSettingKey: ["ionrift-resonance", "installedSoundPacks"]
+            }
         },
         "ionrift-arbiter": {
             title: "Ionrift Arbiter",
