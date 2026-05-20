@@ -14,8 +14,6 @@
 - The Forge's per-file upload toasts no longer flood the notification area during pack installs.
 - Installing several packs in quick succession now queues them instead of running in parallel, preventing doubled API load.
 
-### Dev
-- `game.ionrift.library.dev` console helpers let developers rehearse the hosted install flow on a self-hosted Foundry: `simulateHostedInstall(true)` forces the hosted warning and throttle path, `installPerFileDelayMs(200)` adds a fixed per-file pause so the progress bar and ETA play out at hosted-platform speed. `resetInstallSimulation()` clears both. `listOverlays()` lists every overlay id known to the registry alongside its target directory and pending state. `inspectOverlayFiles(spec)` walks an overlay's target directory and reports what's on disk. The dev API is never persisted and never surfaced in UI.
 
 ## [2.1.1] - 2026-05-20
 
