@@ -1,9 +1,9 @@
 {
     "id": "ionrift-library",
     "title": "Ionrift Library",
-    "description": "Core dependency for the Ionrift module suite. Provides shared utilities, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules. Supports DnD5e, Daggerheart, and Pathfinder 2e.",
+    "description": "Core dependency for the Ionrift module suite. Provides the Patreon Library for content distribution, a shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
     "readme": "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
-    "version": "2.2.0",
+    "version": "2.1.0",
     "bugs": "https://discord.gg/vFGXf7Fncj",
     "media": [{"type": "icon", "url": "modules/ionrift-library/assets/module-icon.png"}],
     "compatibility": {

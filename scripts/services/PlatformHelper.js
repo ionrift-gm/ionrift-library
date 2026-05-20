@@ -102,6 +102,73 @@ export class PlatformHelper {
         }
     }
 
+    /**
+     * Deletes a file or directory tree under the data (or Forge) source.
+     * Recurses into subdirectories when the platform supports FilePicker.delete.
+     *
+     * @param {string} relativePath  Path relative to the file source root.
+     * @returns {Promise<boolean>}  True when the path is gone or was removed.
+     */
+    static async deletePath(relativePath) {
+        const FP = this.FP;
+        if (!FP || typeof FP.delete !== "function") {
+            return false;
+        }
+
+        const src = this.fileSource;
+        const normalized = (relativePath || "").replace(/^\/+/, "").replace(/\/+$/, "");
+        if (!normalized) return false;
+
+        const deleteOne = async (path) => {
+            try {
+                await FP.delete(src, path);
+                return true;
+            } catch {
+                return false;
+            }
+        };
+
+        let browse;
+        try {
+            browse = await FP.browse(src, normalized);
+        } catch {
+            return true;
+        }
+
+        for (const fileUrl of browse.files ?? []) {
+            const filePath = this._relativePathFromBrowse(fileUrl, normalized);
+            if (filePath) await deleteOne(filePath);
+        }
+
+        for (const dirUrl of browse.dirs ?? []) {
+            const dirPath = this._relativePathFromBrowse(dirUrl, normalized) ?? dirUrl;
+            await this.deletePath(dirPath);
+        }
+
+        await deleteOne(normalized);
+        try {
+            await FP.browse(src, normalized);
+            return false;
+        } catch {
+            return true;
+        }
+    }
+
+    /**
+     * @param {string} browseEntry  File or directory path from FilePicker.browse.
+     * @param {string} [_fallback]
+     * @returns {string|null}
+     * @private
+     */
+    static _relativePathFromBrowse(browseEntry, _fallback) {
+        if (!browseEntry || typeof browseEntry !== "string") return null;
+        const marker = "/Data/";
+        const idx = browseEntry.indexOf(marker);
+        if (idx >= 0) return browseEntry.slice(idx + marker.length);
+        if (!browseEntry.includes("://")) return browseEntry.replace(/^\/+/, "");
+        return null;
+    }
+
     // ─── Asset URL Resolution ────────────────────────────────────
 
     /**

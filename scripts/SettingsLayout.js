@@ -27,6 +27,24 @@ export class SettingsLayout {
     static _packModules = new Map();
 
     /**
+     * Pack manager menus to hide when Patreon Library owns delivery.
+     * Covers modules that registered before overlay mode or bypassed registerPackButton.
+     */
+    static LEGACY_PACK_MENU_KEYS = [
+        ["ionrift-respite", "contentPacks"],
+        ["ionrift-resonance", "contentPacks"],
+        ["ionrift-quartermaster", "contentPacks"]
+    ];
+
+    /**
+     * Patreon Library owns pack install UI when overlay distribution is active.
+     * @returns {boolean}
+     */
+    static isOverlayPackUiActive() {
+        return !!game?.ionrift?.library?.isOverlayDistributionActive?.();
+    }
+
+    /**
      * Registers the Attunement / Setup menu button at the top of the settings panel.
      * @param {string} moduleId    – The module ID (e.g. "ionrift-library")
      * @param {class}  setupApp    – The FormApplication subclass for the setup wizard
@@ -57,6 +75,10 @@ export class SettingsLayout {
      * @param {string} [options.icon]  – FA icon class (default "fas fa-box-open")
      */
     static registerPackButton(moduleId, appClass, options = {}) {
+        if (moduleId !== "ionrift-library" && SettingsLayout.isOverlayPackUiActive()) {
+            return;
+        }
+
         const key = options.key || "contentPacks";
 
         game.settings.registerMenu(moduleId, key, {
@@ -148,9 +170,15 @@ export class SettingsLayout {
 
         const root = html instanceof Element ? html : (html ? html[0] : document);
         const updates = game?.ionrift?.library?._packUpdates ?? [];
+        const overlayUi = SettingsLayout.isOverlayPackUiActive();
 
         for (const [moduleId, { key }] of SettingsLayout._packModules) {
-            const btn = root?.querySelector?.(`button[data-key="${moduleId}.${key}"]`);
+            const dataKey = overlayUi && moduleId === "ionrift-library"
+                ? "ionrift-library.patreonLibrary"
+                : `${moduleId}.${key}`;
+            if (overlayUi && moduleId !== "ionrift-library") continue;
+
+            const btn = root?.querySelector?.(`button[data-key="${dataKey}"]`);
             if (!btn) continue;
             if (btn.querySelector(".ionrift-pack-update-badge")) continue;
 
@@ -164,7 +192,7 @@ export class SettingsLayout {
                 .map(u => `\u2022 ${u.packId}  (v${u.installed?.version} to v${u.available?.latest})`)
                 .join("\n");
             const tooltip = packLines
-                ? `${moduleCount} pack update${moduleCount === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Manage Packs to update.`
+                ? `${moduleCount} pack update${moduleCount === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Patreon Library to update.`
                 : `${moduleCount} pack update${moduleCount === 1 ? "" : "s"} available`;
 
             const badge = document.createElement("span");
@@ -396,6 +424,36 @@ export class SettingsLayout {
             }
         }
     }
+
+    /**
+     * Hides per-module pack manager buttons when Patreon Library owns delivery.
+     * @param {jQuery|Element} html
+     */
+    static suppressLegacyPackButtons(html) {
+        if (!SettingsLayout.isOverlayPackUiActive()) return;
+
+        const $html = html?.jquery ? html : $(html);
+        const seen = new Set();
+
+        const hideMenu = (moduleId, key) => {
+            const id = `${moduleId}.${key}`;
+            if (seen.has(id) || moduleId === "ionrift-library") return;
+            seen.add(id);
+
+            const btn = $html.find(`button[data-key="${id}"]`);
+            if (!btn.length) return;
+
+            const group = btn.closest(".form-group");
+            if (group.length) group.css("display", "none");
+        };
+
+        for (const [moduleId, { key }] of SettingsLayout._packModules) {
+            hideMenu(moduleId, key);
+        }
+        for (const [moduleId, key] of SettingsLayout.LEGACY_PACK_MENU_KEYS) {
+            hideMenu(moduleId, key);
+        }
+    }
 }
 
 Hooks.on("renderSettingsConfig", (app, html, data) => {
@@ -406,4 +464,5 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
     SettingsLayout.injectPatreonStatus();
     SettingsLayout.injectPackUpdateBadge(html);
     SettingsLayout.injectEarlyAccessBadge(html);
+    SettingsLayout.suppressLegacyPackButtons(html);
 });

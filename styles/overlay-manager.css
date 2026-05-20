@@ -417,6 +417,13 @@
     flex-shrink: 0;
 }
 
+.ionrift-window .overlay-tier-pill--pack-name {
+    text-transform: none;
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    font-weight: 600;
+}
+
 /* ── Tile grid: uniform 3 columns ── */
 
 .ionrift-window .overlay-tile-grid,
@@ -576,6 +583,22 @@
 .ionrift-window .overlay-tile-status.is-muted   { color: rgba(255, 255, 255, 0.4); }
 .ionrift-window .overlay-tile-status.is-locked  { color: rgba(255, 255, 255, 0.3); }
 
+.ionrift-window .overlay-tile-status.is-partial {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.12);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.ionrift-window .overlay-tile-status.is-off {
+    color: rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ionrift-window .overlay-tile--partial {
+    border-color: rgba(251, 191, 36, 0.28);
+}
+
 .ionrift-window .overlay-tile--compact {
     min-height: 80px;
     padding: 0.55rem 0.4rem 0.5rem;
@@ -633,11 +656,28 @@
 .ionrift-window .overlay-split-detail {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
     padding: 0.15rem 0 0.15rem 0.75rem;
     border-left: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.ionrift-window .ionrift-overlay-manager[data-view="detail"] {
+    overflow: hidden;
+    max-height: min(78vh, 640px);
+}
+
+.ionrift-window .ionrift-overlay-manager[data-view="detail"] .overlay-split {
+    flex: 1;
+    min-height: 0;
+}
+
+.ionrift-window .ionrift-overlay-manager[data-view="detail"] .overlay-split-nav {
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 0.15rem;
 }
 
 .ionrift-window .overlay-detail-head {
@@ -687,6 +727,110 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+}
+
+.ionrift-window .overlay-detail-tiers--accordion {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.2rem;
+    gap: 0.45rem;
+}
+
+.ionrift-window .overlay-pack-panel {
+    display: flex;
+    flex-direction: column;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+
+.ionrift-window .overlay-pack-panel--locked {
+    opacity: 0.65;
+}
+
+.ionrift-window .overlay-pack-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-pack-panel-head .overlay-tier-block-action {
+    margin-left: auto;
+}
+
+.ionrift-window .overlay-pack-panel-toggle {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.ionrift-window .overlay-pack-panel--accordion .overlay-pack-panel-head:hover {
+    background: rgba(139, 92, 246, 0.08);
+}
+
+.ionrift-window .overlay-pack-panel-toggle:hover {
+    color: inherit;
+}
+
+.ionrift-window .overlay-pack-panel-toggle .overlay-tier-pill,
+.ionrift-window .overlay-pack-panel-toggle .overlay-pack-class,
+.ionrift-window .overlay-pack-panel-label .overlay-tier-pill,
+.ionrift-window .overlay-pack-panel-label .overlay-pack-class {
+    margin: 0;
+}
+
+.ionrift-window .overlay-pack-panel-label {
+    flex: 0 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.35rem;
+}
+
+.ionrift-window .overlay-pack-panel-chevron {
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    color: rgba(196, 181, 253, 0.7);
+    transition: transform 0.15s ease;
+}
+
+.ionrift-window .overlay-pack-panel.is-expanded .overlay-pack-panel-chevron {
+    transform: rotate(90deg);
+}
+
+.ionrift-window .overlay-pack-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0 0.55rem 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ionrift-window .overlay-pack-panel:not(.is-expanded) .overlay-pack-panel-body {
+    display: none;
+}
+
+.ionrift-window .overlay-pack-panel--accordion:not(.is-expanded) {
+    background: rgba(255, 255, 255, 0.015);
 }
 
 .ionrift-window .overlay-tier-block {
@@ -818,6 +962,49 @@
     align-items: center;
     gap: 0.3rem;
     white-space: nowrap;
+}
+
+.ionrift-window .overlay-pack-toolbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-pack-active-toggle {
+    margin: 0;
+}
+
+.ionrift-window .overlay-pack-panel--off .overlay-pack-panel-head {
+    opacity: 0.82;
+}
+
+.ionrift-window .overlay-pack-panel--off.is-expanded .overlay-pack-panel-body {
+    opacity: 0.9;
+}
+
+.ionrift-window .overlay-detail-btn--icon {
+    padding: 0.28rem 0.45rem !important;
+    min-width: 1.75rem;
+}
+
+.ionrift-window .overlay-detail-btn--danger {
+    border-color: rgba(248, 113, 113, 0.45) !important;
+    color: rgba(252, 165, 165, 0.9) !important;
+}
+
+.ionrift-window .overlay-detail-btn--danger:hover {
+    background: rgba(248, 113, 113, 0.12) !important;
+    border-color: rgba(248, 113, 113, 0.65) !important;
+}
+
+.ionrift-window .overlay-pack-panel-head .overlay-tier-block-action {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
 /* ── Footer ── */

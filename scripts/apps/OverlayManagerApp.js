@@ -20,6 +20,7 @@ const STATUS_PRIORITY = [
     "not-installed",
     "update-available",
     "module-outdated",
+    "installed-inactive",
     "up-to-date",
     "no-content",
     "module-inactive",
@@ -57,6 +58,15 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
     /** @type {boolean} */
     _manageOpen = false;
+
+    /**
+     * Expanded pack panel in module detail accordion.
+     * undefined = pick a default on first paint for this module visit
+     * null = all panels collapsed (user choice)
+     * string = overlayId of the open panel
+     * @type {string|null|undefined}
+     */
+    _expandedOverlayId = undefined;
 
     /** @type {boolean} */
     _overlayRegistrySynced = false;
@@ -108,12 +118,18 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 && PackRegistryService._compareVersions(mod.version, entry.minModuleVersion) < 0);
 
             let status;
+            let active = false;
             if (!hasAccess) status = "locked";
             else if (!mod?.active) status = "module-inactive";
             else if (isModuleOutdated) status = "module-outdated";
             else if (!localMatches) status = "not-installed";
-            else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) status = "update-available";
-            else status = "up-to-date";
+            else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) {
+                status = "update-available";
+                active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+            } else {
+                active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+                status = active ? "up-to-date" : "installed-inactive";
+            }
 
             let contents = null;
             if (hasAccess && localMatches) {
@@ -137,6 +153,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 minModuleVersion: entry.minModuleVersion ?? null,
                 installedModuleVersion: mod?.version ?? null,
                 status,
+                isActive: active,
                 hasAccess,
                 isModuleActive: !!mod?.active,
                 contents,
@@ -175,6 +192,15 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             ? new Date(OverlayService._lastCheckTimestamp).toLocaleTimeString()
             : "Not checked this session";
 
+        let installedCount = 0;
+        let inactiveCount = 0;
+        for (const ov of overlays) {
+            if (ov.status === "up-to-date" || ov.status === "installed-inactive" || ov.status === "update-available") {
+                installedCount += 1;
+            }
+            if (ov.status === "installed-inactive") inactiveCount += 1;
+        }
+
         return {
             isConnected,
             userTier,
@@ -182,6 +208,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             earlyAccess,
             overlayCount,
             actionableCount: actionableOverlayIds.length,
+            installedCount,
+            inactiveCount,
             lastCheck,
             view: this._view,
             selected,
@@ -193,7 +221,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     async _renderHTML(context) {
         const el = document.createElement("div");
         el.classList.add("ionrift-overlay-manager", "ionrift-patreon-library");
-        el.dataset.view = context.view;
+        if (context.view) el.dataset.view = context.view;
 
         if (!context.isConnected) {
             el.innerHTML = this._buildConnectCard();
@@ -280,6 +308,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         root.querySelector("[data-action='back-grid']")?.addEventListener("click", () => {
             this._view = "grid";
             this._selectedModuleId = null;
+            this._expandedOverlayId = undefined;
             this.render();
         });
 
@@ -305,8 +334,22 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         root.querySelectorAll("[data-action='select-tile']").forEach(btn => {
             btn.addEventListener("click", () => {
-                this._selectedModuleId = btn.dataset.moduleId;
+                const moduleId = btn.dataset.moduleId;
+                if (this._selectedModuleId !== moduleId) {
+                    this._expandedOverlayId = undefined;
+                }
+                this._selectedModuleId = moduleId;
                 this._view = "detail";
+                this.render();
+            });
+        });
+
+        root.querySelectorAll("[data-action='toggle-pack-panel']").forEach(btn => {
+            btn.addEventListener("click", (ev) => {
+                ev.stopPropagation();
+                const overlayId = btn.dataset.overlayId;
+                if (!overlayId) return;
+                this._expandedOverlayId = this._expandedOverlayId === overlayId ? null : overlayId;
                 this.render();
             });
         });
@@ -329,6 +372,43 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     return;
                 }
                 await OverlayService.installOverlay(overlayId);
+                this.render();
+            });
+        });
+
+        root.querySelectorAll("[data-action='toggle-overlay-active']").forEach(input => {
+            input.addEventListener("change", async () => {
+                const overlayId = input.dataset.overlayId;
+                const moduleId = input.dataset.moduleId;
+                const sublayer = input.dataset.sublayer;
+                if (!overlayId || !moduleId || !sublayer) return;
+                input.disabled = true;
+                await OverlayService.setOverlayActive(overlayId, input.checked, { moduleId, sublayer });
+                this.render();
+            });
+        });
+
+        root.querySelectorAll("[data-action='uninstall-overlay']").forEach(btn => {
+            btn.addEventListener("click", async (ev) => {
+                ev.stopPropagation();
+                const overlayId = btn.dataset.overlayId;
+                const moduleId = btn.dataset.moduleId;
+                const sublayer = btn.dataset.sublayer;
+                if (!overlayId || !moduleId || !sublayer) return;
+
+                const confirmed = await game.ionrift?.library?.confirm?.({
+                    title: "Remove content pack",
+                    content: `<p>Remove <strong>${overlayId}</strong> from this world?</p><p>Files are deleted from local storage. Reinstall from Patreon Library any time.</p>`,
+                    yesLabel: "Remove",
+                    yesIcon: "fas fa-trash-alt"
+                });
+                if (!confirmed) return;
+
+                btn.disabled = true;
+                const ok = await OverlayService.uninstallOverlay(overlayId, moduleId, sublayer);
+                if (!ok) {
+                    ui?.notifications?.warn(`Could not remove ${overlayId}. Check the console for details.`);
+                }
                 this.render();
             });
         });
@@ -442,7 +522,16 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             g.hasAccess = g.overlays.some(o => o.hasAccess);
             g.packCount = g.overlays.length;
             g.entitledCount = g.overlays.filter(o => o.hasAccess).length;
-            g.installedCount = g.overlays.filter(o => o.status === "up-to-date").length;
+            g.installedCount = g.overlays.filter(o =>
+                o.status === "up-to-date"
+                || o.status === "installed-inactive"
+                || o.status === "update-available"
+            ).length;
+            g.inactiveCount = g.overlays.filter(o => o.status === "installed-inactive").length;
+            g.activeCount = g.overlays.filter(o =>
+                o.status === "up-to-date"
+                || (o.status === "update-available" && o.isActive)
+            ).length;
         }
 
         groups.sort((a, b) =>
@@ -451,11 +540,44 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return groups;
     }
 
+    /**
+     * Module tile corner icon: reflects install + active mix across all packs.
+     * @param {Object} group
+     */
+    _tileRollupDisplay(group) {
+        if (group.status === "locked" || group.status === "module-inactive"
+            || group.status === "module-outdated" || group.status === "no-content") {
+            return this._tileStatusDisplay(group);
+        }
+
+        const activeCount = group.activeCount ?? 0;
+        const offCount = group.inactiveCount ?? 0;
+        const installedCount = group.installedCount ?? 0;
+
+        if (activeCount > 0 && offCount > 0) {
+            return {
+                icon: "fa-circle-half-stroke",
+                className: "is-partial",
+                label: `${activeCount} active, ${offCount} off`
+            };
+        }
+        if (installedCount > 0 && offCount > 0 && activeCount === 0) {
+            return { icon: "fa-moon", className: "is-off", label: "Installed, off" };
+        }
+        if (activeCount > 0) {
+            return { icon: "fa-check", className: "is-ok", label: "Active" };
+        }
+
+        return this._tileStatusDisplay(group);
+    }
+
     _tileStatusDisplay(target) {
         const isError = !!target.hasError;
         switch (target.status) {
+            case "installed-inactive":
+                return { icon: "fa-moon", className: "is-off", label: "Off" };
             case "up-to-date":
-                return { icon: "fa-check", className: "is-ok", label: "Installed" };
+                return { icon: "fa-check", className: "is-ok", label: "Active" };
             case "not-installed":
                 return isError
                     ? { icon: "fa-rotate-right", className: "is-action", label: "Install failed last time. Try again." }
@@ -521,10 +643,12 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     _renderModuleTile(group, compact = false) {
-        const status = this._tileStatusDisplay(group);
+        const status = this._tileRollupDisplay(group);
+        const isPartial = status.className === "is-partial";
         const classes = [
             "overlay-tile",
             `overlay-tile--${group.status}`,
+            isPartial ? "overlay-tile--partial" : "",
             group.hasError ? "overlay-tile--error" : "",
             group.status === "locked" ? "overlay-tile--locked" : "",
             group.status === "module-inactive" ? "overlay-tile--inactive" : "",
@@ -536,8 +660,12 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const showProgress = group.entitledCount > 0;
         const isComplete = showProgress && group.installedCount === group.entitledCount;
         const packWord = group.entitledCount === 1 ? "pack" : "packs";
-        const packMeta = showProgress
-            ? `<span class="overlay-tile-meta ${isComplete ? "is-complete" : ""}">${group.installedCount}/${group.entitledCount} ${packWord}</span>`
+        let metaText = showProgress ? `${group.installedCount}/${group.entitledCount} ${packWord}` : "";
+        if (isPartial && group.activeCount > 0) {
+            metaText += ` · ${group.activeCount} on`;
+        }
+        const packMeta = metaText
+            ? `<span class="overlay-tile-meta ${isComplete && !isPartial ? "is-complete" : ""}">${metaText}</span>`
             : "";
 
         return `
@@ -625,9 +753,15 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     _buildPacksSectionHead(context) {
         const modWord = context.overlayCount === 1 ? "module" : "modules";
         let summary = `${context.overlayCount} ${modWord}`;
+        if (context.installedCount > 0) {
+            summary += ` &middot; ${context.installedCount} installed`;
+        }
+        if (context.inactiveCount > 0) {
+            summary += ` &middot; ${context.inactiveCount} off`;
+        }
         if (context.actionableCount > 0) {
             const packWord = context.actionableCount === 1 ? "pack" : "packs";
-            summary += ` &middot; ${context.actionableCount} new ${packWord}`;
+            summary += ` &middot; ${context.actionableCount} ready to install`;
         }
 
         const installAllBtn = context.actionableCount > 0
@@ -702,8 +836,29 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return html;
     }
 
+    /**
+     * Which pack panel should start expanded in detail view.
+     * @param {Object[]} overlays
+     * @returns {string|null}
+     */
+    _pickDefaultExpandedOverlay(overlays) {
+        if (!overlays?.length) return null;
+        const actionable = overlays.find(o =>
+            o.status === "update-available" || o.status === "not-installed"
+        );
+        return actionable?.overlayId ?? overlays[0].overlayId;
+    }
+
     _buildDetailPanel(group) {
         const shortName = this._shortModuleName(group.moduleName);
+        const useAccordion = group.overlays.length > 1;
+        if (useAccordion && this._expandedOverlayId === undefined) {
+            this._expandedOverlayId = this._pickDefaultExpandedOverlay(group.overlays);
+        }
+        if (!useAccordion && group.overlays.length === 1) {
+            this._expandedOverlayId = group.overlays[0].overlayId;
+        }
+
         let html = `<div class="overlay-split-detail">`;
 
         html += `
@@ -727,16 +882,17 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             </p>`;
         }
 
-        html += `<div class="overlay-detail-tiers">`;
+        html += `<div class="overlay-detail-tiers ${useAccordion ? "overlay-detail-tiers--accordion" : ""}">`;
         for (const overlay of group.overlays) {
-            html += this._renderTierBlock(overlay);
+            const isExpanded = !useAccordion || overlay.overlayId === this._expandedOverlayId;
+            html += this._renderTierBlock(overlay, { isExpanded, useAccordion });
         }
         html += `</div>`;
         html += `</div>`;
         return html;
     }
 
-    _renderTierBlock(overlay) {
+    _renderTierBlock(overlay, { isExpanded = true, useAccordion = false } = {}) {
         const contents = overlay.contents;
         const summary = contents?.summary ?? overlay.description ?? "";
         const actionHtml = this._renderDetailAction(overlay);
@@ -781,21 +937,53 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         const classLabel = overlay.packLabel
             ?? this._packClassLabel(overlay.sublayer, overlay.overlayId);
+        const isFollowerTier = overlay.tier === "Free";
+        const headBadges = isFollowerTier
+            ? `<span class="overlay-tier-pill overlay-tier-pill--pack-name">${classLabel}</span>`
+            : `<span class="overlay-tier-pill">${this._tierDisplayLabel(overlay.tier)}</span>
+                <span class="overlay-pack-class">${classLabel}</span>`;
+
+        const panelClasses = [
+            "overlay-pack-panel",
+            `overlay-pack-panel--${overlay.status}`,
+            overlay.isActive ? "overlay-pack-panel--on" : "overlay-pack-panel--off",
+            isExpanded ? "is-expanded" : "",
+            useAccordion ? "overlay-pack-panel--accordion" : ""
+        ].filter(Boolean).join(" ");
+
+        const chevronHtml = useAccordion
+            ? `<i class="fas fa-chevron-right overlay-pack-panel-chevron" aria-hidden="true"></i>`
+            : "";
+
+        const toggleBtn = useAccordion
+            ? `<button type="button" class="overlay-pack-panel-toggle"
+                    data-action="toggle-pack-panel" data-overlay-id="${overlay.overlayId}"
+                    aria-expanded="${isExpanded}">
+                ${chevronHtml}
+                ${headBadges}
+            </button>`
+            : `<div class="overlay-pack-panel-label">${headBadges}</div>`;
+
+        const bodyHtml = isExpanded
+            ? `
+            <div class="overlay-pack-panel-body">
+                ${lockedNote}
+                ${outdatedNote}
+                ${showBody && summary ? `<p class="overlay-detail-summary">${summary}</p>` : ""}
+                ${categoriesHtml}
+                ${errorHtml ? `<p class="overlay-detail-error">${errorHtml}</p>` : ""}
+                <div class="overlay-detail-meta">${versionMeta}</div>
+            </div>`
+            : "";
 
         return `
-        <div class="overlay-tier-block overlay-tier-block--${overlay.status}">
-            <div class="overlay-tier-block-head">
-                <span class="overlay-tier-pill">${this._tierDisplayLabel(overlay.tier)}</span>
-                <span class="overlay-pack-class">${classLabel}</span>
+        <section class="${panelClasses}" data-overlay-id="${overlay.overlayId}">
+            <div class="overlay-pack-panel-head">
+                ${toggleBtn}
                 <div class="overlay-tier-block-action">${actionHtml}</div>
             </div>
-            ${lockedNote}
-            ${outdatedNote}
-            ${showBody && summary ? `<p class="overlay-detail-summary">${summary}</p>` : ""}
-            ${categoriesHtml}
-            ${errorHtml ? `<p class="overlay-detail-error">${errorHtml}</p>` : ""}
-            <div class="overlay-detail-meta">${versionMeta}</div>
-        </div>`;
+            ${bodyHtml}
+        </section>`;
     }
 
     _renderDetailAction(overlay) {
@@ -803,14 +991,42 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             case "not-installed":
                 return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Install"><i class="fas fa-download"></i> Install</button>`;
             case "update-available":
-                return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
+                return `${this._renderOverlayLifecycleControls(overlay)}
+                    <button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
             case "up-to-date":
-                return `<span class="overlay-detail-status-ok"><i class="fas fa-check"></i> Up to date</span>`;
+            case "installed-inactive":
+                return this._renderOverlayLifecycleControls(overlay);
             case "module-outdated":
                 return `<span class="overlay-detail-status-blocked"><i class="fas fa-arrow-up"></i> Update module first</span>`;
             default:
                 return "";
         }
+    }
+
+    _renderOverlayLifecycleControls(overlay) {
+        const checked = overlay.isActive ? "checked" : "";
+        return `
+        <div class="overlay-pack-toolbar">
+            <label class="pack-toggle-label overlay-pack-active-toggle"
+                title="${overlay.isActive ? "On in this world" : "Off in this world"}"
+                aria-label="${overlay.isActive ? "On in this world" : "Off in this world"}">
+                <input type="checkbox" class="pack-toggle-input" data-action="toggle-overlay-active"
+                    data-overlay-id="${overlay.overlayId}"
+                    data-module-id="${overlay.moduleId}"
+                    data-sublayer="${overlay.sublayer}"
+                    ${checked} />
+                <span class="pack-toggle-switch"></span>
+            </label>
+            <button type="button" class="overlay-detail-btn overlay-detail-btn--icon overlay-detail-btn--danger"
+                data-action="uninstall-overlay"
+                data-overlay-id="${overlay.overlayId}"
+                data-module-id="${overlay.moduleId}"
+                data-sublayer="${overlay.sublayer}"
+                title="Remove installed files"
+                aria-label="Remove installed files">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>`;
     }
 
     _formatDetailError(lastError, status, overlayId) {

@@ -22,6 +22,9 @@ import { Logger } from "./Logger.js";
 
 const MODULE_LABEL = "OverlayService";
 
+/** Library build that ships Patreon Library content lifecycle controls. */
+export const OVERLAY_DISTRIBUTION_MIN_VERSION = "2.3.0";
+
 /** Legacy paid overlay installs used a single premium/ directory. */
 const LEGACY_PREMIUM_SUBLAYER = "premium";
 
@@ -369,6 +372,142 @@ export class OverlayService {
         await this.checkAvailable();
     }
 
+    /**
+     * True when overlay distribution is enabled for this world and the
+     * installed library meets {@link OVERLAY_DISTRIBUTION_MIN_VERSION}.
+     * @returns {boolean}
+     */
+    static isDistributionActive() {
+        const lib = game.modules.get("ionrift-library");
+        if (!lib?.active) return false;
+        if (!game.settings.get("ionrift-library", "overlayDistributionEnabled")) return false;
+        // Capability probe: do not rely on manifest version alone (Foundry may still
+        // report 2.2.0 until the module row is updated and the world is reloaded).
+        return typeof this.setOverlayActive === "function"
+            && typeof this.uninstallOverlay === "function";
+    }
+
+    /**
+     * @returns {Record<string, { active?: boolean }>}
+     */
+    static _getWorldStateMap() {
+        try {
+            return game.settings.get("ionrift-library", "overlayWorldState") ?? {};
+        } catch {
+            return {};
+        }
+    }
+
+    /**
+     * Whether an installed overlay is active in this world.
+     * Missing state defaults to active when the overlay is installed.
+     * @param {string} overlayId
+     * @param {string} [moduleId]
+     * @param {string} [sublayer]
+     * @returns {Promise<boolean>}
+     */
+    static async isOverlayActive(overlayId, moduleId, sublayer) {
+        const state = this._getWorldStateMap()[overlayId];
+        if (state && typeof state.active === "boolean") return state.active;
+
+        if (moduleId && sublayer) {
+            const local = await this.getLocalManifest(moduleId, sublayer);
+            return !!(local && local.overlayId === overlayId);
+        }
+        return false;
+    }
+
+    /**
+     * @param {string} overlayId
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<{ overlayId: string, moduleId: string, sublayer: string, installed: boolean, active: boolean, version: string|null }>}
+     */
+    static async getOverlayState(overlayId, moduleId, sublayer) {
+        const local = await this.getLocalManifest(moduleId, sublayer);
+        const installed = !!(local && local.overlayId === overlayId);
+        const active = installed
+            ? await this.isOverlayActive(overlayId, moduleId, sublayer)
+            : false;
+        return {
+            overlayId,
+            moduleId,
+            sublayer,
+            installed,
+            active,
+            version: local?.version ?? null
+        };
+    }
+
+    /**
+     * Enable or disable an installed overlay for this world.
+     * @param {string} overlayId
+     * @param {boolean} active
+     * @param {{ moduleId: string, sublayer: string }} meta
+     * @returns {Promise<boolean>}
+     */
+    static async setOverlayActive(overlayId, active, { moduleId, sublayer }) {
+        const local = await this.getLocalManifest(moduleId, sublayer);
+        if (!local || local.overlayId !== overlayId) {
+            Logger.warn(MODULE_LABEL, `setOverlayActive: ${overlayId} is not installed.`);
+            return false;
+        }
+
+        const map = { ...this._getWorldStateMap() };
+        map[overlayId] = { ...(map[overlayId] ?? {}), active: !!active };
+        await game.settings.set("ionrift-library", "overlayWorldState", map);
+
+        this._emitContentChanged({ overlayId, moduleId, sublayer, active: !!active, installed: true });
+        Logger.info(MODULE_LABEL, `${overlayId} ${active ? "enabled" : "disabled"} for this world.`);
+        return true;
+    }
+
+    /**
+     * Remove an overlay from disk and clear world state for it.
+     * @param {string} overlayId
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<boolean>}
+     */
+    static async uninstallOverlay(overlayId, moduleId, sublayer) {
+        const local = await this.getLocalManifest(moduleId, sublayer);
+        if (!local || local.overlayId !== overlayId) {
+            Logger.warn(MODULE_LABEL, `uninstallOverlay: ${overlayId} is not installed.`);
+            return false;
+        }
+
+        const targetDir = this.getOverlayPath(moduleId, sublayer);
+        const removed = await PlatformHelper.deletePath(targetDir);
+        if (!removed) {
+            this._recordError(overlayId, "uninstall", "Could not remove overlay files from storage.");
+            Logger.warn(MODULE_LABEL, `uninstallOverlay: delete failed for ${targetDir}`);
+            return false;
+        }
+
+        this._manifestCache.delete(`${moduleId}:${sublayer}`);
+        this._contentsCache.delete(`${moduleId}:${sublayer}`);
+        this._clearError(overlayId);
+
+        const map = { ...this._getWorldStateMap() };
+        delete map[overlayId];
+        await game.settings.set("ionrift-library", "overlayWorldState", map);
+
+        this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== overlayId);
+        this._emitContentChanged({ overlayId, moduleId, sublayer, active: false, installed: false });
+
+        Logger.info(MODULE_LABEL, `Overlay uninstalled: ${overlayId}`);
+        ui?.notifications?.info(`Content removed: ${overlayId}`);
+        return true;
+    }
+
+    /**
+     * @param {{ overlayId: string, moduleId: string, sublayer: string, active: boolean, installed: boolean }} detail
+     * @private
+     */
+    static _emitContentChanged(detail) {
+        Hooks.callAll("ionrift.overlayContentChanged", detail);
+    }
+
     // ── Internal ────────────────────────────────────────────────────────
 
     /**
@@ -470,6 +609,19 @@ export class OverlayService {
             this._contentsCache.delete(`${entry.moduleId}:${sublayer}`);
 
             this._clearError(overlayId);
+
+            const map = { ...this._getWorldStateMap() };
+            map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
+            await game.settings.set("ionrift-library", "overlayWorldState", map);
+
+            this._emitContentChanged({
+                overlayId,
+                moduleId: entry.moduleId,
+                sublayer,
+                active: true,
+                installed: true
+            });
+
             Logger.info(MODULE_LABEL, `Overlay installed: ${overlayId} v${entry.latest}`);
             if (userInitiated) {
                 ui?.notifications?.info(`Content installed: ${overlayId} (${entry.latest})`);

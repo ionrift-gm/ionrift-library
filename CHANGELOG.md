@@ -1,14 +1,29 @@
 # Changelog
 
-## [2.1.0] - 2026-05-10
+## [2.1.0] - 2026-05-20
 
 ### Added
 
-- System adapters are now registered per system instead of a single static class. Modules can register adapters for systems the library does not ship with using `game.ionrift.library.adapterRegistry.register(adapter)`. Calls on `game.ionrift.library.system` behave the same as before.
+- **Patreon Library.** New unified panel in Ionrift Library settings for managing your Patreon connection, early-access modules, and content packs in one place. Replaces the per-module pack install menu.
 
-- DnD5e, PF2e, and Daggerheart adapters now expose item helpers (`getRarity`, `getPrice`, `getWeight`, `requiresAttunement`, `getItemCategory`) alongside the existing actor helpers.
+- **Content overlay distribution.** Terrain packs, art packs, and sound packs can now be installed, updated, and removed directly from the Patreon Library panel. Each pack shows its install status, version, and contents. An "Install All" button handles everything pending in one click.
 
-- `game.ionrift.library.terrains` holds the shared terrain registry: the canonical terrain list for the world. Content packs and modules can register more entries with `game.ionrift.library.terrains.register(def)` from an `ionrift.terrainsReady` hook callback.
+- **System adapter registry.** Adapters are now registered per game system instead of a single static class. Ships with DnD5e, PF2e, and Daggerheart adapters. Third-party system modules can register their own.
+
+- **Terrain registry.** Shared terrain list at `game.ionrift.library.terrains` gives all modules a single canonical set of terrain IDs and labels. Content packs register additional terrains via the `ionrift.terrainsReady` hook. Respite and Quartermaster both read from this spine.
+
+
+### Changed
+
+- Content pack management in Respite and Quartermaster settings is replaced by the Patreon Library when overlay distribution is active. The legacy pack manager still appears if overlay distribution is off.
+
+- Nested directory creation now walks each path segment instead of attempting the full path at once - fixes failures on platforms that do not create parent directories automatically.
+
+- Batch file operations (zip extraction, module installs) suppress additional toast categories during extraction so the notification area stays clean.
+
+### Fixed
+
+- Download failures now return structured error objects with status codes instead of null. Modules that check downloads silently (overlay auto-checks) no longer pop Foundry toasts - only user-initiated downloads show notifications.
 
 ## [2.0.2] - 2026-05-07
 

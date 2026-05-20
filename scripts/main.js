@@ -147,7 +147,12 @@ Hooks.once('init', () => {
          *   game.ionrift.library.installById("quartermaster-core-overlay",
          *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free" });
          */
-        installById: (overlayId, entry) => OverlayService.installById(overlayId, entry)
+        installById: (overlayId, entry) => OverlayService.installById(overlayId, entry),
+        /** True when Patreon Library owns per-module pack install UI. */
+        isOverlayDistributionActive: () => OverlayService.isDistributionActive(),
+        setOverlayActive: (overlayId, active, meta) => OverlayService.setOverlayActive(overlayId, active, meta),
+        uninstallOverlay: (overlayId, moduleId, sublayer) => OverlayService.uninstallOverlay(overlayId, moduleId, sublayer),
+        getOverlayState: (overlayId, moduleId, sublayer) => OverlayService.getOverlayState(overlayId, moduleId, sublayer)
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -251,7 +256,15 @@ Hooks.once('init', () => {
         scope: "world",
         config: false,
         type: Boolean,
-        default: false,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register("ionrift-library", "overlayWorldState", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {},
         restricted: true
     });
 
