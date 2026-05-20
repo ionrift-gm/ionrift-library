@@ -33,6 +33,74 @@ export class OverlayService {
     /** Root directory for all overlay content (data-relative). */
     static OVERLAY_ROOT = "ionrift-data/overlays";
 
+    /**
+     * Dev-only: when true, install paths behave as if on hosted Foundry
+     * (warning dialog, Forge throttle). Toggled via `game.ionrift.library.dev`.
+     * Never persisted, never UI-exposed.
+     */
+    static _devSimulateHosted = false;
+
+    /**
+     * Dev-only: artificial per-file delay (milliseconds) inserted after each
+     * upload in `_extractOverlayZip`. Used to reproduce the slow-install
+     * experience locally so the warning, progress bar, and ETA can be
+     * reviewed without round-tripping to The Forge.
+     */
+    static _devPerFileDelayMs = 0;
+
+    /**
+     * True when the install path should behave as if on hosted Foundry.
+     * Combines real Forge detection with the dev simulation flag.
+     * @returns {boolean}
+     */
+    static _isHostedInstall() {
+        return PlatformHelper.isForge || this._devSimulateHosted;
+    }
+
+    /**
+     * Tail of the install-serialization chain. Each top-level install entry
+     * point (`installOverlay`, `installById`, `installAllPending`,
+     * `reinstallOverlay`) chains its work onto this so installs run one at a
+     * time across the whole library. Prevents Forge rate doubling, toast
+     * suppression races, and progress-dialog id collisions that would
+     * otherwise occur if a user clicked Install on several packs in quick
+     * succession.
+     * @type {Promise<*>}
+     */
+    static _installChain = Promise.resolve();
+
+    /** Number of installs currently queued or running. */
+    static _activeInstallCount = 0;
+
+    /**
+     * Serialize an install task. Subsequent calls queue behind the in-flight
+     * task and a one-line "queued" notification is shown so the user knows
+     * the click was accepted but is waiting its turn.
+     *
+     * @param {string} label  Short human label for the queued-install toast.
+     * @param {() => Promise<*>} taskFn  The actual install work.
+     * @returns {Promise<*>}
+     * @private
+     */
+    static async _runInstallTask(label, taskFn) {
+        if (this._activeInstallCount > 0) {
+            ui?.notifications?.info(
+                `Install queued: ${label}. Starts when the current install finishes.`
+            );
+        }
+        this._activeInstallCount++;
+
+        const previous = this._installChain;
+        const task = previous.catch(() => {}).then(() => taskFn());
+        this._installChain = task.catch(() => {});
+
+        try {
+            return await task;
+        } finally {
+            this._activeInstallCount--;
+        }
+    }
+
     /** In-memory cache of local manifests. Populated on first read. */
     static _manifestCache = new Map();
 
@@ -151,16 +219,18 @@ export class OverlayService {
             return false;
         }
 
-        const ok = await this._downloadAndExtract(
-            pending.overlayId,
-            pending.entry,
-            pending.sublayer,
-            { userInitiated: true }
-        );
-        if (ok) {
-            this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== overlayId);
-        }
-        return ok;
+        return this._runInstallTask(overlayId, async () => {
+            const ok = await this._downloadAndExtract(
+                pending.overlayId,
+                pending.entry,
+                pending.sublayer,
+                { userInitiated: true }
+            );
+            if (ok) {
+                this.pendingOverlays = this.pendingOverlays.filter(p => p.overlayId !== overlayId);
+            }
+            return ok;
+        });
     }
 
     /**
@@ -168,18 +238,32 @@ export class OverlayService {
      * @returns {Promise<number>}
      */
     static async installAllPending() {
-        let count = 0;
-        for (const pending of [...this.pendingOverlays]) {
-            const ok = await this._downloadAndExtract(
-                pending.overlayId,
-                pending.entry,
-                pending.sublayer,
-                { userInitiated: true }
-            );
-            if (ok) count++;
-        }
-        this.pendingOverlays = [];
-        return count;
+        const pending = [...this.pendingOverlays];
+        if (pending.length === 0) return 0;
+
+        return this._runInstallTask(`${pending.length} content pack(s)`, async () => {
+            // Single hosted-platform warning for the whole batch, not one per pack.
+            if (this._isHostedInstall()) {
+                const proceed = await this._confirmHostedInstall(`${pending.length} content pack(s)`);
+                if (!proceed) {
+                    Logger.info(MODULE_LABEL, "installAllPending cancelled before download.");
+                    return 0;
+                }
+            }
+
+            let count = 0;
+            for (const item of pending) {
+                const ok = await this._downloadAndExtract(
+                    item.overlayId,
+                    item.entry,
+                    item.sublayer,
+                    { userInitiated: true, skipHostedWarning: true }
+                );
+                if (ok) count++;
+            }
+            this.pendingOverlays = [];
+            return count;
+        });
     }
 
     /**
@@ -216,7 +300,9 @@ export class OverlayService {
             tier: entry.tier,
         };
         Logger.info(MODULE_LABEL, `Direct install requested for ${overlayId} v${entry.version} (registry bypass).`);
-        return await this._downloadAndExtract(overlayId, installEntry, sublayer, { userInitiated: true });
+        return this._runInstallTask(overlayId, () =>
+            this._downloadAndExtract(overlayId, installEntry, sublayer, { userInitiated: true })
+        );
     }
 
     /**
@@ -524,12 +610,14 @@ export class OverlayService {
         this._contentsCache.delete(`${entry.moduleId}:${sublayer}`);
         this._clearError(overlayId);
 
-        Logger.info(MODULE_LABEL, `Reinstalling ${overlayId} v${entry.latest} (force overwrite).`);
-        const ok = await this._downloadAndExtract(overlayId, entry, sublayer, { userInitiated: true });
-        if (ok) {
-            ui?.notifications?.info(`Reinstalled: ${overlayId} v${entry.latest}`);
-        }
-        return ok;
+        Logger.info(MODULE_LABEL, `Reinstalling ${overlayId} v${entry.latest}.`);
+        return this._runInstallTask(`${overlayId} (reinstall)`, async () => {
+            const ok = await this._downloadAndExtract(overlayId, entry, sublayer, { userInitiated: true });
+            if (ok) {
+                ui?.notifications?.info(`Reinstalled: ${overlayId} v${entry.latest}`);
+            }
+            return ok;
+        });
     }
 
     /**
@@ -698,10 +786,23 @@ export class OverlayService {
      * @private
      */
     static async _downloadAndExtract(overlayId, entry, sublayer, options = {}) {
-        const { userInitiated = false } = options;
+        const { userInitiated = false, skipHostedWarning = false } = options;
         Logger.info(MODULE_LABEL, `Downloading overlay: ${overlayId} v${entry.latest} → ${entry.moduleId}/${sublayer}`);
 
+        if (userInitiated && this._isHostedInstall() && !skipHostedWarning) {
+            const proceed = await this._confirmHostedInstall(overlayId);
+            if (!proceed) {
+                Logger.info(MODULE_LABEL, `Install cancelled before download: ${overlayId}.`);
+                return false;
+            }
+        }
+
+        const progressApp = userInitiated
+            ? await this._createProgressApp(overlayId, entry.latest)
+            : null;
+
         try {
+            progressApp?.setStatus?.("Requesting download link...");
             const download = await CloudRelayService.requestDownload(
                 overlayId,
                 entry.latest,
@@ -715,9 +816,11 @@ export class OverlayService {
                     download?.status
                 );
                 Logger.warn(MODULE_LABEL, `Download denied for ${overlayId}.`);
+                progressApp?.close?.();
                 return false;
             }
 
+            progressApp?.setStatus?.("Downloading content pack...");
             const response = await fetch(download.url);
             if (!response.ok) {
                 this._recordError(
@@ -727,13 +830,16 @@ export class OverlayService {
                     response.status
                 );
                 Logger.error(MODULE_LABEL, `Failed to fetch overlay ZIP (HTTP ${response.status}).`);
+                progressApp?.close?.();
                 return false;
             }
+            progressApp?.setStatus?.("Reading archive...");
             const blob = await response.blob();
 
             const targetDir = `${this.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
+            let extractResult;
             try {
-                await this._extractOverlayZip(blob, targetDir);
+                extractResult = await this._extractOverlayZip(blob, targetDir, { progressApp });
             } catch (extractErr) {
                 this._recordError(
                     overlayId,
@@ -741,6 +847,13 @@ export class OverlayService {
                     extractErr?.message ?? "Extract failed"
                 );
                 Logger.error(MODULE_LABEL, `Overlay extract failed for ${overlayId}:`, extractErr);
+                progressApp?.close?.();
+                return false;
+            }
+
+            if (extractResult.cancelled) {
+                this._recordError(overlayId, "extract", "Install cancelled by user");
+                progressApp?.complete?.(extractResult.uploaded, 0, ["cancelled"]);
                 return false;
             }
 
@@ -772,7 +885,8 @@ export class OverlayService {
             });
 
             Logger.info(MODULE_LABEL, `Overlay installed: ${overlayId} v${entry.latest}`);
-            if (userInitiated) {
+            progressApp?.complete?.(extractResult.uploaded, 0, []);
+            if (userInitiated && !progressApp) {
                 ui?.notifications?.info(`Content installed: ${overlayId} (${entry.latest})`);
             }
             return true;
@@ -780,49 +894,170 @@ export class OverlayService {
         } catch (e) {
             this._recordError(overlayId, "extract", e?.message ?? "Install failed");
             Logger.error(MODULE_LABEL, `Overlay download/extract failed for ${overlayId}:`, e);
+            progressApp?.close?.();
             return false;
         }
     }
 
     /**
-     * @param {Blob} blob
-     * @param {string} targetDir
+     * Ask the GM to confirm an install when running on a hosted platform.
+     *
+     * On The Forge, every file goes through `FilePicker.upload` as an
+     * individual HTTPS round-trip into the Assets Library. Large packs
+     * (sound libraries with hundreds of audio files) routinely take
+     * 10-15 minutes to finish. The pre-flight confirm makes that wait
+     * something the user opted into, not something that surprises them.
+     *
+     * @param {string} overlayId
+     * @returns {Promise<boolean>}
      * @private
      */
-    static async _extractOverlayZip(blob, targetDir) {
+    static async _confirmHostedInstall(overlayId) {
+        const confirmFn = game?.ionrift?.library?.confirm;
+        if (typeof confirmFn !== "function") return true;
+
+        const content = `
+            <p>Installing <strong>${overlayId}</strong> uploads every file in the pack into your hosted Assets Library, one at a time.</p>
+            <p>Large packs typically take <strong>10 to 15 minutes</strong>, and very large sound packs can take longer on a slow machine.</p>
+            <ul>
+                <li>Keep this browser tab open until the progress dialog reports complete.</li>
+                <li>A progress bar and estimated time remaining will appear during the install.</li>
+                <li>You can cancel from the progress dialog at any point.</li>
+            </ul>
+            <p>Continue?</p>
+        `;
+
+        return await confirmFn({
+            title: "Install content pack on hosted Foundry?",
+            content,
+            yesLabel: "Start install",
+            yesIcon: "fas fa-download",
+            noLabel: "Not now",
+            noIcon: "fas fa-times",
+            defaultYes: true
+        });
+    }
+
+    /**
+     * Lazily load and instantiate the shared ZIP import progress dialog.
+     * Returns null in headless contexts (no DOM) or if the app cannot be loaded.
+     * @param {string} overlayId
+     * @param {string} version
+     * @returns {Promise<Object|null>}
+     * @private
+     */
+    static async _createProgressApp(overlayId, version) {
+        if (typeof document === "undefined") return null;
+        try {
+            const { ZipImportProgressApp } = await import("../apps/ZipImportProgressApp.js");
+            const app = new ZipImportProgressApp(`${overlayId} v${version}`, 0);
+            app.render({ force: true });
+            return app;
+        } catch (e) {
+            Logger.warn(MODULE_LABEL, "Progress UI unavailable:", e?.message ?? e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract an overlay ZIP into the target directory.
+     *
+     * Directory creation is deduplicated up front: every unique nested directory
+     * has its existence verified exactly once before file uploads begin, instead
+     * of once per file. Uploads are batched with a small pause on Forge so the
+     * hosted API rate monitor stays quiet.
+     *
+     * Every install is a full upload. Cancel stops the work, but the next
+     * Install (or Repair) re-uploads from scratch rather than trying to skip
+     * files that look like they were uploaded by a previous attempt. The
+     * mental model stays clean: Install is "install from scratch," Repair is
+     * "install from scratch and overwrite," Cancel is "stop now."
+     *
+     * @param {Blob} blob
+     * @param {string} targetDir
+     * @param {{ progressApp?: Object|null }} [options]
+     * @returns {Promise<{ uploaded: number, total: number, cancelled: boolean }>}
+     * @private
+     */
+    static async _extractOverlayZip(blob, targetDir, options = {}) {
+        const { progressApp = null } = options;
+
         const JSZip = await PlatformHelper.loadJSZip();
         const zip = await JSZip.loadAsync(blob);
-
-        await PlatformHelper.ensureDirectory(targetDir);
 
         const FP = PlatformHelper.FP;
         const source = PlatformHelper.fileSource;
 
-        await PlatformHelper.withSuppressedToasts(async () => {
-            const entries = Object.entries(zip.files).filter(([, f]) => !f.dir);
-            let extracted = 0;
+        const entries = [];
+        for (const [rawPath, file] of Object.entries(zip.files)) {
+            if (file.dir) continue;
+            if (rawPath.endsWith(".js")) {
+                Logger.warn(MODULE_LABEL, `Skipping .js file in overlay: ${rawPath}`);
+                continue;
+            }
+            const path = rawPath.replace(/\\/g, "/");
+            const fileName = path.split("/").pop();
+            const fileDir = path.includes("/")
+                ? `${targetDir}/${path.substring(0, path.lastIndexOf("/"))}`
+                : targetDir;
+            entries.push({ path, file, fileName, fileDir });
+        }
 
-            for (const [path, file] of entries) {
-                if (path.endsWith(".js")) {
-                    Logger.warn(MODULE_LABEL, `Skipping .js file in overlay: ${path}`);
-                    continue;
+        // Unique leaf directories only. ensureDirectory walks each segment from
+        // root, so we don't need to enumerate intermediates here.
+        const dirs = new Set();
+        dirs.add(targetDir);
+        for (const { fileDir } of entries) {
+            dirs.add(fileDir);
+        }
+
+        progressApp?.setStatus?.("Preparing directories...");
+        for (const dir of [...dirs].sort()) {
+            await PlatformHelper.ensureDirectory(dir);
+        }
+
+        progressApp?.setTotal?.(entries.length);
+
+        const BATCH_SIZE = 10;
+        const BATCH_DELAY = this._isHostedInstall() ? 250 : 150;
+        const perFileDelayMs = Math.max(0, Number(this._devPerFileDelayMs) || 0);
+
+        let uploaded = 0;
+        let cancelled = false;
+
+        await PlatformHelper.withSuppressedToasts(async () => {
+            for (let i = 0; i < entries.length; i++) {
+                if (progressApp?.cancelled) {
+                    cancelled = true;
+                    Logger.warn(MODULE_LABEL, `Extraction cancelled at file ${i + 1}/${entries.length}.`);
+                    break;
                 }
 
-                const fileBlob = await file.async("blob");
-                const fileName = path.split("/").pop();
-                const fileDir = path.includes("/")
-                    ? `${targetDir}/${path.substring(0, path.lastIndexOf("/"))}`
-                    : targetDir;
+                const entry = entries[i];
 
-                await PlatformHelper.ensureDirectory(fileDir);
+                try {
+                    const fileBlob = await entry.file.async("blob");
+                    const uploadFile = new File([fileBlob], entry.fileName, { type: this._mimeType(entry.fileName) });
+                    await FP.upload(source, entry.fileDir, uploadFile, {});
+                    uploaded++;
+                    progressApp?.update?.(i + 1, entry.fileName);
+                } catch (uploadErr) {
+                    Logger.warn(MODULE_LABEL, `Upload failed for ${entry.path}:`, uploadErr);
+                }
 
-                const uploadFile = new File([fileBlob], fileName, { type: this._mimeType(fileName) });
-                await FP.upload(source, fileDir, uploadFile, {});
-                extracted++;
+                // Dev-only: simulate slow hosted uploads for local install testing.
+                if (perFileDelayMs > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, perFileDelayMs));
+                }
+
+                if ((i + 1) % BATCH_SIZE === 0 && i + 1 < entries.length) {
+                    await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
+                }
             }
-
-            Logger.log(MODULE_LABEL, `Extracted ${extracted} file(s) to ${targetDir}`);
         });
+
+        Logger.log(MODULE_LABEL, `Extracted ${uploaded}/${entries.length} file(s) to ${targetDir}${cancelled ? " (cancelled)" : ""}`);
+        return { uploaded, total: entries.length, cancelled };
     }
 
     /**

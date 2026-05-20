@@ -36,6 +36,7 @@ import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";
 import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
 import { OverlayService } from "./services/OverlayService.js";
 import { PackNudgeService } from "./services/PackNudgeService.js";
+import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -177,7 +178,204 @@ Hooks.once('init', () => {
          * config during init and call `packNudge.inject(moduleId, $anchor)`
          * from each surface where the banner should appear.
          */
-        packNudge: PackNudgeService
+        packNudge: PackNudgeService,
+        /**
+         * Legacy asset sweeper. Detects and removes files orphaned inside
+         * a module's own folder after an architectural change moved content
+         * to a separate pack. Surfaced through the Patreon Library detail
+         * panel for each covered module.
+         *
+         * Console helpers:
+         *   game.ionrift.library.cleanup.detect("ionrift-resonance")
+         *   game.ionrift.library.cleanup.sweep("ionrift-resonance", "resonance-prepack-sounds")
+         *   game.ionrift.library.cleanup.forceMode("v14-advisory")  // preview
+         *   game.ionrift.library.cleanup.forceMode("auto")          // reset
+         */
+        cleanup: LegacyAssetSweeper,
+        /**
+         * Dev-only install simulation knobs. Not persisted, not surfaced in UI.
+         * Use from the console to rehearse the Patreon Library install flow
+         * locally without round-tripping to The Forge.
+         *
+         * Typical workflow:
+         *   game.ionrift.library.dev.simulateHostedInstall(true);
+         *   game.ionrift.library.dev.installPerFileDelayMs(200);
+         *   // Click Install... in the Patreon Library.
+         *   game.ionrift.library.dev.resetInstallSimulation();
+         */
+        dev: {
+            /**
+             * Get or set hosted-install simulation. When true, install paths
+             * show the hosted warning dialog and use the Forge throttle, even
+             * on a self-hosted Foundry. Pass no argument to read.
+             * @param {boolean} [enabled]
+             * @returns {boolean}
+             */
+            simulateHostedInstall(enabled) {
+                if (enabled === undefined) return OverlayService._devSimulateHosted;
+                OverlayService._devSimulateHosted = Boolean(enabled);
+                Logger.log("Library", `Hosted install simulation: ${OverlayService._devSimulateHosted ? "on" : "off"}.`);
+                return OverlayService._devSimulateHosted;
+            },
+            /**
+             * Get or set the artificial per-file delay (milliseconds) inserted
+             * after each upload during overlay install. Useful to make a fast
+             * local install play out long enough to review the progress bar
+             * and ETA. Pass 0 to disable.
+             * @param {number} [ms]
+             * @returns {number}
+             */
+            installPerFileDelayMs(ms) {
+                if (ms === undefined) return OverlayService._devPerFileDelayMs;
+                const value = Math.max(0, Number(ms) || 0);
+                OverlayService._devPerFileDelayMs = value;
+                Logger.log("Library", `Per-file install delay: ${value}ms.`);
+                return value;
+            },
+            /** Clear all install simulation flags. */
+            resetInstallSimulation() {
+                OverlayService._devSimulateHosted = false;
+                OverlayService._devPerFileDelayMs = 0;
+                Logger.log("Library", "Install simulation reset.");
+            },
+            /**
+             * Browse an overlay's target directory tree and log every file
+             * present. Useful for confirming what arrived on disk after an
+             * install, or for inspecting state after a cancel.
+             *
+             * Accepts any of:
+             *   - overlayId string (looked up in pendingOverlays, then registry)
+             *   - { moduleId, sublayer } object (resolves to target dir directly)
+             *
+             * Usage:
+             *   await game.ionrift.library.dev.inspectOverlayFiles("resonance-core-overlay");
+             *   await game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "free" });
+             *
+             * @param {string|{moduleId: string, sublayer: string, overlayId?: string}} spec
+             * @returns {Promise<{ targetDir: string, files: string[], dirs: string[] }|null>}
+             */
+            async inspectOverlayFiles(spec) {
+                let targetDir = null;
+                let overlayLabel = "(unknown)";
+
+                if (typeof spec === "string") {
+                    overlayLabel = spec;
+                    const pending = OverlayService.pendingOverlays?.find(p => p.overlayId === spec);
+                    if (pending) {
+                        targetDir = `${OverlayService.OVERLAY_ROOT}/${pending.entry.moduleId}/${pending.sublayer}`;
+                    } else {
+                        try {
+                            const registry = await PackRegistryService._fetchRegistry();
+                            const entry = registry?.overlays?.[spec];
+                            if (entry) {
+                                const sublayer = OverlayService.resolveSublayer(entry);
+                                targetDir = `${OverlayService.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
+                            }
+                        } catch (e) {
+                            Logger.warn("Library", `inspectOverlayFiles: registry lookup failed: ${e?.message ?? e}`);
+                        }
+                    }
+                } else if (spec?.moduleId && spec?.sublayer) {
+                    targetDir = `${OverlayService.OVERLAY_ROOT}/${spec.moduleId}/${spec.sublayer}`;
+                    overlayLabel = spec.overlayId ?? `${spec.moduleId}/${spec.sublayer}`;
+                }
+
+                if (!targetDir) {
+                    Logger.warn("Library", "inspectOverlayFiles: could not resolve target directory.");
+                    Logger.warn("Library", '  Try: game.ionrift.library.dev.listOverlays()');
+                    Logger.warn("Library", '  Or:  game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "free" })');
+                    return null;
+                }
+
+                const source = PlatformHelper.fileSource;
+                const FP = PlatformHelper.FP;
+                if (!FP) {
+                    Logger.warn("Library", "inspectOverlayFiles: FilePicker unavailable.");
+                    return null;
+                }
+
+                const allFiles = [];
+                const allDirs = [];
+                const walk = async (dir) => {
+                    try {
+                        const result = await FP.browse(source, dir);
+                        for (const filePath of result?.files ?? []) {
+                            allFiles.push(filePath);
+                        }
+                        for (const subDir of result?.dirs ?? []) {
+                            allDirs.push(subDir);
+                            await walk(subDir);
+                        }
+                    } catch (e) {
+                        Logger.warn("Library", `inspectOverlayFiles: browse failed for ${dir}: ${e?.message ?? e}`);
+                    }
+                };
+
+                allDirs.push(targetDir);
+                await walk(targetDir);
+
+                Logger.info("Library", `inspectOverlayFiles: ${overlayLabel}`);
+                Logger.info("Library", `  targetDir: ${targetDir}`);
+                Logger.info("Library", `  source:    ${source}`);
+                Logger.info("Library", `  dirs:      ${allDirs.length}`);
+                Logger.info("Library", `  files:     ${allFiles.length}`);
+                if (allFiles.length > 0) {
+                    Logger.info("Library", `  first 5 files: ${allFiles.slice(0, 5).join(", ")}`);
+                }
+                return { targetDir, files: allFiles, dirs: allDirs };
+            },
+            /**
+             * List every overlay id known to the system, with their pending
+             * status and resolved target directory. Use this when you can't
+             * remember the exact id to pass to `inspectOverlayFiles`.
+             *
+             * Usage:
+             *   await game.ionrift.library.dev.listOverlays();
+             *
+             * @returns {Promise<Array<{ overlayId: string, moduleId: string, sublayer: string, targetDir: string, pending: boolean }>>}
+             */
+            async listOverlays() {
+                const rows = [];
+                const pending = OverlayService.pendingOverlays ?? [];
+                let registry = null;
+                try {
+                    registry = await PackRegistryService._fetchRegistry();
+                } catch (e) {
+                    Logger.warn("Library", `listOverlays: registry fetch failed (${e?.message ?? e}). Showing pending only.`);
+                }
+
+                const seen = new Set();
+                const overlayEntries = registry?.overlays ?? {};
+                for (const [overlayId, entry] of Object.entries(overlayEntries)) {
+                    const sublayer = OverlayService.resolveSublayer(entry);
+                    const targetDir = `${OverlayService.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
+                    rows.push({
+                        overlayId,
+                        moduleId: entry.moduleId,
+                        sublayer,
+                        targetDir,
+                        pending: pending.some(p => p.overlayId === overlayId)
+                    });
+                    seen.add(overlayId);
+                }
+                for (const item of pending) {
+                    if (seen.has(item.overlayId)) continue;
+                    rows.push({
+                        overlayId: item.overlayId,
+                        moduleId: item.entry?.moduleId ?? "?",
+                        sublayer: item.sublayer ?? "?",
+                        targetDir: `${OverlayService.OVERLAY_ROOT}/${item.entry?.moduleId}/${item.sublayer}`,
+                        pending: true
+                    });
+                }
+
+                Logger.info("Library", `Known overlays (${rows.length}):`);
+                for (const row of rows) {
+                    Logger.info("Library", `  ${row.pending ? "[pending]" : "[ok]    "} ${row.overlayId.padEnd(36)} -> ${row.targetDir}`);
+                }
+                return rows;
+            }
+        }
     };
 
     // Expose Service Globally (outside lib namespace)
@@ -302,6 +500,30 @@ Hooks.once('init', () => {
         config: false,
         type: Boolean,
         default: false
+    });
+
+    // Legacy cleanup UI force-mode. Dev-only, off-config, controlled
+    // from the console for preview testing across platforms:
+    //   game.ionrift.library.cleanup.forceMode("v14-advisory")
+    // Valid values: auto, v13-button, v14-advisory, forge-readonly, hide.
+    game.settings.register("ionrift-library", "legacyCleanupForceMode", {
+        scope: "client",
+        config: false,
+        type: String,
+        choices: Object.fromEntries(FORCE_MODE_OPTIONS.map(m => [m, m])),
+        default: "auto"
+    });
+
+    // Per-world record of completed sweeps. Shape:
+    //   { [moduleId]: { [entryId]: { sweptAt: <ms>, freedBytes: <number> } } }
+    // Detection re-runs FilePicker.browse anyway, so this is informational
+    // rather than authoritative; useful for diagnostics and future audits.
+    game.settings.register("ionrift-library", "legacyCleanupHistory", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {},
+        restricted: true
     });
 
     // HEADER — Patreon Library only (single subscription funnel)

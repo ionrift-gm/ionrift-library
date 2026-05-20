@@ -6,6 +6,8 @@ import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { SettingsLayout } from "../SettingsLayout.js";
 import { ZipImporterService } from "../services/ZipImporterService.js";
 import { PlatformHelper } from "../services/PlatformHelper.js";
+import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
+import { DialogHelper } from "../DialogHelper.js";
 
 /** Module accent stripes for detail panel (from MODULE_COLORS.md). */
 const MODULE_ACCENT = {
@@ -42,6 +44,9 @@ const STATUS_PRIORITY = [
  * and settings key are renamed to "Patreon Library".
  */
 export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
+
+    /** Accordion panel id for legacy cleanup (not an overlay registry entry). */
+    static CLEANUP_PANEL_ID = "__legacy-cleanup__";
 
     static DEFAULT_OPTIONS = {
         id: "ionrift-patreon-library",
@@ -91,6 +96,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             const localOverlays = await this._collectLocalOverlays();
             const groups = this._buildGroups(localOverlays);
             this._appendModulesWithoutContent(groups, {});
+            await this._attachCleanupInfo(groups);
 
             if (this._view === "detail" && this._selectedModuleId
                 && !groups.some(g => g.moduleId === this._selectedModuleId)) {
@@ -213,6 +219,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         const groups = this._buildGroups(overlays);
         this._appendModulesWithoutContent(groups, overlayMap);
+        await this._attachCleanupInfo(groups);
 
         if (this._view === "detail" && this._selectedModuleId
             && !groups.some(g => g.moduleId === this._selectedModuleId)) {
@@ -489,6 +496,101 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             });
         });
 
+        root.querySelectorAll("[data-action='legacy-cleanup-sweep']").forEach(btn => {
+            btn.addEventListener("click", async (ev) => {
+                ev.stopPropagation();
+                await this._handleLegacyCleanupSweep(btn);
+            });
+        });
+
+        root.querySelectorAll("[data-action='legacy-cleanup-copy-paths']").forEach(btn => {
+            btn.addEventListener("click", async (ev) => {
+                ev.stopPropagation();
+                await this._handleLegacyCleanupCopyPaths(btn);
+            });
+        });
+
+    }
+
+    /**
+     * Confirm and run a legacy cleanup sweep for the requested manifest
+     * entry. GM-only, v13-button mode only. Refuses to proceed if the
+     * caller is on an advisory platform; the button should not be
+     * rendered in those cases but defence-in-depth is cheap.
+     */
+    async _handleLegacyCleanupSweep(btn) {
+        const moduleId = btn.dataset.moduleId;
+        const entryId = btn.dataset.entryId;
+        if (!moduleId || !entryId) return;
+
+        const mode = LegacyAssetSweeper.getPlatformMode();
+        if (mode !== "v13-button") {
+            ui.notifications.warn("Cleanup must be done manually on this platform.");
+            return;
+        }
+
+        const entries = LegacyAssetSweeper.getModuleManifest(moduleId) ?? [];
+        const entry = entries.find(e => e.id === entryId);
+        if (!entry) return;
+
+        const size = LegacyAssetSweeper.formatBytes(entry.estimatedBytes ?? 0);
+        const pathList = entry.paths.map(p => `<li><code>${p}</code></li>`).join("");
+
+        const confirmed = await DialogHelper.confirm({
+            title: "Reclaim space",
+            content: `
+                <p>${entry.description}</p>
+                <p>The following will be deleted from your install:</p>
+                <ul>${pathList}</ul>
+                <p>About ${size} will be freed. This cannot be undone.</p>
+            `,
+            yesLabel: "Reclaim space",
+            yesIcon: "fas fa-broom",
+            noLabel: "Cancel"
+        });
+        if (!confirmed) return;
+
+        btn.disabled = true;
+        const originalLabel = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Reclaiming...`;
+
+        const result = await LegacyAssetSweeper.sweep(moduleId, entryId);
+
+        if (result.ok) {
+            ui.notifications.info(`Cleanup complete. Freed about ${size}.`);
+        } else if (result.removed > 0) {
+            ui.notifications.warn(`Cleanup partial: ${result.removed} removed, ${result.failed} failed. Check console for details.`);
+        } else {
+            ui.notifications.error(`Cleanup failed. Some files may be in use; restart Foundry and try again.`);
+            btn.disabled = false;
+            btn.innerHTML = originalLabel;
+            return;
+        }
+
+        this.render();
+    }
+
+    /**
+     * Copy the manifest paths for an entry to the clipboard. Used by
+     * the v14 advisory mode and the Forge guidance flow so the user
+     * can paste the list into their file manager or support thread.
+     */
+    async _handleLegacyCleanupCopyPaths(btn) {
+        const moduleId = btn.dataset.moduleId;
+        const entryId = btn.dataset.entryId;
+        if (!moduleId || !entryId) return;
+
+        const entries = LegacyAssetSweeper.getModuleManifest(moduleId) ?? [];
+        const entry = entries.find(e => e.id === entryId);
+        if (!entry) return;
+
+        const text = entry.paths.join("\n");
+        try {
+            await navigator.clipboard.writeText(text);
+            ui.notifications.info("Paths copied to clipboard.");
+        } catch {
+            ui.notifications.warn("Could not access clipboard. The paths are listed in the panel above.");
+        }
     }
 
     /**
@@ -1248,11 +1350,24 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return actionable?.overlayId ?? overlays[0].overlayId;
     }
 
+    /**
+     * Which accordion panel opens first in module detail view. Content
+     * packs always win the default; cleanup is housekeeping and stays
+     * collapsed unless the user opens it deliberately.
+     * @param {Object} group
+     * @returns {string|null}
+     */
+    _pickDefaultExpandedPanel(group) {
+        return this._pickDefaultExpandedOverlay(group.overlays);
+    }
+
     _buildDetailPanel(group, isConnected = true) {
         const shortName = this._shortModuleName(group.moduleName);
-        const useAccordion = group.overlays.length > 1;
+        const hasCleanup = !!(group.cleanup?.entries?.length
+            && LegacyAssetSweeper.getPlatformMode() !== "hide");
+        const useAccordion = group.overlays.length > 1 || hasCleanup;
         if (useAccordion && this._expandedOverlayId === undefined) {
-            this._expandedOverlayId = this._pickDefaultExpandedOverlay(group.overlays);
+            this._expandedOverlayId = this._pickDefaultExpandedPanel(group);
         }
         if (!useAccordion && group.overlays.length === 1) {
             this._expandedOverlayId = group.overlays[0].overlayId;
@@ -1286,10 +1401,204 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             const isExpanded = !useAccordion || overlay.overlayId === this._expandedOverlayId;
             html += this._renderTierBlock(overlay, { isExpanded, useAccordion, isConnected });
         }
+        if (hasCleanup) {
+            const cleanupExpanded = !useAccordion
+                || this._expandedOverlayId === OverlayManagerApp.CLEANUP_PANEL_ID;
+            html += this._renderCleanupAccordionPanel(group, {
+                isExpanded: cleanupExpanded,
+                useAccordion
+            });
+        }
         html += `</div>`;
 
         html += `</div>`;
         return html;
+    }
+
+    /**
+     * Run the legacy asset sweeper against every group and attach the
+     * detection result (or null) as `group.cleanup`. Errors are swallowed
+     * per group so a single bad detection does not break the whole render.
+     * @param {Array} groups
+     * @returns {Promise<void>}
+     */
+    async _attachCleanupInfo(groups) {
+        if (!Array.isArray(groups) || groups.length === 0) return;
+        const mode = LegacyAssetSweeper.getPlatformMode();
+        if (mode === "hide") {
+            for (const group of groups) group.cleanup = null;
+            return;
+        }
+        const isForcedPreview = LegacyAssetSweeper.forceMode() !== "auto";
+        const coveredIds = new Set(LegacyAssetSweeper.getCoveredModuleIds());
+        await Promise.all(groups.map(async (group) => {
+            if (!coveredIds.has(group.moduleId)) {
+                group.cleanup = null;
+                return;
+            }
+            try {
+                let detection = await LegacyAssetSweeper.detect(group.moduleId);
+                if (!detection && isForcedPreview) {
+                    detection = LegacyAssetSweeper.synthesize(group.moduleId);
+                }
+                group.cleanup = detection;
+            } catch (e) {
+                console.warn("OverlayManagerApp | Cleanup detection failed for", group.moduleId, e);
+                group.cleanup = null;
+            }
+        }));
+    }
+
+    /**
+     * Legacy cleanup as the first accordion row in the detail harmonica.
+     * Collapsed header stays visible above long content-pack lists.
+     */
+    _renderCleanupAccordionPanel(group, { isExpanded = false, useAccordion = true } = {}) {
+        const cleanup = group?.cleanup;
+        if (!cleanup?.entries?.length) return "";
+
+        const mode = LegacyAssetSweeper.getPlatformMode();
+        const totalBytes = cleanup.estimatedBytes ?? 0;
+        const headline = LegacyAssetSweeper.formatBytes(totalBytes);
+
+        let body = "";
+        for (const entry of cleanup.entries) {
+            body += this._renderCleanupEntry(group, entry, mode);
+        }
+
+        const previewPill = cleanup.synthetic
+            ? `<span class="overlay-tier-pill overlay-tier-pill--preview" title="Preview render. No legacy files were detected on disk; force-mode is set.">Preview</span>`
+            : "";
+
+        const panelClasses = [
+            "overlay-pack-panel",
+            "overlay-pack-panel--cleanup",
+            "overlay-pack-panel--up-to-date",
+            isExpanded ? "is-expanded" : "",
+            useAccordion ? "overlay-pack-panel--accordion" : ""
+        ].filter(Boolean).join(" ");
+
+        const chevronHtml = useAccordion
+            ? `<i class="fas fa-chevron-right overlay-pack-panel-chevron" aria-hidden="true"></i>`
+            : "";
+
+        const headBadges = `${previewPill}
+            <span class="overlay-tier-pill overlay-tier-pill--cleanup"><i class="fas fa-broom"></i> Cleanup available</span>
+            <span class="overlay-pack-class overlay-pack-class--cleanup">Save ${headline}</span>`;
+
+        const toggleBtn = useAccordion
+            ? `<button type="button" class="overlay-pack-panel-toggle"
+                    data-action="toggle-pack-panel"
+                    data-overlay-id="${OverlayManagerApp.CLEANUP_PANEL_ID}"
+                    aria-expanded="${isExpanded}">
+                ${chevronHtml}
+                ${headBadges}
+            </button>`
+            : `<div class="overlay-pack-panel-label">${headBadges}</div>`;
+
+        const bodyHtml = isExpanded
+            ? `
+            <div class="overlay-pack-panel-body overlay-pack-panel-body--cleanup">
+                ${body}
+            </div>`
+            : "";
+
+        return `
+        <section class="${panelClasses}" data-overlay-id="${OverlayManagerApp.CLEANUP_PANEL_ID}">
+            <div class="overlay-pack-panel-head">
+                ${toggleBtn}
+            </div>
+            ${bodyHtml}
+        </section>`;
+    }
+
+    /**
+     * Render one legacy manifest entry as a card inside the cleanup
+     * section. Picks the action block from the current platform mode.
+     */
+    _renderCleanupEntry(group, entry, mode) {
+        const savings = LegacyAssetSweeper.describeSavings(entry.kind, entry.estimatedBytes ?? 0);
+
+        const pathsList = entry.paths
+            .map(p => `<li><code>${p}</code></li>`)
+            .join("");
+
+        const metaParts = [`Disk ${savings.disk}`];
+        if (savings.quota !== "0 MB") metaParts.push(`Forge quota ${savings.quota}`);
+        const savingsLine = `<span class="overlay-cleanup-meta">${metaParts.join(" · ")}</span>`;
+        const quotaNote = savings.quotaNote
+            ? `<p class="overlay-cleanup-note">${savings.quotaNote}</p>`
+            : "";
+
+        return `
+        <article class="overlay-cleanup-entry">
+            <p class="overlay-cleanup-desc">${entry.description}</p>
+            ${savingsLine}
+            ${quotaNote}
+            <details class="overlay-cleanup-paths">
+                <summary>Show paths (${entry.paths.length})</summary>
+                <ul>${pathsList}</ul>
+            </details>
+            ${this._renderCleanupAction(group, entry, mode)}
+        </article>`;
+    }
+
+    /**
+     * Mode-specific action area. v13 ships an actual delete button.
+     * v14 and Forge ship a short note plus a copy-paths affordance.
+     */
+    _renderCleanupAction(group, entry, mode) {
+        const moduleId = group.moduleId;
+        const entryId = entry.id;
+
+        if (mode === "v13-button") {
+            return `
+            <div class="overlay-cleanup-action">
+                <button type="button" class="overlay-cleanup-btn overlay-cleanup-btn--primary"
+                        data-action="legacy-cleanup-sweep"
+                        data-module-id="${moduleId}" data-entry-id="${entryId}">
+                    <i class="fas fa-broom"></i> Reclaim space
+                </button>
+                <button type="button" class="overlay-cleanup-btn overlay-cleanup-btn--ghost"
+                        data-action="legacy-cleanup-copy-paths"
+                        data-module-id="${moduleId}" data-entry-id="${entryId}"
+                        title="Copy the paths to the clipboard">
+                    <i class="fas fa-copy"></i> Copy paths
+                </button>
+            </div>`;
+        }
+
+        if (mode === "v14-advisory") {
+            return `
+            <div class="overlay-cleanup-action overlay-cleanup-action--advisory">
+                <p>Foundry v14 restricts in-app file deletion. Close Foundry, remove the path above, then reopen.</p>
+                <button type="button" class="overlay-cleanup-btn overlay-cleanup-btn--primary"
+                        data-action="legacy-cleanup-copy-paths"
+                        data-module-id="${moduleId}" data-entry-id="${entryId}">
+                    <i class="fas fa-copy"></i> Copy paths
+                </button>
+            </div>`;
+        }
+
+        if (mode === "forge-readonly") {
+            return `
+            <div class="overlay-cleanup-action overlay-cleanup-action--advisory">
+                <p>Reinstall ${this._shortModuleName(group.moduleName)} from your Forge dashboard to clear the older files.</p>
+                <div class="overlay-cleanup-action-row">
+                    <a class="overlay-cleanup-btn overlay-cleanup-btn--primary"
+                       href="https://forge-vtt.com/setup" target="_blank" rel="noopener">
+                        <i class="fas fa-external-link-alt"></i> Open Forge dashboard
+                    </a>
+                    <button type="button" class="overlay-cleanup-btn overlay-cleanup-btn--ghost"
+                            data-action="legacy-cleanup-copy-paths"
+                            data-module-id="${moduleId}" data-entry-id="${entryId}">
+                        <i class="fas fa-copy"></i> Copy paths
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        return "";
     }
 
     _renderTierBlock(overlay, { isExpanded = true, useAccordion = false, isConnected = true } = {}) {

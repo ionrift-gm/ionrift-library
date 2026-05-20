@@ -670,6 +670,8 @@
     overflow-y: auto;
     min-height: 0;
     padding-right: 0.35rem;
+    padding-bottom: 0.85rem;
+    scroll-padding-bottom: 0.85rem;
 }
 
 .ionrift-window .overlay-detail-head {
@@ -722,10 +724,6 @@
 }
 
 .ionrift-window .overlay-detail-tiers--accordion {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
     padding-right: 0.2rem;
     gap: 0.45rem;
 }
@@ -1066,4 +1064,169 @@
     text-align: center;
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Legacy cleanup accordion row (housekeeping; lives below packs) ─ */
+
+.ionrift-window .overlay-pack-panel--cleanup {
+    opacity: 0.92;
+}
+
+.ionrift-window .overlay-pack-panel--cleanup .overlay-pack-panel-chevron {
+    color: rgba(243, 212, 155, 0.7);
+}
+
+.ionrift-window .overlay-tier-pill--cleanup {
+    background: rgba(217, 163, 93, 0.12);
+    border-color: rgba(217, 163, 93, 0.35);
+    color: #e8c98a;
+    font-weight: 500;
+}
+
+.ionrift-window .overlay-tier-pill--cleanup i {
+    margin-right: 0.2rem;
+    color: #d9a35d;
+}
+
+.ionrift-window .overlay-pack-class--cleanup {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.ionrift-window .overlay-pack-panel-body--cleanup {
+    gap: 0.5rem;
+}
+
+.ionrift-window .overlay-cleanup-entry {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.ionrift-window .overlay-cleanup-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.ionrift-window .overlay-cleanup-meta {
+    font-size: 0.74rem;
+    color: #e8c98a;
+    letter-spacing: 0.01em;
+}
+
+.ionrift-window .overlay-cleanup-note {
+    margin: 0;
+    font-size: 0.74rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.ionrift-window .overlay-cleanup-paths {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0;
+}
+
+.ionrift-window .overlay-cleanup-paths summary {
+    cursor: pointer;
+    padding: 0.35rem 0.55rem;
+    font-size: 0.76rem;
+    color: rgba(255, 255, 255, 0.65);
+    user-select: none;
+}
+
+.ionrift-window .overlay-cleanup-paths[open] summary {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-window .overlay-cleanup-paths ul {
+    margin: 0;
+    padding: 0.4rem 0.85rem;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.ionrift-window .overlay-cleanup-paths code {
+    font-size: 0.76rem;
+    color: #ddd6fe;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+}
+
+.ionrift-window .overlay-cleanup-action {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.ionrift-window .overlay-cleanup-action--advisory {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+}
+
+.ionrift-window .overlay-cleanup-action--advisory p {
+    margin: 0;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.4;
+}
+
+.ionrift-window .overlay-cleanup-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.ionrift-window .overlay-cleanup-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ionrift-window .overlay-cleanup-btn--primary {
+    background: rgba(217, 163, 93, 0.18) !important;
+    border: 1px solid rgba(217, 163, 93, 0.55) !important;
+    color: #f3d49b !important;
+    box-shadow: none !important;
+}
+
+.ionrift-window .overlay-cleanup-btn--primary:hover {
+    background: rgba(217, 163, 93, 0.3) !important;
+    border-color: rgba(217, 163, 93, 0.85) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-cleanup-btn--ghost {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: rgba(255, 255, 255, 0.75) !important;
+    box-shadow: none !important;
+}
+
+.ionrift-window .overlay-cleanup-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+.ionrift-window .overlay-cleanup-btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
 }

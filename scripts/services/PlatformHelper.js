@@ -276,9 +276,12 @@ export class PlatformHelper {
      * suppressed. Restores original handlers even if the callback throws.
      *
      * Suppresses:
-     *   - info:  "saved to" (per-file upload confirmations)
+     *   - info:  "saved to" (self-hosted Foundry per-file upload confirmations)
+     *   - info:  "Uploaded to your Assets Library" (Forge per-file upload toast)
+     *   - info:  "File Uploaded" (Forge variant)
      *   - error: "Target directory…does not exist" (Foundry's createDirectory noise)
      *   - warn:  "Target directory…does not exist" (some Foundry versions use warn)
+     *   - warn:  "rate monitor" (Forge API rate monitor during throttled batch installs)
      *
      * Use this when performing batch uploads (zip extraction, module install)
      * where per-file toasts would flood the notification area.
@@ -289,29 +292,52 @@ export class PlatformHelper {
     static async withSuppressedToasts(fn) {
         if (typeof ui === "undefined" || !ui.notifications) return fn();
 
-        const origInfo = ui.notifications.info;
-        const origError = ui.notifications.error;
-        const origWarn = ui.notifications.warn;
+        const state = this._toastSuppressionState ??= { depth: 0, originals: null };
 
-        ui.notifications.info = function (msg, ...args) {
-            if (typeof msg === "string" && msg.includes("saved to")) return;
-            return origInfo.call(this, msg, ...args);
-        };
-        ui.notifications.error = function (msg, ...args) {
-            if (typeof msg === "string" && msg.includes("does not exist")) return;
-            return origError.call(this, msg, ...args);
-        };
-        ui.notifications.warn = function (msg, ...args) {
-            if (typeof msg === "string" && msg.includes("does not exist")) return;
-            return origWarn.call(this, msg, ...args);
-        };
+        if (state.depth === 0) {
+            state.originals = {
+                info: ui.notifications.info,
+                error: ui.notifications.error,
+                warn: ui.notifications.warn
+            };
 
+            const isUploadToast = (msg) => {
+                if (typeof msg !== "string") return false;
+                return msg.includes("saved to")
+                    || msg.includes("Uploaded to your Assets Library")
+                    || msg.includes("File Uploaded");
+            };
+            const isRateMonitorToast = (msg) => {
+                return typeof msg === "string" && msg.includes("rate monitor");
+            };
+
+            const orig = state.originals;
+            ui.notifications.info = function (msg, ...args) {
+                if (isUploadToast(msg)) return;
+                return orig.info.call(this, msg, ...args);
+            };
+            ui.notifications.error = function (msg, ...args) {
+                if (typeof msg === "string" && msg.includes("does not exist")) return;
+                return orig.error.call(this, msg, ...args);
+            };
+            ui.notifications.warn = function (msg, ...args) {
+                if (typeof msg === "string" && msg.includes("does not exist")) return;
+                if (isRateMonitorToast(msg)) return;
+                return orig.warn.call(this, msg, ...args);
+            };
+        }
+
+        state.depth++;
         try {
             return await fn();
         } finally {
-            ui.notifications.info = origInfo;
-            ui.notifications.error = origError;
-            ui.notifications.warn = origWarn;
+            state.depth--;
+            if (state.depth === 0 && state.originals) {
+                ui.notifications.info = state.originals.info;
+                ui.notifications.error = state.originals.error;
+                ui.notifications.warn = state.originals.warn;
+                state.originals = null;
+            }
         }
     }
 }

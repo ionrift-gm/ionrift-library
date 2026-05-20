@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.1.2] - 2026-05-20
+
+### Added
+- Pre-install notice on hosted Foundry. Before a content pack starts uploading, a confirmation dialog explains that large packs typically take 10 to 15 minutes on The Forge and that the browser tab needs to stay open.
+- Estimated time remaining is shown in the install progress dialog once enough files have uploaded for a stable rate.
+- Cancel button on the install progress dialog. Cancel stops the work at the next file boundary; the next Install or Repair starts fresh.
+
+### Changed
+- Content pack installs from the Patreon Library now show a progress dialog with file count, current file, and a cancel button, so large sound and art packs no longer look like a hang on slow connections.
+- Hosted platform installs upload in throttled batches with a short pause between groups. Larger packs install without tripping the Forge API rate monitor.
+- Directory creation during pack installs is deduplicated up front instead of running per file. A 400-file pack now issues a handful of directory checks instead of hundreds.
+- "Install All" prompts the hosted-platform notice once for the whole batch rather than per pack.
+
+### Fixed
+- Forge's "File Uploaded to your Assets Library" toast no longer floods the notification area during pack installs.
+- Clicking Install on several content packs in quick succession used to run them in parallel, which doubled the hosted-platform API load and corrupted the per-file toast suppression. Installs are now serialized: a second click while one is running shows an "Install queued" notification and begins as soon as the current install finishes.
+
+### Dev
+- `game.ionrift.library.dev` console helpers let developers rehearse the hosted install flow on a self-hosted Foundry: `simulateHostedInstall(true)` forces the hosted warning and throttle path, `installPerFileDelayMs(200)` adds a fixed per-file pause so the progress bar and ETA play out at hosted-platform speed. `resetInstallSimulation()` clears both. `listOverlays()` lists every overlay id known to the registry alongside its target directory and pending state. `inspectOverlayFiles(spec)` walks an overlay's target directory and reports what's on disk. The dev API is never persisted and never surfaced in UI.
+
 ## [2.1.1] - 2026-05-20
 
 ### Added

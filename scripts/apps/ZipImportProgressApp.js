@@ -28,6 +28,9 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
     /** @type {string} */
     #statusMessage = "Preparing...";
 
+    /** @type {number} Epoch ms when the upload phase started, or 0 if not started. */
+    #uploadStartedAt = 0;
+
     constructor(fileName, totalFiles) {
         super();
         this.#fileName = fileName;
@@ -59,9 +62,45 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
             currentFileName: this.#currentFileName,
             percentage: pct,
             statusMessage: this.#statusMessage,
+            etaText: this.#computeEtaText(),
             complete: this.#complete,
             cancelled: this.cancelled
         };
+    }
+
+    /**
+     * Estimated time remaining, based on the average upload rate since the
+     * upload phase started. Returns an empty string until enough data has
+     * been gathered to make a meaningful estimate.
+     * @returns {string}
+     */
+    #computeEtaText() {
+        if (!this.#uploadStartedAt || this.#currentFile <= 0) return "";
+        if (this.#totalFiles <= 0 || this.#currentFile >= this.#totalFiles) return "";
+
+        const elapsedSec = (Date.now() - this.#uploadStartedAt) / 1000;
+        // Need at least a couple of seconds of data for a stable estimate.
+        if (elapsedSec < 2) return "";
+
+        const rate = this.#currentFile / elapsedSec;
+        if (rate <= 0) return "";
+
+        const remainingSec = (this.#totalFiles - this.#currentFile) / rate;
+        return this.#formatDuration(remainingSec);
+    }
+
+    /**
+     * @param {number} seconds
+     * @returns {string}
+     */
+    #formatDuration(seconds) {
+        if (!Number.isFinite(seconds) || seconds <= 0) return "";
+        if (seconds < 60) return `about ${Math.max(1, Math.ceil(seconds))}s remaining`;
+        const mins = Math.ceil(seconds / 60);
+        if (mins < 60) return `about ${mins} min remaining`;
+        const hours = Math.floor(mins / 60);
+        const rem = mins % 60;
+        return rem > 0 ? `about ${hours}h ${rem}m remaining` : `about ${hours}h remaining`;
     }
 
     /** @override */
@@ -110,6 +149,9 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
                 this.render({ force: true });
             });
         } else {
+            const etaLine = context.etaText
+                ? `<div class="zip-progress-eta">${context.etaText}</div>`
+                : "";
             el.innerHTML = `
                 <div class="zip-progress-header">
                     <i class="fas fa-file-archive"></i>
@@ -120,6 +162,7 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
                     <span class="zip-progress-bar-label">${context.currentFile} / ${context.totalFiles}</span>
                 </div>
                 <div class="zip-progress-current">${context.currentFileName || "Starting..."}</div>
+                ${etaLine}
                 <div class="zip-progress-actions">
                     <button type="button" class="zip-cancel-btn">
                         <i class="fas fa-times"></i> Cancel
@@ -149,6 +192,9 @@ export class ZipImportProgressApp extends foundry.applications.api.ApplicationV2
      * @param {string} fileName
      */
     update(current, fileName) {
+        if (!this.#uploadStartedAt && current > 0) {
+            this.#uploadStartedAt = Date.now();
+        }
         this.#currentFile = current;
         this.#currentFileName = fileName;
         this.#statusMessage = `Uploading ${fileName}...`;

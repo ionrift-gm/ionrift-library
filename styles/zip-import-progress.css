@@ -78,6 +78,15 @@
     padding: 0 4px;
 }
 
+/* Estimated time remaining */
+.zip-progress-eta {
+    font-size: 0.85em;
+    color: #c4b5fd;
+    padding: 2px 4px 0;
+    font-style: italic;
+    text-align: right;
+}
+
 /* Preparing state (parsing/validating) */
 .zip-progress-preparing {
     display: flex;
