@@ -37,6 +37,7 @@ import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js"
 import { OverlayService } from "./services/OverlayService.js";
 import { PackNudgeService } from "./services/PackNudgeService.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
+import { ItemMintingService } from "./services/ItemMintingService.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -96,6 +97,8 @@ Hooks.once('init', () => {
         enrichment: ItemEnrichmentEngine,
         /** Cloud Relay — Patreon connection, tier checks, download relay. */
         cloud: CloudRelayService,
+        /** Item mint validation — formula, enum, and slug guards before create/update. */
+        minting: ItemMintingService,
         /** Install a module update via the cloud relay. */
         installModule: (moduleId, version) => ModuleInstallerService.installModule(moduleId, version),
         /** Unified test harness — suite registration, discovery, execution. */
