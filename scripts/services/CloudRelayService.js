@@ -12,6 +12,18 @@ export class CloudRelayService {
     static API_URL = "https://api.ionrift.cloud";
     static CLIENT_ID = "tc0M_ZBHMPeQUQh5UGuxf5rePVmv9c9Af0hoMeMYdbmDmxEb7d334xn51Fk-nhOy";
 
+    /** Window before expiry that triggers the proactive warning. */
+    static EXPIRY_WARN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+    /** Snooze duration applied after the GM dismisses a "soon" warning. */
+    static EXPIRY_SNOOZE_SOON_MS = 3 * 24 * 60 * 60 * 1000;
+
+    /** Snooze duration after an "already expired" warning. Shorter — still actionable. */
+    static EXPIRY_SNOOZE_EXPIRED_MS = 24 * 60 * 60 * 1000;
+
+    /** Shared user-facing copy for an expired connection. */
+    static EXPIRED_COPY = "Your Patreon connection has expired. Go to <strong>Ionrift Library</strong>, disconnect, and reconnect.";
+
     // Lazy-loaded to avoid circular import at parse time
     static async _getDialogHelper() {
         const { DialogHelper } = await import("../DialogHelper.js");
@@ -41,18 +53,82 @@ export class CloudRelayService {
     }
 
     /**
+     * Decode the full JWT payload. Returns an empty object on any failure so
+     * callers can safely destructure.
+     * @returns {object}
+     */
+    static getSigilClaims() {
+        const sigil = this.getSigil();
+        if (!sigil) return {};
+        try {
+            const segment = sigil.split(".")[1];
+            if (!segment) return {};
+            return JSON.parse(atob(segment)) ?? {};
+        } catch {
+            return {};
+        }
+    }
+
+    /**
      * Decode tier claim from the Sigil JWT payload.
      * @returns {string|null} e.g. "Acolyte", "Weaver", null
      */
     static getTierClaim() {
-        const sigil = this.getSigil();
-        if (!sigil) return null;
-        try {
-            const payload = JSON.parse(atob(sigil.split(".")[1]));
-            return payload.tier?.trim() ?? null;
-        } catch {
-            return null;
+        const tier = this.getSigilClaims().tier;
+        return typeof tier === "string" ? (tier.trim() || null) : null;
+    }
+
+    /**
+     * Inspect the local Sigil's `exp` claim. Pure client-side; never contacts
+     * the server. The server is the source of truth — this exists so the UI
+     * can warn before a stale token causes a 401.
+     *
+     * @returns {{
+     *   hasExpiry: boolean,
+     *   expiresAt: Date|null,
+     *   secondsRemaining: number|null,
+     *   expired: boolean,
+     *   expiringSoon: boolean
+     * }}
+     */
+    static getExpiryStatus() {
+        const { exp } = this.getSigilClaims();
+        if (typeof exp !== "number" || !Number.isFinite(exp)) {
+            return {
+                hasExpiry: false,
+                expiresAt: null,
+                secondsRemaining: null,
+                expired: false,
+                expiringSoon: false
+            };
         }
+
+        const expiresAt = new Date(exp * 1000);
+        const msRemaining = expiresAt.getTime() - Date.now();
+        return {
+            hasExpiry: true,
+            expiresAt,
+            secondsRemaining: Math.floor(msRemaining / 1000),
+            expired: msRemaining <= 0,
+            expiringSoon: msRemaining > 0 && msRemaining <= this.EXPIRY_WARN_WINDOW_MS
+        };
+    }
+
+    /**
+     * True when a Sigil is stored AND has not expired locally. Use for "can
+     * this call succeed?" gates. Use `isConnected()` for "should the menu
+     * offer Connect vs Disconnect?".
+     *
+     * Tokens without an `exp` claim are treated as authenticated so older
+     * Sigils continue to work until the server rejects them.
+     *
+     * @returns {boolean}
+     */
+    static isAuthenticated() {
+        if (!this.isConnected()) return false;
+        const status = this.getExpiryStatus();
+        if (!status.hasExpiry) return true;
+        return !status.expired;
     }
 
     // ── OAuth Flow ───────────────────────────────────────────
@@ -94,6 +170,7 @@ export class CloudRelayService {
         }
 
         await game.settings.set("ionrift-library", "sigil", result.token);
+        this.clearExpirySnooze();
         const tier = this.getTierClaim() || "Free";
         console.log("CloudRelay | Sigil stored. Tier:", tier);
 
@@ -124,6 +201,7 @@ export class CloudRelayService {
     static async disconnect() {
         if (!game.user.isGM) return;
         await game.settings.set("ionrift-library", "sigil", "");
+        this.clearExpirySnooze();
         ui.notifications.info("Patreon disconnected.");
         console.log("CloudRelay | Sigil cleared.");
     }
@@ -176,6 +254,24 @@ export class CloudRelayService {
     }
 
     /**
+     * Heuristic for "this auth failure is because the JWT is stale, not
+     * because the request was unauthenticated". Server returns 401 with a
+     * body like "Invalid authentication token: jwt expired" for stale tokens.
+     *
+     * @param {string} msg  Response body text
+     * @returns {boolean}
+     * @private
+     */
+    static _isExpiredAuthBody(msg) {
+        const text = (msg ?? "").toLowerCase();
+        if (!text) return false;
+        if (text.includes("jwt expired")) return true;
+        if (text.includes("token expired")) return true;
+        if (text.includes("expired") && text.includes("token")) return true;
+        return false;
+    }
+
+    /**
      * @param {number} status
      * @param {string} msg
      * @param {string} packId
@@ -185,20 +281,24 @@ export class CloudRelayService {
     static _notifyDownloadFailure(status, msg, packId, version) {
         const named = `<strong>${packId}</strong> (${version})`;
         if (status === 401) {
-            ui.notifications.error(
-                `Patreon connection missing. Connect in <strong>Ionrift Library</strong> before downloading ${named}.`,
-                { permanent: true }
-            );
+            // A stale Sigil also presents as 401; route those to the "expired"
+            // copy so the GM disconnects + reconnects rather than trying to
+            // connect a connection they already have.
+            if (this.isConnected() || this._isExpiredAuthBody(msg)) {
+                ui.notifications.error(this.EXPIRED_COPY, { permanent: true });
+            } else {
+                ui.notifications.error(
+                    `Patreon connection missing. Connect in <strong>Ionrift Library</strong> before downloading ${named}.`,
+                    { permanent: true }
+                );
+            }
             return;
         }
         if (status === 403) {
             const isAuthFailure = msg.toLowerCase().includes("invalid authentication")
-                || msg.toLowerCase().includes("token");
+                || this._isExpiredAuthBody(msg);
             if (isAuthFailure) {
-                ui.notifications.error(
-                    "Your Patreon connection has expired. Go to <strong>Ionrift Library</strong>, disconnect, and reconnect.",
-                    { permanent: true }
-                );
+                ui.notifications.error(this.EXPIRED_COPY, { permanent: true });
             } else {
                 ui.notifications.warn(`Your subscription tier does not include ${named}.`);
             }
@@ -211,6 +311,97 @@ export class CloudRelayService {
             return;
         }
         ui.notifications.error(`Download failed for ${named} (HTTP ${status}). Try again from Patreon Library.`);
+    }
+
+    // ── Expiry Warning ───────────────────────────────────────
+
+    /**
+     * GM-only proactive check. If the stored Sigil has expired or expires
+     * within the warning window, show a notification once and snooze it.
+     * Silent in all other cases.
+     *
+     * Pure local check. Never calls the server. Safe to invoke on `ready`.
+     *
+     * @param {object} [options]
+     * @param {boolean} [options.force=false]  Skip the snooze gate.
+     * @returns {{ shown: "expired"|"soon"|"none", snoozed: boolean }}
+     */
+    static warnIfExpiringSoon({ force = false } = {}) {
+        try {
+            if (!game?.user?.isGM) return { shown: "none", snoozed: false };
+            if (!this._expiryWarningsEnabled()) return { shown: "none", snoozed: false };
+            if (!this.isConnected()) return { shown: "none", snoozed: false };
+
+            const status = this.getExpiryStatus();
+            if (!status.hasExpiry) return { shown: "none", snoozed: false };
+            if (!status.expired && !status.expiringSoon) return { shown: "none", snoozed: false };
+
+            if (!force && this._isExpirySnoozed()) {
+                return { shown: "none", snoozed: true };
+            }
+
+            if (status.expired) {
+                ui.notifications.error(this.EXPIRED_COPY, { permanent: true });
+                this._snoozeExpiryWarning(this.EXPIRY_SNOOZE_EXPIRED_MS);
+                return { shown: "expired", snoozed: false };
+            }
+
+            const days = Math.max(1, Math.ceil(status.secondsRemaining / 86400));
+            ui.notifications.warn(
+                `Patreon connection expires in ${days} day${days === 1 ? "" : "s"}. `
+                + `Reconnect in <strong>Ionrift Library</strong> to keep automatic pack updates.`,
+                { permanent: true }
+            );
+            this._snoozeExpiryWarning(this.EXPIRY_SNOOZE_SOON_MS);
+            return { shown: "soon", snoozed: false };
+        } catch (e) {
+            console.warn("CloudRelay | warnIfExpiringSoon failed:", e);
+            return { shown: "none", snoozed: false };
+        }
+    }
+
+    /** @private */
+    static _expiryWarningsEnabled() {
+        try {
+            const value = game.settings.get("ionrift-library", "expiryWarnings");
+            return value !== false;
+        } catch {
+            return true;
+        }
+    }
+
+    /** @private */
+    static _isExpirySnoozed() {
+        try {
+            const until = Number(game.settings.get("ionrift-library", "expiryWarningSnooze")) || 0;
+            return until > Date.now();
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * @param {number} durationMs
+     * @private
+     */
+    static _snoozeExpiryWarning(durationMs) {
+        try {
+            game.settings.set("ionrift-library", "expiryWarningSnooze", Date.now() + durationMs);
+        } catch (e) {
+            console.warn("CloudRelay | Failed to record expiry snooze:", e);
+        }
+    }
+
+    /**
+     * Clear the snooze so the next reload re-evaluates. Called after a
+     * successful reconnect.
+     */
+    static clearExpirySnooze() {
+        try {
+            game.settings.set("ionrift-library", "expiryWarningSnooze", 0);
+        } catch {
+            /* settings not ready */
+        }
     }
 
     // ── Internal ─────────────────────────────────────────────

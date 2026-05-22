@@ -185,6 +185,90 @@
     color: #fff !important;
 }
 
+/* ── Expiry strip variants ── */
+
+.ionrift-window .overlay-mgr-strip--soon {
+    background: rgba(251, 191, 36, 0.06);
+    border-color: rgba(251, 191, 36, 0.32);
+}
+
+.ionrift-window .overlay-mgr-strip--expired {
+    background: rgba(248, 113, 113, 0.07);
+    border-color: rgba(248, 113, 113, 0.45);
+}
+
+.ionrift-window .overlay-mgr-strip-advisory {
+    flex: 0 0 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-top: 0.55rem;
+    margin-top: 0.1rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.ionrift-window .overlay-mgr-strip-advisory--soon {
+    border-top-color: rgba(251, 191, 36, 0.35);
+}
+
+.ionrift-window .overlay-mgr-strip-advisory--expired {
+    border-top-color: rgba(248, 113, 113, 0.45);
+}
+
+.ionrift-window .overlay-mgr-strip-advisory-icon {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.ionrift-window .overlay-mgr-strip-advisory--soon .overlay-mgr-strip-advisory-icon {
+    color: #fbbf24;
+}
+
+.ionrift-window .overlay-mgr-strip-advisory--expired .overlay-mgr-strip-advisory-icon {
+    color: #fca5a5;
+}
+
+.ionrift-window .overlay-mgr-strip-advisory-text {
+    flex: 1;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.78);
+    line-height: 1.3;
+}
+
+.ionrift-window .overlay-mgr-strip-advisory-text strong {
+    font-weight: 600;
+    margin-right: 0.4rem;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.ionrift-window .overlay-mgr-strip-advisory-hint {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.ionrift-window .overlay-mgr-strip-reconnect {
+    background: rgba(34, 211, 238, 0.12) !important;
+    border: 1px solid rgba(34, 211, 238, 0.4) !important;
+    color: #67e8f9 !important;
+    border-radius: 4px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.35rem;
+    box-shadow: none !important;
+    flex-shrink: 0;
+    line-height: 1.35;
+}
+
+.ionrift-window .overlay-mgr-strip-reconnect:hover {
+    background: rgba(34, 211, 238, 0.22) !important;
+    border-color: #22d3ee !important;
+    color: #fff !important;
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.2);
+}
+
 /* ── Generic section header (EA + Packs share this base) ── */
 
 .ionrift-window .overlay-mgr-section {

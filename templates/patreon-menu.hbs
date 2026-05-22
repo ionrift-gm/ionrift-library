@@ -9,6 +9,29 @@
         {{/if}}
     </header>
 
+    {{#if expiryStatus}}
+    <div class="ionrift-patreon-expiry ionrift-patreon-expiry--{{expiryStatus.state}}">
+        <div class="ionrift-patreon-expiry-line">
+            {{#if (eq expiryStatus.state "expired")}}
+            <i class="fas fa-exclamation-triangle"></i>
+            {{else if (eq expiryStatus.state "soon")}}
+            <i class="fas fa-clock"></i>
+            {{else}}
+            <i class="fas fa-check-circle"></i>
+            {{/if}}
+            <span class="ionrift-patreon-expiry-label">{{expiryStatus.label}}</span>
+            {{#unless (eq expiryStatus.state "ok")}}
+            <button type="button" class="ionrift-patreon-btn-reconnect" data-action="reconnect">
+                <i class="fas fa-sync-alt"></i> Reconnect
+            </button>
+            {{/unless}}
+        </div>
+        {{#if expiryStatus.hint}}
+        <div class="ionrift-patreon-expiry-hint">{{expiryStatus.hint}}</div>
+        {{/if}}
+    </div>
+    {{/if}}
+
     <div class="ionrift-ea-divider"></div>
 
     {{#if earlyAccessOffers.length}}

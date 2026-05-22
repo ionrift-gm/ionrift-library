@@ -31,6 +31,10 @@ export class PatreonMenu extends FormApplication {
             ? (CloudRelayService.getTierClaim() || "Free")
             : null;
 
+        const expiryStatus = isConnected
+            ? this._formatExpiryStatus(CloudRelayService.getExpiryStatus())
+            : null;
+
         const registryCache = game.settings.get("ionrift-library", "registryLastCheck") ?? {};
         const liveData = await PackRegistryService._fetchRegistry();
         const registryData = liveData ?? registryCache.data;
@@ -71,7 +75,44 @@ export class PatreonMenu extends FormApplication {
             }
         }
 
-        return { isConnected, userTier, earlyAccessOffers };
+        return { isConnected, userTier, expiryStatus, earlyAccessOffers };
+    }
+
+    /**
+     * Map the raw expiry status into template-friendly fields. Returns null
+     * when the token has no expiry claim so the row stays hidden for older
+     * Sigils.
+     *
+     * @param {object} status
+     * @returns {{state: "expired"|"soon"|"ok", label: string, hint: string}|null}
+     */
+    _formatExpiryStatus(status) {
+        if (!status?.hasExpiry) return null;
+
+        if (status.expired) {
+            return {
+                state: "expired",
+                label: "Expired",
+                hint: "Reconnect to resume pack updates."
+            };
+        }
+
+        const days = Math.max(1, Math.ceil(status.secondsRemaining / 86400));
+        const noun = days === 1 ? "day" : "days";
+
+        if (status.expiringSoon) {
+            return {
+                state: "soon",
+                label: `Expires in ${days} ${noun}`,
+                hint: "Reconnect now to avoid an interruption."
+            };
+        }
+
+        return {
+            state: "ok",
+            label: `Renews in ${days} ${noun}`,
+            hint: ""
+        };
     }
 
     activateListeners(html) {
@@ -113,6 +154,13 @@ export class PatreonMenu extends FormApplication {
 
         html.find("[data-action='disconnect']").on("click", async () => {
             await CloudRelayService.disconnect();
+            SettingsLayout.injectPatreonStatus();
+            this.close();
+        });
+
+        html.find("[data-action='reconnect']").on("click", async () => {
+            await CloudRelayService.disconnect();
+            await CloudRelayService.connect();
             SettingsLayout.injectPatreonStatus();
             this.close();
         });

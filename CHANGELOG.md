@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.3] - 2026-05-22
+
+### Added
+- The Patreon row in Settings now shows a clock icon when the connection is within a week of expiring, and a warning triangle once it has expired. The button label flips to "Reconnect Patreon" in the expired state.
+- Patreon Library shows an inline advisory at the top of the panel when the connection is expiring or has expired, with a Reconnect button that disconnects and re-runs the OAuth flow in one step.
+
+### Fixed
+- The "Patreon connection missing" message no longer appears for connections that have simply expired. The error now reads "Your Patreon connection has expired" and points you at the Library to disconnect and reconnect.
+
 ## [2.1.2] - 2026-05-20
 
 ### Added

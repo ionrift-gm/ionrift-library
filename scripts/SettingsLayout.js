@@ -359,10 +359,11 @@ export class SettingsLayout {
      * Uses global document selectors by default — safe to call from any context
      * (renderSettingsConfig hook or post-action refresh).
      *
-     * @param {Object} [overrides]               Test overrides
-     * @param {Element} [overrides.root]          Root element to search within (default: document)
-     * @param {boolean} [overrides.isConnected]   Override connection state
-     * @param {string}  [overrides.tier]          Override tier label
+     * @param {Object} [overrides]                Test overrides
+     * @param {Element} [overrides.root]           Root element to search within (default: document)
+     * @param {boolean} [overrides.isConnected]    Override connection state
+     * @param {string}  [overrides.tier]           Override tier label
+     * @param {Object}  [overrides.expiryStatus]   Override decoded expiry status
      */
     static injectPatreonStatus(overrides = {}) {
         const root = overrides.root ?? document;
@@ -376,16 +377,27 @@ export class SettingsLayout {
 
         let isConnected = overrides.isConnected ?? false;
         let tier = overrides.tier ?? null;
+        let expiryStatus = overrides.expiryStatus ?? null;
 
         if (!("isConnected" in overrides)) {
             try {
                 const sigil = game.settings.get("ionrift-library", "sigil") || "";
                 isConnected = !!sigil;
                 if (sigil) {
+                    let payload = {};
                     try {
-                        const payload = JSON.parse(atob(sigil.split(".")[1]));
-                        tier = payload.tier ?? null;
-                    } catch { /* ignore */ }
+                        payload = JSON.parse(atob(sigil.split(".")[1])) ?? {};
+                    } catch { /* ignore decode failure */ }
+                    if (tier === null) tier = payload.tier ?? null;
+                    if (!expiryStatus && typeof payload.exp === "number" && Number.isFinite(payload.exp)) {
+                        const msRemaining = (payload.exp * 1000) - Date.now();
+                        expiryStatus = {
+                            hasExpiry: true,
+                            expired: msRemaining <= 0,
+                            expiringSoon: msRemaining > 0 && msRemaining <= 7 * 24 * 60 * 60 * 1000,
+                            secondsRemaining: Math.floor(msRemaining / 1000)
+                        };
+                    }
                 }
             } catch { /* settings not ready */ }
         }
@@ -398,17 +410,35 @@ export class SettingsLayout {
 
         if (isConnected) {
             const tierLabel = tier || "Free";
+            const expired = expiryStatus?.hasExpiry && expiryStatus.expired;
+            const soon = expiryStatus?.hasExpiry && expiryStatus.expiringSoon;
 
             if (label) {
-                label.insertAdjacentHTML("beforeend",
-                    `<i class="fas fa-check-circle ionrift-patreon-status" style="color: #4ff; margin-left: 8px;" title="Connected (${tierLabel})"></i>`);
+                if (expired) {
+                    label.insertAdjacentHTML("beforeend",
+                        `<i class="fas fa-exclamation-triangle ionrift-patreon-status" style="color: #fca5a5; margin-left: 8px;" title="Connection expired"></i>`);
+                } else if (soon) {
+                    label.insertAdjacentHTML("beforeend",
+                        `<i class="fas fa-clock ionrift-patreon-status" style="color: #fbbf24; margin-left: 8px;" title="Connection expiring soon"></i>`);
+                } else {
+                    label.insertAdjacentHTML("beforeend",
+                        `<i class="fas fa-check-circle ionrift-patreon-status" style="color: #4ff; margin-left: 8px;" title="Connected (${tierLabel})"></i>`);
+                }
             }
 
             if (btnIcon) btnIcon.className = "fab fa-patreon";
-            if (btnSpan) btnSpan.textContent = "Open Library";
+            if (btnSpan) btnSpan.textContent = expired ? "Reconnect Patreon" : "Open Library";
 
             if (hint) {
-                hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Manage early access, content packs, and connection.`;
+                if (expired) {
+                    hint.innerHTML = `Connection expired. <strong style="color: #fca5a5;">Reconnect</strong> in the Patreon Library to resume pack updates.`;
+                } else if (soon) {
+                    const days = Math.max(1, Math.ceil((expiryStatus.secondsRemaining ?? 0) / 86400));
+                    const noun = days === 1 ? "day" : "days";
+                    hint.innerHTML = `Connected as <strong style="color: #fbbf24;">${tierLabel}</strong>. Expires in ${days} ${noun} — reconnect to avoid an interruption.`;
+                } else {
+                    hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Manage early access, content packs, and connection.`;
+                }
             }
         } else {
             if (label) {

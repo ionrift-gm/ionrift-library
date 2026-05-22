@@ -447,6 +447,26 @@ Hooks.once('init', () => {
         restricted: true
     });
 
+    // Patreon Sigil expiry warnings. GM-only. Default on so a stale connection
+    // is surfaced once per snooze window before downloads start failing.
+    game.settings.register("ionrift-library", "expiryWarnings", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    // Snooze timestamp (ms epoch). Set by CloudRelayService.warnIfExpiringSoon
+    // so a fresh notification doesn't fire on every reload.
+    game.settings.register("ionrift-library", "expiryWarningSnooze", {
+        scope: "world",
+        config: false,
+        type: Number,
+        default: 0,
+        restricted: true
+    });
+
     // One-time advisory flag (Resonance v2.2.2) — kept for backward compat;
     // the notification was removed in a later release. Existing worlds may have
     // this stored; re-registering prevents a settings-load error.
@@ -765,6 +785,12 @@ Hooks.once('ready', async () => {
         // Overlay checks run when the GM opens Patreon Library, not on world ready.
         // Enable overlays in a dev world via:
         //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
+
+        // Patreon expiry: do NOT toast on ready. The settings row icon and the
+        // in-app strip inside Patreon Library carry the advisory. The 401
+        // routing in CloudRelayService also catches anyone who manages to
+        // miss both surfaces and triggers a download. `warnIfExpiringSoon`
+        // is still callable on demand for diagnostics.
     }
 });
 

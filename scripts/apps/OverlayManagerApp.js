@@ -84,6 +84,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     async _prepareContext() {
         const isConnected = CloudRelayService.isConnected();
         const userTier = isConnected ? (CloudRelayService.getTierClaim() || "Free") : null;
+        const expiryStatus = isConnected
+            ? this._formatExpiryStatus(CloudRelayService.getExpiryStatus())
+            : null;
 
         if (isConnected
             && game.settings.get("ionrift-library", "overlayDistributionEnabled")
@@ -119,6 +122,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             return {
                 isConnected: false,
                 userTier: null,
+                expiryStatus: null,
                 groups,
                 earlyAccess: [],
                 overlayCount: groups.length,
@@ -265,6 +269,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         return {
             isConnected,
             userTier,
+            expiryStatus,
             groups,
             earlyAccess,
             overlayCount,
@@ -276,6 +281,37 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             selected,
             manageOpen: this._manageOpen
         };
+    }
+
+    /**
+     * Reduce the raw expiry status into the subset of fields the subscription
+     * strip needs. Returns null when there is nothing actionable to show.
+     *
+     * @param {object} status
+     * @returns {{state: "expired"|"soon", label: string, hint: string}|null}
+     */
+    _formatExpiryStatus(status) {
+        if (!status?.hasExpiry) return null;
+
+        if (status.expired) {
+            return {
+                state: "expired",
+                label: "Connection expired",
+                hint: "Reconnect to resume pack updates and early access."
+            };
+        }
+
+        if (status.expiringSoon) {
+            const days = Math.max(1, Math.ceil(status.secondsRemaining / 86400));
+            const noun = days === 1 ? "day" : "days";
+            return {
+                state: "soon",
+                label: `Expires in ${days} ${noun}`,
+                hint: "Reconnect now to avoid an interruption."
+            };
+        }
+
+        return null;
     }
 
     /** @override */
@@ -319,6 +355,18 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             btn.disabled = true;
             await CloudRelayService.disconnect();
             this._manageOpen = false;
+            SettingsLayout.injectPatreonStatus();
+            this.render();
+        });
+
+        root.querySelector("[data-action='reconnect-patreon']")?.addEventListener("click", async (ev) => {
+            const btn = ev.currentTarget;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Reconnecting...`;
+            await CloudRelayService.disconnect();
+            await CloudRelayService.connect();
+            this._manageOpen = false;
+            this._overlayRegistrySynced = false;
             SettingsLayout.injectPatreonStatus();
             this.render();
         });
@@ -1170,8 +1218,27 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             </div>`
             : "";
 
+        const expiry = context.expiryStatus;
+        const expiryMod = expiry ? ` overlay-mgr-strip--${expiry.state}` : "";
+        const expiryAdvisory = expiry
+            ? `
+            <div class="overlay-mgr-strip-advisory overlay-mgr-strip-advisory--${expiry.state}">
+                <span class="overlay-mgr-strip-advisory-icon">
+                    <i class="fas ${expiry.state === "expired" ? "fa-exclamation-triangle" : "fa-clock"}"></i>
+                </span>
+                <span class="overlay-mgr-strip-advisory-text">
+                    <strong>${expiry.label}.</strong>
+                    <span class="overlay-mgr-strip-advisory-hint">${expiry.hint}</span>
+                </span>
+                <button type="button" class="overlay-mgr-strip-reconnect" data-action="reconnect-patreon"
+                        title="Disconnect and reconnect your Patreon account">
+                    <i class="fas fa-sync-alt"></i> Reconnect
+                </button>
+            </div>`
+            : "";
+
         return `
-        <div class="overlay-mgr-strip ${context.manageOpen ? "is-open" : ""}">
+        <div class="overlay-mgr-strip ${context.manageOpen ? "is-open" : ""}${expiryMod}">
             <div class="overlay-mgr-strip-main">
                 <i class="fab fa-patreon overlay-mgr-strip-icon"></i>
                 <span class="overlay-mgr-strip-label">Connected</span>
@@ -1183,6 +1250,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 <i class="fas fa-cog"></i> Manage
             </button>
             ${manageTray}
+            ${expiryAdvisory}
         </div>`;
     }
 
