@@ -252,7 +252,7 @@ Hooks.once('init', () => {
              *
              * Usage:
              *   await game.ionrift.library.dev.inspectOverlayFiles("resonance-core-overlay");
-             *   await game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "free" });
+             *   await game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "core" });
              *
              * @param {string|{moduleId: string, sublayer: string, overlayId?: string}} spec
              * @returns {Promise<{ targetDir: string, files: string[], dirs: string[] }|null>}
@@ -286,7 +286,7 @@ Hooks.once('init', () => {
                 if (!targetDir) {
                     Logger.warn("Library", "inspectOverlayFiles: could not resolve target directory.");
                     Logger.warn("Library", '  Try: game.ionrift.library.dev.listOverlays()');
-                    Logger.warn("Library", '  Or:  game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "free" })');
+                    Logger.warn("Library", '  Or:  game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "core" })');
                     return null;
                 }
 

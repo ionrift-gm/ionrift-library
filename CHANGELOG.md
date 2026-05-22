@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- New content pack installs land under `core/` instead of `free/`. Existing installs keep working at their current location and continue to upgrade in place.
+
 ## [2.1.3] - 2026-05-22
 
 ### Added

@@ -1,16 +1,24 @@
 /**
- * OverlayService. Premium content overlay manager.
+ * OverlayService. Content overlay manager.
  *
  * Manages the lifecycle of overlay content packs: check availability
  * against the registry, download via Cloud Relay, extract to the
  * local filesystem, and expose overlay paths to consumer modules.
  *
  * Overlays are data-only packages (JSON, WebP, OGG). No .js files.
- * Each registry overlay installs to a per-tier sublayer directory
- * (free, initiate, acolyte, weaver, artificer).
+ * Each registry overlay installs to a per-pack sublayer directory.
+ * The default sublayer for a module's primary pack is `core` (e.g.
+ * `ionrift-data/overlays/ionrift-respite/core/`). Modules that ship
+ * multiple Free-tier packs use pack-named sublayers (`wanderers`,
+ * `frost-stone`). Paid sublayers use the audience tier id
+ * (`initiate`, `acolyte`, `weaver`, `artificer`).
  *
  * Storage: ionrift-data/overlays/{moduleId}/{sublayer}/
  * Manifest: overlay-manifest.json in each sublayer directory
+ *
+ * Back-compat: the historical default was `free` (pre-May 2026). Existing
+ * `free/` installs continue to read and upgrade in place. New installs land
+ * at `core/` unless the registry pins them to `free` explicitly.
  *
  * @see CONTENT_DELIVERY_STRATEGY.md
  */
@@ -27,6 +35,15 @@ export const OVERLAY_DISTRIBUTION_MIN_VERSION = "2.3.0";
 
 /** Legacy paid overlay installs used a single premium/ directory. */
 const LEGACY_PREMIUM_SUBLAYER = "premium";
+
+/**
+ * Pre-May 2026 default sublayer for Free-tier overlays. Read-only fallback
+ * now; new installs route to {@link DEFAULT_CORE_SUBLAYER}.
+ */
+const LEGACY_FREE_SUBLAYER = "free";
+
+/** Canonical sublayer for a module's primary pack. */
+const DEFAULT_CORE_SUBLAYER = "core";
 
 export class OverlayService {
 
@@ -123,16 +140,22 @@ export class OverlayService {
 
     /**
      * Map a registry tier label to a filesystem sublayer id.
+     * "Free" maps to {@link DEFAULT_CORE_SUBLAYER} (`core`); paid tiers map
+     * to their lowercase tier id.
      * @param {string} tier  e.g. "Free", "Initiate", "Acolyte"
-     * @returns {string}  e.g. "free", "initiate"
+     * @returns {string}  e.g. "core", "initiate"
      */
     static tierToSublayer(tier) {
-        return (tier || "Free").toLowerCase();
+        const normalized = (tier || "Free").toLowerCase();
+        if (normalized === "free") return DEFAULT_CORE_SUBLAYER;
+        return normalized;
     }
 
     /**
-     * Filesystem sublayer for an overlay. Registry may set `sublayer` when a
-     * module ships multiple packs at the same tier (e.g. core + frost-stone).
+     * Filesystem sublayer for an overlay, used for read-time path resolution
+     * and UI display. Registry may set `sublayer` when a module ships
+     * multiple packs at the same tier (e.g. core + frost-stone). For install
+     * destination use {@link resolveInstallSublayer} instead.
      * @param {{ tier?: string, sublayer?: string }} entry
      * @returns {string}
      */
@@ -141,6 +164,56 @@ export class OverlayService {
             return entry.sublayer;
         }
         return this.tierToSublayer(entry?.tier);
+    }
+
+    /**
+     * Resolve the on-disk sublayer to install into. Differs from
+     * {@link resolveSublayer} only for legacy `free/` installs: when the
+     * registry has no explicit sublayer and a `free/overlay-manifest.json`
+     * already exists for the module, the install sticks to `free/` instead
+     * of starting a parallel `core/` directory. New installs land at `core/`.
+     *
+     * Order of precedence:
+     *   1. Registry entry pins `sublayer` explicitly  → use it.
+     *   2. Legacy `free/` manifest exists for moduleId → return `"free"`.
+     *   3. Otherwise                                  → return tier default.
+     *
+     * @param {{ tier?: string, sublayer?: string, moduleId?: string }} entry
+     * @returns {Promise<string>}
+     */
+    static async resolveInstallSublayer(entry) {
+        if (entry?.sublayer && typeof entry.sublayer === "string") {
+            return entry.sublayer;
+        }
+        if (entry?.moduleId) {
+            const legacy = await this._readManifestAt(entry.moduleId, LEGACY_FREE_SUBLAYER);
+            if (legacy) return LEGACY_FREE_SUBLAYER;
+        }
+        return this.tierToSublayer(entry?.tier);
+    }
+
+    /**
+     * Read-fallback chain for a sublayer. When a manifest or contents file
+     * is missing at the primary location, the service walks each fallback
+     * in turn so legacy installs (under `free` or `premium`) remain
+     * readable after a convention shift.
+     * @param {string} sublayer
+     * @returns {string[]}
+     * @private
+     */
+    static _legacyFallbackSublayers(sublayer) {
+        const fallbacks = [];
+        if (sublayer === DEFAULT_CORE_SUBLAYER) {
+            fallbacks.push(LEGACY_FREE_SUBLAYER);
+        }
+        if (
+            sublayer !== DEFAULT_CORE_SUBLAYER
+            && sublayer !== LEGACY_FREE_SUBLAYER
+            && sublayer !== LEGACY_PREMIUM_SUBLAYER
+        ) {
+            fallbacks.push(LEGACY_PREMIUM_SUBLAYER);
+        }
+        return fallbacks;
     }
 
     /**
@@ -177,7 +250,7 @@ export class OverlayService {
                 continue;
             }
 
-            const sublayer = this.resolveSublayer(entry);
+            const sublayer = await this.resolveInstallSublayer(entry);
 
             const local = await this.getLocalManifest(entry.moduleId, sublayer);
             const isCurrent = local
@@ -277,7 +350,7 @@ export class OverlayService {
      * Example (F12 console, GM logged in and tier-eligible):
      *   await game.ionrift.library.overlay.installById(
      *       "quartermaster-core-overlay",
-     *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free" }
+     *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free", sublayer: "free" }
      *   );
      *
      * @param {string} overlayId
@@ -293,7 +366,11 @@ export class OverlayService {
             Logger.warn(MODULE_LABEL, "installById: entry must include { version, moduleId, tier }.");
             return false;
         }
-        const sublayer = entry.sublayer ?? this.tierToSublayer(entry.tier);
+        const sublayer = await this.resolveInstallSublayer({
+            sublayer: entry.sublayer,
+            tier: entry.tier,
+            moduleId: entry.moduleId
+        });
         const installEntry = {
             latest: entry.version,
             moduleId: entry.moduleId,
@@ -307,7 +384,12 @@ export class OverlayService {
 
     /**
      * Read the local overlay manifest for a module's sublayer.
-     * Falls back to legacy premium/ when a paid tier sublayer is empty.
+     *
+     * Walks the read-fallback chain when the primary location is empty:
+     * `core` → `free` for the post-rename world, and any non-legacy
+     * sublayer → `premium` for the pre-rename paid layer. Legacy hits are
+     * also cached under their own key so repeat reads short-circuit.
+     *
      * @param {string} moduleId
      * @param {string} sublayer
      * @returns {Promise<Object|null>}
@@ -319,10 +401,14 @@ export class OverlayService {
         }
 
         let data = await this._readManifestAt(moduleId, sublayer);
-        if (!data && sublayer !== "free" && sublayer !== LEGACY_PREMIUM_SUBLAYER) {
-            data = await this._readManifestAt(moduleId, LEGACY_PREMIUM_SUBLAYER);
-            if (data) {
-                this._manifestCache.set(`${moduleId}:${LEGACY_PREMIUM_SUBLAYER}`, data);
+        if (!data) {
+            for (const fallback of this._legacyFallbackSublayers(sublayer)) {
+                const legacyData = await this._readManifestAt(moduleId, fallback);
+                if (legacyData) {
+                    this._manifestCache.set(`${moduleId}:${fallback}`, legacyData);
+                    data = legacyData;
+                    break;
+                }
             }
         }
 
@@ -331,7 +417,8 @@ export class OverlayService {
     }
 
     /**
-     * Read contents.json shipped inside an installed overlay.
+     * Read contents.json shipped inside an installed overlay. Walks the
+     * same legacy fallback chain as {@link getLocalManifest}.
      * @param {string} moduleId
      * @param {string} sublayer
      * @returns {Promise<{ summary?: string, categories?: Array }|null>}
@@ -345,8 +432,8 @@ export class OverlayService {
         const paths = [
             `${this.getOverlayPath(moduleId, sublayer)}/contents.json`,
         ];
-        if (sublayer !== "free" && sublayer !== LEGACY_PREMIUM_SUBLAYER) {
-            paths.push(`${this.getOverlayPath(moduleId, LEGACY_PREMIUM_SUBLAYER)}/contents.json`);
+        for (const fallback of this._legacyFallbackSublayers(sublayer)) {
+            paths.push(`${this.getOverlayPath(moduleId, fallback)}/contents.json`);
         }
 
         for (const filePath of paths) {
@@ -603,7 +690,7 @@ export class OverlayService {
             return false;
         }
 
-        const sublayer = this.resolveSublayer(entry);
+        const sublayer = await this.resolveInstallSublayer(entry);
 
         // Clear caches so fresh manifest is read after extraction
         this._manifestCache.delete(`${entry.moduleId}:${sublayer}`);

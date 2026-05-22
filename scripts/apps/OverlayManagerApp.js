@@ -1139,6 +1139,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             return "Frost & Stone pack";
         }
         switch (sublayer) {
+            case "core":      return "Core pack";
             case "free":      return "Core pack";
             case "initiate":  return "Standard pack";
             case "acolyte":
