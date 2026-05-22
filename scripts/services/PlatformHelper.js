@@ -25,10 +25,27 @@ export class PlatformHelper {
     // ─── FilePicker Resolution ────────────────────────────────────
 
     /**
-     * Returns the platform-correct FilePicker class.
+     * Memoised FilePicker class. Sentinel `undefined` means unresolved;
+     * `null` means resolved to nothing available.
+     * @private
+     */
+    static _cachedFP = undefined;
+
+    /**
+     * Returns the platform-correct FilePicker class. Cached after first
+     * resolution.
      *
-     * - On Forge: Returns the global `FilePicker` (Forge monkey-patches it
-     *   with S3 Asset Library support; the v13 namespaced version is unpatched).
+     * Caching matters on Forge: Foundry v13 wraps `globalThis.FilePicker`
+     * in a deprecation Proxy that logs a compatibility warning on every
+     * read. We must use the global on Forge because Forge monkey-patches
+     * it with S3 Asset Library support and leaves the v13 namespaced
+     * version unpatched. Resolving once and stashing the class reference
+     * means the deprecation log fires once per session instead of once
+     * per overlay manifest read. The fallback chain in OverlayService can
+     * call this dozens of times per OverlayManagerApp render, so the
+     * difference is significant.
+     *
+     * - On Forge: Returns the global `FilePicker` (S3-patched).
      * - On self-hosted v13+: Returns `foundry.applications.apps.FilePicker`.
      * - On self-hosted v12: Falls back to the global `FilePicker`.
      * - In headless/Vitest: Returns null (no Foundry runtime).
@@ -36,22 +53,36 @@ export class PlatformHelper {
      * @returns {FilePicker|null}
      */
     static get FP() {
+        if (this._cachedFP !== undefined) return this._cachedFP;
+
         // Headless guard — no Foundry runtime available (Vitest, CI, etc.)
         if (typeof foundry === "undefined" && typeof FilePicker === "undefined") {
+            this._cachedFP = null;
             return null;
         }
 
-        // Forge patches the global FilePicker, not the v13 namespaced version.
+        let resolved;
         if (this.isForge) {
-            return FilePicker;
+            // Forge patches the global FilePicker; the namespaced version is unpatched.
+            resolved = typeof FilePicker !== "undefined" ? FilePicker : null;
+        } else if (typeof foundry !== "undefined") {
+            // Self-hosted: prefer v13 namespace, fall back to global (v12 compat).
+            resolved = foundry.applications?.apps?.FilePicker
+                ?? (typeof FilePicker !== "undefined" ? FilePicker : null);
+        } else {
+            resolved = typeof FilePicker !== "undefined" ? FilePicker : null;
         }
 
-        // Self-hosted: prefer v13 namespace, fall back to global (v12 compat).
-        if (typeof foundry !== "undefined") {
-            return foundry.applications?.apps?.FilePicker ?? (typeof FilePicker !== "undefined" ? FilePicker : null);
-        }
+        this._cachedFP = resolved;
+        return resolved;
+    }
 
-        return typeof FilePicker !== "undefined" ? FilePicker : null;
+    /**
+     * Drop the cached FilePicker class. Useful for tests that swap the
+     * global between cases. Production code never needs this.
+     */
+    static _resetFPCache() {
+        this._cachedFP = undefined;
     }
 
     // ─── File Source ──────────────────────────────────────────────
