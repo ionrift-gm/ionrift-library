@@ -83,6 +83,29 @@ export class ItemMintingService {
     }
 
     /**
+     * Validate every item document in a batch. Throws on the first failure.
+     * Does not mutate the input array.
+     *
+     * @param {object[]} sources
+     * @param {object} [options]
+     */
+    static guardAll(sources, options = {}) {
+        if (!Array.isArray(sources)) {
+            throw ItemMintingService._error("sources must be an array", options);
+        }
+        for (let idx = 0; idx < sources.length; idx++) {
+            const item = sources[idx];
+            try {
+                ItemMintingService.assertValid(item, options);
+            } catch (err) {
+                const label = item?.name ? `"${item.name}"` : `#${idx}`;
+                err.message = `${err.message} (item: ${label})`;
+                throw err;
+            }
+        }
+    }
+
+    /**
      * Validate an update patch shaped like Quartermaster promotion output.
      * Assembles nested system data from dot-path keys, then runs guard().
      *
