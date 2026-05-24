@@ -1,9 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [2.1.4] - 2026-05-24
 
-### Changed
-- New content pack installs land under `core/` instead of `free/`. Existing installs keep working at their current location and continue to upgrade in place.
+### Added
+- **Graduated EA nudge.** Modules that have moved from Early Access to the public Foundry listing now prompt GMs still running the old EA copy to uninstall and reinstall from the module browser. The dialog is snoozable.
 
 ### Fixed
 - Quieter console on The Forge. The platform helper now resolves the FilePicker class once per session instead of on every overlay manifest read, so the v13 deprecation warning logs once at boot rather than several times per Library render.
