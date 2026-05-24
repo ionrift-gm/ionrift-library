@@ -367,6 +367,11 @@ export class PackRegistryService {
             const installed = game.modules.get(moduleId);
             if (!installed) continue;
 
+            // Skip graduated EA modules — the CDN install path is dead.
+            // _checkGraduatedEAInstall() handles those instead.
+            const ea = entry.earlyAccess;
+            if (ea?.publicAt && new Date(ea.publicAt) <= new Date()) continue;
+
             const latest = entry.latest;
             if (!latest) continue;
 
@@ -396,7 +401,11 @@ export class PackRegistryService {
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
 
-            if (ea.publicAt && new Date(ea.publicAt) <= new Date()) continue;
+            // Module graduated from EA to public — check for stale EA installs
+            if (ea.publicAt && new Date(ea.publicAt) <= new Date()) {
+                this._checkGraduatedEAInstall(moduleId, entry);
+                continue;
+            }
 
             const reqRank = this.TIER_ORDER.indexOf(ea.tier);
             if (reqRank === -1 || userRank < reqRank) continue;
@@ -573,6 +582,113 @@ export class PackRegistryService {
                 callback: () => ui.notifications.info("Preview only, no snooze triggered.")
             }
         });
+    }
+
+    // ── Graduated EA Nudge ──────────────────────────────────────
+
+    /**
+     * Check whether a module that has graduated from EA is installed at an
+     * older version and nudge the GM to reinstall from the public listing.
+     * @param {string} moduleId
+     * @param {Object} registryEntry  Full registry.modules entry
+     */
+    static _checkGraduatedEAInstall(moduleId, registryEntry) {
+        const installed = game.modules.get(moduleId);
+        if (!installed) return;
+
+        const latest = registryEntry.latest;
+        if (!latest) return;
+
+        // Already on the current public version — nothing to do
+        if (this._compareVersions(installed.version, latest) >= 0) return;
+
+        if (this._isPackSnoozed(`graduated:${moduleId}`)) return;
+
+        this._showGraduatedEANotification(moduleId, installed.version, registryEntry);
+    }
+
+    /**
+     * Show a snoozable dialog advising the GM to switch from their EA install
+     * to the public Foundry module listing.
+     * @param {string} moduleId
+     * @param {string} installedVersion
+     * @param {Object} registryEntry
+     */
+    static _showGraduatedEANotification(moduleId, installedVersion, registryEntry) {
+        const meta = this.MODULE_DISPLAY_META[moduleId] ?? {};
+        const mod  = game.modules.get(moduleId);
+        const title = meta.title || mod?.title || moduleId;
+
+        setTimeout(async () => {
+            const content = this._buildGraduatedDialogContent(moduleId, installedVersion, registryEntry);
+
+            const confirmed = await foundry.applications.api.DialogV2.confirm({
+                window: {
+                    title: `${title} — Now Public!`,
+                    icon:  "fas fa-graduation-cap"
+                },
+                content,
+                yes: {
+                    label: "Got It",
+                    icon:  "fas fa-check"
+                },
+                no: {
+                    label: "Later",
+                    icon:  "fas fa-clock"
+                }
+            });
+
+            if (!confirmed) {
+                this._snoozePack(`graduated:${moduleId}`);
+            }
+        }, 3500);
+    }
+
+    /**
+     * Build rich HTML for the graduated EA dialog.
+     * Reuses ionrift-ea-dialog-content styling from the EA dialog.
+     * @param {string} moduleId
+     * @param {string} installedVersion
+     * @param {Object} registryEntry
+     * @returns {string}
+     */
+    static _buildGraduatedDialogContent(moduleId, installedVersion, registryEntry) {
+        const meta  = this.MODULE_DISPLAY_META[moduleId] ?? {};
+        const mod   = game.modules.get(moduleId);
+        const title = meta.title || mod?.title || moduleId;
+        const icon  = meta.icon  || "fas fa-cube";
+        const latest = registryEntry.latest ?? "latest";
+
+        return `
+<div class="ionrift-ea-dialog-content">
+    <div class="ionrift-ea-identity">
+        <div class="ionrift-ea-icon"><i class="${icon}"></i></div>
+        <div class="ionrift-ea-meta">
+            <div class="ionrift-ea-name">
+                ${title}
+                <span class="ionrift-ea-version-pill">v${installedVersion}</span>
+                <span class="ionrift-ea-tier-pill" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71;">Now Public</span>
+            </div>
+            <div class="ionrift-ea-desc">This module has graduated from Early Access and is now on the public Foundry module listing.</div>
+        </div>
+    </div>
+
+    <div class="ionrift-ea-divider"></div>
+
+    <div style="font-size: 13px; color: #c9d1d9; line-height: 1.6;">
+        <p style="margin: 0 0 8px;"><strong>Your Early Access copy (v${installedVersion}) will no longer receive CDN updates.</strong></p>
+        <p style="margin: 0 0 8px;">To stay current with v${latest} and beyond:</p>
+        <ol style="margin: 0 0 8px; padding-left: 20px;">
+            <li>Uninstall this copy from <strong>Settings → Manage Modules</strong></li>
+            <li>Go to <strong>Add-on Modules → Install Module</strong></li>
+            <li>Search for <strong>"${title}"</strong> and click <strong>Install</strong></li>
+        </ol>
+    </div>
+
+    <div class="ionrift-ea-snooze-note">
+        "Later" snoozes this for 3 days.
+    </div>
+</div>`;
     }
 
     // ── Snooze Helpers ──────────────────────────────────────────
