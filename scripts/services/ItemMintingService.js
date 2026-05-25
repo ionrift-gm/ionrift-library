@@ -11,6 +11,7 @@ const DND5E_RARITIES = new Set([
 const DND5E_ATTUNEMENT = new Set(["", "required", "optional"]);
 
 const SLUG_RE = /^[a-z0-9-]+$/;
+const ACTIVITY_KEY_RE = /^[a-zA-Z0-9]+$/;
 
 export class ItemMintingService {
 
@@ -167,9 +168,9 @@ export class ItemMintingService {
 
         if (system.activities && typeof system.activities === "object") {
             for (const [actId, activity] of Object.entries(system.activities)) {
-                if (actId && !SLUG_RE.test(actId)) {
+                if (actId && !SLUG_RE.test(actId) && !ACTIVITY_KEY_RE.test(actId)) {
                     throw ItemMintingService._error(
-                        `system.activities key "${actId}" is not a valid slug`,
+                        `system.activities key "${actId}" is not a valid identifier`,
                         options,
                         `system.activities.${actId}`
                     );
