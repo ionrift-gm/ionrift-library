@@ -105,9 +105,14 @@ export class TestHarnessRunner {
 
     /**
      * Run all registered suites sequentially and return a consolidated report.
+     *
+     * @param {object} [options]
+     * @param {boolean} [options.chat=true]  Post a consolidated summary card to
+     *   chat (whispered to the GM). Set false for headless / CI use.
      * @returns {Promise<object>} Full report
      */
-    static async runAll() {
+    static async runAll(options = {}) {
+        const { chat = true } = options;
         const suiteIds = this.getSuites();
         if (suiteIds.length === 0) {
             console.warn("Ionrift | TestHarnessRunner: No test suites registered.");
@@ -139,6 +144,15 @@ export class TestHarnessRunner {
         };
 
         this._logSummary(report);
+
+        if (chat) {
+            try {
+                await this._postChatReport(report);
+            } catch (err) {
+                console.warn("Ionrift | TestHarnessRunner: chat report failed:", err?.message);
+            }
+        }
+
         return report;
     }
 
@@ -172,6 +186,68 @@ export class TestHarnessRunner {
             `%c══ ${passed}/${total} passed across ${report.suites.length} suite(s) (${report.duration}ms) ══`,
             `font-weight:bold; color:${color}; font-size:1.1em`
         );
+    }
+
+    // ── Chat Report ──────────────────────────────────────────────
+
+    /**
+     * Post a consolidated summary card for the full harness run to chat.
+     * Whispered to the current user (GM). Per-suite detail (failed assertions
+     * only) is included so failures are actionable without a console open.
+     *
+     * Skipped silently outside an active Foundry game session.
+     */
+    static async _postChatReport(report) {
+        if (typeof ChatMessage === "undefined") return;
+        if (typeof game === "undefined" || !game?.user) return;
+
+        const { passed, failed, total } = report.overall;
+        const headerBg = failed === 0 ? "#1a472a" : "#4a1a1a";
+        const headerFg = failed === 0 ? "#4ade80" : "#f87171";
+
+        let html = `<div style="font-family: monospace; font-size: 12px; padding: 8px;">`;
+        html += `<div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; padding: 6px; background: ${headerBg}; color: ${headerFg}; border-radius: 4px;">`;
+        html += `⚡ Ionrift Test Harness — ${passed}/${total} passed across ${report.suites.length} suite(s)`;
+        if (failed > 0) html += ` (${failed} failed)`;
+        html += `</div>`;
+
+        for (const suite of report.suites) {
+            const icon = suite.failed > 0 ? "❌" : suite.skipped ? "⏭️" : "✅";
+            const color = suite.failed > 0 ? "#f87171" : "#4ade80";
+            const bg = suite.failed > 0 ? "#1f0a0a" : "#0a1f0a";
+
+            html += `<div style="margin: 4px 0; padding: 6px; background: ${bg}; border-left: 3px solid ${color}; border-radius: 2px;">`;
+            html += `<div style="color: ${color}; font-weight: bold;">${icon} ${this._escapeHtml(suite.name)} `;
+            html += `<span style="color:#94a3b8; font-weight: normal;">— ${suite.passed}/${suite.total} (${suite.duration}ms)</span></div>`;
+
+            if (suite.failed > 0 && Array.isArray(suite.results)) {
+                const failures = suite.results.filter(r => r.status === "fail");
+                for (const f of failures) {
+                    const name = this._escapeHtml(f.name || "Assertion");
+                    const msg = f.message ? `: ${this._escapeHtml(f.message)}` : "";
+                    html += `<div style="color: #fca5a5; margin-left: 16px; font-size: 11px;">↳ ${name}${msg}</div>`;
+                }
+            }
+
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+
+        await ChatMessage.create({
+            content: html,
+            whisper: [game.user.id],
+            speaker: { alias: "Ionrift Test Harness" }
+        });
+    }
+
+    static _escapeHtml(value) {
+        if (value === null || value === undefined) return "";
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
     }
 
     // ── Report Export ────────────────────────────────────────────
