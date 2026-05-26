@@ -68,7 +68,7 @@ export class TestReportApp extends FormApplication {
             btn.querySelector("span").textContent = "Running...";
 
             try {
-                this.report = await TestHarnessRunner.runAll();
+                this.report = await TestHarnessRunner.runAll({ chat: false });
                 this.render();
             } catch (err) {
                 console.error("Ionrift | Test re-run failed:", err);

@@ -277,7 +277,22 @@ export const DND5E_DATA = {
             { id: "skeleton", keywords: ["Skeleton"], tags: ["bones", "undead"], sound: "MONSTER_SKELETON" }
         ]
     },
-    exceptions: {}
+    exceptions: {
+        "flameskull": {
+            id: "undead_construct",
+            tags: ["fire", "flying", "skull", "magic", "no_limbs", "floating", "detached_skull", "bones"],
+            sound: "MONSTER_GHOST",
+            confidence: 1.0,
+            override: true
+        },
+        "demilich": {
+            id: "undead_construct",
+            tags: ["flying", "skull", "magic", "no_limbs", "floating", "detached_skull", "gemstones", "bones"],
+            sound: "MONSTER_GHOST",
+            confidence: 1.0,
+            override: true
+        }
+    }
 };
 
 /* 

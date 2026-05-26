@@ -168,6 +168,11 @@ export class ItemMintingService {
 
         if (system.activities && typeof system.activities === "object") {
             for (const [actId, activity] of Object.entries(system.activities)) {
+                // Foundry's deletion DSL: keys prefixed with "-=" remove the
+                // existing entry on update. They are valid in update payloads
+                // and must not be validated as identifiers.
+                if (actId.startsWith("-=")) continue;
+
                 if (actId && !SLUG_RE.test(actId) && !ACTIVITY_KEY_RE.test(actId)) {
                     throw ItemMintingService._error(
                         `system.activities key "${actId}" is not a valid identifier`,
