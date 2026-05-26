@@ -303,13 +303,25 @@ export class LegacyAssetSweeper {
                 continue;
             }
 
+            // Guard: verify browse actually returned the target path, not a
+            // parent-fallback. Foundry v13 can silently return the nearest
+            // existing parent when the requested directory doesn't exist.
+            const rootTarget = rootBrowse?.target ?? "";
+            if (!this._browseTargetMatches(rootTarget, root)) continue;
+
             for (const dirUrl of rootBrowse?.dirs ?? []) {
                 const dirName = dirUrl.split("/").filter(Boolean).pop();
                 if (!dirName) continue;
                 try {
                     const subBrowse = await FP.browse(src, `${root}/${dirName}`);
                     const files = subBrowse?.files ?? [];
-                    if (files.some(f => f.endsWith("/manifest.json") || f.endsWith("manifest.json"))) {
+                    // Match exact filename "manifest.json" only — not
+                    // "overlay-manifest.json" which would false-positive
+                    // against other modules' overlay manifests.
+                    if (files.some(f => {
+                        const base = f.split("/").pop();
+                        return base === "manifest.json";
+                    })) {
                         return true;
                     }
                 } catch {
@@ -543,6 +555,13 @@ export class LegacyAssetSweeper {
      * subdirectory. Used as a coarse "is there anything still here?"
      * test; precise enumeration is unnecessary for the detection step.
      *
+     * Includes a target-path validation guard: Foundry v13's
+     * FilePicker.browse can silently fall back to the nearest existing
+     * parent directory when the requested path doesn't exist, returning
+     * that parent's contents instead of throwing. Without this guard,
+     * a missing `sounds/pack/` would appear to have content because
+     * the browse returned `sounds/AUDIO_LICENSE.md` from the parent.
+     *
      * @param {string} path
      * @returns {Promise<boolean>}
      * @private
@@ -553,12 +572,36 @@ export class LegacyAssetSweeper {
         const src = PlatformHelper.fileSource;
         try {
             const browse = await FP.browse(src, path);
+
+            // Guard: verify the browse result corresponds to the
+            // requested path, not a parent-fallback.
+            const target = browse?.target ?? "";
+            if (!this._browseTargetMatches(target, path)) return false;
+
             const fileCount = browse?.files?.length ?? 0;
             const dirCount = browse?.dirs?.length ?? 0;
             return fileCount > 0 || dirCount > 0;
         } catch {
             return false;
         }
+    }
+
+    /**
+     * Compare a FilePicker browse result's `target` field against the
+     * path that was requested. Returns true when they match (allowing
+     * for trailing-slash and case differences). Returns true when no
+     * target field exists (safety: assume the browse is accurate if
+     * the API doesn't report what it resolved to).
+     *
+     * @param {string} browseTarget  The `target` field from the browse result.
+     * @param {string} requestedPath The path that was originally requested.
+     * @returns {boolean}
+     * @private
+     */
+    static _browseTargetMatches(browseTarget, requestedPath) {
+        if (!browseTarget) return true;  // No target field — trust the result.
+        const norm = (p) => (p ?? "").replace(/[\\/]+/g, "/").replace(/\/+$/, "").toLowerCase();
+        return norm(browseTarget) === norm(requestedPath);
     }
 
     /**
