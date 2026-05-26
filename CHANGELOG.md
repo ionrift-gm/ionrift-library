@@ -1,18 +1,16 @@
 # Changelog
 
-## [Unreleased]
+## [2.1.5] - 2026-05-26
 
 ### Changed
-- Terrain registry now exposes a stable kernel base of five terrains (forest, swamp, desert, urban, dungeon) via a new `getBase()` accessor. The base set is what other modules should rely on when seeding their own pickers; the shared registry no longer aggregates terrains pushed by other modules. Mountain has been removed from the base set; modules that need it now bring it with their own pack data.
+- Terrain registry exposes a stable kernel base of five terrains (forest, swamp, desert, urban, dungeon). Modules that need additional terrains now bring them with their own pack data instead of pushing into the shared list.
 
 ### Added
-- `TerrainRegistry.unregister(id)` for removing module-added entries when a content pack is toggled off. Kernel base ids are protected.
-- `TerrainRegistry.isBase(id)` helper for distinguishing kernel terrains from module-added entries.
+- Content overlays can register and unregister terrains at runtime. Installing or removing an overlay updates the terrain picker automatically.
 
 ### Fixed
-- `ItemMintingService` validation now skips Foundry's deletion DSL keys (entries prefixed `-=` are valid in update payloads and were incorrectly rejected as malformed identifiers).
-- Test report re-run no longer spams the chat log; the `Run again` button now requests a silent run.
-- Flameskull and demilich now resolve to the floating-skull sound profile instead of the generic undead default.
+- Minting validation no longer rejects Foundry deletion-syntax keys in update payloads.
+- Flameskull and demilich now resolve to the floating-skull sound profile instead of the generic undead fallback.
 
 ## [2.1.4] - 2026-05-24
 
