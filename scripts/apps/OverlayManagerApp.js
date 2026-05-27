@@ -4,7 +4,6 @@ import { PackRegistryService } from "../services/PackRegistryService.js";
 import { ModuleInstallerService } from "../services/ModuleInstallerService.js";
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { SettingsLayout } from "../SettingsLayout.js";
-import { ZipImporterService } from "../services/ZipImporterService.js";
 import { PlatformHelper } from "../services/PlatformHelper.js";
 import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
 import { DialogHelper } from "../DialogHelper.js";
@@ -642,14 +641,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
-     * Window-level zip-import flow. The .zip is opened first and the manifest
-     * inspected to decide which opted-in module should receive the pack. The
-     * destructive-warnings modal then runs for that module before extraction.
-     *
-     * Routing rules, evaluated in order against the manifest:
-     *   1. manifest.id or manifest.packId starts with any
-     *      MODULE_DISPLAY_META[moduleId].zipImport.match.idPrefix entry
-     *   2. manifest.packType is in match.packTypes
+     * Window-level zip-import flow. Accepts current-format overlay zips only.
+     * Reads overlay-manifest.json from the archive root and delegates to
+     * OverlayService.installFromBlob.
      *
      * @param {HTMLButtonElement} btn
      */
@@ -659,42 +653,38 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         let manifest = null;
         try {
-            manifest = await this._readManifestFromZip(file);
+            manifest = await this._readOverlayManifestFromZip(file);
         } catch (e) {
-            console.warn("OverlayManagerApp | Failed to read manifest from zip:", e);
+            console.warn("OverlayManagerApp | Failed to read overlay manifest from zip:", e);
         }
+
         if (!manifest) {
-            ui.notifications?.error("This .zip is missing a manifest.json at its root.");
-            return;
-        }
-
-        const packId = typeof manifest.id === "string" && manifest.id
-            ? manifest.id
-            : (typeof manifest.packId === "string" ? manifest.packId : null);
-        if (!packId) {
-            ui.notifications?.error("The manifest.json in this .zip is missing an \"id\" (or \"packId\") field.");
-            return;
-        }
-
-        const target = this._resolveTargetForManifest(manifest);
-        if (!target) {
             ui.notifications?.error(
-                "Could not match this .zip to an installed Ionrift module. Check that the relevant module is enabled and that the manifest declares a recognised type."
+                "This .zip is not a current Ionrift overlay pack. Install content through the in-app Patreon Library, or download an overlay zip from the Patreon post link."
             );
             return;
         }
 
-        const { moduleId, meta, zipConfig } = target;
-        const moduleLabel = meta.title ?? moduleId;
+        const overlayId = typeof manifest.overlayId === "string" ? manifest.overlayId : null;
+        const moduleId = typeof manifest.moduleId === "string" ? manifest.moduleId : null;
+        const version = typeof manifest.version === "string" ? manifest.version : null;
+        if (!overlayId || !moduleId || !version) {
+            ui.notifications?.error("The overlay-manifest.json in this .zip is missing overlayId, moduleId, or version.");
+            return;
+        }
+
+        const moduleLabel = PackRegistryService.MODULE_DISPLAY_META[moduleId]?.title
+            ?? game.modules.get(moduleId)?.title
+            ?? moduleId;
 
         const proceed = await OverlayService.confirmDestructiveAction({
             moduleId,
             action: "zipImport",
             title: `Install ${moduleLabel} content pack?`,
-            intro: `<strong>${packId}</strong> will be installed from <strong>${file.name}</strong> into ${moduleLabel}.`,
+            intro: `<strong>${overlayId}</strong> v${version} will be installed from <strong>${file.name}</strong>.`,
             confirmLabel: "Install",
             confirmIcon: "fas fa-file-import",
-            context: { packId, fileName: file.name, manifest }
+            context: { overlayId, fileName: file.name, manifest }
         });
         if (!proceed) return;
 
@@ -703,96 +693,31 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
 
         try {
-            const importerModuleId = zipConfig.importerModuleId ?? moduleId.replace(/^ionrift-/, "");
-            const assetTypePrefix = zipConfig.assetTypePrefix ?? "packs/";
-
-            if (game.ionrift?.library?.platform) {
-                const baseAssetDir = `ionrift-data/${importerModuleId}/${assetTypePrefix.replace(/\/+$/, "")}`;
-                await PlatformHelper.withSuppressedToasts(
-                    () => PlatformHelper.ensureDirectory(baseAssetDir)
-                );
-            }
-
-            const result = await ZipImporterService.importFromFile(file, {
-                moduleId: importerModuleId,
-                assetType: `${assetTypePrefix}${packId}`,
-                allowedExtensions: zipConfig.fileExtensions,
-                maxSizeMB: zipConfig.maxSizeMB ?? 50
+            const blob = new Blob([await file.arrayBuffer()], { type: file.type || "application/zip" });
+            const installed = await OverlayService.installFromBlob(blob, {
+                overlayId,
+                version,
+                moduleId,
+                tier: manifest.tier,
+                sublayer: manifest.sublayer,
+                userInitiated: true
             });
 
-            if (!result || result.imported === 0) {
+            if (!installed) {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
                 return;
             }
 
-            const settingKey = zipConfig.onInstalledSettingKey;
-            if (Array.isArray(settingKey) && settingKey.length === 2) {
-                try {
-                    const current = game.settings.get(settingKey[0], settingKey[1]) ?? {};
-                    current[packId] = true;
-                    await game.settings.set(settingKey[0], settingKey[1], current);
-                } catch (e) {
-                    console.warn("OverlayManagerApp | Could not auto-enable pack:", e);
-                }
-            }
-
-            const changedModuleId = zipConfig.contentChangedModuleId ?? moduleId;
-            Hooks.callAll("ionrift.overlayContentChanged", {
-                moduleId: changedModuleId,
-                source: "zipImport",
-                packId,
-                installed: true,
-                active: true
-            });
-
-            ui.notifications?.info(`Installed "${packId}" into ${moduleLabel} (${result.imported} files).`);
+            ui.notifications?.info(`Installed "${overlayId}" v${version} into ${moduleLabel}.`);
         } catch (e) {
             console.error("OverlayManagerApp | Zip import failed:", e);
             ui.notifications?.error(`Zip import failed: ${e.message}`);
         } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
             this.render();
         }
-    }
-
-    /**
-     * Resolve which acceptsZipImport module owns this manifest.
-     *
-     * idPrefix match takes precedence over packType match, so a pack with both
-     * `id: "ionrift-soundpack-core"` and `packType: "sfx"` lands at Resonance
-     * regardless of any other module that claims the sfx packType.
-     *
-     * @param {Object} manifest
-     * @returns {{moduleId: string, meta: Object, zipConfig: Object}|null}
-     */
-    _resolveTargetForManifest(manifest) {
-        const idCandidate = typeof manifest?.id === "string" ? manifest.id
-            : (typeof manifest?.packId === "string" ? manifest.packId : "");
-        const packType = typeof manifest?.packType === "string" ? manifest.packType : "";
-
-        const opted = Object.entries(PackRegistryService.MODULE_DISPLAY_META)
-            .filter(([, meta]) => meta?.acceptsZipImport)
-            .map(([moduleId, meta]) => ({ moduleId, meta, zipConfig: meta.zipImport ?? {} }));
-
-        if (idCandidate) {
-            for (const entry of opted) {
-                const prefixes = entry.zipConfig?.match?.idPrefix;
-                if (Array.isArray(prefixes) && prefixes.some(p => typeof p === "string" && idCandidate.startsWith(p))) {
-                    return entry;
-                }
-            }
-        }
-
-        if (packType) {
-            for (const entry of opted) {
-                const types = entry.zipConfig?.match?.packTypes;
-                if (Array.isArray(types) && types.includes(packType)) {
-                    return entry;
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -820,27 +745,34 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
-     * Read manifest.json from the zip's root. Returns the parsed object or
-     * null when missing. Throws on JSZip / JSON errors so callers can surface
-     * a useful error toast.
+     * Read overlay-manifest.json from the zip root.
      * @param {File} file
      * @returns {Promise<Object|null>}
      */
-    async _readManifestFromZip(file) {
+    async _readOverlayManifestFromZip(file) {
         const JSZip = await PlatformHelper.loadJSZip();
         const buffer = await file.arrayBuffer();
         const zip = await JSZip.loadAsync(buffer);
-        let entry = zip.file("manifest.json");
+        let entry = zip.file("overlay-manifest.json");
         if (!entry) {
             zip.forEach((relativePath, candidate) => {
                 if (entry || candidate.dir) return;
                 const normalized = relativePath.replace(/\\/g, "/").toLowerCase();
-                if (normalized === "manifest.json") entry = candidate;
+                if (normalized === "overlay-manifest.json") entry = candidate;
             });
         }
         if (!entry) return null;
         const text = await entry.async("text");
         return JSON.parse(text);
+    }
+
+    /**
+     * @deprecated Legacy manifest.json zips are no longer supported.
+     * @param {File} file
+     * @returns {Promise<Object|null>}
+     */
+    async _readManifestFromZip(file) {
+        return this._readOverlayManifestFromZip(file);
     }
 
     _hasError(status, lastError) {
@@ -1034,6 +966,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 if (o.status === "installed-locked" && o.isActive) return true;
                 return false;
             }).length;
+            g.updateCount = g.overlays.filter(o => o.status === "update-available").length;
         }
 
         groups.sort((a, b) =>
@@ -1161,7 +1094,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             group.status === "locked" ? "overlay-tile--locked" : "",
             group.status === "module-inactive" ? "overlay-tile--inactive" : "",
             this._selectedModuleId === group.moduleId ? "overlay-tile--selected" : "",
-            compact ? "overlay-tile--compact" : ""
+            compact ? "overlay-tile--compact" : "",
+            group.updateCount > 0 ? "overlay-tile--stale" : ""
         ].filter(Boolean).join(" ");
 
         const shortName = this._shortModuleName(group.moduleName);
@@ -1175,6 +1109,10 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const packMeta = metaText
             ? `<span class="overlay-tile-meta ${isComplete && !isPartial ? "is-complete" : ""}">${metaText}</span>`
             : "";
+        const updateWord = group.updateCount === 1 ? "update available" : "updates available";
+        const updateBadge = group.updateCount > 0
+            ? `<span class="overlay-tile-update-badge"><i class="fas fa-sync"></i> ${group.updateCount} ${updateWord}</span>`
+            : "";
 
         return `
         <button type="button" class="${classes}"
@@ -1186,6 +1124,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             <span class="overlay-tile-label">
                 <span class="overlay-tile-name">${shortName}</span>
                 ${packMeta}
+                ${updateBadge}
             </span>
         </button>`;
     }
@@ -1304,8 +1243,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             summary += ` &middot; ${context.inactiveCount} off`;
         }
         if (context.actionableCount > 0) {
-            const packWord = context.actionableCount === 1 ? "pack" : "packs";
-            summary += ` &middot; ${context.actionableCount} ready to install`;
+            summary += ` &middot; <span class="overlay-mgr-section-updates">${context.actionableCount} ready to install</span>`;
         }
 
         const installAllBtn = context.actionableCount > 0
@@ -1798,7 +1736,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Install"><i class="fas fa-download"></i> Install</button>`;
             case "update-available":
                 return `${this._renderOverlayLifecycleControls(overlay, isConnected)}
-                    <button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
+                    <button type="button" class="overlay-detail-btn overlay-detail-btn--update" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Update"><i class="fas fa-sync"></i> Update</button>`;
             case "up-to-date":
             case "installed-inactive":
             case "installed-outdated":

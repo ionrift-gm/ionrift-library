@@ -1,50 +1,32 @@
 /**
  * ZipImporterService
  *
- * Shared utility for importing ZIP archives through the Foundry UI.
- * Consumer modules call importZipPack() with their module ID, asset type,
- * and optional validators. Files are extracted client-side via JSZip and
- * uploaded through FilePicker.upload().
+ * Manual overlay ZIP import through the Foundry UI. Accepts current-format
+ * overlay archives only (root overlay-manifest.json). Legacy content-pack
+ * zips are no longer supported on the import surface; use the in-app Patreon
+ * Library for one-click installs.
  *
- * Target directory convention: ionrift-data/{moduleId}/{assetType}/
+ * Target directory: ionrift-data/overlays/{moduleId}/{sublayer}/
  *
  * Usage:
- *   await game.ionrift.library.importZipPack({
- *       moduleId: "respite",
- *       assetType: "art",
- *       allowedExtensions: [".webp", ".png", ".jpg"],
- *       maxSizeMB: 50
- *   });
+ *   await game.ionrift.library.importZipPack();
  */
 
-import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { PlatformHelper } from "./PlatformHelper.js";
+import { OverlayService } from "./OverlayService.js";
 
-// OS-generated junk files to skip during extraction
-const SKIP_PATTERNS = [
-    "__MACOSX",
-    ".DS_Store",
-    "Thumbs.db",
-    "desktop.ini",
-    ".gitkeep"
-];
+const DEFAULT_MAX_SIZE_MB = 200;
 
-const DEFAULT_MAX_SIZE_MB = 50;
-const DATA_ROOT = "ionrift-data";
+const LEGACY_ZIP_MESSAGE =
+    "This archive is not an Ionrift overlay zip. Manual import only supports current-format overlay zips; install content through the in-app Patreon Library instead.";
 
 export class ZipImporterService {
 
     /**
-     * Full import flow: file picker -> parse -> validate -> upload -> done.
-     * Opens a browser file picker, then processes the selected ZIP.
+     * Full import flow: file picker -> parse -> validate -> overlay install.
      *
-     * @param {Object} options
-     * @param {string} options.moduleId       Module slug (e.g. "respite")
-     * @param {string} options.assetType      Asset category (e.g. "art", "sfx")
-     * @param {string[]} [options.allowedExtensions]  File extensions to accept
-     * @param {number} [options.maxSizeMB]    Max zip file size in MB (default: 50)
-     * @param {Function} [options.schemaValidator]    Validates extracted entries
-     * @param {boolean} [options.overwriteExisting]   Overwrite files (default: true)
+     * @param {Object} [options]
+     * @param {number} [options.maxSizeMB] Max zip file size in MB (default: 200)
      * @returns {Promise<{imported: number, skipped: number, errors: string[], manifest: Record<string, unknown>|null}|null>}
      */
     static async importZipPack(options = {}) {
@@ -60,30 +42,21 @@ export class ZipImporterService {
     }
 
     /**
-     * Programmatic import from a File object (used by test harness).
-     * Skips the file picker dialog.
+     * Programmatic import from a File object.
      *
-     * @param {File} file               The ZIP file to import
-     * @param {Object} options           Same options as importZipPack
+     * @param {File} file
+     * @param {Object} [options]
+     * @param {number} [options.maxSizeMB]
+     * @param {boolean} [options.userInitiated]
      * @returns {Promise<{imported: number, skipped: number, errors: string[], manifest: Record<string, unknown>|null}>}
      */
     static async importFromFile(file, options = {}) {
-        const hasAllowedExtensionsOption = Object.prototype.hasOwnProperty.call(options, "allowedExtensions");
         const {
-            moduleId,
-            assetType = "assets",
-            allowedExtensions = [],
             maxSizeMB = DEFAULT_MAX_SIZE_MB,
-            schemaValidator = null,
-            overwriteExisting = true
+            userInitiated = true
         } = options;
 
-        if (!moduleId) throw new Error("ZipImporterService: moduleId is required.");
-
         const errors = [];
-        const targetDir = `${DATA_ROOT}/${moduleId}/${assetType}`;
-
-        // Size gate
         const maxBytes = maxSizeMB * 1024 * 1024;
         if (file.size > maxBytes) {
             const msg = `Pack exceeds the ${maxSizeMB} MB limit (${(file.size / 1024 / 1024).toFixed(1)} MB).`;
@@ -91,215 +64,80 @@ export class ZipImporterService {
             return { imported: 0, skipped: 0, errors: [msg], manifest: null };
         }
 
-        // Show progress modal early so user sees feedback during parse
-        const { ZipImportProgressApp } = await import("../apps/ZipImportProgressApp.js");
-        const progressApp = new ZipImportProgressApp(file.name, 0);
-        progressApp.render({ force: true });
-
-        // Load JSZip dynamically (vendored)
         let JSZip;
         try {
             JSZip = await PlatformHelper.loadJSZip();
         } catch {
-            progressApp.close();
             return { imported: 0, skipped: 0, errors: ["Failed to load JSZip library."], manifest: null };
         }
 
-        // Parse the ZIP
         let zip;
         try {
-            progressApp.setStatus("Reading archive...");
             const buffer = await file.arrayBuffer();
             zip = await JSZip.loadAsync(buffer);
         } catch (e) {
             const msg = `Failed to parse ZIP: ${e.message}`;
             ui.notifications.error(msg);
-            progressApp.close();
             return { imported: 0, skipped: 0, errors: [msg], manifest: null };
         }
 
-        let validManifest = null;
-        const manifestEntry = this._findManifestEntry(zip);
-        if (manifestEntry) {
-            try {
-                const manifestText = await manifestEntry.async("text");
-                const manifestJson = JSON.parse(manifestText);
-                const validation = PackManifestSchema.validate(manifestJson);
-                if (validation.valid) {
-                    validManifest = manifestJson;
-                } else {
-                    console.warn("ZipImporter | manifest.json is invalid:", validation.errors);
-                }
-            } catch (error) {
-                console.warn("ZipImporter | Failed to read manifest.json:", error);
-            }
-        } else {
-            console.warn("ZipImporter | No manifest.json found in archive.");
+        const overlayManifestEntry = this._findOverlayManifestEntry(zip);
+        if (!overlayManifestEntry) {
+            ui.notifications.error(LEGACY_ZIP_MESSAGE);
+            return { imported: 0, skipped: 0, errors: [LEGACY_ZIP_MESSAGE], manifest: null };
         }
 
-        let effectiveAllowedExtensions = allowedExtensions;
-        if (!hasAllowedExtensionsOption && validManifest?.packType && Array.isArray(validManifest.contentTypes)) {
-            const manifestExtensions = validManifest.contentTypes
-                .filter((value) => typeof value === "string")
-                .map((value) => value.trim().toLowerCase())
-                .filter((value) => value.length > 0)
-                .map((value) => (value.startsWith(".") ? value : `.${value}`));
-            if (manifestExtensions.length > 0) {
-                effectiveAllowedExtensions = manifestExtensions;
-                console.log("ZipImporter | Using manifest contentTypes as allowedExtensions:", effectiveAllowedExtensions);
-            }
+        let overlayManifest;
+        try {
+            overlayManifest = JSON.parse(await overlayManifestEntry.async("text"));
+        } catch (e) {
+            const msg = `Failed to read overlay-manifest.json: ${e.message}`;
+            ui.notifications.error(msg);
+            return { imported: 0, skipped: 0, errors: [msg], manifest: null };
         }
 
-        // Filter entries
-        progressApp.setStatus("Scanning files...");
-        const entries = [];
-        zip.forEach((relativePath, entry) => {
-            if (entry.dir) return;
-            // Normalize backslashes (Windows .NET ZipFile may produce these)
-            relativePath = relativePath.replace(/\\/g, "/");
-            if (SKIP_PATTERNS.some(p => relativePath.includes(p))) return;
+        const validation = this._validateOverlayManifest(overlayManifest);
+        if (!validation.valid) {
+            const msg = validation.errors.join(", ");
+            ui.notifications.error(`Invalid overlay manifest: ${msg}`);
+            return { imported: 0, skipped: 0, errors: validation.errors, manifest: overlayManifest };
+        }
 
-            const ext = "." + relativePath.split(".").pop().toLowerCase();
-            if (effectiveAllowedExtensions.length > 0 && !effectiveAllowedExtensions.includes(ext)) return;
-
-            entries.push({ path: relativePath, entry });
+        const blob = new Blob([await file.arrayBuffer()], { type: file.type || "application/zip" });
+        const installed = await OverlayService.installFromBlob(blob, {
+            overlayId: overlayManifest.overlayId,
+            version: overlayManifest.version,
+            moduleId: overlayManifest.moduleId,
+            tier: overlayManifest.tier,
+            sublayer: overlayManifest.sublayer,
+            userInitiated
         });
 
-        if (entries.length === 0) {
-            const msg = "ZIP contains no files matching the allowed extensions.";
-            ui.notifications.warn(msg);
-            progressApp.close();
-            return { imported: 0, skipped: 0, errors: [msg], manifest: validManifest };
+        if (!installed) {
+            const msg = `Overlay install failed for "${overlayManifest.overlayId}".`;
+            return { imported: 0, skipped: 0, errors: [msg], manifest: overlayManifest };
         }
 
-        // Schema validation
-        console.log(`ZipImporter | ${entries.length} entries after filtering:`, entries.map(e => e.path));
-        if (schemaValidator) {
-            progressApp.setStatus("Validating structure...");
-            const entryMeta = entries.map(e => ({
-                path: e.path,
-                dir: e.path.includes("/") ? e.path.substring(0, e.path.lastIndexOf("/")) : "",
-                name: e.path.includes("/") ? e.path.substring(e.path.lastIndexOf("/") + 1) : e.path
-            }));
-            const validation = schemaValidator(entryMeta);
-            if (!validation.valid) {
-                const msg = `Schema validation failed: ${(validation.errors || []).join(", ")}`;
-                ui.notifications.error(msg);
-                progressApp.close();
-                return { imported: 0, skipped: 0, errors: [msg], manifest: validManifest };
-            }
-        }
+        const fileCount = typeof overlayManifest.fileCount === "number"
+            ? overlayManifest.fileCount
+            : 1;
 
-        // Update progress with actual file count now that we know it
-        progressApp.setTotal(entries.length);
-
-        // Create directory structure
-        const dirsToCreate = new Set();
-        dirsToCreate.add(DATA_ROOT);
-        dirsToCreate.add(`${DATA_ROOT}/${moduleId}`);
-        dirsToCreate.add(targetDir);
-        for (const e of entries) {
-            if (e.path.includes("/")) {
-                const parts = e.path.split("/");
-                let current = targetDir;
-                for (let i = 0; i < parts.length - 1; i++) {
-                    current += "/" + parts[i];
-                    dirsToCreate.add(current);
-                }
-            }
-        }
-
-        // Suppress batch toasts for both directory creation and file uploads.
-        // Foundry's createDirectory emits noisy 'does not exist' errors
-        // during recursive creation, and uploads emit per-file 'saved to' info.
-        let imported = 0;
-        let skipped = 0;
-        await PlatformHelper.withSuppressedToasts(async () => {
-            for (const dir of [...dirsToCreate].sort()) {
-                await PlatformHelper.ensureDirectory(dir);
-            }
-
-            // Upload files
-            for (let i = 0; i < entries.length; i++) {
-                const { path, entry } = entries[i];
-
-                if (progressApp.cancelled) {
-                    errors.push(`Import cancelled at file ${i + 1}/${entries.length}.`);
-                    break;
-                }
-
-                try {
-                    const blob = await entry.async("blob");
-                    const fileName = path.includes("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
-                    const subDir = path.includes("/")
-                        ? targetDir + "/" + path.substring(0, path.lastIndexOf("/"))
-                        : targetDir;
-
-                    const uploadFile = new File([blob], fileName);
-                    await PlatformHelper.FP.upload(PlatformHelper.fileSource, subDir, uploadFile, {});
-                    imported++;
-                    progressApp.update(i + 1, fileName);
-                } catch (e) {
-                    console.warn(`ZipImporter | Failed to upload ${path}:`, e);
-                    errors.push(`${path}: ${e.message}`);
-                }
-            }
-        });
-
-        if (validManifest) {
-            try {
-                const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
-                const updated = {
-                    ...installedPacks,
-                    [validManifest.packId]: {
-                        version: validManifest.version,
-                        tier: validManifest.tier,
-                        packType: validManifest.packType,
-                        format: "zip",
-                        installedAt: new Date().toISOString(),
-                        fileCount: imported
-                    }
-                };
-                await game.settings.set("ionrift-library", "installedPacks", updated);
-                console.log(`ZipImporter | Stored manifest metadata for packId "${validManifest.packId}".`);
-            } catch (error) {
-                console.warn("ZipImporter | Failed to persist installed pack metadata:", error);
-            }
-        } else if (manifestEntry) {
-            console.warn("ZipImporter | manifest.json present but invalid. Continuing without metadata.");
-        }
-
-        // Complete
-        progressApp.complete(imported, skipped, errors);
-
-        if (errors.length === 0) {
-            ui.notifications.info(`Imported ${imported} files from "${file.name}".`);
-        } else {
-            ui.notifications.warn(`Imported ${imported} files with ${errors.length} errors.`);
-        }
-
-        console.log(`ZipImporter | Complete: ${imported} imported, ${skipped} skipped, ${errors.length} errors.`);
-        return { imported, skipped, errors, manifest: validManifest };
+        ui.notifications.info(`Installed overlay "${overlayManifest.overlayId}" v${overlayManifest.version}.`);
+        return { imported: fileCount, skipped: 0, errors, manifest: overlayManifest };
     }
 
     /**
-     * Returns the target directory path for a given module and asset type.
-     * Useful for consumer modules to know where assets were imported to.
-     *
-     * @param {string} moduleId
-     * @param {string} assetType
+     * @deprecated Legacy zip paths are no longer used. Overlays install under ionrift-data/overlays/.
+     * @param {string} _moduleId
+     * @param {string} _assetType
      * @returns {string}
      */
-    static getTargetDir(moduleId, assetType = "assets") {
-        return `${DATA_ROOT}/${moduleId}/${assetType}`;
+    static getTargetDir(_moduleId, _assetType = "assets") {
+        return "ionrift-data/overlays";
     }
 
     // ── Internal ───────────────────────────────────────────────────
 
-    /**
-     * Opens a browser file picker restricted to .zip files.
-     * @returns {Promise<File|null>}
-     */
     static _pickFile() {
         return new Promise((resolve) => {
             const input = document.createElement("input");
@@ -308,26 +146,41 @@ export class ZipImporterService {
             input.addEventListener("change", (e) => {
                 resolve(e.target.files?.[0] ?? null);
             });
-            // Handle user cancellation (no file selected)
             input.addEventListener("cancel", () => resolve(null));
             input.click();
         });
     }
 
     /**
-     * Locates manifest.json at the archive root (case-insensitive).
+     * @param {Object} manifest
+     * @returns {{ valid: boolean, errors: string[] }}
+     */
+    static _validateOverlayManifest(manifest) {
+        const errors = [];
+        if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
+            return { valid: false, errors: ["overlay-manifest.json must be an object."] };
+        }
+        for (const field of ["overlayId", "version", "moduleId", "tier"]) {
+            if (typeof manifest[field] !== "string" || !manifest[field].trim()) {
+                errors.push(`${field} is required in overlay-manifest.json.`);
+            }
+        }
+        return { valid: errors.length === 0, errors };
+    }
+
+    /**
      * @param {Object} zip
      * @returns {Object|null}
      */
-    static _findManifestEntry(zip) {
-        const directMatch = zip.file("manifest.json");
+    static _findOverlayManifestEntry(zip) {
+        const directMatch = zip.file("overlay-manifest.json");
         if (directMatch) return directMatch;
 
         let fallback = null;
         zip.forEach((relativePath, entry) => {
             if (fallback || entry.dir) return;
             const normalized = relativePath.replace(/\\/g, "/").toLowerCase();
-            if (normalized === "manifest.json") fallback = entry;
+            if (normalized === "overlay-manifest.json") fallback = entry;
         });
         return fallback;
     }

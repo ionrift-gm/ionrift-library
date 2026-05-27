@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.0] - 2026-05-27
+
+### Changed
+- Manual zip import now accepts current-format overlay packs only. Download an overlay zip from Patreon or install through the in-app Patreon Library. Legacy content-pack zips are no longer supported on the import surface.
+- Patreon Library "Install .zip" routes overlay archives into the same on-disk path as one-click overlay installs.
+
+### Added
+- `OverlayService.installFromBlob()` for sideloading overlay zips without a cloud download step.
+
 ## [2.1.5] - 2026-05-26
 
 ### Changed
