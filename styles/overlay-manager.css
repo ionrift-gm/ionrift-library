@@ -316,6 +316,11 @@
     min-width: 0;
 }
 
+.ionrift-window .overlay-mgr-section-updates {
+    color: #6ee7b7;
+    font-weight: 600;
+}
+
 .ionrift-window .overlay-mgr-section-head--packs .overlay-mgr-check-btn,
 .ionrift-window .overlay-mgr-section-head--packs .overlay-mgr-install-all-btn {
     margin-left: auto;
@@ -663,6 +668,43 @@
     color: rgba(255, 255, 255, 0.45);
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ── Stale tile (update available) ── */
+
+.ionrift-window .overlay-tile--stale {
+    border-color: rgba(52, 211, 153, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.2);
+}
+
+.ionrift-window .overlay-tile--stale:hover {
+    box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.5) !important;
+}
+
+.ionrift-window .overlay-tile-update-badge {
+    font-size: 0.54rem;
+    font-weight: 600;
+    color: #6ee7b7;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    border-radius: 3px;
+    padding: 0.12rem 0.4rem;
+    margin-top: 0.15rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    animation: ionrift-update-pulse 2.4s ease-in-out infinite;
+}
+
+.ionrift-window .overlay-tile-update-badge i {
+    font-size: 0.48rem;
+}
+
+@keyframes ionrift-update-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
 }
 
 .ionrift-window .overlay-tile--partial {
@@ -1018,6 +1060,19 @@
 
 .ionrift-window .overlay-detail-btn:hover {
     background: rgba(139, 92, 246, 0.15) !important;
+}
+
+.ionrift-window .overlay-detail-btn--update {
+    background: rgba(52, 211, 153, 0.14) !important;
+    border-color: rgba(52, 211, 153, 0.65) !important;
+    color: #6ee7b7 !important;
+    font-weight: 600;
+}
+
+.ionrift-window .overlay-detail-btn--update:hover {
+    background: rgba(52, 211, 153, 0.25) !important;
+    border-color: rgba(52, 211, 153, 0.9) !important;
+    color: #fff !important;
 }
 
 .ionrift-window .overlay-detail-status-ok {
