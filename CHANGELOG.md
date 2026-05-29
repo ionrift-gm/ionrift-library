@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.2.1] - 2026-05-29
+
+### Fixed
+- Compatibility declared for Foundry v14. Worlds upgrading from v13 could have the library auto-disabled, which cascades to break all dependent Ionrift modules.
+
 ## [2.2.0] - 2026-05-27
 
 ### Changed
