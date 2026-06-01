@@ -21,6 +21,23 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         classes: ["ionrift-window"]
     };
 
+    /**
+     * @override
+     * On v14, defer to the system's native party management instead of the
+     * curated-roster editor, since party membership is owned by the system from
+     * v14 onward. This keeps every open-site (settings menu, Respite,
+     * Quartermaster) routed to the native feature without per-consumer changes.
+     * When no native party is configured yet, the adapter surfaces guidance for
+     * designating one. Falls through to the editor on v13, or on a v14 system
+     * with no native management (adapter returns false).
+     */
+    async render(...args) {
+        if (PartyRoster.isV14() && PartyRoster.openNativeManagement()) {
+            return this;
+        }
+        return super.render(...args);
+    }
+
     /** @override */
     async _prepareContext() {
         const roster = PartyRoster.getRosterIds();

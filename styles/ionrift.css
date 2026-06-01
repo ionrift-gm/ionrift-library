@@ -171,7 +171,7 @@
 .ionrift-window input[type="text"],
 .ionrift-window input[type="number"],
 .ionrift-window select {
-    background: rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.4) !important;
     color: #ffffff !important;
     border-radius: 4px;
@@ -187,9 +187,22 @@
     /* Center text */
 }
 
+/* Themed dropdown chevron: replace the native arrow so the indicator keeps
+   consistent breathing room from the right edge across every module. */
+.ionrift-window select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.55' stroke-width='2' d='M4 6l4 4 4-4'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.55rem center !important;
+    background-size: 0.6rem !important;
+    padding-right: 1.5rem !important;
+}
+
 .ionrift-window input:focus,
 .ionrift-window select:focus {
-    background: rgba(0, 0, 0, 0.9) !important;
+    background-color: rgba(0, 0, 0, 0.9) !important;
     border-color: #a78bfa !important;
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
     outline: none;

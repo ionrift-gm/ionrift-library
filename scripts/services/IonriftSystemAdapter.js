@@ -11,6 +11,36 @@ export class IonriftSystemAdapter {
     getClassNames(actor) { return []; }
     getTraits(actor) { return new Set(); }
     isPlayerCharacter(actor) { return actor?.hasPlayerOwner && actor?.type === "character"; }
+
+    /**
+     * Resolve party members from the system's native party feature, if one
+     * exists. Returns null when the system has no native party source or none
+     * is configured, in which case the caller falls back to the curated
+     * PartyRoster setting. An array (including an empty one) signals that a
+     * native party is active and should be deferred to.
+     *
+     * Base class has no native source.
+     * @returns {Actor[]|null}
+     */
+    getNativePartyMembers() { return null; }
+
+    /**
+     * Open the system's native party management UI. Returns true if the
+     * adapter handled the request (opened a sheet or surfaced guidance),
+     * false if no native management exists and the caller should fall back
+     * to the curated roster UI.
+     * @returns {boolean}
+     */
+    openNativePartyManagement() { return false; }
+
+    /**
+     * Register system-specific hooks that detect native party changes
+     * (membership edits, primary-party reassignment) and invoke `callback`
+     * when one occurs. The caller uses this to re-emit `ionrift.partyChanged`
+     * so downstream UIs refresh. Base class has no native source, so no-op.
+     * @param {() => void} callback
+     */
+    watchNativeParty(callback) {}
     getRarity(item) { return item?.system?.rarity ?? "common"; }
     getPrice(item) { return item?.system?.price?.value ?? 0; }
     getWeight(item) { return item?.system?.weight?.value ?? 0; }

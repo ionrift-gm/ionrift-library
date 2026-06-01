@@ -84,4 +84,59 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
     getAbilityScore(actor, abbr) {
         return actor?.system?.abilities?.[abbr]?.value ?? 10;
     }
+
+    /**
+     * dnd5e exposes the designated primary party as a Group actor via
+     * game.actors.party (backed by the "dnd5e.primaryParty" setting). Its
+     * members live in system.members, each entry resolving an actor through
+     * the `.actor` accessor. We mirror only character-type members to keep
+     * parity with the curated roster the rest of the suite assumes.
+     * @returns {Actor[]|null}
+     */
+    getNativePartyMembers() {
+        const party = game.actors?.party;
+        const members = party?.system?.members;
+        if (!members) return null;
+        try {
+            return members
+                .map(m => m.actor ?? m)
+                .filter(a => a && a.type === "character");
+        } catch {
+            return null;
+        }
+    }
+
+    openNativePartyManagement() {
+        const party = game.actors?.party;
+        if (party?.sheet) {
+            party.sheet.render(true);
+            return true;
+        }
+        ui.notifications?.warn(
+            "No primary party is set. Right-click a party group actor in the Actors sidebar and choose Make Primary Party."
+        );
+        return true;
+    }
+
+    /**
+     * Native party changes surface two ways in dnd5e: reassigning the primary
+     * party (the "dnd5e.primaryParty" Setting document) and editing the group
+     * actor's members (an update to the party group actor, whose system.members
+     * holds the roster). Watch both and debounce so a single user action fires
+     * one downstream refresh.
+     */
+    watchNativeParty(callback) {
+        const fire = foundry.utils.debounce(() => callback(), 100);
+
+        const onSetting = (setting) => {
+            if (setting?.key === "dnd5e.primaryParty") fire();
+        };
+        Hooks.on("createSetting", onSetting);
+        Hooks.on("updateSetting", onSetting);
+
+        Hooks.on("updateActor", (actor) => {
+            const partyId = game.actors?.party?.id;
+            if (partyId && actor?.id === partyId) fire();
+        });
+    }
 }

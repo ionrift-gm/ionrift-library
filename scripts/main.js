@@ -752,6 +752,9 @@ Hooks.once('ready', async () => {
         console.warn("Ionrift | PartyRoster migration check failed:", e)
     );
 
+    // Bridge native party changes (v14+) to the ionrift.partyChanged hook
+    PartyRoster.installNativePartyBridge();
+
     if (game.user.isGM) {
         // Self-heal corrupted compendium-folder state before anything that
         // reads it. Idempotent: a healthy world performs no writes. Guards
