@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Compendium sidebar folders that lost their name no longer block a world from loading. The library now repairs the stored folder layout on startup, renaming any nameless compendium folder and clearing references to folders that no longer exist. GMs can also run the repair on demand from the console.
+
 ## [2.2.1] - 2026-05-29
 
 ### Fixed

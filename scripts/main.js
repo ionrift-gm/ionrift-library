@@ -38,6 +38,7 @@ import { OverlayService } from "./services/OverlayService.js";
 import { PackNudgeService } from "./services/PackNudgeService.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
 import { ItemMintingService } from "./services/ItemMintingService.js";
+import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -182,6 +183,20 @@ Hooks.once('init', () => {
          * from each surface where the banner should appear.
          */
         packNudge: PackNudgeService,
+        /**
+         * Compendium configuration self-heal. Repairs the world-side compendium
+         * folder state behind "Folder validation errors: name: may not be
+         * undefined" (Foundry #13225 / #11800). Runs automatically on ready for
+         * the GM; also callable for support.
+         *
+         * Console helpers:
+         *   game.ionrift.library.diagnoseCompendiumConfig()         // report only
+         *   await game.ionrift.library.repairCompendiumConfig({ dryRun: true })
+         *   await game.ionrift.library.repairCompendiumConfig()     // apply
+         */
+        compendiumGuard: CompendiumConfigGuard,
+        diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
+        repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
         /**
          * Legacy asset sweeper. Detects and removes files orphaned inside
          * a module's own folder after an architectural change moved content
@@ -713,6 +728,20 @@ Hooks.once('ready', async () => {
         }
     });
 
+    TestHarnessRunner.register("ionrift-library-compendium-guard", {
+        name: "Compendium Config Guard",
+        description: "Headless tests for the compendium-folder self-heal planner",
+        runFn: async () => {
+            try {
+                const { runCompendiumConfigGuardTests } = await import("./tests/CompendiumConfigGuardTests.js");
+                return runCompendiumConfigGuardTests();
+            } catch {
+                return { passed: 0, failed: 0, total: 0, skipped: true,
+                    results: [{ name: "CompendiumConfigGuardTests", status: "skip", message: "Test file not present (production build)." }] };
+            }
+        }
+    });
+
     // Init Session Tracker
     SessionTracker.init();
 
@@ -724,6 +753,14 @@ Hooks.once('ready', async () => {
     );
 
     if (game.user.isGM) {
+        // Self-heal corrupted compendium-folder state before anything that
+        // reads it. Idempotent: a healthy world performs no writes. Guards
+        // against "Folder validation errors: name: may not be undefined"
+        // (Foundry #13225 / #11800) recurring across module updates.
+        CompendiumConfigGuard.repairWorld().catch(e =>
+            console.warn("Ionrift | Compendium config self-heal failed:", e)
+        );
+
         // Static protocol version - only bump when indexing steps change,
         // NOT on every module patch release.
         const INDEXING_PROTOCOL_VERSION = "1";
