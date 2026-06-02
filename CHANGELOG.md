@@ -1,9 +1,13 @@
 # Changelog
 
-## [Unreleased]
+## [2.3.0] - 2026-06-02
+
+### Added
+- Native party roster on Foundry v14. DnD5e v14 worlds now use the system's built-in party membership instead of the manual roster. Existing v13 worlds continue using the configured roster as before.
+- Built terrain category. Terrains registered by content overlays are now tagged as built-in or overlay-provided, with a legacy normalizer for packs that predate the distinction.
 
 ### Fixed
-- Compendium sidebar folders that lost their name no longer block a world from loading. The library now repairs the stored folder layout on startup, renaming any nameless compendium folder and clearing references to folders that no longer exist. GMs can also run the repair on demand from the console.
+- Compendium sidebar folders that lost their name no longer block a world from loading. The library repairs the stored folder layout on startup, renaming any nameless compendium folder and clearing references to folders that no longer exist.
 
 ## [2.2.1] - 2026-05-29
 
