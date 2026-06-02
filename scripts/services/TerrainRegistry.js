@@ -12,7 +12,12 @@
  * an extension should be visible to every consumer at once. Most consumers
  * should prefer their own registry seeded from `getBase()`.
  *
- * @typedef {"wilderness" | "dungeon" | "safe-haven"} TerrainCategory
+ * @typedef {"wilderness" | "built" | "safe-haven"} TerrainCategory
+ *
+ * `built` covers non-wilderness environments where travel resolution (forage, hunt,
+ * scout) does not apply: cities, dungeons, ruins, catacombs, and similar.
+ * Legacy pack data may still declare `"dungeon"` or `"urban"`; normalize via
+ * {@link normalizeTerrainCategory}.
  *
  * @typedef {object} TerrainDefinition
  * @property {string} id            Canonical id, e.g. "forest".
@@ -21,13 +26,31 @@
  * @property {object} [flags]       Free-form metadata for consumers.
  */
 
+/** Legacy category values folded into {@link TerrainCategory}. */
+export const TERRAIN_CATEGORY_ALIASES = Object.freeze({
+    dungeon: "built",
+    urban: "built"
+});
+
+/**
+ * Resolve a raw terrain.json category to a canonical spine category.
+ * @param {string|null|undefined} category
+ * @returns {TerrainCategory|null}
+ */
+export function normalizeTerrainCategory(category) {
+    if (!category) return null;
+    const resolved = TERRAIN_CATEGORY_ALIASES[category] ?? category;
+    if (resolved === "built" || resolved === "safe-haven" || resolved === "wilderness") return resolved;
+    return null;
+}
+
 /** @type {TerrainDefinition[]} The canonical kernel base. */
 const BASE_TERRAINS = [
     { id: "forest",  label: "Forest",  category: "wilderness" },
     { id: "swamp",   label: "Swamp",   category: "wilderness" },
     { id: "desert",  label: "Desert",  category: "wilderness" },
-    { id: "urban",   label: "Urban",   category: "wilderness" },
-    { id: "dungeon", label: "Dungeon", category: "dungeon" }
+    { id: "urban",   label: "Urban",   category: "built" },
+    { id: "dungeon", label: "Dungeon", category: "built" }
 ];
 
 export class TerrainRegistry {
@@ -131,6 +154,17 @@ export class TerrainRegistry {
      */
     isBase(id) {
         return this._baseIds.has(id);
+    }
+
+    /**
+     * Canonical category for a registered terrain id.
+     * @param {string} id
+     * @returns {TerrainCategory}
+     */
+    getCategory(id) {
+        const t = this._terrains.get(id);
+        if (!t) return "wilderness";
+        return normalizeTerrainCategory(t.category) ?? "wilderness";
     }
 }
 

@@ -33,7 +33,7 @@ import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";
-import { TerrainRegistry, terrainRegistry } from "./services/TerrainRegistry.js";
+import { TerrainRegistry, terrainRegistry, normalizeTerrainCategory } from "./services/TerrainRegistry.js";
 import { OverlayService } from "./services/OverlayService.js";
 import { PackNudgeService } from "./services/PackNudgeService.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
@@ -94,6 +94,8 @@ Hooks.once('init', () => {
         terrains: terrainRegistry,
         /** TerrainRegistry class. Exposed for consumers that need to extend or type-check. */
         TerrainRegistry,
+        /** Canonical terrain category normalizer (built / safe-haven / wilderness). */
+        normalizeTerrainCategory,
         /** Item Enrichment Engine — register module-specific enrichments here. */
         enrichment: ItemEnrichmentEngine,
         /** Cloud Relay — Patreon connection, tier checks, download relay. */
