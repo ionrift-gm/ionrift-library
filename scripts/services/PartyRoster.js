@@ -88,37 +88,32 @@ export class PartyRoster {
 
     /**
      * Returns the current party as resolved Actor documents.
-     * On v14 with a native party, returns the native members (an empty party
-     * resolves to an empty list, reflecting the true state). On v14 with no
-     * native party configured, returns the live player-owned characters rather
-     * than the curated setting, so stale roster data never drifts past an
-     * unset or empty native party. On v13, uses the curated roster, falling
-     * back to all player-owned characters when it is empty.
+     * When a system-native party is active (v14+ dnd5e with a primary party
+     * configured), returns the native members — an empty party resolves to an
+     * empty list, reflecting the true state. Otherwise uses the curated roster,
+     * falling back to all player-owned characters when it is empty. Systems
+     * without native party support (PF2e, Daggerheart) always use the curated
+     * roster regardless of Foundry version.
      * @returns {Actor[]}
      */
     static getMembers() {
         const native = this.nativeMembers();
         if (native) return native;
 
-        if (!this.isV14()) {
-            const ids = this._settingIds();
-            if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
-        }
+        const ids = this._settingIds();
+        if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
         return game.actors.filter(a => a.hasPlayerOwner && a.type === "character");
     }
 
     /**
-     * Returns the active party's actor IDs. On v14 with a native party, these
-     * are the native member IDs so consumers that build lists from IDs defer to
-     * the native source. On v14 with no native party, returns an empty array
-     * (no curated drift). On v13, returns the curated setting IDs; an empty
-     * array means "no explicit roster" (fallback mode).
+     * Returns the active party's actor IDs. When a system-native party is
+     * active, returns the native member IDs. Otherwise returns the curated
+     * setting IDs; an empty array means "no explicit roster" (fallback mode).
      * @returns {string[]}
      */
     static getRosterIds() {
         const native = this.nativeMembers();
         if (native) return native.map(a => a.id);
-        if (this.isV14()) return [];
         return this._settingIds();
     }
 
@@ -137,9 +132,9 @@ export class PartyRoster {
 
     /**
      * Quick membership check.
-     * On v14 with a native party, checks native membership directly. Otherwise
-     * checks the stored roster; in fallback mode (empty roster), checks
-     * hasPlayerOwner instead.
+     * When a system-native party is active, checks native membership directly.
+     * Otherwise checks the stored roster; in fallback mode (empty roster),
+     * checks hasPlayerOwner instead.
      * @param {string} actorId
      * @returns {boolean}
      */
@@ -147,25 +142,23 @@ export class PartyRoster {
         const native = this.nativeMembers();
         if (native) return native.some(a => a.id === actorId);
 
-        if (!this.isV14()) {
-            const ids = this._settingIds();
-            if (ids.length) return ids.includes(actorId);
-        }
+        const ids = this._settingIds();
+        if (ids.length) return ids.includes(actorId);
         const actor = game.actors.get(actorId);
         return !!(actor?.hasPlayerOwner && actor?.type === "character");
     }
 
     /**
      * Persist a new roster and fire the change hook.
-     * GM-only; silently no-ops for players. On v14+ membership is owned by the
-     * system's native party, so this no-ops and points the GM at the native UI
-     * rather than writing the (now vestigial) curated setting.
+     * GM-only; silently no-ops for players. When a system-native party is
+     * active, no-ops and points the GM at the native UI rather than writing
+     * the (now vestigial) curated setting.
      * @param {string[]} actorIds
      */
     static async setRoster(actorIds) {
         if (!game.user.isGM) return;
-        if (this.isV14()) {
-            ui.notifications?.info("Party membership is managed by the system's native party in Foundry v14. Use the party sheet to change members.");
+        if (this.nativePartyActive()) {
+            ui.notifications?.info("Party membership is managed by the system's native party. Use the party sheet to change members.");
             return;
         }
         await game.settings.set(LIB_ID, "partyRoster", actorIds);
