@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.1] - 2026-06-03
+
+### Fixed
+- Foundry could not update the library past 2.2.1. The v2.3.0 release shipped with a download URL still pointing at the previous version, so every update attempt silently re-installed 2.2.1. Modules that require 2.3.0 or later - including Respite 3.0 - were blocked from activating.
+
 ## [2.3.0] - 2026-06-02
 
 ### Added
