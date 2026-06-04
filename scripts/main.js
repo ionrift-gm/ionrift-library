@@ -7,6 +7,7 @@ import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js"; // Impo
 import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
 import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
 import { SettingsLayout } from "./SettingsLayout.js";
+import { ModuleConfigProfiles } from "./ModuleConfigProfiles.js";
 import * as SettingsVisibility from "./SettingsVisibility.js";
 import { IntegrationStatus } from "./services/IntegrationStatus.js";
 // import { StatusIndicatorManager } from "./services/StatusIndicatorManager.js"; // Removed
@@ -68,6 +69,7 @@ Hooks.once('init', () => {
         DiagnosticService, // Expose Class
         Logger, // Expose Class
         SettingsLayout, // Expose Class
+        ModuleConfigProfiles,
         SettingsVisibility,
         confirm: DialogHelper.confirm, // Centralized confirm dialog utility
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),

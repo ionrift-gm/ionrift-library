@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Module config profiles.** Shared Quick Setup card, profile apply confirm, and settings group headers for module settings panels (`ModuleConfigProfiles`).
+
 ## [2.3.1] - 2026-06-03
 
 ### Fixed

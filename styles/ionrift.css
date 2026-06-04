@@ -2671,3 +2671,264 @@
     gap: 0.4rem;
 }
 
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Module settings: Quick Setup profiles and group headers            */
+/*  Injected by ionrift-library ModuleConfigProfiles.js                */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.ionrift-quick-setup,
+.respite-quick-setup {
+    margin: 0 0 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(200, 160, 60, 0.28);
+    border-radius: 6px;
+    background: rgba(200, 160, 60, 0.06);
+}
+
+.ionrift-quick-setup-head,
+.respite-quick-setup-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
+}
+
+.ionrift-quick-setup-head-top,
+.respite-quick-setup-head-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.ionrift-quick-setup-title,
+.respite-quick-setup-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.ionrift-quick-setup-title i,
+.respite-quick-setup-title i {
+    color: rgba(200, 160, 60, 0.9);
+    margin-right: 0.35rem;
+}
+
+.ionrift-quick-setup-sub,
+.respite-quick-setup-sub {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    line-height: 1.45;
+    padding-right: 0.15rem;
+}
+
+.ionrift-quick-setup-guide-link,
+.respite-quick-setup-guide-link {
+    flex-shrink: 0;
+    background: rgba(200, 160, 60, 0.12);
+    border: 1px solid rgba(200, 160, 60, 0.35);
+    color: rgba(220, 190, 110, 0.95);
+    font-size: 0.72rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ionrift-quick-setup-guide-link:hover,
+.respite-quick-setup-guide-link:hover {
+    background: rgba(200, 160, 60, 0.22);
+    border-color: rgba(200, 160, 60, 0.6);
+}
+
+.ionrift-quick-setup-guide-link i,
+.respite-quick-setup-guide-link i {
+    margin-right: 0.3rem;
+}
+
+.ionrift-quick-setup-options,
+.respite-quick-setup-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ionrift-quick-setup-row,
+.respite-quick-setup-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ionrift-quick-setup-row-secondary .ionrift-profile-btn,
+.ionrift-quick-setup-row-secondary .respite-profile-btn,
+.respite-quick-setup-row-secondary .ionrift-profile-btn,
+.respite-quick-setup-row-secondary .respite-profile-btn {
+    flex: 1;
+}
+
+.ionrift-profile-btn,
+.respite-profile-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.6rem;
+    line-height: 1.3;
+    text-align: left;
+    border: 1px solid rgba(200, 160, 60, 0.28);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.ionrift-profile-btn:hover,
+.respite-profile-btn:hover {
+    border-color: rgba(200, 160, 60, 0.6);
+}
+
+.ionrift-profile-name,
+.ionrift-profile-btn .rp-name,
+.respite-profile-btn .rp-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ionrift-profile-name i,
+.ionrift-profile-btn .rp-name i,
+.respite-profile-btn .rp-name i {
+    color: rgba(200, 160, 60, 0.9);
+    margin-right: 0.3rem;
+}
+
+.ionrift-profile-desc,
+.ionrift-profile-btn .rp-desc,
+.respite-profile-btn .rp-desc {
+    font-size: 0.68rem;
+    opacity: 0.6;
+    white-space: normal;
+}
+
+.ionrift-profile-custom,
+.respite-profile-custom {
+    cursor: default;
+    border-style: dashed;
+}
+
+.ionrift-profile-custom:not(.is-active),
+.respite-profile-custom:not(.is-active) {
+    opacity: 0.5;
+}
+
+.ionrift-profile-custom:hover,
+.respite-profile-custom:hover {
+    border-color: rgba(200, 160, 60, 0.28);
+}
+
+.ionrift-profile-active,
+.ionrift-profile-btn .rp-active,
+.respite-profile-btn .rp-active {
+    display: none;
+    margin-top: 0.15rem;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #7ddc8f;
+    letter-spacing: 0.02em;
+}
+
+.ionrift-profile-active i,
+.ionrift-profile-btn .rp-active i,
+.respite-profile-btn .rp-active i {
+    margin-right: 0.25rem;
+}
+
+.ionrift-profile-btn.is-active,
+.respite-profile-btn.is-active {
+    border-color: rgba(125, 220, 143, 0.7);
+    box-shadow: 0 0 0 1px rgba(125, 220, 143, 0.35), 0 0 10px rgba(125, 220, 143, 0.18);
+    background: rgba(125, 220, 143, 0.06);
+}
+
+.ionrift-profile-btn.is-active:hover,
+.respite-profile-btn.is-active:hover {
+    border-color: rgba(125, 220, 143, 0.85);
+}
+
+.ionrift-profile-btn.is-active .ionrift-profile-active,
+.ionrift-profile-btn.is-active .rp-active,
+.respite-profile-btn.is-active .rp-active {
+    display: inline-flex;
+    align-items: center;
+}
+
+.ionrift-profile-confirm tr.ionrift-profile-confirm-group td,
+.ionrift-profile-confirm tr.rp-group td,
+.respite-profile-confirm tr.rp-group td {
+    padding-top: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.55;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ionrift-profile-confirm table,
+.respite-profile-confirm table {
+    width: 100%;
+    margin: 0.4rem 0;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.ionrift-profile-confirm td,
+.respite-profile-confirm td {
+    padding: 0.15rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-profile-confirm td:last-child,
+.respite-profile-confirm td:last-child {
+    text-align: right;
+    font-weight: 600;
+}
+
+.ionrift-profile-confirm td.on,
+.respite-profile-confirm td.on {
+    color: #7ddc8f;
+}
+
+.ionrift-profile-confirm td.off,
+.respite-profile-confirm td.off {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.ionrift-profile-note,
+.respite-profile-note {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    margin-top: 0.4rem;
+}
+
+.ionrift-settings-group-header,
+.respite-settings-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.75rem 0 0.25rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.75;
+    border-bottom: 1px solid rgba(200, 160, 60, 0.22);
+}
+
+.ionrift-settings-group-header i,
+.respite-settings-group-header i {
+    color: rgba(200, 160, 60, 0.85);
+    font-size: 0.75rem;
+}
+
