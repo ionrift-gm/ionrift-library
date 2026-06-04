@@ -1,0 +1,118 @@
+---
+description: Ionrift engineering standards — injected automatically into all agent runs.
+globs: ["**/*.js", "**/*.mjs", "**/*.hbs", "**/*.json"]
+alwaysApply: true
+---
+
+# Ionrift Engineering Standards
+
+These rules apply to all work on this repository. They are the canonical source of truth for cloud agents that cannot reach the local `ionrift-brand/` documentation tree.
+
+---
+
+## 1. Git & Commit Conventions
+
+- **Trunk-based.** All work lands on `main`. Feature branches (`feat/*`, `refactor/*`, `fix/*`, `tests/*`, `adapter/*`) are short-lived and merge to `main` after tests pass.
+- **Commit prefixes:** `feat:` `fix:` `refactor:` `test:` `chore:` `docs:` — lowercase, conventional commits.
+- **No AI tells in commit messages.** Describe the technical change only. Never reference agent workflows, review processes, or authoring tools.
+  - ❌ `chore: apply tone guide fixes per agent audit`
+  - ✅ `chore: normalize comment formatting`
+- **No motive language.** Don't explain *why* a thing was done from an operational perspective — describe *what* changed.
+- **Branch naming:** Short, human-readable, describes the work. No dates or ticket numbers.
+  - ✅ `bugfix/null-roster-crash` `refactor/split-soundconfig` `tests/pf2e-crit-mapping` `adapter/pf2e-prof-bonus`
+  - ❌ `fix/nightly/null-party-roster/2026-06-03`
+- **Merge with `--no-ff`** to preserve branch history as a single visible unit.
+- **Master is always releasable.** Only commit working code. If a feature is incomplete, use a `feat/*` branch.
+
+---
+
+## 2. Code Hygiene
+
+- **No duplicate methods.** When refactoring, verify you are not leaving legacy methods at the bottom of the file.
+- **No dead code.** Delete commented-out code blocks immediately. Git history is the backup.
+- **No `console.log` debris.** All non-critical logs must use the local `Logger` wrapper (`Logger.log`, `Logger.warn`). Direct `console.*` calls are only acceptable in tests.
+- **No inline item definitions** (`_makeMeat()`, `_makeHerbs()`, inline loot tables). Items must come from compendium at startup.
+- **No `scripts/lib/` junk drawer.** Don't move a 500-line method into `lib/` to hide it. Extract it into a dedicated single-responsibility class instead.
+
+---
+
+## 3. God Class Policy
+
+Avoid classes that handle **Data + Logic + UI + Generation** simultaneously. Split responsibilities:
+
+- **Creative logic** (generating names, rolling outcomes, random selection) → dedicated `feature/Generator.js`
+- **Data logic** (schema, defaults, validation) → dedicated model or data class
+- **UI logic** (rendering, event handling) → the App class only
+
+**Thresholds that signal a refactor is needed:**
+- File > 600 lines → review
+- File > 1000 lines → refactor
+- File > 1500 lines → critical
+- Single method > 100 lines → review
+- Single method > 200 lines → refactor
+- Class has methods from 3+ concern categories → refactor immediately
+
+---
+
+## 4. Split-Brain Rule (State Management)
+
+The Ionrift UI uses Foundry HBS templates (server-rendered) + jQuery/Vanilla JS (client events). A "split brain" occurs when these disagree on state.
+
+**Rules:**
+- Do NOT manually reconstruct complex DOM elements (lists, cards, tables) in JS event handlers. Update the underlying data and call `app.render()` instead.
+- For simple toggles (show/hide, class toggle), direct JS manipulation is fine.
+- Interactive elements that appear/disappear based on state **must** be in the initial HTML (hidden via CSS). Do NOT use `{{#if}}` to exclude them entirely — JS can't show what doesn't exist in the DOM.
+- **One source of truth.** If the same concept (e.g. "party actors") is needed in multiple places, extract a shared `_getPartyActors()` helper rather than duplicating the filter logic.
+
+**Pre-commit checklist for any change that reads application state:**
+1. Does this handler read data from the same source as `getData()`/`_prepareContext()`?
+2. Does `this._someField` actually exist, or is it a phantom property that returns `undefined`?
+3. Is the data potentially stale (cached snapshot vs live `game.actors`)?
+
+---
+
+## 5. System Adapter Protocol
+
+Ionrift modules use a system adapter pattern to insulate game-system-agnostic logic from system-specific data models.
+
+- **Never access system data paths directly** outside the adapter layer (e.g. `actor.system.attributes.hp`, `actor.system.details.level`). Route all system queries through the adapter.
+- **Never branch on `game.system.id`** outside the adapter factory. If you find yourself writing `if (game.system.id === 'dnd5e')` in a non-adapter file, that logic belongs in the adapter.
+- **Every supported system must have a `validateSchema()` method.** It must not crash on fresh worlds with no actors.
+- **PF2e data paths are volatile.** If a PF2e path is uncertain, mark it `// VERIFY:` rather than shipping unverified code.
+
+---
+
+## 6. Security
+
+- All configuration UIs, sound pickers, and world-altering tools are **GM Only**.
+- Guard sensitive hooks and render methods with `if (!game.user.isGM) return;` at the top.
+- Players emit events (rolls, activity submissions). They never configure settings.
+
+---
+
+## 7. Inclusion & Identity
+
+- **Banned terms in code, comments, and UI:** `Male`, `Female`, `Sex`, `Gender`.
+- **Use instead:** `Masculine`, `Feminine`, `Identity`, `Body Type`.
+- Variable names: `identity`, `masc`, `fem`. `const gender` is prohibited.
+
+---
+
+## 8. Startup Safety
+
+- No `setTimeout` for arbitrary delays during startup.
+- If relying on a global API (e.g. `syrinscapeControl`), use a polling loop (`waitForDependency`) or a valid Foundry Hook.
+- Assume modules load in random order. Never rely on load-order assumptions.
+
+---
+
+## 9. Nightly Automation Behaviour
+
+When running as a nightly scheduled agent:
+
+- **Baseline before touching code.** Create a `git tag pre-refactor/<short-description>` before any refactor, or ensure clean working tree before any fix.
+- **Branch for every change.** One branch per bug fix or refactor. Merge to `main` after tests pass.
+- **Green-only merges.** Do not merge a branch where any test is failing.
+- **Silence is valid.** "No issues found" is a legitimate and expected outcome on many nights. Do not manufacture findings.
+- **Escalate, don't guess.** If correct behavior is ambiguous, report the finding and stop. Do not ship unverified fixes.
+- **Commit message hygiene applies to automated commits too.** The same no-AI-tells rules apply regardless of who authored the commit.
