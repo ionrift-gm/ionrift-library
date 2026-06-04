@@ -4,13 +4,8 @@
     "description": "Shared logic for Ionrift modules.",
     "type": "module",
     "scripts": {
-        "test": "vitest run --config tests/vitest.config.js",
-        "test:watch": "vitest --config tests/vitest.config.js",
         "check:sublayer": "node scripts/dev/verifySublayerConvention.mjs"
     },
     "author": "Ionrift",
-    "license": "SEE LICENSE IN LICENSE.md",
-    "devDependencies": {
-        "vitest": "^3.0.0"
-    }
+    "license": "SEE LICENSE IN LICENSE.md"
 }
