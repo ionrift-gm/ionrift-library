@@ -25,6 +25,34 @@ jobs:
       - name: Validate CHANGELOG
         run: node tools/validate-changelog.mjs
 
+      - name: Verify version matches tag
+        run: |
+          VERSION=$(jq -r .version module.json)
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "$VERSION" != "$TAG" ]; then
+            echo "::error::module.json version ($VERSION) does not match tag ($TAG)"
+            exit 1
+          fi
+          echo "OK: module.json version ($VERSION) matches tag ($TAG)"
+
+      - name: Verify download URL matches version
+        run: |
+          VERSION=$(jq -r .version module.json)
+          DOWNLOAD=$(jq -r .download module.json)
+          # Extract version from download URL (expects .../releases/download/vX.Y.Z/...)
+          DL_VERSION=$(echo "$DOWNLOAD" | grep -oP '/releases/download/v\K[^/]+')
+          if [ -z "$DL_VERSION" ]; then
+            echo "::error::download URL does not match expected GitHub Releases pattern: $DOWNLOAD"
+            exit 1
+          fi
+          if [ "$DL_VERSION" != "$VERSION" ]; then
+            echo "::error::download URL references v$DL_VERSION but module.json version is $VERSION"
+            echo "  download: $DOWNLOAD"
+            echo "  This is the exact bug that shipped v2.3.0 with a v2.2.1 download URL."
+            exit 1
+          fi
+          echo "OK: download URL version ($DL_VERSION) matches module version ($VERSION)"
+
       - name: Zip Module
         run: |
           zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*" "tests/*" "vitest*" ".eslintrc*"
