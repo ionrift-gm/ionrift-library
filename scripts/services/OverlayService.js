@@ -387,6 +387,10 @@ export class OverlayService {
      * Skips cloud download; reuses the same extract and manifest write path
      * as {@link _downloadAndExtract}.
      *
+     * Serialized through {@link _runInstallTask} so manual zip imports queue
+     * behind (and block) cloud installs. Without this, concurrent uploads
+     * cause Forge rate doubling and silent partial installs.
+     *
      * @param {Blob} blob
      * @param {Object} options
      * @param {string} options.overlayId
@@ -424,78 +428,80 @@ export class OverlayService {
                 moduleId
             });
 
-        if (userInitiated && this._isHostedInstall() && !skipHostedWarning) {
-            const proceed = await this._confirmHostedInstall(overlayId);
-            if (!proceed) {
-                Logger.info(MODULE_LABEL, `Manual install cancelled before extract: ${overlayId}.`);
-                return false;
+        return this._runInstallTask(`${overlayId} (zip)`, async () => {
+            if (userInitiated && this._isHostedInstall() && !skipHostedWarning) {
+                const proceed = await this._confirmHostedInstall(overlayId);
+                if (!proceed) {
+                    Logger.info(MODULE_LABEL, `Manual install cancelled before extract: ${overlayId}.`);
+                    return false;
+                }
             }
-        }
 
-        const app = progressApp ?? (userInitiated
-            ? await this._createProgressApp(overlayId, version)
-            : null);
+            const app = progressApp ?? (userInitiated
+                ? await this._createProgressApp(overlayId, version)
+                : null);
 
-        try {
-            const targetDir = `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}`;
-            let extractResult;
             try {
-                extractResult = await this._extractOverlayZip(blob, targetDir, { progressApp: app });
-            } catch (extractErr) {
-                this._recordError(
+                const targetDir = `${this.OVERLAY_ROOT}/${moduleId}/${sublayer}`;
+                let extractResult;
+                try {
+                    extractResult = await this._extractOverlayZip(blob, targetDir, { progressApp: app });
+                } catch (extractErr) {
+                    this._recordError(
+                        overlayId,
+                        "extract",
+                        extractErr?.message ?? "Extract failed"
+                    );
+                    Logger.error(MODULE_LABEL, `Manual overlay extract failed for ${overlayId}:`, extractErr);
+                    app?.close?.();
+                    return false;
+                }
+
+                if (extractResult.cancelled) {
+                    this._recordError(overlayId, "extract", "Install cancelled by user");
+                    app?.complete?.(extractResult.uploaded, 0, ["cancelled"]);
+                    return false;
+                }
+
+                const manifest = {
                     overlayId,
-                    "extract",
-                    extractErr?.message ?? "Extract failed"
-                );
-                Logger.error(MODULE_LABEL, `Manual overlay extract failed for ${overlayId}:`, extractErr);
+                    version,
+                    moduleId,
+                    tier,
+                    sublayer,
+                    installedAt: new Date().toISOString()
+                };
+                await this._writeManifest(targetDir, manifest);
+
+                this._manifestCache.set(`${moduleId}:${sublayer}`, manifest);
+                this._contentsCache.delete(`${moduleId}:${sublayer}`);
+                this._clearError(overlayId);
+
+                const map = { ...this._getWorldStateMap() };
+                map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
+                await game.settings.set("ionrift-library", "overlayWorldState", map);
+
+                this._emitContentChanged({
+                    overlayId,
+                    moduleId,
+                    sublayer,
+                    active: true,
+                    installed: true
+                });
+
+                Logger.info(MODULE_LABEL, `Manual overlay installed: ${overlayId} v${version}`);
+                app?.complete?.(extractResult.uploaded, 0, []);
+                if (userInitiated && !app) {
+                    ui?.notifications?.info(`Content installed: ${overlayId} (${version})`);
+                }
+                return true;
+            } catch (e) {
+                this._recordError(overlayId, "extract", e?.message ?? "Install failed");
+                Logger.error(MODULE_LABEL, `Manual overlay install failed for ${overlayId}:`, e);
                 app?.close?.();
                 return false;
             }
-
-            if (extractResult.cancelled) {
-                this._recordError(overlayId, "extract", "Install cancelled by user");
-                app?.complete?.(extractResult.uploaded, 0, ["cancelled"]);
-                return false;
-            }
-
-            const manifest = {
-                overlayId,
-                version,
-                moduleId,
-                tier,
-                sublayer,
-                installedAt: new Date().toISOString()
-            };
-            await this._writeManifest(targetDir, manifest);
-
-            this._manifestCache.set(`${moduleId}:${sublayer}`, manifest);
-            this._contentsCache.delete(`${moduleId}:${sublayer}`);
-            this._clearError(overlayId);
-
-            const map = { ...this._getWorldStateMap() };
-            map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
-            await game.settings.set("ionrift-library", "overlayWorldState", map);
-
-            this._emitContentChanged({
-                overlayId,
-                moduleId,
-                sublayer,
-                active: true,
-                installed: true
-            });
-
-            Logger.info(MODULE_LABEL, `Manual overlay installed: ${overlayId} v${version}`);
-            app?.complete?.(extractResult.uploaded, 0, []);
-            if (userInitiated && !app) {
-                ui?.notifications?.info(`Content installed: ${overlayId} (${version})`);
-            }
-            return true;
-        } catch (e) {
-            this._recordError(overlayId, "extract", e?.message ?? "Install failed");
-            Logger.error(MODULE_LABEL, `Manual overlay install failed for ${overlayId}:`, e);
-            app?.close?.();
-            return false;
-        }
+        });
     }
 
     /**
