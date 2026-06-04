@@ -2899,6 +2899,11 @@
     color: #7ddc8f;
 }
 
+.ionrift-profile-confirm td.value,
+.respite-profile-confirm td.value {
+    color: rgba(255, 255, 255, 0.88);
+}
+
 .ionrift-profile-confirm td.off,
 .respite-profile-confirm td.off {
     color: rgba(255, 255, 255, 0.45);

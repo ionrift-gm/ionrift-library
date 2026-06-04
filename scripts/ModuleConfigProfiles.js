@@ -99,12 +99,24 @@ export class ModuleConfigProfiles {
     static formatCellDefault(key, value) {
         if (typeof value === "number") {
             const text = Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
-            return { text, cssClass: value > 0 ? "on" : "off" };
+            return { text, cssClass: "value" };
         }
         if (typeof value === "string") {
-            return { text: value, cssClass: "on" };
+            return { text: value, cssClass: "value" };
         }
         return { text: value ? "On" : "Off", cssClass: value ? "on" : "off" };
+    }
+
+    /**
+     * @param {*} current
+     * @param {*} next
+     * @returns {boolean}
+     */
+    static profileValueChanged(current, next) {
+        if (typeof current === "number" && typeof next === "number") {
+            return Math.abs(current - next) > 1e-9;
+        }
+        return current !== next;
     }
 
     /**
@@ -124,8 +136,16 @@ export class ModuleConfigProfiles {
             const groupLabel = group
                 ? `<tr class="ionrift-profile-confirm-group"><td colspan="2">${group.label}</td></tr>`
                 : "";
-            const cell = formatCell(k, profile.values[k]);
-            return `${groupLabel}<tr><td>${quickSetup.keyLabels[k] ?? k}</td><td class="${cell.cssClass}">${cell.text}</td></tr>`;
+            const next = profile.values[k];
+            let current;
+            try {
+                current = game.settings.get(moduleId, k);
+            } catch {
+                current = undefined;
+            }
+            const cell = formatCell(k, next);
+            const cssClass = ModuleConfigProfiles.profileValueChanged(current, next) ? "on" : "value";
+            return `${groupLabel}<tr><td>${quickSetup.keyLabels[k] ?? k}</td><td class="${cssClass}">${cell.text}</td></tr>`;
         }).join("");
 
         const note = quickSetup.confirmNote
