@@ -1,9 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## [2.3.2] - 2026-06-04
 
 ### Added
-- **Module config profiles.** Shared Quick Setup card, profile apply confirm, and settings group headers for module settings panels (`ModuleConfigProfiles`).
+- **Module config profiles.** Shared Quick Setup card with preset profiles and grouped settings headers for module settings panels.
+
+### Changed
+- **Profile apply confirm.** The confirm dialog now highlights only the values that will actually change. Unchanged settings show in neutral text instead of green.
 
 ## [2.3.1] - 2026-06-03
 
