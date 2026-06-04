@@ -43,9 +43,7 @@ scripts/data/classifierTestVectors.js
 BACKLOG.md
 
 # Agent handoff specs (ephemeral — see DEV_PROTOCOLS.md §30)
-# Note: .cursor/rules/ and .cursor/automation-briefs/ are committed infrastructure — NOT ignored.
-.cursor/specs/
-.cursor/*.md
+.cursor/
 CURSOR_TASK_*
 CURSOR_SPEC_*
 CURSOR_PLAN_*
