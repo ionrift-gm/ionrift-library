@@ -89,20 +89,128 @@ export class PartyRoster {
     /**
      * Returns the current party as resolved Actor documents.
      * When a system-native party is active (v14+ dnd5e with a primary party
-     * configured), returns the native members — an empty party resolves to an
-     * empty list, reflecting the true state. Otherwise uses the curated roster,
-     * falling back to all player-owned characters when it is empty. Systems
-     * without native party support (PF2e, Daggerheart) always use the curated
-     * roster regardless of Foundry version.
+     * configured), returns the native members when present. When the native
+     * party is configured but empty, falls back to the curated roster, then
+     * player-owned characters. Systems without native party support (PF2e,
+     * Daggerheart) always use the curated roster regardless of Foundry version.
      * @returns {Actor[]}
      */
     static getMembers() {
         const native = this.nativeMembers();
-        if (native) return native;
+
+        // v14 with a configured native party (including empty): trust native first, then curated.
+        // Player-owned fallback is reserved for v13 and v14 worlds without a primary party set.
+        if (this.isV14() && Array.isArray(native)) {
+            if (native.length) return native;
+            const ids = this._settingIds();
+            if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
+            return [];
+        }
+
+        if (native?.length) return native;
 
         const ids = this._settingIds();
         if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
-        return game.actors.filter(a => a.hasPlayerOwner && a.type === "character");
+
+        return game.actors.filter(a => {
+            if (!a.hasPlayerOwner) return false;
+            return a.type === "character" || a.system?.isCharacter;
+        });
+    }
+
+    /**
+     * True when this world uses the dnd5e v14 primary-party Group on Foundry v14+.
+     * @returns {boolean}
+     */
+    static usesDnd5eNativeParty() {
+        return this.isV14()
+            && game.system?.id === "dnd5e"
+            && game.actors?.party !== undefined;
+    }
+
+    /**
+     * Setup diagnostics for empty-party UI and non-blocking GM warnings.
+     * v14 dnd5e surfaces primary-party states; v13 and below use curated roster copy.
+     * @returns {{
+     *   isV14: boolean,
+     *   usesNativeParty: boolean,
+     *   emptyParty: boolean,
+     *   reason: string|null,
+     *   warning: string|null
+     * }}
+     */
+    static getSetupState() {
+        const members = this.getMembers();
+        const emptyParty = members.length === 0;
+
+        if (!this.usesDnd5eNativeParty()) {
+            return {
+                isV14: this.isV14(),
+                usesNativeParty: false,
+                emptyParty,
+                reason: emptyParty ? "no_characters" : null,
+                warning: null
+            };
+        }
+
+        const primary = game.actors.party;
+        const groups = game.actors.filter(a => a.type === "group");
+        const primaryPcCount = primary?.system?.playerCharacters?.length ?? 0;
+        const alternateGroup = groups.find(
+            g => g.id !== primary?.id && (g.system?.playerCharacters?.length ?? 0) > 0
+        );
+
+        if (emptyParty) {
+            if (!primary && groups.length) {
+                return {
+                    isV14: true,
+                    usesNativeParty: true,
+                    emptyParty: true,
+                    reason: "no_primary_party",
+                    warning: null
+                };
+            }
+            if (!primary) {
+                return {
+                    isV14: true,
+                    usesNativeParty: true,
+                    emptyParty: true,
+                    reason: "no_party_group",
+                    warning: null
+                };
+            }
+            if (primaryPcCount === 0) {
+                return {
+                    isV14: true,
+                    usesNativeParty: true,
+                    emptyParty: true,
+                    reason: "primary_party_empty",
+                    warning: null
+                };
+            }
+            return {
+                isV14: true,
+                usesNativeParty: true,
+                emptyParty: true,
+                reason: "no_characters",
+                warning: null
+            };
+        }
+
+        let warning = null;
+        if (!primary && members.length) {
+            warning = "no_primary_party";
+        } else if (alternateGroup && primaryPcCount === 0) {
+            warning = "no_primary_party";
+        }
+
+        return {
+            isV14: true,
+            usesNativeParty: true,
+            emptyParty: false,
+            reason: null,
+            warning
+        };
     }
 
     /**

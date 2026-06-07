@@ -94,16 +94,41 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
      * @returns {Actor[]|null}
      */
     getNativePartyMembers() {
-        const party = game.actors?.party;
-        const members = party?.system?.members;
-        if (!members) return null;
-        try {
-            return members
-                .map(m => m.actor ?? m)
-                .filter(a => a && a.type === "character");
-        } catch {
-            return null;
+        const extractMembers = (party) => {
+            if (!party?.system?.members) return [];
+
+            const playerChars = party.system.playerCharacters;
+            if (playerChars?.length) return [...playerChars];
+
+            const resolved = [];
+            for (const member of party.system.members) {
+                const actor = member?.actor ?? game.actors.get(
+                    typeof member?.actor === "string" ? member.actor : member?.actor?.id
+                );
+                if (actor?.system?.isCharacter) resolved.push(actor);
+            }
+            return resolved;
+        };
+
+        const primary = game.actors?.party;
+        let members = extractMembers(primary);
+        if (members.length) return members;
+
+        // Primary party can be stale or empty while another group holds the roster.
+        for (const group of game.actors.filter(a => a.type === "group")) {
+            if (group.id === primary?.id) continue;
+            members = extractMembers(group);
+            if (members.length) {
+                console.warn(
+                    `Ionrift | Primary party "${primary?.name ?? "unset"}" has no usable members; `
+                    + `using "${group.name}". Right-click that group and choose Make Primary Party.`
+                );
+                return members;
+            }
         }
+
+        if (primary?.system?.members) return [];
+        return null;
     }
 
     openNativePartyManagement() {
