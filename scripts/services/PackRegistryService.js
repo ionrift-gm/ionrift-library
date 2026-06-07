@@ -7,6 +7,7 @@
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { CloudRelayService } from "./CloudRelayService.js";
 import { ModuleInstallerService } from "./ModuleInstallerService.js";
+import { Logger } from "./Logger.js";
 
 export class PackRegistryService {
 
@@ -46,7 +47,7 @@ export class PackRegistryService {
         let registryData = null;
 
         if (age < this.CHECK_INTERVAL_MS && cache.data) {
-            console.log("PackRegistry | Using cached registry data.");
+            Logger.log("PackRegistry", "Using cached registry data.");
             registryData = cache.data;
         } else {
             registryData = await this._fetchRegistry();
@@ -58,13 +59,13 @@ export class PackRegistryService {
                     data: registryData
                 });
             } catch (error) {
-                console.warn("PackRegistry | Failed to cache registry data:", error);
+                Logger.warn("PackRegistry", "Failed to cache registry data:", error);
             }
         }
 
         const packs = registryData?.packs;
         if (!packs || typeof packs !== "object") {
-            console.warn("PackRegistry | Registry data has no packs object.");
+            Logger.warn("PackRegistry", "Registry data has no packs object.");
             return;
         }
 
@@ -96,9 +97,9 @@ export class PackRegistryService {
 
         if (notifiable.length === 0) {
             if (updates.length > 0) {
-                console.log(`PackRegistry | ${updates.length} update(s) available but all snoozed.`);
+                Logger.log("PackRegistry", `${updates.length} update(s) available but all snoozed.`);
             } else {
-                console.log("PackRegistry | All installed packs are up to date.");
+                Logger.log("PackRegistry", "All installed packs are up to date.");
             }
             // Module+EA checks still run so badge count stays accurate
             if (registryData.modules) {
@@ -108,7 +109,7 @@ export class PackRegistryService {
             return;
         }
 
-        console.log(`PackRegistry | ${notifiable.length} update(s) to notify (${updates.length - notifiable.length} snoozed).`);
+        Logger.log("PackRegistry", `${notifiable.length} update(s) to notify (${updates.length - notifiable.length} snoozed).`);
         for (const { packId, installed: inst, available } of notifiable) {
             this._showUpdateNotification(packId, inst, available);
         }
@@ -187,16 +188,16 @@ export class PackRegistryService {
             clearTimeout(timeout);
 
             if (!response.ok) {
-                console.warn(`PackRegistry | Registry returned HTTP ${response.status}.`);
+                Logger.warn("PackRegistry", `Registry returned HTTP ${response.status}.`);
                 return null;
             }
 
             return await response.json();
         } catch (error) {
             if (error.name === "AbortError") {
-                console.warn("PackRegistry | Registry fetch timed out after 10 seconds.");
+                Logger.warn("PackRegistry", "Registry fetch timed out after 10 seconds.");
             } else {
-                console.warn("PackRegistry | Registry fetch failed:", error);
+                Logger.warn("PackRegistry", "Registry fetch failed:", error);
             }
             return null;
         }
@@ -266,7 +267,7 @@ export class PackRegistryService {
             progressApp.complete(1, 0, []);
         } catch (error) {
             progressApp.close();
-            console.error(`PackRegistry | Download failed for ${packId}:`, error);
+            Logger.error("PackRegistry", `Download failed for ${packId}:`, error);
             ui.notifications.error(`Failed to download ${packId}: ${error.message}`);
             return null;
         }
@@ -287,11 +288,11 @@ export class PackRegistryService {
 
             if (result) {
                 ui.notifications.info(`Updated ${packId} to v${version}.`);
-                console.log(`PackRegistry | Successfully updated ${packId} to v${version}.`);
+                Logger.log("PackRegistry", `Successfully updated ${packId} to v${version}.`);
             }
             return result;
         } catch (error) {
-            console.error(`PackRegistry | Install failed for ${packId}:`, error);
+            Logger.error("PackRegistry", `Install failed for ${packId}:`, error);
             ui.notifications.error(`Failed to install ${packId}: ${error.message}`);
             return null;
         }
@@ -700,9 +701,9 @@ export class PackRegistryService {
             const snoozed = game.settings.get("ionrift-library", "registrySnoozed") ?? {};
             snoozed[packId] = Date.now();
             game.settings.set("ionrift-library", "registrySnoozed", snoozed);
-            console.log(`PackRegistry | Snoozed ${packId} for ${this.SNOOZE_DURATION_MS / 86400000} days.`);
+            Logger.log("PackRegistry", `Snoozed ${packId} for ${this.SNOOZE_DURATION_MS / 86400000} days.`);
         } catch (e) {
-            console.warn("PackRegistry | Failed to record snooze:", e);
+            Logger.warn("PackRegistry", "Failed to record snooze:", e);
         }
     }
 
@@ -717,9 +718,9 @@ export class PackRegistryService {
             if (!(packId in snoozed)) return;
             delete snoozed[packId];
             game.settings.set("ionrift-library", "registrySnoozed", snoozed);
-            console.log(`PackRegistry | Cleared snooze for ${packId}.`);
+            Logger.log("PackRegistry", `Cleared snooze for ${packId}.`);
         } catch (e) {
-            console.warn("PackRegistry | Failed to clear snooze:", e);
+            Logger.warn("PackRegistry", "Failed to clear snooze:", e);
         }
     }
 }
