@@ -3,17 +3,13 @@ import { SidebarHelper } from "./SidebarHelper.js";
 import { DiagnosticApp } from "./apps/DiagnosticApp.js";
 import { DiagnosticService } from "./services/DiagnosticService.js";
 import { ClassifierValidatorApp } from "./apps/ClassifierValidatorApp.js";
-import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js"; // Import Setup App
+import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js";
 import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
 import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
 import { SettingsLayout } from "./SettingsLayout.js";
 import { ModuleConfigProfiles } from "./ModuleConfigProfiles.js";
 import * as SettingsVisibility from "./SettingsVisibility.js";
 import { IntegrationStatus } from "./services/IntegrationStatus.js";
-// import { StatusIndicatorManager } from "./services/StatusIndicatorManager.js"; // Removed
-
-// import { LogRecorder } from "./LogRecorder.js"; // Externalized
-// import { CommandListener } from "./CommandListener.js"; // Externalized
 import { RuntimeValidator } from "./RuntimeValidator.js";
 import { WorldSchema } from "./data/WorldSchema.js";
 import { Logger } from "./services/Logger.js";
@@ -51,8 +47,6 @@ Hooks.on("renderItemSheet5e2", _onEnrichSheet); // dnd5e v3 alternate class
 
 // Initialize Library
 Hooks.once('init', () => {
-    // LogRecorder & CommandListener moved to ionrift-devtools
-
     Logger.log("Library", "Initializing Shared Library");
 
     // Expose API
