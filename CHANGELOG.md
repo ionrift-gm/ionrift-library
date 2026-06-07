@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.3] - 2026-06-07
+
+### Fixed
+- Fixed an issue where the party roster would fail to load if the primary D&D 5e party group was empty, now gracefully falling back to alternate groups.
+
 ## [2.3.2] - 2026-06-04
 
 ### Added
