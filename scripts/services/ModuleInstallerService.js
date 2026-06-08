@@ -229,21 +229,98 @@ export class ModuleInstallerService {
     }
 
     /**
-     * Fallback dialog shown when server-side install fails on v14+.
-     * Provides a direct download link and manual extraction instructions.
+     * Detect the user's host environment for tailoring extract instructions.
+     * Returns "forge" only for The Forge VTT; Forge is normally diverted
+     * earlier by `_showForgeInstallDialog`, but this keeps the helper
+     * complete. Self-hosted desktops are split by OS so the fallback dialog
+     * can show the right path hint and the right extract gesture.
+     *
+     * @returns {"forge"|"windows"|"mac"|"linux"|"unknown"}
+     */
+    static _detectInstallPlatform() {
+        if (PlatformHelper.isForge) return "forge";
+
+        const platform = (typeof navigator !== "undefined" && navigator.platform) || "";
+        const ua       = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+
+        if (/Win/i.test(platform) || /Windows/i.test(ua)) return "windows";
+        if (/Mac/i.test(platform) || /Macintosh|Mac OS X/i.test(ua)) return "mac";
+        if (/Linux|X11/i.test(platform) || /Linux/i.test(ua)) return "linux";
+        return "unknown";
+    }
+
+    /**
+     * Per-platform extract guidance for the manual fallback dialog.
+     * `dataPathHint` is the typical Foundry data root for the OS; it is a
+     * hint, not the truth. The actual location is whatever
+     * Setup -> Configuration -> Data Path reports.
+     *
+     * @param {"forge"|"windows"|"mac"|"linux"|"unknown"} platform
+     * @returns {{ extract: string, dataPathHint: string|null }}
+     */
+    static _platformGuidance(platform) {
+        switch (platform) {
+            case "windows":
+                return {
+                    extract: "Right-click the ZIP, choose <strong>Extract All...</strong>, then copy the extracted files into the module folder.",
+                    dataPathHint: "%LOCALAPPDATA%\\FoundryVTT\\Data"
+                };
+            case "mac":
+                return {
+                    extract: "Double-click the ZIP to extract it, then move the extracted files into the module folder.",
+                    dataPathHint: "~/Library/Application Support/FoundryVTT/Data"
+                };
+            case "linux":
+                return {
+                    extract: "Run <code>unzip module.zip -d &lt;DataPath&gt;/modules/{moduleId}/</code> from a terminal.",
+                    dataPathHint: "~/.local/share/FoundryVTT/Data"
+                };
+            case "forge":
+                return {
+                    extract: "Use My Foundry -> Summon Import Wizard -> ZIP File tab in your Forge dashboard.",
+                    dataPathHint: null
+                };
+            default:
+                return {
+                    extract: "Extract the ZIP contents (not the ZIP file itself) directly into the module folder.",
+                    dataPathHint: null
+                };
+        }
+    }
+
+    /**
+     * Fallback dialog shown when server-side install fails on v13+/v14+.
+     * Provides a direct download link, the exact module-folder target path,
+     * and platform-specific extract guidance.
+     *
      * @param {string} downloadUrl  Presigned GCS URL
      * @param {string} moduleId
      * @param {string} version
      */
     static _showV14FallbackDialog(downloadUrl, moduleId, version) {
+        const platform = this._detectInstallPlatform();
+        const guidance = this._platformGuidance(platform);
+        const extract  = guidance.extract.replace("{moduleId}", moduleId);
+        const targetRel = `modules/${moduleId}/`;
+        const targetFile = `modules/${moduleId}/module.json`;
+        const dataPathHint = guidance.dataPathHint
+            ? `<p class="ionrift-forge-install-note ionrift-install-pathhint">
+                <i class="fas fa-folder-open"></i>
+                <span>Typical location for ${platform === "windows" ? "Windows" : platform === "mac" ? "macOS" : "Linux"}: <code>${guidance.dataPathHint}</code>. Confirm yours under <strong>Setup -> Configuration -> Data Path</strong>.</span>
+              </p>`
+            : `<p class="ionrift-forge-install-note ionrift-install-pathhint">
+                <i class="fas fa-folder-open"></i>
+                <span>Your data path is shown under <strong>Setup -> Configuration -> Data Path</strong>.</span>
+              </p>`;
+
         const overlay = document.createElement("div");
         overlay.classList.add("ionrift-armor-modal-overlay");
         overlay.innerHTML = `
             <div class="ionrift-armor-modal ionrift-forge-install-modal">
                 <h3><i class="fas fa-cloud-download-alt"></i> Manual Install Required</h3>
                 <p>
-                    Foundry v14 restricts in-world file uploads to asset types.
-                    Download the ZIP and extract it manually.
+                    In-world install is unavailable on this host. Download the ZIP
+                    and extract it into the module folder.
                 </p>
                 <div class="ionrift-forge-install-steps">
                     <div class="ionrift-forge-step">
@@ -255,13 +332,18 @@ export class ModuleInstallerService {
                     </a>
                     <div class="ionrift-forge-step">
                         <span class="ionrift-forge-step-num">2</span>
-                        <span>Extract the ZIP into the <strong>modules/${moduleId}/</strong> folder in the Foundry data directory</span>
+                        <span>${extract}</span>
                     </div>
                     <div class="ionrift-forge-step">
                         <span class="ionrift-forge-step-num">3</span>
-                        <span>Reload Foundry to pick up the new version</span>
+                        <span>The result must be: <code>&lt;DataPath&gt;/${targetFile}</code> and the rest of the module files alongside it. Do not leave the ZIP in <code>${targetRel}</code>, and do not nest a second <code>${moduleId}</code> folder inside.</span>
+                    </div>
+                    <div class="ionrift-forge-step">
+                        <span class="ionrift-forge-step-num">4</span>
+                        <span>Restart Foundry (full restart, not browser refresh), then enable the module in <strong>Manage Modules</strong>.</span>
                     </div>
                 </div>
+                ${dataPathHint}
                 <p class="ionrift-forge-install-note">
                     <i class="fas fa-clock"></i> This download link expires in 60 minutes.
                 </p>
