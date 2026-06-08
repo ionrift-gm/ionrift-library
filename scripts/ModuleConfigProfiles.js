@@ -26,6 +26,7 @@
  * @property {{ beforeKey: string, label: string }[]} [quickSetup.confirmRowGroups]
  * @property {() => void} [quickSetup.onGuide]
  * @property {string} [quickSetup.guideTooltip]
+ * @property {(profile: ProfileDefinition) => void|Promise<void>} [quickSetup.onApplied]
  * @property {SettingsGroupDefinition[]} groups
  */
 
@@ -172,6 +173,8 @@ export class ModuleConfigProfiles {
         for (const k of quickSetup.profileKeys) {
             await game.settings.set(moduleId, k, profile.values[k]);
         }
+
+        await quickSetup.onApplied?.(profile);
 
         const scope = document.querySelector(`.ionrift-quick-setup[data-module="${moduleId}"]`);
         if (scope) {

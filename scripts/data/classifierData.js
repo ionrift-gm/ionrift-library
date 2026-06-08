@@ -97,7 +97,7 @@ const DAGGERHEART_DATA = {
                 id: "vampire",
                 keywords: ["Vampire", "Spawn"],
                 tags: ["fangs", "pale", "charming", "regeneration"],
-                sound: "MONSTER_HUMANOID"
+                sound: "MONSTER_VAMPIRE"
             }
         ]
     },

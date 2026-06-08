@@ -400,11 +400,11 @@ DND5E_DATA.plant.subtypes.push(
 // UNDEAD
 DND5E_DATA.undead.subtypes.push(
     { id: "ghoul", keywords: ["Ghoul", "Ghast"], tags: ["paralysis"], sound: "MONSTER_ZOMBIE" },
-    { id: "wight", keywords: ["Wight"], tags: ["life-drain"], sound: "MONSTER_zOMBIE" },
-    { id: "mummy", keywords: ["Mummy"], tags: ["curse", "rotting"], sound: "MONSTER_ZOMBIE" },
-    { id: "vampire", keywords: ["Vampire"], tags: ["regeneration", "charm", "bite"], sound: "MONSTER_HUMANOID" },
-    { id: "lich", keywords: ["Lich", "Demilich"], tags: ["spellcaster", "phylactery"], sound: "MONSTER_SKELETON" },
-    { id: "wraith", keywords: ["Wraith", "Ghost", "Specter", "Shadow", "Poltergeist", "Banshee", "Will-o'-Wisp"], tags: ["incorporeal", "drain"], sound: "MONSTER_GHOST" }
+    { id: "wight", keywords: ["Wight"], tags: ["life-drain"], sound: "MONSTER_ZOMBIE" },
+    { id: "mummy", keywords: ["Mummy"], tags: ["curse", "rotting"], sound: "MONSTER_MUMMY" },
+    { id: "vampire", keywords: ["Vampire"], tags: ["regeneration", "charm", "bite"], sound: "MONSTER_VAMPIRE" },
+    { id: "lich", keywords: ["Lich", "Demilich"], tags: ["spellcaster", "phylactery"], sound: "MONSTER_LICH" },
+    { id: "wraith", keywords: ["Wraith", "Ghost", "Specter", "Shadow", "Poltergeist", "Banshee", "Will-o'-Wisp"], tags: ["incorporeal", "drain"], sound: "MONSTER_WRAITH" }
 );
 
 // DRAGONS
