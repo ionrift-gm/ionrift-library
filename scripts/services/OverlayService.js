@@ -5,7 +5,20 @@
  * against the registry, download via Cloud Relay, extract to the
  * local filesystem, and expose overlay paths to consumer modules.
  *
- * Overlays are data-only packages (JSON, WebP, OGG). No .js files.
+ * Overlay content types:
+ *   - **Data overlays** (default): JSON, WebP, OGG. Consumer modules
+ *     read files via readOverlayFile() and materialise into compendiums
+ *     or interpret at runtime. (QM items, Respite terrains, Resonance.)
+ *   - **Plugin overlays** (`contentType: "plugin"`): contain `.mjs`
+ *     code modules alongside data and art. Consumer modules dynamically
+ *     import() the plugins and register them into a framework at runtime.
+ *     (CW archetypes, Respite professions.) Plugin .mjs files are
+ *     Terser-minified before packaging.
+ *
+ * The extract pipeline handles both types identically — no file-extension
+ * filtering. The `contentType` field in the overlay manifest and registry
+ * is informational for consumer modules and UI display.
+ *
  * Each registry overlay installs to a per-pack sublayer directory.
  * The default sublayer for a module's primary pack is `core` (e.g.
  * `ionrift-data/overlays/ionrift-respite/core/`). Modules that ship
