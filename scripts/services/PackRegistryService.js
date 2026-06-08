@@ -42,45 +42,25 @@ export class PackRegistryService {
     static async checkForUpdates() {
         if (!game.user.isGM) return;
 
-        const cache = game.settings.get("ionrift-library", "registryLastCheck") ?? { timestamp: 0, data: null };
-        const age = Date.now() - (cache.timestamp ?? 0);
-        let registryData = null;
-
-        if (age < this.CHECK_INTERVAL_MS && cache.data) {
-            Logger.log("PackRegistry", "Using cached registry data.");
-            registryData = cache.data;
-        } else {
-            registryData = await this._fetchRegistry();
-            if (!registryData) return;
-
-            try {
-                await game.settings.set("ionrift-library", "registryLastCheck", {
-                    timestamp: Date.now(),
-                    data: registryData
-                });
-            } catch (error) {
-                Logger.warn("PackRegistry", "Failed to cache registry data:", error);
-            }
-        }
+        const registryData = await this.resolveRegistryData();
+        if (!registryData) return;
 
         const packs = registryData?.packs;
-        if (!packs || typeof packs !== "object") {
-            Logger.warn("PackRegistry", "Registry data has no packs object.");
-            return;
-        }
-
-        const installed = game.settings.get("ionrift-library", "installedPacks") ?? {};
         const updates = [];
 
-        for (const [packId, registryEntry] of Object.entries(packs)) {
-            const local = installed[packId];
-            if (!local) continue;
+        if (packs && typeof packs === "object") {
+            const installed = game.settings.get("ionrift-library", "installedPacks") ?? {};
 
-            const latest = registryEntry?.latest;
-            if (!latest || typeof latest !== "string") continue;
+            for (const [packId, registryEntry] of Object.entries(packs)) {
+                const local = installed[packId];
+                if (!local) continue;
 
-            if (this._compareVersions(local.version, latest) < 0) {
-                updates.push({ packId, installed: local, available: registryEntry });
+                const latest = registryEntry?.latest;
+                if (!latest || typeof latest !== "string") continue;
+
+                if (this._compareVersions(local.version, latest) < 0) {
+                    updates.push({ packId, installed: local, available: registryEntry });
+                }
             }
         }
 
@@ -119,6 +99,37 @@ export class PackRegistryService {
             this._checkModuleUpdates(registryData);
             this._checkEarlyAccess(registryData);
         }
+    }
+
+    /**
+     * Cached registry fetch shared by pack update checks and overlay availability.
+     * @param {{ forceFetch?: boolean }} [options]
+     * @returns {Promise<Object|null>}
+     */
+    static async resolveRegistryData({ forceFetch = false } = {}) {
+        if (!game.user?.isGM) return null;
+
+        const cache = game.settings.get("ionrift-library", "registryLastCheck") ?? { timestamp: 0, data: null };
+        const age = Date.now() - (cache.timestamp ?? 0);
+
+        if (!forceFetch && age < this.CHECK_INTERVAL_MS && cache.data) {
+            Logger.log("PackRegistry", "Using cached registry data.");
+            return cache.data;
+        }
+
+        const registryData = await this._fetchRegistry();
+        if (!registryData) return null;
+
+        try {
+            await game.settings.set("ionrift-library", "registryLastCheck", {
+                timestamp: Date.now(),
+                data: registryData
+            });
+        } catch (error) {
+            Logger.warn("PackRegistry", "Failed to cache registry data:", error);
+        }
+
+        return registryData;
     }
 
     /**

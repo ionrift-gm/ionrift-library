@@ -240,7 +240,7 @@ export class OverlayService {
 
         let registry;
         try {
-            registry = await PackRegistryService._fetchRegistry();
+            registry = await PackRegistryService.resolveRegistryData();
         } catch (e) {
             Logger.warn(MODULE_LABEL, "Registry fetch failed:", e.message);
             return;

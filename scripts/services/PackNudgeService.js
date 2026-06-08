@@ -309,7 +309,8 @@ export class PackNudgeService {
             return { $anchor: $group, position };
         };
 
-        return tryAnchor(`button[data-key="${moduleId}.setupWizard"]`)
+        return tryAnchor(`button[data-key="${moduleId}.patreonLibrary"]`)
+            ?? tryAnchor(`button[data-key="${moduleId}.setupWizard"]`)
             ?? tryAnchor(`button[data-key="${moduleId}.contentPacks"]`)
             ?? this.#findFirstModuleFormGroup(moduleId, $html);
     }

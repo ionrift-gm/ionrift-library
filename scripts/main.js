@@ -36,6 +36,7 @@ import { PackNudgeService } from "./services/PackNudgeService.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
 import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
+import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -114,6 +115,11 @@ Hooks.once('init', () => {
          * Read by PackRegistryApp to render per-card update indicators.
          */
         _packUpdates: [],
+        /**
+         * Pending overlay installs/updates from OverlayService.checkAvailable().
+         * Read by SettingsLayout for per-module pack alert badges.
+         */
+        _pendingOverlays: [],
         /**
          * Trigger a cloud download-and-install for a pack that has a pending update.
          * No-ops gracefully if the pack isn't in the pending list.
@@ -820,10 +826,12 @@ Hooks.once('ready', async () => {
             };
         }
 
-        // Pack update check (daily, non-blocking)
-        PackRegistryService.checkForUpdates().catch(e => console.warn("Ionrift | Registry check failed:", e));
+        // Pack and overlay alert checks (daily registry cache, throttled overlay scan)
+        SettingsLayout.ensurePackAlertsFresh().catch(e => console.warn("Ionrift | Pack alert check failed:", e));
 
-        // Overlay checks run when the GM opens Patreon Library, not on world ready.
+        // Diagnose broken installs (zip-in-folder, double-nested, missing module.json)
+        InstallHealthCheck.run().catch(e => console.warn("Ionrift | Install health check failed:", e));
+
         // Enable overlays in a dev world via:
         //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
 

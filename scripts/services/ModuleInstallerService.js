@@ -197,6 +197,7 @@ export class ModuleInstallerService {
             await PlatformHelper.FP.upload(PlatformHelper.fileSource, tempDir, manifestFile, {});
         } catch (e) {
             console.error("ModuleInstaller | Failed to stage temp manifest:", e);
+            await this._ensureModuleDirectory(moduleId);
             this._showV14FallbackDialog(downloadUrl, moduleId, version);
             return false;
         }
@@ -223,6 +224,7 @@ export class ModuleInstallerService {
             return true;
         } catch (e) {
             console.error("ModuleInstaller | Server-side install failed:", e);
+            await this._ensureModuleDirectory(moduleId);
             this._showV14FallbackDialog(downloadUrl, moduleId, version);
             return false;
         }
@@ -608,6 +610,20 @@ export class ModuleInstallerService {
     }
 
     // ── Utilities ────────────────────────────────────────────
+
+    /**
+     * Ensure the target module directory exists before showing the fallback
+     * dialog. On a fresh install the folder won't exist yet, which confuses
+     * users told to "extract into" it.
+     * @param {string} moduleId
+     */
+    static async _ensureModuleDirectory(moduleId) {
+        try {
+            await PlatformHelper.ensureDirectory(`modules/${moduleId}`);
+        } catch (e) {
+            console.warn(`ModuleInstaller | Could not pre-create modules/${moduleId}/:`, e);
+        }
+    }
 
     /**
      * Recursively add a Foundry data directory to a JSZip archive.

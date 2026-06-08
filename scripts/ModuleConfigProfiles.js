@@ -2,8 +2,8 @@
  * Shared Quick Setup profiles and settings-panel grouping for Ionrift modules.
  *
  * Modules call register() during init with profile presets, group headers, and
- * optional guide link. A single renderSettingsConfig hook (deferred one microtask
- * after SettingsLayout footer injection) enhances each registered section.
+ * optional guide link. SettingsLayout runs enhanceAll() after the library row
+ * is injected, then aligns the pack divider above the profile panel.
  */
 
 /** @typedef {{ id: string, label: string, icon: string, desc: string, values: Record<string, *> }} ProfileDefinition */
@@ -283,7 +283,17 @@ export class ModuleConfigProfiles {
             quickSetup.onGuide?.();
         });
 
-        container.insertBefore(quick, container.firstChild);
+        const libraryRow = container.querySelector(`.ionrift-library-shortcut[data-module-id="${moduleId}"]`);
+        if (libraryRow) {
+            const afterLibrary = libraryRow.nextElementSibling;
+            if (afterLibrary?.classList?.contains("ionrift-settings-divider")) {
+                afterLibrary.insertAdjacentElement("afterend", quick);
+            } else {
+                libraryRow.insertAdjacentElement("afterend", quick);
+            }
+        } else {
+            container.insertBefore(quick, container.firstChild);
+        }
         ModuleConfigProfiles.markActiveProfile(quick, moduleId, quickSetup.profiles, quickSetup.profileKeys);
     }
 
@@ -295,10 +305,4 @@ export class ModuleConfigProfiles {
             ModuleConfigProfiles.enhanceSettingsSection(html, config);
         }
     }
-}
-
-if (globalThis.Hooks?.on) {
-    Hooks.on("renderSettingsConfig", (app, html) => {
-        queueMicrotask(() => ModuleConfigProfiles.enhanceAll(html));
-    });
 }

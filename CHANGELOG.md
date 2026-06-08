@@ -2,8 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- On startup, the library now inspects the modules folder for EA modules that Foundry cannot see. If it finds a structural problem (ZIP left unextracted, double-nested folder, empty directory, or a valid install that just needs a restart), it surfaces a console warning with the exact cause and fix. Saves a support round-trip for the most common install mistakes.
+
 ### Changed
 - The manual install fallback dialog now detects your operating system and shows the right extract gesture (Right-click Extract All on Windows, double-click on macOS, `unzip` on Linux). It also spells out the exact target path (`<DataPath>/modules/{moduleId}/module.json`), references **Setup -> Configuration -> Data Path** for confirming the data root, and warns against the two common mistakes that leave a module invisible to Foundry: leaving the ZIP itself inside the module folder, or nesting a second copy of the module folder.
+- When the server-side installer falls back to manual mode, it now pre-creates the target module folder so users do not have to create it themselves.
 
 ## [2.3.3] - 2026-06-07
 
