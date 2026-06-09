@@ -2,17 +2,15 @@
 
 ## [2.3.5] - 2026-06-09
 
-### Fixed
-- Fixed a UTF-8 BOM in the shipped module.json that caused a JSON parse error in the Foundry package installer on some platforms.
-
-## [2.3.4] - 2026-06-09
-
 ### Added
 - On startup, the library now inspects the modules folder for EA modules that Foundry cannot see. If it finds a structural problem (ZIP left unextracted, double-nested folder, empty directory, or a valid install that just needs a restart), it surfaces a console warning with the exact cause and fix. Saves a support round-trip for the most common install mistakes.
 
 ### Changed
 - The manual install fallback dialog now shows OS-specific extraction steps and the exact target path for the module folder, so you're not guessing where files should land.
 - When the server-side installer falls back to manual mode, it now pre-creates the target module folder so users do not have to create it themselves.
+
+### Fixed
+- Fixed a UTF-8 BOM in the shipped module.json that caused a JSON parse error in the Foundry package installer on some platforms.
 
 ## [2.3.3] - 2026-06-07
 
