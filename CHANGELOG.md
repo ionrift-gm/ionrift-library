@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.3.5] - 2026-06-09
+## [2.3.6] - 2026-06-09
 
 ### Added
 - On startup, the library now inspects the modules folder for EA modules that Foundry cannot see. If it finds a structural problem (ZIP left unextracted, double-nested folder, empty directory, or a valid install that just needs a restart), it surfaces a console warning with the exact cause and fix. Saves a support round-trip for the most common install mistakes.
