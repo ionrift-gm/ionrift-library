@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.5] - 2026-06-09
+
+### Fixed
+- Fixed a UTF-8 BOM in the shipped module.json that caused a JSON parse error in the Foundry package installer on some platforms.
+
 ## [2.3.4] - 2026-06-09
 
 ### Added
@@ -149,7 +154,7 @@
 ## [1.9.1] - 2026-04-21
 
 ### Fixed
-- **Module installs on Foundry v14.** One-click installs from the Patreon Connection panel were silently failing on v14 — the module appeared to install but all functional files were missing. Installs now use a server-side route that works with v14's stricter upload rules. If the server route isn't available (some hosting environments), a download dialog with manual extraction steps appears instead of a silent failure.
+- **Module installs on Foundry v14.** One-click installs from the Patreon Connection panel were silently failing on v14 â€” the module appeared to install but all functional files were missing. Installs now use a server-side route that works with v14's stricter upload rules. If the server route isn't available (some hosting environments), a download dialog with manual extraction steps appears instead of a silent failure.
 - Module backup before upgrade is skipped on v14 where the backup would also be blocked. The existing version stays in place until the new one extracts successfully.
 
 ## [1.9.0] - 2026-04-20
@@ -188,11 +193,11 @@
 ## [1.8.0] - 2026-04-17
 
 ### Added
-- **Pathfinder 2e support.** The creature classifier now reads PF2e trait data (`system.traits.value`) — so when Resonance's Adaptive Sounds activates on a PF2e creature, it has real trait signal to work with rather than falling back to name-only guessing. A zombie tagged `["undead", "mindless"]` will now be identified as undead even if the name alone wouldn't tip it off.
+- **Pathfinder 2e support.** The creature classifier now reads PF2e trait data (`system.traits.value`) â€” so when Resonance's Adaptive Sounds activates on a PF2e creature, it has real trait signal to work with rather than falling back to name-only guessing. A zombie tagged `["undead", "mindless"]` will now be identified as undead even if the name alone wouldn't tip it off.
 
 ### Changed
 - The Creature Index setup wizard no longer pops automatically on first install. It's still a click away in the Ionrift Library settings, but it won't interrupt you the moment you enable the library. Modules that need the index (like Resonance's Adaptive Sounds) will let you know when it matters.
-- PF2e worlds no longer see all 25+ bundled Pathfinder compendiums in the Creature Index scan list. The system's own adventure paths and bestiaries are filtered out — only world-specific and third-party packs appear.
+- PF2e worlds no longer see all 25+ bundled Pathfinder compendiums in the Creature Index scan list. The system's own adventure paths and bestiaries are filtered out â€” only world-specific and third-party packs appear.
 
 ### Fixed
 - The **Calibration Warning** shown at the end of Creature Index setup was firing incorrectly on PF2e worlds. The self-test suite had no PF2e entries and was falling through to a DnD5e-specific test that was never going to pass. PF2e installs now correctly show all-clear after the integrity check.
@@ -232,7 +237,7 @@
 ### Added
 - **Patreon Connection panel.** The settings menu button now opens a full panel showing your tier and any available early-access modules. Modules you qualify for show an Install Now button; modules that need a higher tier are visible but locked, so you can see what's coming with an upgrade.
 - **Early-access badge** on the Patreon Connection settings button. Appears when an early-access offer was snoozed and is still waiting. Clicking it opens the panel directly.
-- `PackRegistryService.clearSnooze()` — internal utility for resetting a snoozed offer when the GM acts on it.
+- `PackRegistryService.clearSnooze()` â€” internal utility for resetting a snoozed offer when the GM acts on it.
 
 ### Changed
 - Disconnect now styled in amber across the Patreon Connection panel for clarity.
