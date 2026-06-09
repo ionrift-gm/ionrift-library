@@ -1,37 +1,44 @@
-{
-    "id": "ionrift-library",
-    "title": "Ionrift Library",
-    "description": "Core dependency for the Ionrift module suite. Provides the Patreon Library for content distribution, a shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
-    "readme": "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
-    "version": "2.3.3",
-    "bugs": "https://discord.gg/vFGXf7Fncj",
-    "media": [{"type": "icon", "url": "modules/ionrift-library/assets/module-icon.png"}],
-    "compatibility": {
-        "minimum": "12",
-        "verified": "14"
-    },
-    "esmodules": [
-        "scripts/main.js"
-    ],
-    "styles": [
-        "styles/ionrift.css",
-        "styles/ionrift-library.css",
-        "styles/zip-import-progress.css",
-        "styles/pack-registry.css",
-        "styles/overlay-manager.css",
-        "styles/pack-nudge.css"
-    ],
-    "relationships": {
-        "requires": []
-    },
-    "url": "https://github.com/ionrift-gm/ionrift-library",
-    "manifest": "https://github.com/ionrift-gm/ionrift-library/releases/latest/download/module.json",
-    "authors": [
-        {
-            "name": "Ionrift",
-            "url": "https://patreon.com/ionrift"
-        }
-    ],
-    "download": "https://github.com/ionrift-gm/ionrift-library/releases/download/v2.3.3/module.zip",
-    "license": "LICENSE"
+﻿{
+    "id":  "ionrift-library",
+    "title":  "Ionrift Library",
+    "description":  "Core dependency for the Ionrift module suite. Provides the Patreon Library for content distribution, a shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
+    "readme":  "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
+    "version":  "2.3.4",
+    "bugs":  "https://discord.gg/vFGXf7Fncj",
+    "media":  [
+                  {
+                      "type":  "icon",
+                      "url":  "modules/ionrift-library/assets/module-icon.png"
+                  }
+              ],
+    "compatibility":  {
+                          "minimum":  "12",
+                          "verified":  "14"
+                      },
+    "esmodules":  [
+                      "scripts/main.js"
+                  ],
+    "styles":  [
+                   "styles/ionrift.css",
+                   "styles/ionrift-library.css",
+                   "styles/zip-import-progress.css",
+                   "styles/pack-registry.css",
+                   "styles/overlay-manager.css",
+                   "styles/pack-nudge.css"
+               ],
+    "relationships":  {
+                          "requires":  [
+
+                                       ]
+                      },
+    "url":  "https://github.com/ionrift-gm/ionrift-library",
+    "manifest":  "https://github.com/ionrift-gm/ionrift-library/releases/latest/download/module.json",
+    "authors":  [
+                    {
+                        "name":  "Ionrift",
+                        "url":  "https://patreon.com/ionrift"
+                    }
+                ],
+    "download":  "https://github.com/ionrift-gm/ionrift-library/releases/download/v2.3.4/module.zip",
+    "license":  "LICENSE"
 }

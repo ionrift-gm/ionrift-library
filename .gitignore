@@ -51,3 +51,5 @@ CURSOR_PLAN_*
 # Internal brand/workspace content - must never be committed to public module repos
 ionrift-brand/
 
+
+test_imports.ps1
