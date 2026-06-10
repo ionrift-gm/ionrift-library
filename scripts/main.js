@@ -27,7 +27,6 @@ import { BugReportService } from "./services/BugReportService.js";
 import { ConsoleCapture } from "./services/ConsoleCapture.js";
 import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
 import { PlatformHelper } from "./services/PlatformHelper.js";
-import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
 import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
@@ -106,10 +105,6 @@ Hooks.once('init', () => {
         minting: ItemMintingService,
         /** Install a module update via the cloud relay. */
         installModule: (moduleId, version) => ModuleInstallerService.installModule(moduleId, version),
-        /** Unified test harness — suite registration, discovery, execution. */
-        tests: TestHarnessRunner,
-        /** Shortcut: run all registered test suites and return consolidated report. */
-        runAllTests: () => TestHarnessRunner.runAll(),
         /**
          * Live count of available pack updates; set after PackRegistryService.checkForUpdates().
          * Read by SettingsLayout.injectPackUpdateBadge() — avoids circular imports.
@@ -647,110 +642,6 @@ Hooks.once('init', () => {
 });
 
 Hooks.once('ready', async () => {
-    // ── Register built-in test suites ────────────────────────
-    TestHarnessRunner.register("ionrift-library", {
-        name: "Creature Classifier",
-        description: "Startup classification self-tests",
-        runFn: async () => {
-            const result = await runSelfTests();
-            return {
-                passed: result.results.filter(r => r.status === "pass").length,
-                failed: result.results.filter(r => r.status === "fail").length,
-                total: result.results.length,
-                skipped: result.skipped ?? false,
-                results: result.results.map(r => ({
-                    name: r.input,
-                    status: r.status,
-                    message: r.details
-                }))
-            };
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-ui", {
-        name: "Patreon Status UI",
-        description: "DOM-based settings panel state tests",
-        runFn: async () => {
-            try {
-                const { runPatreonStatusTests } = await import("./tests/PatreonStatusTests.js");
-                return runPatreonStatusTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "PatreonStatusTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-roster", {
-        name: "Party Roster",
-        description: "Headless unit tests for the PartyRoster kernel service",
-        runFn: async () => {
-            try {
-                const { runPartyRosterTests } = await import("./tests/PartyRosterTests.js");
-                return runPartyRosterTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "PartyRosterTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-adapters", {
-        name: "System Adapter Registry",
-        description: "Headless unit tests for IonriftSystemAdapter and the registry",
-        runFn: async () => {
-            try {
-                const { runAdapterTests } = await import("./tests/AdapterTests.js");
-                return runAdapterTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "AdapterTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-terrains", {
-        name: "Terrain Registry",
-        description: "Headless unit tests for TerrainRegistry",
-        runFn: async () => {
-            try {
-                const { runTerrainTests } = await import("./tests/TerrainTests.js");
-                return runTerrainTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "TerrainTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-overlays", {
-        name: "Overlay Lifecycle",
-        description: "Headless tests for overlay install, reinstall, delete, and terrain spine",
-        runFn: async () => {
-            try {
-                const { runOverlayTests } = await import("./tests/OverlayTests.js");
-                return runOverlayTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "OverlayTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
-    TestHarnessRunner.register("ionrift-library-compendium-guard", {
-        name: "Compendium Config Guard",
-        description: "Headless tests for the compendium-folder self-heal planner",
-        runFn: async () => {
-            try {
-                const { runCompendiumConfigGuardTests } = await import("./tests/CompendiumConfigGuardTests.js");
-                return runCompendiumConfigGuardTests();
-            } catch {
-                return { passed: 0, failed: 0, total: 0, skipped: true,
-                    results: [{ name: "CompendiumConfigGuardTests", status: "skip", message: "Test file not present (production build)." }] };
-            }
-        }
-    });
-
     // Init Session Tracker
     SessionTracker.init();
 
