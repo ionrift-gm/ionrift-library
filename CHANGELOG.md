@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3.7] - 2026-06-10
+
+### Added
+- **Bug report tool.** New support tool that captures console errors and module state directly from the game. Accessible from the library settings menu.
+
 ## [2.3.6] - 2026-06-09
 
 ### Added

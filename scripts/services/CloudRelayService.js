@@ -253,6 +253,148 @@ export class CloudRelayService {
         }
     }
 
+    // ── Support bug reports ────────────────────────────────────
+
+    /**
+     * @param {{ context: string, summary?: string, byteLength: number }} payload
+     * @returns {Promise<{ ok: boolean, reportId?: string, reference?: string, error?: string }>}
+     */
+    static async initSupportReport(payload) {
+        const sigil = this.getSigil();
+        if (!sigil) return { ok: false, error: "Not connected to Patreon" };
+
+        const { context, summary, byteLength } = payload ?? {};
+        if (!context || !byteLength) {
+            return { ok: false, error: "Missing report init fields" };
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-init`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${sigil}`,
+                },
+                body: JSON.stringify({ context, summary, byteLength }),
+            });
+
+            if (!response.ok) {
+                const msg = this._sanitizeCloudError(await response.text());
+                if (response.status === 429) {
+                    return { ok: false, error: "Daily report limit reached. Try again tomorrow or use Discord." };
+                }
+                if (response.status === 401) {
+                    return { ok: false, error: this.isConnected() ? this.EXPIRED_COPY : "Not connected to Patreon" };
+                }
+                return { ok: false, error: msg || `HTTP ${response.status}` };
+            }
+
+            const data = await response.json();
+            return {
+                ok: true,
+                reportId:  data.reportId,
+                reference: data.reference,
+            };
+        } catch (err) {
+            console.error("CloudRelay | Support report init failed:", err);
+            return { ok: false, error: err?.message ?? "Network error" };
+        }
+    }
+
+    /**
+     * Upload report JSON through middleware (no direct GCS access).
+     * @param {string} reportId
+     * @param {string|object} reportJson
+     * @returns {Promise<{ ok: boolean, reference?: string, reportId?: string, error?: string }>}
+     */
+    static async uploadSupportReport(reportId, reportJson) {
+        const sigil = this.getSigil();
+        if (!sigil || !reportId || reportJson == null) {
+            return { ok: false, error: "Missing report data" };
+        }
+
+        let report;
+        try {
+            report = typeof reportJson === "string" ? JSON.parse(reportJson) : reportJson;
+        } catch {
+            return { ok: false, error: "Invalid report payload" };
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-upload`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${sigil}`,
+                },
+                body: JSON.stringify({ reportId, report }),
+            });
+
+            if (!response.ok) {
+                const msg = this._sanitizeCloudError(await response.text());
+                if (response.status === 401) {
+                    return { ok: false, error: this.isConnected() ? this.EXPIRED_COPY : "Not connected to Patreon" };
+                }
+                if (response.status === 403) {
+                    return { ok: false, error: msg || "Report session expired. Try again." };
+                }
+                return { ok: false, error: msg || `Upload failed (${response.status})` };
+            }
+
+            const data = await response.json();
+            return {
+                ok: true,
+                reportId: data.reportId ?? reportId,
+                reference: data.reference,
+            };
+        } catch (err) {
+            console.error("CloudRelay | Support report upload failed:", err);
+            return { ok: false, error: err?.message ?? "Network error" };
+        }
+    }
+
+    /**
+     * @param {string} reportId
+     * @returns {Promise<{ ok: boolean, reference?: string, error?: string }>}
+     */
+    static async completeSupportReport(reportId) {
+        const sigil = this.getSigil();
+        if (!sigil || !reportId) return { ok: false, error: "Missing report id" };
+
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-complete`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${sigil}`,
+                },
+                body: JSON.stringify({ reportId }),
+            });
+            if (!response.ok) {
+                const msg = await response.text();
+                return { ok: false, error: msg || `HTTP ${response.status}` };
+            }
+            const data = await response.json();
+            return { ok: true, reference: data.reference };
+        } catch (err) {
+            return { ok: false, error: err?.message ?? "Network error" };
+        }
+    }
+
+    /**
+     * Strip infrastructure URLs from server error text before showing to the client.
+     * @param {string} msg
+     * @returns {string}
+     * @private
+     */
+    static _sanitizeCloudError(msg) {
+        const text = String(msg ?? "").trim();
+        if (!text) return "";
+        return text
+            .replace(/https?:\/\/storage\.googleapis\.com[^\s]*/gi, "[storage]")
+            .replace(/https?:\/\/[^\s]*\.googleapis\.com[^\s]*/gi, "[storage]");
+    }
+
     /**
      * Heuristic for "this auth failure is because the JWT is stale, not
      * because the request was unauthenticated". Server returns 401 with a

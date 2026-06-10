@@ -23,6 +23,8 @@ import { IonriftSystemAdapter } from "./services/IonriftSystemAdapter.js";
 import { PackRegistryService } from "./services/PackRegistryService.js";
 import { AbstractPackRegistryApp } from "./apps/AbstractPackRegistryApp.js";
 import { CloudRelayService } from "./services/CloudRelayService.js";
+import { BugReportService } from "./services/BugReportService.js";
+import { ConsoleCapture } from "./services/ConsoleCapture.js";
 import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
 import { PlatformHelper } from "./services/PlatformHelper.js";
 import { TestHarnessRunner } from "./services/TestHarnessRunner.js";
@@ -49,6 +51,7 @@ Hooks.on("renderItemSheet5e2", _onEnrichSheet); // dnd5e v3 alternate class
 // Initialize Library
 Hooks.once('init', () => {
     Logger.log("Library", "Initializing Shared Library");
+    ConsoleCapture.install();
 
     // Expose API
     game.ionrift = game.ionrift || {};
@@ -97,6 +100,8 @@ Hooks.once('init', () => {
         enrichment: ItemEnrichmentEngine,
         /** Cloud Relay — Patreon connection, tier checks, download relay. */
         cloud: CloudRelayService,
+        /** Support bug reports — collect, copy, submit (Sigil required for upload). */
+        bugReport: BugReportService,
         /** Item mint validation — formula, enum, and slug guards before create/update. */
         minting: ItemMintingService,
         /** Install a module update via the cloud relay. */
@@ -607,7 +612,7 @@ Hooks.once('init', () => {
 
     // FOOTER
     SettingsLayout.registerFooter("ionrift-library", {
-        diagnostics: DiagnosticApp
+        diagnostics: DiagnosticApp,
     });
 
 

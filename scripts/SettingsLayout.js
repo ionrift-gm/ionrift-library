@@ -5,7 +5,7 @@
  *   Header  – Attunement / Setup wizard (registerHeader)
  *   Pack    – Content pack manager button (registerPackButton)
  *   Body    – Module-specific settings (module registers these itself)
- *   Footer  – Wiki, Discord, Diagnostics, Debug (registerFooter)
+ *   Footer  – Discord, Bug Report, Diagnostics, Wiki, Debug (registerFooter)
  *
  * Registration order controls render order in the Foundry settings panel.
  * Call registerHeader first, then registerPackButton, then module body
@@ -14,6 +14,8 @@
  * The renderSettingsConfig hook auto-discovers all registered modules and
  * applies layout injection (dividers, reordering) without a hardcoded list.
  */
+
+import { BugReportApp } from "./apps/BugReportApp.js";
 
 const DISCORD_INVITE = "https://discord.gg/vFGXf7Fncj";
 const WIKI_DEFAULT   = "https://github.com/ionrift-gm/ionrift-library/wiki";
@@ -254,7 +256,7 @@ export class SettingsLayout {
     static registerFooter(moduleId, {
         wiki        = WIKI_DEFAULT,
         discord     = true,
-        diagnostics = null
+        diagnostics = null,
     } = {}) {
 
         SettingsLayout._registeredModules.add(moduleId);
@@ -272,6 +274,16 @@ export class SettingsLayout {
                 restricted: true
             });
         }
+
+        // Bug report (all modules; context scoped per moduleId)
+        game.settings.registerMenu(moduleId, "bugReportMenu", {
+            name: "Bug Report",
+            label: "Submit Report",
+            hint: "Copy or send a scrubbed diagnostic bundle. You get a reference number to cite in Discord.",
+            icon: "fas fa-bug",
+            type: BugReportApp.forModule(moduleId),
+            restricted: true,
+        });
 
         // Diagnostics (library only)
         if (diagnostics) {
@@ -461,7 +473,7 @@ export class SettingsLayout {
         const $container = $supportGroup.parent();
 
         // Collect footer menu groups to move to bottom
-        const footerKeys = ["supportLink", "diagnosticMenu", "wikiLink"];
+        const footerKeys = ["supportLink", "bugReportMenu", "diagnosticMenu", "wikiLink"];
         const footerGroups = [];
         for (const key of footerKeys) {
             const $btn = $html.find(`button[data-key="${moduleId}.${key}"]`);
