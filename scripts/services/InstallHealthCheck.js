@@ -1,12 +1,17 @@
 /**
  * InstallHealthCheck
- * Post-ready diagnostic that inspects the module folder of EA modules that
- * Foundry cannot see. Surfaces actionable console warnings pointing the
- * user at the exact structural problem: ZIP left inside the folder,
- * double-nested module directory, or missing module.json.
+ * Post-ready diagnostic for the GM. Looks at Ionrift module folders that are
+ * present on disk but not loaded by Foundry, and surfaces a console hint only
+ * when there is positive evidence the folder is a half-finished install the
+ * user is actively trying to complete (a ZIP left inside the folder, or the
+ * module files nested one level too deep).
  *
- * Runs only for the GM, only for modules the library knows it distributes
- * that are absent from game.modules.
+ * It deliberately stays quiet for empty folders, residue from a removed
+ * module, or unrelated leftover files. Those are not broken installs and a
+ * warning toast for them is noise.
+ *
+ * Candidate folders are discovered from the modules directory at runtime, so
+ * nothing here enumerates a fixed module list.
  */
 
 import { PlatformHelper } from "./PlatformHelper.js";
@@ -16,41 +21,64 @@ export class InstallHealthCheck {
 
     static MODULE_ID = "ionrift-library";
 
-    /**
-     * Module IDs distributed through the Library EA install flow.
-     * Only these are inspected; a module installed through the Foundry
-     * package browser will either be in game.modules or not exist at all.
-     */
-    static EA_MODULES = [
-        "ionrift-cursewright",
-        "ionrift-quartermaster",
-        "ionrift-respite",
-        "ionrift-arbiter",
-        "ionrift-workshop",
-        "ionrift-civics",
-        "ionrift-atmosphere",
-        "ionrift-economy"
-    ];
+    /** Folders that are never a module install to diagnose. */
+    static IGNORE = new Set(["ionrift-library"]);
+
+    /** Guards against re-running within a single session. */
+    static _ran = false;
 
     /**
-     * Run the health check for all EA modules not currently visible to Foundry.
-     * Call from the ready hook (GM only).
+     * Run the health check once per session for the GM.
+     * Call from the ready hook.
      */
     static async run() {
-        if (!game.user.isGM) return;
+        if (!game.user?.isGM) return;
+        if (this._ran) return;
+        this._ran = true;
 
         const FP = PlatformHelper.FP;
         if (!FP) return;
 
-        for (const moduleId of this.EA_MODULES) {
-            if (game.modules.get(moduleId)) continue;
-            await this._diagnose(moduleId);
+        const candidates = await this._discoverCandidates();
+
+        const problems = [];
+        for (const moduleId of candidates) {
+            const diagnosis = await this._diagnose(moduleId);
+            if (diagnosis) problems.push({ moduleId, diagnosis });
         }
+
+        if (problems.length) this._report(problems);
     }
 
     /**
-     * Inspect a single module directory and surface any structural problems.
+     * Find Ionrift module folders present on disk that Foundry has not loaded.
+     * Derived from the modules directory listing, never a hardcoded list.
+     * @returns {Promise<string[]>}
+     */
+    static async _discoverCandidates() {
+        const FP = PlatformHelper.FP;
+        const source = PlatformHelper.fileSource;
+
+        let result;
+        try {
+            result = await FP.browse(source, "modules");
+        } catch {
+            return [];
+        }
+
+        const dirs = result?.dirs ?? [];
+        return dirs
+            .map(d => d.replace(/\/$/, "").split("/").pop())
+            .filter(id => id && id.startsWith("ionrift-"))
+            .filter(id => !this.IGNORE.has(id))
+            .filter(id => !game.modules.get(id));
+    }
+
+    /**
+     * Inspect a single folder and return a diagnosis only when there is
+     * positive evidence of an in-progress, mis-structured install.
      * @param {string} moduleId
+     * @returns {Promise<{ problem: string, detail: string, fix: string }|null>}
      */
     static async _diagnose(moduleId) {
         const dirPath = `modules/${moduleId}`;
@@ -61,77 +89,88 @@ export class InstallHealthCheck {
         try {
             result = await FP.browse(source, dirPath);
         } catch {
-            // Directory does not exist at all. No folder, no problem to
-            // diagnose (the module was never downloaded, not a broken install).
-            return;
+            return null;
         }
 
         const files = result?.files ?? [];
         const dirs = result?.dirs ?? [];
+        const fileNames = files.map(f => f.split("/").pop().toLowerCase());
 
-        const diagnosis = this._analyze(moduleId, files, dirs);
-        if (!diagnosis) return;
+        // Already has a manifest at the root. Nothing structural to fix here;
+        // a missing entry in game.modules at this point is a cache/restart
+        // matter that we do not nag about.
+        if (fileNames.includes("module.json")) return null;
 
-        this._report(moduleId, diagnosis);
+        const zipFile = fileNames.find(f => f.endsWith(".zip"));
+        if (zipFile) {
+            return this._analyze(moduleId, { zipFile });
+        }
+
+        // Confirm a true double-nest by looking for a manifest one level down,
+        // rather than guessing from folder names (which produces false hits).
+        const nestedDir = await this._findNestedManifestDir(dirPath, dirs);
+        if (nestedDir) {
+            return this._analyze(moduleId, { nestedDir });
+        }
+
+        // Empty folder, removed-module residue, or unrelated files. Not an
+        // actionable install problem. Keep a quiet trace for the curious.
+        if (files.length || dirs.length) {
+            console.debug(`Ionrift | ${moduleId}: folder present, no manifest, no install evidence; ignoring.`);
+        }
+        return null;
     }
 
     /**
-     * Determine what is wrong with the folder contents.
+     * Return the name of the first immediate subdirectory that contains a
+     * module.json, or null if none do.
+     * @param {string} dirPath
+     * @param {string[]} dirs  Subdirectory entries from a browse() call.
+     * @returns {Promise<string|null>}
+     */
+    static async _findNestedManifestDir(dirPath, dirs) {
+        const FP = PlatformHelper.FP;
+        const source = PlatformHelper.fileSource;
+
+        for (const entry of dirs) {
+            const name = entry.replace(/\/$/, "").split("/").pop();
+            if (!name) continue;
+
+            let nested;
+            try {
+                nested = await FP.browse(source, `${dirPath}/${name}`);
+            } catch {
+                continue;
+            }
+
+            const nestedNames = (nested?.files ?? []).map(f => f.split("/").pop().toLowerCase());
+            if (nestedNames.includes("module.json")) return name;
+        }
+        return null;
+    }
+
+    /**
+     * Build a diagnosis from confirmed evidence.
      * @param {string} moduleId
-     * @param {string[]} files  File paths in modules/{moduleId}/
-     * @param {string[]} dirs   Subdirectory paths in modules/{moduleId}/
+     * @param {{ zipFile?: string, nestedDir?: string }} evidence
      * @returns {{ problem: string, detail: string, fix: string }|null}
      */
-    static _analyze(moduleId, files, dirs) {
-        const fileNames = files.map(f => f.split("/").pop().toLowerCase());
-        const dirNames = dirs.map(d => d.replace(/\/$/, "").split("/").pop().toLowerCase());
+    static _analyze(moduleId, evidence = {}) {
+        const { zipFile, nestedDir } = evidence;
 
-        // Case 1: ZIP file left in the module folder
-        const zipFile = fileNames.find(f => f.endsWith(".zip"));
         if (zipFile) {
             return {
                 problem: "zip-in-folder",
-                detail: `Found "${zipFile}" inside modules/${moduleId}/. The ZIP must be extracted, not placed as-is.`,
-                fix: `Extract the contents of the ZIP into modules/${moduleId}/ so that module.json sits directly inside, then delete the ZIP file and restart Foundry.`
+                detail: `Found "${zipFile}" inside modules/${moduleId}/. The archive needs to be extracted, not left as a ZIP.`,
+                fix: `Extract the contents of the ZIP into modules/${moduleId}/ so that module.json sits directly inside, delete the ZIP, then restart Foundry.`
             };
         }
 
-        // Case 2: Double-nested folder (modules/ionrift-foo/ionrift-foo/)
-        const nestedDir = dirNames.find(d => d === moduleId || d === moduleId.replace("ionrift-", ""));
         if (nestedDir) {
-            const nested = dirs.find(d => d.replace(/\/$/, "").split("/").pop().toLowerCase() === nestedDir);
             return {
                 problem: "double-nested",
-                detail: `Found a nested "${nestedDir}" folder inside modules/${moduleId}/. The module files are one level too deep.`,
-                fix: `Move everything from modules/${moduleId}/${nestedDir}/ up into modules/${moduleId}/ so that module.json sits directly inside, then remove the empty nested folder and restart Foundry.`
-            };
-        }
-
-        // Case 3: Folder exists but has no module.json
-        const hasModuleJson = fileNames.includes("module.json");
-        if (!hasModuleJson) {
-            const isEmpty = files.length === 0 && dirs.length === 0;
-            if (isEmpty) {
-                return {
-                    problem: "empty-folder",
-                    detail: `modules/${moduleId}/ exists but is completely empty.`,
-                    fix: `Extract the downloaded ZIP into this folder so that module.json and the rest of the module files are inside, then restart Foundry.`
-                };
-            }
-            return {
-                problem: "missing-module-json",
-                detail: `modules/${moduleId}/ has files but no module.json. Foundry cannot recognise it as a module.`,
-                fix: `Verify you extracted the correct ZIP. The archive should contain a module.json at its root. Re-extract if needed, then restart Foundry.`
-            };
-        }
-
-        // Folder looks structurally valid but Foundry still can't see it.
-        // This can happen if Foundry's module cache is stale (needs full restart).
-        if (files.length > 0) {
-            return {
-                problem: "restart-needed",
-                detail: `modules/${moduleId}/ contains a valid module.json but Foundry does not list it. A full restart (not browser refresh) may be needed.`,
-                fix: `Shut down Foundry completely and relaunch it. A browser refresh alone does not re-scan the modules folder.`
+                detail: `The module files are one level too deep, inside modules/${moduleId}/${nestedDir}/.`,
+                fix: `Move everything from modules/${moduleId}/${nestedDir}/ up into modules/${moduleId}/ so that module.json sits directly inside, remove the empty nested folder, then restart Foundry.`
             };
         }
 
@@ -139,20 +178,23 @@ export class InstallHealthCheck {
     }
 
     /**
-     * Log a structured warning to the console with diagnosis and fix.
-     * @param {string} moduleId
-     * @param {{ problem: string, detail: string, fix: string }} diagnosis
+     * Log per-module detail to the console and show a single consolidated toast.
+     * @param {Array<{ moduleId: string, diagnosis: { problem: string, detail: string, fix: string } }>} problems
      */
-    static _report(moduleId, diagnosis) {
-        console.group(`%cIonrift Install Check: ${moduleId}`, "color: #f39c12; font-weight: bold;");
-        console.warn(`Problem: ${diagnosis.detail}`);
-        console.info(`Fix: ${diagnosis.fix}`);
+    static _report(problems) {
+        console.group("%cIonrift install check", "color: #f39c12; font-weight: bold;");
+        for (const { moduleId, diagnosis } of problems) {
+            console.warn(`${moduleId}: ${diagnosis.detail}`);
+            console.info(`Fix: ${diagnosis.fix}`);
+            Logger.warn("Library", `Install health check [${moduleId}]: ${diagnosis.problem}`);
+        }
         console.groupEnd();
 
-        Logger.warn("Library", `Install health check [${moduleId}]: ${diagnosis.problem}`);
-
+        const count = problems.length;
+        const noun = count === 1 ? "module" : "modules";
+        const verb = count === 1 ? "needs" : "need";
         ui.notifications.warn(
-            `${moduleId} appears to be installed incorrectly. Check the browser console (F12) for details.`,
+            `${count} Ionrift ${noun} ${verb} a quick fix to finish installing. Open the console (F12) for steps.`,
             { permanent: false }
         );
     }
