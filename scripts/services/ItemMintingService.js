@@ -85,7 +85,7 @@ export class ItemMintingService {
 
     /**
      * Validate every item document in a batch. Throws on the first failure.
-     * Does not mutate the input array.
+     * Normalised system data is merged back onto each source object.
      *
      * @param {object[]} sources
      * @param {object} [options]
@@ -97,7 +97,8 @@ export class ItemMintingService {
         for (let idx = 0; idx < sources.length; idx++) {
             const item = sources[idx];
             try {
-                ItemMintingService.assertValid(item, options);
+                const normalized = ItemMintingService.assertValid(item, options);
+                ItemMintingService._mergeNormalized(item, normalized);
             } catch (err) {
                 const label = item?.name ? `"${item.name}"` : `#${idx}`;
                 err.message = `${err.message} (item: ${label})`;
@@ -142,6 +143,8 @@ export class ItemMintingService {
         const system = data.system;
         if (!system || typeof system !== "object") return;
 
+        ItemMintingService._normalizeDnd5eSystem(system);
+
         if ("rarity" in system) {
             ItemMintingService._assertEnum(
                 system.rarity,
@@ -183,6 +186,113 @@ export class ItemMintingService {
                 ItemMintingService._guardActivity(activity, `system.activities.${actId}`, options);
             }
         }
+    }
+
+    /** @private */
+    static _normalizeDnd5eSystem(system) {
+        if (typeof system.identifier === "string" && system.identifier.length) {
+            system.identifier = ItemMintingService._normalizeIdentifier(system.identifier);
+        }
+
+        ItemMintingService._normalizeDamageBlock(system.damage);
+
+        if (system.activities && typeof system.activities === "object") {
+            for (const activity of Object.values(system.activities)) {
+                ItemMintingService._normalizeActivity(activity);
+            }
+        }
+    }
+
+    /** @private */
+    static _normalizeDamageBlock(damage) {
+        if (!damage || typeof damage !== "object") return;
+
+        if (damage.base) {
+            ItemMintingService._normalizeDamagePart(damage.base);
+        }
+        if (damage.versatile) {
+            ItemMintingService._normalizeDamagePart(damage.versatile);
+        }
+    }
+
+    /** @private */
+    static _normalizeDamagePart(part) {
+        if (!part || typeof part !== "object") return;
+
+        if (Array.isArray(part.types)) {
+            for (let idx = 0; idx < part.types.length; idx++) {
+                part.types[idx] = ItemMintingService._normalizeDamageType(part.types[idx]);
+            }
+        }
+
+        if (Array.isArray(part.parts)) {
+            for (const nested of part.parts) {
+                ItemMintingService._normalizeDamagePart(nested);
+            }
+        }
+    }
+
+    /** @private */
+    static _normalizeActivity(activity) {
+        if (!activity || typeof activity !== "object") return;
+
+        const damage = activity.damage;
+        if (Array.isArray(damage?.parts)) {
+            for (const part of damage.parts) {
+                ItemMintingService._normalizeDamagePart(part);
+            }
+        }
+    }
+
+    /**
+     * Lowercase valid slugs; slugify spaced or punctuated third-party identifiers.
+     * @private
+     */
+    static _normalizeIdentifier(value) {
+        if (typeof value !== "string" || !value.length) return value;
+
+        const lowered = value.toLowerCase().trim();
+        if (SLUG_RE.test(lowered)) return lowered;
+
+        const slug = lowered
+            .normalize("NFKD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/[\s_]+/g, "-")
+            .replace(/-+/g, "-")
+            .replace(/^-|-$/g, "");
+
+        if (!slug.length) return value;
+        return slug;
+    }
+
+    /**
+     * Match CONFIG.DND5E damage/healing type keys case-insensitively.
+     * @private
+     */
+    static _normalizeDamageType(type) {
+        if (!type || typeof type !== "string") return type;
+
+        const known = globalThis.CONFIG?.DND5E?.damageTypes
+            ?? globalThis.CONFIG?.DND5E?.healingTypes;
+        if (!known) return type;
+        if (type in known) return type;
+
+        const lower = type.toLowerCase();
+        if (lower in known) return lower;
+
+        for (const key of Object.keys(known)) {
+            if (key.toLowerCase() === lower) return key;
+        }
+
+        return type;
+    }
+
+    /** @private */
+    static _mergeNormalized(target, normalized) {
+        if (!target || !normalized || target === normalized) return;
+        if (normalized.system) target.system = normalized.system;
     }
 
     /** @private */
