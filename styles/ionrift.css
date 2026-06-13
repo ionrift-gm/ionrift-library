@@ -2,9 +2,9 @@
 /* Merged from Ionrift Sounds & Ionrift Lib */
 
 :root {
-    --ionrift-glass-bg: rgba(20, 20, 30, 0.95);
-    --ionrift-glass-border: 1px solid rgba(139, 92, 246, 0.3);
-    --ionrift-glass-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    --ionrift-glass-bg: rgba(15, 15, 20, 0.96);
+    --ionrift-glass-border: 1px solid rgba(139, 92, 246, 0.4);
+    --ionrift-glass-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
     --ionrift-font-stack: "Signika", sans-serif;
     --ionrift-accent: #8b5cf6;
     /* Violet */
@@ -17,7 +17,7 @@
 .ionrift-window.window-app.glass-ui,
 .ionrift-window.window-app.ionrift {
     background: var(--ionrift-glass-bg) !important;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(24px);
     border: var(--ionrift-glass-border) !important;
     box-shadow: var(--ionrift-glass-shadow) !important;
     color: var(--ionrift-text-muted);
@@ -170,12 +170,13 @@
 /* Input Fields - High Contrast */
 .ionrift-window input[type="text"],
 .ionrift-window input[type="number"],
+.ionrift-window textarea,
 .ionrift-window select {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    background-color: rgba(10, 10, 15, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     color: #ffffff !important;
     border-radius: 4px;
-    padding: 2px 8px;
+    padding: 4px 8px;
     /* Reduce vertical padding to prevent overflow */
     font-family: "Consolas", "Courier New", monospace;
     /* Good for IDs */
@@ -185,6 +186,12 @@
     height: auto !important;
     line-height: normal;
     /* Center text */
+}
+
+/* Ensure textareas look consistent */
+.ionrift-window textarea {
+    resize: vertical;
+    padding: 8px !important;
 }
 
 /* Themed dropdown chevron: replace the native arrow so the indicator keeps
@@ -201,6 +208,7 @@
 }
 
 .ionrift-window input:focus,
+.ionrift-window textarea:focus,
 .ionrift-window select:focus {
     background-color: rgba(0, 0, 0, 0.9) !important;
     border-color: #a78bfa !important;
@@ -234,7 +242,8 @@
     box-shadow: none !important;
 }
 
-.ionrift-window input::placeholder {
+.ionrift-window input::placeholder,
+.ionrift-window textarea::placeholder {
     color: rgba(255, 255, 255, 0.5) !important;
 }
 
