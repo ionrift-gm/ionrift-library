@@ -10,6 +10,9 @@
 
 import { CloudRelayService } from "./CloudRelayService.js";
 import { PlatformHelper } from "./PlatformHelper.js";
+import { Logger } from "./Logger.js";
+
+const MODULE_LABEL = "ModuleInstaller";
 
 export class ModuleInstallerService {
 
@@ -53,7 +56,7 @@ export class ModuleInstallerService {
             try {
                 await this._backupModule(moduleId, currentVersion);
             } catch (e) {
-                console.warn("ModuleInstaller | Backup failed (continuing with install):", e);
+                Logger.warn(MODULE_LABEL, "Backup failed (continuing with install):", e);
             }
         }
 
@@ -72,7 +75,7 @@ export class ModuleInstallerService {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 blob = await response.blob();
             } catch (e) {
-                console.error("ModuleInstaller | Download failed:", e);
+                Logger.error(MODULE_LABEL, "Download failed:", e);
                 ui.notifications.error(`Download failed: ${e.message}`);
                 return false;
             }
@@ -176,7 +179,7 @@ export class ModuleInstallerService {
             await PlatformHelper.ensureDirectory("ionrift-data");
             await PlatformHelper.ensureDirectory(tempDir);
         } catch (e) {
-            console.warn("ModuleInstaller | Could not create temp directory:", e);
+            Logger.warn(MODULE_LABEL, "Could not create temp directory:", e);
         }
 
         // Minimal manifest pointing at the presigned download URL.
@@ -196,7 +199,7 @@ export class ModuleInstallerService {
         try {
             await PlatformHelper.FP.upload(PlatformHelper.fileSource, tempDir, manifestFile, {});
         } catch (e) {
-            console.error("ModuleInstaller | Failed to stage temp manifest:", e);
+            Logger.error(MODULE_LABEL, "Failed to stage temp manifest:", e);
             await this._ensureModuleDirectory(moduleId);
             this._showV14FallbackDialog(downloadUrl, moduleId, version);
             return false;
@@ -220,10 +223,10 @@ export class ModuleInstallerService {
                 throw new Error(`HTTP ${response.status}${body ? `: ${body}` : ""}`);
             }
 
-            console.log(`ModuleInstaller | Server-side install complete for ${moduleId} v${version}.`);
+            Logger.log(MODULE_LABEL, `Server-side install complete for ${moduleId} v${version}.`);
             return true;
         } catch (e) {
-            console.error("ModuleInstaller | Server-side install failed:", e);
+            Logger.error(MODULE_LABEL, "Server-side install failed:", e);
             await this._ensureModuleDirectory(moduleId);
             this._showV14FallbackDialog(downloadUrl, moduleId, version);
             return false;
@@ -372,7 +375,7 @@ export class ModuleInstallerService {
     static async _backupModule(moduleId, currentVersion) {
         // v14 restricts uploads to asset-type extensions; .zip is not in the whitelist
         if ((game.release?.generation ?? 0) >= 14) {
-            console.log("ModuleInstaller | Backup skipped (v14 upload restrictions).");
+            Logger.log(MODULE_LABEL, "Backup skipped (v14 upload restrictions).");
             return;
         }
 
@@ -380,7 +383,7 @@ export class ModuleInstallerService {
         try {
             JSZip = await PlatformHelper.loadJSZip();
         } catch {
-            console.warn("ModuleInstaller | JSZip not available, skipping backup.");
+            Logger.warn(MODULE_LABEL, "JSZip not available, skipping backup.");
             return;
         }
 
@@ -402,7 +405,7 @@ export class ModuleInstallerService {
         const uploadFile = new File([content], fileName, { type: "application/zip" });
         await PlatformHelper.FP.upload(PlatformHelper.fileSource, backupDir, uploadFile, {});
 
-        console.log(`ModuleInstaller | Backup created: ${backupDir}/${fileName}`);
+        Logger.log(MODULE_LABEL, `Backup created: ${backupDir}/${fileName}`);
 
         // Prune old backups
         await this._pruneBackups(moduleId);
@@ -440,9 +443,9 @@ export class ModuleInstallerService {
                     // Foundry FilePicker doesn't have a delete method —
                     // we cannot prune from client-side on all platforms.
                     // Log for manual cleanup.
-                    console.log(`ModuleInstaller | Backup exceeds max (${keepCount}): ${filePath}`);
+                    Logger.log(MODULE_LABEL, `Backup exceeds max (${keepCount}): ${filePath}`);
                 } catch (e) {
-                    console.warn("ModuleInstaller | Prune failed:", e);
+                    Logger.warn(MODULE_LABEL, "Prune failed:", e);
                 }
             }
         } catch {
@@ -560,7 +563,7 @@ export class ModuleInstallerService {
                     await PlatformHelper.FP.upload(PlatformHelper.fileSource, subDir, uploadFile, {});
                     uploaded++;
                 } catch (e) {
-                    console.warn(`ModuleInstaller | Failed to extract ${outputPath}:`, e);
+                    Logger.warn(MODULE_LABEL, `Failed to extract ${outputPath}:`, e);
                 }
 
                 // Breathe between batches
@@ -570,7 +573,7 @@ export class ModuleInstallerService {
             }
         });
 
-        console.log(`ModuleInstaller | Extracted ${uploaded}/${entries.length} files to ${targetDir}.`);
+        Logger.log(MODULE_LABEL, `Extracted ${uploaded}/${entries.length} files to ${targetDir}.`);
         ui.notifications.info(`Installed ${moduleId}: ${uploaded} files extracted.`);
         return true;
     }
@@ -621,7 +624,7 @@ export class ModuleInstallerService {
         try {
             await PlatformHelper.ensureDirectory(`modules/${moduleId}`);
         } catch (e) {
-            console.warn(`ModuleInstaller | Could not pre-create modules/${moduleId}/:`, e);
+            Logger.warn(MODULE_LABEL, `Could not pre-create modules/${moduleId}/:`, e);
         }
     }
 
@@ -643,7 +646,7 @@ export class ModuleInstallerService {
                     const relativePath = filePath.substring(dirPath.length + 1);
                     zip.file(`${zipPrefix}/${relativePath}`, blob);
                 } catch (e) {
-                    console.warn(`ModuleInstaller | Skipped file ${filePath}:`, e);
+                    Logger.warn(MODULE_LABEL, `Skipped file ${filePath}:`, e);
                 }
             }
 
@@ -653,7 +656,7 @@ export class ModuleInstallerService {
                 await this._addDirectoryToZip(zip, subDir, `${zipPrefix}/${subName}`);
             }
         } catch (e) {
-            console.warn(`ModuleInstaller | Could not browse ${dirPath}:`, e);
+            Logger.warn(MODULE_LABEL, `Could not browse ${dirPath}:`, e);
         }
     }
 

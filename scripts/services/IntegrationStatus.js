@@ -1,5 +1,7 @@
 import { Logger } from "./Logger.js";
 
+const MODULE_LABEL = "IntegrationStatus";
+
 export class IntegrationStatus {
     constructor() {
         this.apps = new Map(); // Registered Apps: { id: { checkStatus, interval, ... } }
@@ -131,13 +133,13 @@ export class IntegrationStatus {
 
         // STOP if no observers
         if (this.observers.size === 0) {
-            console.log("Ionrift Integration | No active observers. Entering Idle Mode.");
+            Logger.log(MODULE_LABEL, "No active observers. Entering Idle Mode.");
             this._stopPolling();
             return;
         }
 
         if (this.currentPollRate !== targetRate) {
-            console.log(`Ionrift Integration | Switching Poll Rate: ${targetRate}ms`);
+            Logger.log(MODULE_LABEL, `Switching Poll Rate: ${targetRate}ms`);
             this._startPolling(targetRate);
         }
     }
@@ -157,7 +159,7 @@ export class IntegrationStatus {
 
             // Validate Result Status
             if (!Object.values(this.STATUS).includes(result.status)) {
-                console.warn(`Ionrift Integration | Invalid status '${result.status}' returned by ${appId}. Defaulting to UNKNOWN.`);
+                Logger.warn(MODULE_LABEL, `Invalid status '${result.status}' returned by ${appId}. Defaulting to UNKNOWN.`);
                 result.status = this.STATUS.UNKNOWN;
             }
 
@@ -185,7 +187,7 @@ export class IntegrationStatus {
             return changed;
 
         } catch (e) {
-            console.warn(`Ionrift Integration | Status Check Failed for ${appId}`, e);
+            Logger.warn(MODULE_LABEL, `Status Check Failed for ${appId}`, e);
             this.state.set(appId, { status: 'error', label: 'Error', message: e.message });
             config.backoff = true;
             return true; // Error counts as change/instability
@@ -252,7 +254,7 @@ export class IntegrationStatus {
         }
 
         if (content.length === 0) {
-            console.warn(`Ionrift Integration | Could not find window content for ${appId}`);
+            Logger.warn(MODULE_LABEL, `Could not find window content for ${appId}`);
             return;
         }
 
