@@ -1,3 +1,5 @@
+import { Logger } from "./Logger.js";
+
 /**
  * CloudRelayService
  * Authenticated relay for Ionrift Cloud. Handles Patreon OAuth connection,
@@ -7,6 +9,9 @@
  * service. The server always re-validates tier claims — client-side decoding
  * is for UI decisions only.
  */
+
+const MODULE_LABEL = "CloudRelay";
+
 export class CloudRelayService {
 
     static API_URL = "https://api.ionrift.cloud";
@@ -172,7 +177,7 @@ export class CloudRelayService {
         await game.settings.set("ionrift-library", "sigil", result.token);
         this.clearExpirySnooze();
         const tier = this.getTierClaim() || "Free";
-        console.log("CloudRelay | Sigil stored. Tier:", tier);
+        Logger.log(MODULE_LABEL, "Sigil stored. Tier:", tier);
 
         // Branded single-button confirmation
         await new Promise((resolve) => {
@@ -203,7 +208,7 @@ export class CloudRelayService {
         await game.settings.set("ionrift-library", "sigil", "");
         this.clearExpirySnooze();
         ui.notifications.info("Patreon disconnected.");
-        console.log("CloudRelay | Sigil cleared.");
+        Logger.log(MODULE_LABEL, "Sigil cleared.");
     }
 
     // ── Download Relay ───────────────────────────────────────
@@ -220,7 +225,7 @@ export class CloudRelayService {
         const label = `${packId} v${version}`;
         const sigil = this.getSigil();
         if (!sigil) {
-            console.warn(`CloudRelay | No Sigil — cannot request download for ${label}.`);
+            Logger.warn(MODULE_LABEL, `No Sigil — cannot request download for ${label}.`);
             return { status: 401, error: "Not connected to Patreon" };
         }
 
@@ -236,7 +241,7 @@ export class CloudRelayService {
 
             if (!response.ok) {
                 const msg = await response.text();
-                console.warn(`CloudRelay | Download denied (${response.status}) for ${label}:`, msg);
+                Logger.warn(MODULE_LABEL, `Download denied (${response.status}) for ${label}:`, msg);
                 if (!silent) {
                     this._notifyDownloadFailure(response.status, msg, packId, version);
                 }
@@ -245,7 +250,7 @@ export class CloudRelayService {
 
             return await response.json();
         } catch (e) {
-            console.error(`CloudRelay | Download request failed for ${label}:`, e);
+            Logger.error(MODULE_LABEL, `Download request failed for ${label}:`, e);
             if (!silent) {
                 ui.notifications.error(`Download failed for ${packId} (${version}). Try again later.`);
             }
@@ -296,7 +301,7 @@ export class CloudRelayService {
                 reference: data.reference,
             };
         } catch (err) {
-            console.error("CloudRelay | Support report init failed:", err);
+            Logger.error(MODULE_LABEL, "Support report init failed:", err);
             return { ok: false, error: err?.message ?? "Network error" };
         }
     }
@@ -348,7 +353,7 @@ export class CloudRelayService {
                 reference: data.reference,
             };
         } catch (err) {
-            console.error("CloudRelay | Support report upload failed:", err);
+            Logger.error(MODULE_LABEL, "Support report upload failed:", err);
             return { ok: false, error: err?.message ?? "Network error" };
         }
     }
@@ -497,7 +502,7 @@ export class CloudRelayService {
             this._snoozeExpiryWarning(this.EXPIRY_SNOOZE_SOON_MS);
             return { shown: "soon", snoozed: false };
         } catch (e) {
-            console.warn("CloudRelay | warnIfExpiringSoon failed:", e);
+            Logger.warn(MODULE_LABEL, "warnIfExpiringSoon failed:", e);
             return { shown: "none", snoozed: false };
         }
     }
@@ -530,7 +535,7 @@ export class CloudRelayService {
         try {
             game.settings.set("ionrift-library", "expiryWarningSnooze", Date.now() + durationMs);
         } catch (e) {
-            console.warn("CloudRelay | Failed to record expiry snooze:", e);
+            Logger.warn(MODULE_LABEL, "Failed to record expiry snooze:", e);
         }
     }
 

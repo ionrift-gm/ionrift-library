@@ -6,6 +6,9 @@
  */
 
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
+import { Logger } from "./Logger.js";
+
+const MODULE_LABEL = "JsonPackImporter";
 
 export class JsonPackService {
     /**
@@ -57,7 +60,7 @@ export class JsonPackService {
             parsedData = JSON.parse(text);
         } catch (error) {
             const msg = `Failed to parse JSON file: ${error.message}`;
-            console.warn("JsonPackImporter | Failed to parse file:", error);
+            Logger.warn(MODULE_LABEL, "Failed to parse file:", error);
             ui.notifications.error(msg);
             return { success: false, packId: null, version: null, errors: [msg] };
         }
@@ -67,7 +70,7 @@ export class JsonPackService {
             const manifestErrors = extracted.errors.length > 0
                 ? extracted.errors
                 : ["Missing or invalid _manifest object."];
-            console.warn("JsonPackImporter | Manifest validation failed:", manifestErrors);
+            Logger.warn(MODULE_LABEL, "Manifest validation failed:", manifestErrors);
             return { success: false, packId: null, version: null, errors: manifestErrors };
         }
 
@@ -82,7 +85,7 @@ export class JsonPackService {
                 validation = schemaValidator(parsedData);
             } catch (error) {
                 const msg = `Schema validator threw an error: ${error.message}`;
-                console.warn("JsonPackImporter | Schema validator error:", error);
+                Logger.warn(MODULE_LABEL, "Schema validator error:", error);
                 return { success: false, packId, version, errors: [msg] };
             }
 
@@ -90,7 +93,7 @@ export class JsonPackService {
                 const schemaErrors = Array.isArray(validation?.errors) && validation.errors.length > 0
                     ? validation.errors
                     : ["Schema validation failed."];
-                console.warn("JsonPackImporter | Schema validation failed:", schemaErrors);
+                Logger.warn(MODULE_LABEL, "Schema validation failed:", schemaErrors);
                 return { success: false, packId, version, errors: schemaErrors };
             }
         }
@@ -100,13 +103,13 @@ export class JsonPackService {
                 await onImport(parsedData);
             } catch (error) {
                 const msg = `Import callback failed: ${error.message}`;
-                console.warn("JsonPackImporter | onImport callback failed:", error);
+                Logger.warn(MODULE_LABEL, "onImport callback failed:", error);
                 return { success: false, packId, version, errors: [msg] };
             }
         }
 
         if (isLegacy) {
-            console.log("JsonPackImporter | Legacy pack imported (no metadata stored).");
+            Logger.log(MODULE_LABEL, "Legacy pack imported (no metadata stored).");
         } else {
             try {
                 const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
@@ -122,16 +125,16 @@ export class JsonPackService {
                     }
                 };
                 await game.settings.set("ionrift-library", "installedPacks", updated);
-                console.log(`JsonPackImporter | Stored manifest metadata for packId "${manifest.packId}".`);
+                Logger.log(MODULE_LABEL, `Stored manifest metadata for packId "${manifest.packId}".`);
             } catch (error) {
                 const msg = `Failed to store installed pack metadata: ${error.message}`;
-                console.warn("JsonPackImporter | Metadata storage failed:", error);
+                Logger.warn(MODULE_LABEL, "Metadata storage failed:", error);
                 return { success: false, packId, version, errors: [msg] };
             }
         }
 
         const label = isLegacy ? "legacy JSON pack" : `JSON pack "${manifest.packId}" (${manifest.version})`;
-        console.log(`JsonPackImporter | Complete: imported ${label}.`);
+        Logger.log(MODULE_LABEL, `Complete: imported ${label}.`);
         return { success: true, packId, version, errors };
     }
 

@@ -127,7 +127,7 @@ Hooks.once('init', () => {
          */
         downloadPackUpdate: (packId) => {
             const update = PackRegistryService.pendingUpdates.find(u => u.packId === packId);
-            if (!update) { console.warn(`Ionrift | No pending update found for ${packId}`); return null; }
+            if (!update) { Logger.warn("Library", `No pending update found for ${packId}`); return null; }
             return PackRegistryService.downloadAndInstall(packId, update.available.latest, update.available);
         },
         /** Preview the EA notification dialog. Console: game.ionrift.library.previewEADialog() */
@@ -633,7 +633,7 @@ Hooks.once('init', () => {
 
         // Optional: Check if we can write to logs
         try {
-            console.log("Ionrift Library | Diagnostic Write Test");
+            Logger.log("Library", "Diagnostic Write Test");
             reportBuilder.addResult("Ionrift Library", "Console Access", "PASS", "Can write to console.");
         } catch (e) {
             reportBuilder.addResult("Ionrift Library", "Console Access", "WARN", "Console write failed?");
@@ -649,7 +649,7 @@ Hooks.once('ready', async () => {
 
     // Migrate party roster from Respite if needed
     PartyRoster.migrateFromRespite().catch(e =>
-        console.warn("Ionrift | PartyRoster migration check failed:", e)
+        Logger.warn("Library", "PartyRoster migration check failed:", e)
     );
 
     // Bridge native party changes (v14+) to the ionrift.partyChanged hook
@@ -661,7 +661,7 @@ Hooks.once('ready', async () => {
         // against "Folder validation errors: name: may not be undefined"
         // (Foundry #13225 / #11800) recurring across module updates.
         CompendiumConfigGuard.repairWorld().catch(e =>
-            console.warn("Ionrift | Compendium config self-heal failed:", e)
+            Logger.warn("Library", "Compendium config self-heal failed:", e)
         );
 
         // Static protocol version - only bump when indexing steps change,
@@ -723,10 +723,10 @@ Hooks.once('ready', async () => {
         }
 
         // Pack and overlay alert checks (daily registry cache, throttled overlay scan)
-        SettingsLayout.ensurePackAlertsFresh().catch(e => console.warn("Ionrift | Pack alert check failed:", e));
+        SettingsLayout.ensurePackAlertsFresh().catch(e => Logger.warn("Library", "Pack alert check failed:", e));
 
         // Diagnose broken installs (zip-in-folder, double-nested, missing module.json)
-        InstallHealthCheck.run().catch(e => console.warn("Ionrift | Install health check failed:", e));
+        InstallHealthCheck.run().catch(e => Logger.warn("Library", "Install health check failed:", e));
 
         // Enable overlays in a dev world via:
         //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
