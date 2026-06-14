@@ -39,6 +39,29 @@ import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
+import {
+    buildRollRequestContext,
+    buildEventPlayerRollContext,
+    buildEventGmRollContext,
+    buildTreePlayerRollContext,
+    buildCampActivityRollContext,
+    buildTravelActivityRollContext,
+    buildCopySpellRollContext,
+    buildMockRollRequestContext,
+    buildRollParticipants,
+    buildRollTargetLabel,
+    sortRollParticipants,
+    layoutRollParticipants,
+    findPreviewPlayerActor,
+    centerRollRequestRoster,
+    ROLL_REQUEST_PREVIEW_VARIANTS
+} from "./services/RollRequestView.js";
+import {
+    ensureDcPulseAnimation,
+    inspectDcAnimation,
+    watchDcAnimation,
+    forceDcPulseTest
+} from "./services/RollRequestDcPulse.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -52,6 +75,13 @@ Hooks.on("renderItemSheet5e2", _onEnrichSheet); // dnd5e v3 alternate class
 Hooks.once('init', () => {
     Logger.log("Library", "Initializing Shared Library");
     ConsoleCapture.install();
+
+    const rollRequestPartialPath = "modules/ionrift-library/templates/partials/_roll-request.hbs";
+    foundry.applications.handlebars.loadTemplates([rollRequestPartialPath]);
+    fetch(rollRequestPartialPath)
+        .then((response) => response.text())
+        .then((source) => Handlebars.registerPartial("rollRequest", source))
+        .catch((err) => Logger.warn("Library", "Failed to load roll-request partial:", err));
 
     // Expose API
     game.ionrift = game.ionrift || {};
@@ -73,7 +103,28 @@ Hooks.once('init', () => {
         /** Shared player/GM roll request service (promise-based). */
         rollRequest: {
             request: (opts) => RollRequestService.request(opts),
-            requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback)
+            requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback),
+            onSocketRelay: (data) => RollRequestService.onSocketRelay(data),
+            buildContext: buildRollRequestContext,
+            buildEventPlayerContext: buildEventPlayerRollContext,
+            buildEventGmContext: buildEventGmRollContext,
+            buildTreePlayerContext: buildTreePlayerRollContext,
+            buildCampActivityContext: buildCampActivityRollContext,
+            buildTravelActivityContext: buildTravelActivityRollContext,
+            buildCopySpellContext: buildCopySpellRollContext,
+            buildParticipants: buildRollParticipants,
+            sortParticipants: sortRollParticipants,
+            layoutParticipants: layoutRollParticipants,
+            centerRoster: centerRollRequestRoster,
+            findPreviewPlayerActor,
+            buildTargetLabel: buildRollTargetLabel,
+            buildMockContext: buildMockRollRequestContext,
+            variants: ROLL_REQUEST_PREVIEW_VARIANTS,
+            partial: "rollRequest",
+            ensureDcPulse: ensureDcPulseAnimation,
+            debugAnimation: inspectDcAnimation,
+            watchAnimation: watchDcAnimation,
+            forceDcPulseTest
         },
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
