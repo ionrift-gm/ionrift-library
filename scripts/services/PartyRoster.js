@@ -112,10 +112,9 @@ export class PartyRoster {
         const ids = this._settingIds();
         if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
 
-        return game.actors.filter(a => {
-            if (!a.hasPlayerOwner) return false;
-            return a.type === "character" || a.system?.isCharacter;
-        });
+        const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
+            ?? (a => a.hasPlayerOwner && (a.type === "character" || a.system?.isCharacter));
+        return game.actors.filter(isPc);
     }
 
     /**
@@ -253,7 +252,9 @@ export class PartyRoster {
         const ids = this._settingIds();
         if (ids.length) return ids.includes(actorId);
         const actor = game.actors.get(actorId);
-        return !!(actor?.hasPlayerOwner && actor?.type === "character");
+        const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
+            ?? (a => a?.hasPlayerOwner && a?.type === "character");
+        return isPc(actor);
     }
 
     /**

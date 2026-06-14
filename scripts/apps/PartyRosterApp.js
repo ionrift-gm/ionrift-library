@@ -43,7 +43,9 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         const roster = PartyRoster.getRosterIds();
         const rosterSet = new Set(roster);
 
-        const allCandidates = game.actors.filter(a => a.hasPlayerOwner && a.type === "character");
+        const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
+            ?? (a => a.hasPlayerOwner && a.type === "character");
+        const allCandidates = game.actors.filter(isPc);
         const isFirstUse = roster.length === 0;
 
         const actors = allCandidates.map(actor => {

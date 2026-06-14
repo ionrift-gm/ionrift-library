@@ -2,6 +2,7 @@ import { IonriftSystemAdapter } from "./IonriftSystemAdapter.js";
 import { DnD5eAdapter } from "./adapters/DnD5eAdapter.js";
 import { PF2eAdapter } from "./adapters/PF2eAdapter.js";
 import { DaggerheartAdapter } from "./adapters/DaggerheartAdapter.js";
+import { UniversalTabletopAdapter } from "./adapters/UniversalTabletopAdapter.js";
 
 /**
  * SystemAdapterRegistry — registration hub for system adapters.
@@ -23,6 +24,7 @@ export class SystemAdapterRegistry {
         this.register(new DnD5eAdapter());
         this.register(new PF2eAdapter());
         this.register(new DaggerheartAdapter());
+        this.register(new UniversalTabletopAdapter());
     }
 
     /**

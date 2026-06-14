@@ -38,6 +38,7 @@ import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSw
 import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
+import { RollRequestService } from "./services/RollRequestService.js";
 
 // ── Item Enrichment: wire hooks at top-level so they are never missed
 // regardless of script load order or hot-reloads. Item sheets don't
@@ -69,6 +70,11 @@ Hooks.once('init', () => {
         ModuleConfigProfiles,
         SettingsVisibility,
         confirm: DialogHelper.confirm, // Centralized confirm dialog utility
+        /** Shared player/GM roll request service (promise-based). */
+        rollRequest: {
+            request: (opts) => RollRequestService.request(opts),
+            requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback)
+        },
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
@@ -642,6 +648,8 @@ Hooks.once('init', () => {
 });
 
 Hooks.once('ready', async () => {
+    RollRequestService.init();
+
     // Init Session Tracker
     SessionTracker.init();
 
