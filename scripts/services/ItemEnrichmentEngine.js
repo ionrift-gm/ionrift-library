@@ -1,3 +1,5 @@
+import { Logger } from "./Logger.js";
+
 /**
  * ItemEnrichmentEngine
  *
@@ -17,6 +19,9 @@
  *   - renderItemSheet5e     (dnd5e v3 ApplicationV2, 4-arg signature)
  *   - renderItemSheet5e2    (dnd5e v3 alternate class name)
  */
+
+const MODULE_LABEL = "ItemEnrichmentEngine";
+
 export class ItemEnrichmentEngine {
 
     /**
@@ -56,7 +61,7 @@ export class ItemEnrichmentEngine {
      */
     static register(itemName, data) {
         if (!itemName || !data?.html) {
-            console.warn("ItemEnrichmentEngine | register() called with invalid data:", itemName, data);
+            Logger.warn(MODULE_LABEL, "register() called with invalid data:", itemName, data);
             return;
         }
         this._registry.set(this._normalize(itemName), data);
@@ -136,7 +141,7 @@ export class ItemEnrichmentEngine {
         }
 
         if (!root?.querySelector) {
-            console.warn("ItemEnrichmentEngine | Cannot resolve root element for:", item.name);
+            Logger.warn(MODULE_LABEL, "Cannot resolve root element for:", item.name);
             return;
         }
 
@@ -169,7 +174,7 @@ export class ItemEnrichmentEngine {
         }
 
         if (!target) {
-            console.warn("ItemEnrichmentEngine | No injection target for:", item.name);
+            Logger.warn(MODULE_LABEL, "No injection target for:", item.name);
             return;
         }
 
