@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.4.0] - 2026-06-15
+
+### Added
+- **Shared roll request service.** Modules can now surface a roll request prompt to players directly through the library, removing the need for each module to ship its own implementation.
+
+### Fixed
+- The party roster now correctly detects player characters in Universal Tabletop System, which uses a different actor type to standard systems.
+
+### Changed
+- The roll request prompt no longer has a Decline button - closing the overlay or pressing Escape now executes the roll rather than cancelling it.
+- Pack minting now uses normalised DnD5e identifiers and damage types for consistent output across content packs.
+- The install health check now only flags installs with genuine structural problems, reducing false positives for partial or in-progress installs.
+
 ## [2.3.7] - 2026-06-10
 
 ### Added
