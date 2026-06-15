@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.4.1] - 2026-06-15
+
+### Added
+- **Story moment panel.** GM-only glass modal for cursed-item beats and table guidance. Exposed on `game.ionrift.library.storyMoment.open()`.
+
 ## [2.4.0] - 2026-06-15
 
 ### Added

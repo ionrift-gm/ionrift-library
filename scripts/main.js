@@ -39,6 +39,7 @@ import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
+import { StoryMomentApp } from "./apps/StoryMomentApp.js";
 import {
     buildRollRequestContext,
     buildEventPlayerRollContext,
@@ -100,6 +101,10 @@ Hooks.once('init', () => {
         ModuleConfigProfiles,
         SettingsVisibility,
         confirm: DialogHelper.confirm, // Centralized confirm dialog utility
+        /** GM-only story moment panel for cursed item beats and table guidance. */
+        storyMoment: {
+            open: (opts) => StoryMomentApp.open(opts)
+        },
         /** Shared player/GM roll request service (promise-based). */
         rollRequest: {
             request: (opts) => RollRequestService.request(opts),
