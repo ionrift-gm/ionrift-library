@@ -13,6 +13,7 @@ const TEMPLATE_PATH = "modules/ionrift-library/templates/partials/_roll-request.
 /**
  * Standalone player prompt for a shared roll request.
  * Uses the Ionrift Glass roll-request component (same as Respite).
+ * Closing the overlay (backdrop, Escape) executes the roll; there is no decline path.
  */
 export class RollRequestPromptApp {
     /**
@@ -36,19 +37,33 @@ export class RollRequestPromptApp {
             const body = document.createElement("div");
             body.className = "ionrift-roll-request-prompt__body";
 
-            const footer = document.createElement("div");
-            footer.className = "ionrift-roll-request-prompt__footer";
-            footer.innerHTML = `
-                <button type="button" class="btn-roll-decline">
-                    <i class="fas fa-times"></i> Decline
-                </button>`;
-
-            panel.append(body, footer);
+            panel.append(body);
             overlay.append(panel);
 
             let rolling = false;
+            let settled = false;
 
-            const cleanup = () => overlay.remove();
+            const cleanup = () => {
+                overlay.removeEventListener("click", onOverlayClick);
+                document.removeEventListener("keydown", onKeyDown, true);
+                overlay.remove();
+            };
+
+            const finish = (result) => {
+                if (settled) return;
+                settled = true;
+                window.setTimeout(() => {
+                    cleanup();
+                    resolve(result);
+                }, 900);
+            };
+
+            const fail = (err) => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(err);
+            };
 
             const render = async (viewPayload = {}) => {
                 const rollRequest = buildPromptRollContext({
@@ -63,13 +78,16 @@ export class RollRequestPromptApp {
                 RollRequestPromptApp.#bindRollButtons(body, onRoll);
             };
 
-            const onRoll = async (event) => {
-                if (rolling) return;
+            const performRoll = async (triggerButton = null) => {
+                if (rolling || settled) return;
                 rolling = true;
 
-                const button = event.currentTarget;
-                button.disabled = true;
-                button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Rolling...`;
+                const button = triggerButton
+                    ?? body.querySelector("[data-action=\"ionriftRoll\"]");
+                if (button instanceof HTMLButtonElement) {
+                    button.disabled = true;
+                    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Rolling...`;
+                }
 
                 const type = payload.type ?? "skill";
                 const typeLabel = type === "save" ? "Saving Throw"
@@ -99,30 +117,41 @@ export class RollRequestPromptApp {
                         passed: result.passed
                     });
 
-                    window.setTimeout(() => {
-                        cleanup();
-                        resolve({
-                            total: result.total,
-                            passed: result.passed,
-                            natD20: result.natD20
-                        });
-                    }, 900);
+                    finish({
+                        total: result.total,
+                        passed: result.passed,
+                        natD20: result.natD20
+                    });
                 } catch (err) {
                     rolling = false;
-                    cleanup();
-                    reject(err);
+                    fail(err);
                 }
             };
 
-            footer.querySelector(".btn-roll-decline")?.addEventListener("click", () => {
-                if (rolling) return;
-                cleanup();
-                reject(new Error("Roll declined"));
-            });
+            const onRoll = (event) => {
+                performRoll(event.currentTarget instanceof HTMLButtonElement
+                    ? event.currentTarget
+                    : null);
+            };
+
+            const onOverlayClick = (event) => {
+                if (event.target !== overlay) return;
+                event.preventDefault();
+                performRoll();
+            };
+
+            const onKeyDown = (event) => {
+                if (event.key !== "Escape") return;
+                event.preventDefault();
+                event.stopPropagation();
+                performRoll();
+            };
+
+            overlay.addEventListener("click", onOverlayClick);
+            document.addEventListener("keydown", onKeyDown, true);
 
             render().catch((err) => {
-                cleanup();
-                reject(err);
+                fail(err);
             });
 
             document.body.appendChild(overlay);

@@ -684,30 +684,9 @@
     padding-right: 0;
 }
 
-.ionrift-roll-request-prompt__footer {
-    display: flex;
-    justify-content: center;
-    margin-top: 0.55rem;
-    padding-top: 0.55rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.ionrift-roll-request-prompt__footer .btn-roll-decline {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.4rem 0.75rem;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-
-.ionrift-roll-request-prompt__footer .btn-roll-decline:hover {
-    border-color: rgba(255, 255, 255, 0.35);
-    color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.08);
+/* Prompt overlay is not scrollable; drop sticky fade so it does not read as a black bar */
+.ionrift-roll-request-prompt .ionrift-roll-request__actions {
+    position: static;
+    background: none;
+    padding: 0;
 }
