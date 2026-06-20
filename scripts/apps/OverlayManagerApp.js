@@ -106,18 +106,19 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
         if (!isConnected) {
             const localOverlays = await this._collectLocalOverlays();
-            const groups = this._buildGroups(localOverlays);
-            this._appendModulesWithoutContent(groups, {});
-            await this._attachCleanupInfo(groups);
+            const allGroups = this._buildGroups(localOverlays);
+            this._appendModulesWithoutContent(allGroups, {}, null);
+            await this._attachCleanupInfo(allGroups);
+            const groups = this._finalizeLibraryGroups(allGroups, null, []);
 
-            if (this._view === "detail" && this._selectedModuleId
-                && !groups.some(g => g.moduleId === this._selectedModuleId)) {
-                this._view = "grid";
-                this._selectedModuleId = null;
-            }
             const selected = this._selectedModuleId
                 ? groups.find(g => g.moduleId === this._selectedModuleId) ?? null
                 : null;
+
+            if (this._view === "detail" && this._selectedModuleId && !selected) {
+                this._view = "grid";
+                this._selectedModuleId = null;
+            }
 
             const installedCount = localOverlays.length;
             const inactiveCount = localOverlays.filter(o => o.status === "installed-inactive").length;
@@ -134,6 +135,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 expiryStatus: null,
                 groups,
                 earlyAccess: [],
+                premiumModules: [],
                 overlayCount: groups.length,
                 actionableCount: 0,
                 installedCount,
@@ -152,6 +154,14 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         for (const [id, entry] of Object.entries(rawOverlayMap)) {
             if (entry?.preview && !showPreview) continue;
             overlayMap[id] = entry;
+        }
+        // Local dev overlays: disk-staged entries for e2e simulation. Gated
+        // behind the same preview flag as registry preview entries, so they are
+        // invisible by default and never surface for normal users.
+        if (showPreview) {
+            for (const [id, entry] of Object.entries(this._devOverlayEntries())) {
+                if (entry?.moduleId) overlayMap[id] = entry;
+            }
         }
         const TIER_ORDER = PackRegistryService.TIER_ORDER;
         const userRank = TIER_ORDER.indexOf(userTier);
@@ -230,32 +240,33 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             });
         }
 
-        const groups = this._buildGroups(overlays);
-        this._appendModulesWithoutContent(groups, overlayMap);
-        await this._attachCleanupInfo(groups);
+        const allGroups = this._buildGroups(overlays);
+        this._appendModulesWithoutContent(allGroups, overlayMap, registry);
+        await this._attachCleanupInfo(allGroups);
 
-        if (this._view === "detail" && this._selectedModuleId
-            && !groups.some(g => g.moduleId === this._selectedModuleId)) {
-            this._view = "grid";
-            this._selectedModuleId = null;
-        }
+        const earlyAccess = this._buildEarlyAccessOffers(registry, userTier);
+        const premiumModules = this._buildPremiumModuleOffers(registry, userTier);
+        const groups = this._finalizeLibraryGroups(allGroups, registry, premiumModules);
 
         const selected = this._selectedModuleId
             ? groups.find(g => g.moduleId === this._selectedModuleId) ?? null
             : null;
 
+        if (this._view === "detail" && this._selectedModuleId && !selected) {
+            this._view = "grid";
+            this._selectedModuleId = null;
+        }
+
         const overlayCount = groups.length;
         const actionableOverlayIds = [];
-        for (const g of groups) {
-            for (const ov of g.overlays) {
+        for (const group of groups) {
+            for (const ov of group.overlays) {
                 if (ov.status === "not-installed" || ov.status === "update-available") {
                     actionableOverlayIds.push(ov.overlayId);
                 }
             }
         }
         this._actionableOverlayIds = actionableOverlayIds;
-
-        const earlyAccess = this._buildEarlyAccessOffers(registry, userTier);
 
         const lastCheck = OverlayService._lastCheckTimestamp
             ? new Date(OverlayService._lastCheckTimestamp).toLocaleTimeString()
@@ -281,6 +292,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             expiryStatus,
             groups,
             earlyAccess,
+            premiumModules,
             overlayCount,
             actionableCount: actionableOverlayIds.length,
             installedCount,
@@ -442,6 +454,19 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
                 PackRegistryService.clearSnooze(`ea:${moduleId}`);
+                await ModuleInstallerService.installModule(moduleId, version);
+                this.render();
+            });
+        });
+
+        root.querySelectorAll("[data-action='install-premium']").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const moduleId = btn.dataset.moduleId;
+                const version = btn.dataset.version;
+                if (!moduleId || !version) return;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
+                PackRegistryService.clearSnooze(`premium:${moduleId}`);
                 await ModuleInstallerService.installModule(moduleId, version);
                 this.render();
             });
@@ -822,6 +847,21 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
+     * Local dev overlay entries from the `devOverlayRegistry` setting. These are
+     * disk-staged overlays surfaced for e2e simulation without a remote registry
+     * publish. Returns an empty object in normal use.
+     * @returns {Record<string, Object>}
+     */
+    _devOverlayEntries() {
+        try {
+            const map = game.settings.get("ionrift-library", "devOverlayRegistry");
+            return (map && typeof map === "object") ? map : {};
+        } catch {
+            return {};
+        }
+    }
+
+    /**
      * Build the early-access offers list from a registry payload.
      * @param {Object|null} registry
      * @param {string|null} userTier
@@ -837,6 +877,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const offers = [];
 
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (PackRegistryService.isPremiumModule(entry)) continue;
+            if (PackRegistryService.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
+
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
             if (ea.publicAt && new Date(ea.publicAt) <= new Date()) continue;
@@ -860,6 +903,156 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             });
         }
         return offers;
+    }
+
+    /**
+     * Build Patreon-delivered premium module offers from a registry payload.
+     * @param {Object|null} registry
+     * @param {string|null} userTier
+     * @returns {Object[]}
+     */
+    _buildPremiumModuleOffers(registry, userTier) {
+        const modules = registry?.modules;
+        if (!modules || typeof modules !== "object") return [];
+
+        const userRank = userTier
+            ? PackRegistryService.TIER_ORDER.indexOf(userTier)
+            : -1;
+        const offers = [];
+
+        for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!PackRegistryService.isPremiumModule(entry)) continue;
+
+            const version = entry.latest;
+            const tier = entry.tier;
+            if (!version || !tier) continue;
+
+            const meta = PackRegistryService.MODULE_DISPLAY_META[moduleId] ?? {};
+            const mod = game.modules.get(moduleId);
+            const reqRank = PackRegistryService.TIER_ORDER.indexOf(tier);
+            const isQualified = userRank >= 0 && userRank >= reqRank;
+            const isInstalled = mod
+                ? PackManifestSchema.compareVersions(mod.version, version) >= 0
+                : false;
+            const releaseStatus = entry.releaseStatus === "ea" ? "ea" : "ga";
+
+            offers.push({
+                moduleId,
+                title: meta.title || mod?.title || moduleId,
+                icon: meta.icon || "fas fa-cube",
+                version,
+                requiredTier: tier,
+                releaseStatus,
+                isQualified,
+                isInstalled
+            });
+        }
+
+        const seen = new Set(offers.map(o => o.moduleId));
+        for (const [moduleId, meta] of Object.entries(PackRegistryService.MODULE_DISPLAY_META)) {
+            if (meta.distribution !== "premium" || seen.has(moduleId)) continue;
+
+            const entry = modules[moduleId];
+            if (PackRegistryService.isPremiumModule(entry)) continue;
+
+            const version = entry?.latest ?? entry?.earlyAccess?.version;
+            const tier = entry?.tier ?? entry?.earlyAccess?.tier;
+            if (!version || !tier) continue;
+
+            const mod = game.modules.get(moduleId);
+            const reqRank = PackRegistryService.TIER_ORDER.indexOf(tier);
+            const isQualified = userRank >= 0 && userRank >= reqRank;
+            const isInstalled = mod
+                ? PackManifestSchema.compareVersions(mod.version, version) >= 0
+                : false;
+
+            offers.push({
+                moduleId,
+                title: meta.title || mod?.title || moduleId,
+                icon: meta.icon || "fas fa-cube",
+                version,
+                requiredTier: tier,
+                releaseStatus: entry?.releaseStatus === "ea" ? "ea" : "ga",
+                isQualified,
+                isInstalled
+            });
+        }
+
+        return offers;
+    }
+
+    /**
+     * Annotate premium modules, attach registry metadata, and add tile rows for
+     * premium offers that have no overlay groups yet.
+     * @param {Array} groups
+     * @param {Object|null} registry
+     * @param {Object[]} premiumModules
+     * @returns {Array}
+     */
+    _finalizeLibraryGroups(groups, registry, premiumModules) {
+        const premiumIds = PackRegistryService.getPremiumModuleIds(registry);
+        const premiumById = new Map(premiumModules.map(offer => [offer.moduleId, offer]));
+
+        for (const group of groups) {
+            if (!premiumIds.has(group.moduleId)) continue;
+            group.isPremium = true;
+            const offer = premiumById.get(group.moduleId);
+            if (offer) {
+                const meta = PackRegistryService.MODULE_DISPLAY_META[group.moduleId] ?? {};
+                const entry = registry?.modules?.[group.moduleId];
+                group.premiumInfo = {
+                    ...offer,
+                    description: entry?.description ?? meta.desc ?? offer.description ?? ""
+                };
+            }
+        }
+
+        for (const offer of premiumModules) {
+            if (groups.some(g => g.moduleId === offer.moduleId)) continue;
+            groups.push(this._buildPremiumPlaceholderGroup(offer, registry));
+        }
+
+        groups.sort((a, b) => {
+            if (a.isPremium !== b.isPremium) return a.isPremium ? -1 : 1;
+            return STATUS_PRIORITY.indexOf(a.status) - STATUS_PRIORITY.indexOf(b.status);
+        });
+        return groups;
+    }
+
+    /**
+     * Grid row for a premium module with no registered overlay packs yet.
+     * @param {Object} offer
+     * @param {Object|null} registry
+     * @returns {Object}
+     */
+    _buildPremiumPlaceholderGroup(offer, registry) {
+        const meta = PackRegistryService.MODULE_DISPLAY_META[offer.moduleId] ?? {};
+        const entry = registry?.modules?.[offer.moduleId];
+        const mod = game.modules.get(offer.moduleId);
+
+        return {
+            moduleId: offer.moduleId,
+            moduleName: offer.title,
+            moduleIcon: offer.icon,
+            moduleAccent: offer.moduleAccent ?? MODULE_ACCENT[offer.moduleId] ?? "#c9a227",
+            isModuleActive: !!mod?.active,
+            isPremium: true,
+            premiumInfo: {
+                ...offer,
+                description: entry?.description ?? meta.desc ?? ""
+            },
+            overlays: [],
+            status: mod?.active ? "no-content" : "module-inactive",
+            hasError: false,
+            hasAccess: offer.isQualified,
+            packCount: 0,
+            entitledCount: 0,
+            installedCount: 0,
+            inactiveCount: 0,
+            activeCount: 0,
+            updateCount: 0,
+            cleanup: null
+        };
     }
 
     /**
@@ -922,11 +1115,13 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
      * @param {Array} groups   In place. Empty groups are pushed onto this list.
      * @param {Object} overlayMap   Already processed registry.overlays map.
      */
-    _appendModulesWithoutContent(groups, overlayMap) {
+    _appendModulesWithoutContent(groups, overlayMap, registry = null) {
+        const premiumIds = PackRegistryService.getPremiumModuleIds(registry);
         const knownModuleIds = new Set(Object.values(overlayMap).map(e => e.moduleId));
         const seen = new Set(groups.map(g => g.moduleId));
 
         for (const [moduleId, meta] of Object.entries(PackRegistryService.MODULE_DISPLAY_META)) {
+            if (premiumIds.has(moduleId)) continue;
             if (seen.has(moduleId)) continue;
             if (knownModuleIds.has(moduleId)) continue;
             const mod = game.modules.get(moduleId);

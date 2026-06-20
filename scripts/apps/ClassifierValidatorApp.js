@@ -1,4 +1,4 @@
-import { classifyCreature } from "../creatureClassifier.js";
+import { classifyCreature, listClassifierOptions, setActorClassification } from "../creatureClassifier.js";
 
 export class ClassifierValidatorApp extends FormApplication {
     constructor(options = {}) {
@@ -119,7 +119,8 @@ export class ClassifierValidatorApp extends FormApplication {
                 .filter(a => a.type !== 'character')
                 .map(a => ({
                     ...this._classifyData(a),
-                    source: "World"
+                    source: "World",
+                    uuid: a.uuid
                 }));
             actors = actors.concat(worldActors);
         }
@@ -144,6 +145,7 @@ export class ClassifierValidatorApp extends FormApplication {
             // Fetch necessary fields including system-specific details
             const index = await pack.getIndex({
                 fields: [
+                    "flags",
                     "system.details.type",
                     "system.details.alignment",
                     "system.details.biography",
@@ -151,11 +153,14 @@ export class ClassifierValidatorApp extends FormApplication {
                     "system.description"    // Common
                 ]
             });
-            const packActors = index.map(i => ({
-                ...this._classifyData(i),
-                source: pack.metadata.label,
-                uuid: i.uuid
-            }));
+            const packActors = index.map(i => {
+                const uuid = i.uuid ?? `Compendium.${pack.collection}.Actor.${i._id}`;
+                return {
+                    ...this._classifyData({ ...i, uuid }),
+                    source: pack.metadata.label,
+                    uuid
+                };
+            });
             actors = actors.concat(packActors);
         }
 
@@ -176,12 +181,105 @@ export class ClassifierValidatorApp extends FormApplication {
             name: actorOrIndex.name || "Unknown Entity",
             img: actorOrIndex.img || "icons/svg/mystery-man.svg",
             classId: this._formatClassId(classification.id),
+            rawClassId: classification.id,
             soundKey: this._formatSoundKey(classification.sound),
             confidence: score,
             confidencePct: Math.round(score * 100),
             scoreClass: scoreClass,
-            tags: Array.from(classification.tags).join(", ")
+            tags: Array.from(classification.tags).join(", "),
+            isManual: !!classification.isOverride
         };
+    }
+
+    async _refreshAfterClassificationOverride({ actorId, uuid }) {
+        let actor = game.actors.get(actorId);
+        if (!actor && uuid) {
+            try { actor = await fromUuid(uuid); } catch { /* ok */ }
+        }
+        const actorUuid = uuid ?? actor?.uuid;
+        if (!actorUuid) return;
+
+        const idx = this._results.findIndex(r => r.uuid === actorUuid || r.actorId === actorId);
+        if (idx < 0) return;
+
+        const doc = actor ?? { uuid: actorUuid, name: this._results[idx].name };
+        this._results[idx] = {
+            ...this._results[idx],
+            ...this._classifyData({ ...doc, uuid: actorUuid }),
+            uuid: actorUuid
+        };
+    }
+
+    async _openClassificationOverrideDialog({ actorId, uuid, currentId, isManual }) {
+        const options = listClassifierOptions();
+        const optionHtml = [
+            `<option value="">Auto (detected)</option>`,
+            ...options.map(o =>
+                `<option value="${o.id}" ${o.id === currentId && isManual ? "selected" : ""}>${o.label}</option>`
+            )
+        ].join("");
+
+        return new Promise(resolve => {
+            let settled = false;
+            const finish = (value) => {
+                if (settled) return;
+                settled = true;
+                resolve(value);
+            };
+
+            const dlg = new Dialog({
+                title: "Set Entity Classification",
+                content: `
+                    <form class="ionrift-classifier-override-form">
+                        <p class="notes">Manual overrides take priority over auto-detection. Compendium entries are stored on this world.</p>
+                        <div class="form-group">
+                            <label>Classification</label>
+                            <select name="classId">${optionHtml}</select>
+                        </div>
+                    </form>`,
+                buttons: {
+                    save: {
+                        icon: '<i class="fas fa-save"></i>',
+                        label: "Save",
+                        callback: html => {
+                            const classId = html.find('[name="classId"]').val() || null;
+                            (async () => {
+                                try {
+                                    let actor = game.actors.get(actorId);
+                                    if (!actor && uuid) {
+                                        try { actor = await fromUuid(uuid); } catch { /* ok */ }
+                                    }
+                                    if (!actor) {
+                                        ui.notifications.warn("Ionrift | Could not resolve actor for classification override.");
+                                        finish(false);
+                                        return;
+                                    }
+                                    await setActorClassification(actor, classId);
+                                    ui.notifications.info(classId
+                                        ? `Classification set to ${this._formatClassId(classId)} for ${actor.name}.`
+                                        : `Auto classification restored for ${actor.name}.`);
+                                    finish(true);
+                                    dlg.close();
+                                } catch (err) {
+                                    console.error(err);
+                                    ui.notifications.error("Ionrift | Could not save classification override.");
+                                    finish(false);
+                                }
+                            })();
+                            return false;
+                        }
+                    },
+                    cancel: {
+                        icon: '<i class="fas fa-times"></i>',
+                        label: "Cancel",
+                        callback: () => finish(false)
+                    }
+                },
+                default: "save",
+                close: () => finish(false)
+            }, { classes: ["ionrift-window", "glass-ui", "dialog"] });
+            dlg.render(true);
+        });
     }
 
     _formatClassId(id) {
@@ -252,6 +350,26 @@ export class ClassifierValidatorApp extends FormApplication {
             else doc = game.actors.get(id);
 
             if (doc) doc.sheet.render(true);
+        });
+
+        // Manual classification override (GM)
+        html.find(".classifier-override-btn").click(async (ev) => {
+            ev.preventDefault();
+            if (!game.user.isGM) return;
+            const btn = $(ev.currentTarget);
+            const saved = await this._openClassificationOverrideDialog({
+                actorId: btn.data("actorId"),
+                uuid: btn.data("uuid"),
+                currentId: btn.data("classId"),
+                isManual: !!btn.data("manual")
+            });
+            if (saved) {
+                await this._refreshAfterClassificationOverride({
+                    actorId: btn.data("actorId"),
+                    uuid: btn.data("uuid")
+                });
+                await this.render(true);
+            }
         });
 
         // Re-Scan

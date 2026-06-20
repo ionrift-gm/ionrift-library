@@ -177,6 +177,7 @@ export function renderModuleTile(group, state) {
         group.hasError ? "overlay-tile--error" : "",
         group.status === "locked" ? "overlay-tile--locked" : "",
         group.status === "module-inactive" ? "overlay-tile--inactive" : "",
+        group.isPremium ? "overlay-tile--premium" : "",
         selectedModuleId === group.moduleId ? "overlay-tile--selected" : "",
         compact ? "overlay-tile--compact" : "",
         group.updateCount > 0 ? "overlay-tile--stale" : ""
@@ -187,6 +188,9 @@ export function renderModuleTile(group, state) {
     const isComplete = showProgress && group.installedCount === group.entitledCount;
     const packWord = group.entitledCount === 1 ? "pack" : "packs";
     let metaText = showProgress ? `${group.installedCount}/${group.entitledCount} ${packWord}` : "";
+    if (!metaText && group.isPremium) {
+        metaText = "Premium";
+    }
     if (isPartial && group.activeCount > 0) {
         metaText += ` · ${group.activeCount} on`;
     }
@@ -204,6 +208,7 @@ export function renderModuleTile(group, state) {
         data-status="${group.status}" title="${status.label}"
         aria-label="${sName}. ${status.label}">
         <span class="overlay-tile-status ${status.className}" aria-hidden="true"><i class="fas ${status.icon}"></i></span>
+        ${group.isPremium ? `<span class="overlay-tile-premium-mark" aria-hidden="true"><i class="fas fa-gem"></i></span>` : ""}
         <span class="overlay-tile-icon"><i class="fas ${group.moduleIcon}"></i></span>
         <span class="overlay-tile-label">
             <span class="overlay-tile-name">${sName}</span>
@@ -316,6 +321,45 @@ export function buildEarlyAccessSection(context) {
     </section>`;
 }
 
+/** Compact premium module strip for detail / inspection view. */
+export function buildPremiumDetailStrip(premiumInfo) {
+    const statusLabel = premiumInfo.releaseStatus === "ea" ? "Early Access" : "GA";
+    const statusClass = premiumInfo.releaseStatus === "ea"
+        ? "overlay-premium-status-pill--ea"
+        : "overlay-premium-status-pill--ga";
+
+    let action;
+    if (!premiumInfo.isQualified) {
+        action = `<span class="overlay-detail-premium-locked"><i class="fas fa-lock"></i> ${premiumInfo.requiredTier}+ required</span>`;
+    } else if (premiumInfo.isInstalled) {
+        action = `<span class="overlay-detail-premium-installed"><i class="fas fa-check"></i> Module installed</span>`;
+    } else {
+        action = `<button type="button" class="overlay-detail-btn overlay-detail-premium-install" data-action="install-premium"
+                    data-module-id="${premiumInfo.moduleId}" data-version="${premiumInfo.version}">
+                    <i class="fas fa-download"></i> Install module
+                </button>`;
+    }
+
+    const desc = premiumInfo.description
+        ? `<p class="overlay-detail-premium-desc">${premiumInfo.description}</p>`
+        : "";
+
+    return `
+    <section class="overlay-detail-premium">
+        <div class="overlay-detail-premium-head">
+            <span class="overlay-detail-premium-label"><i class="fas fa-gem"></i> Premium module</span>
+            <span class="overlay-detail-premium-badges">
+                <span class="overlay-premium-status-pill ${statusClass}">${statusLabel}</span>
+                <span class="overlay-tier-pill">${premiumInfo.requiredTier}+</span>
+                <span class="overlay-detail-premium-version">v${premiumInfo.version}</span>
+            </span>
+            <span class="overlay-detail-premium-action">${action}</span>
+        </div>
+        ${desc}
+        <p class="overlay-detail-premium-note">Delivered through Patreon. Not listed on the public Foundry browser.</p>
+    </section>`;
+}
+
 /** Content packs section header (count + Install All + Check for updates). */
 export function buildPacksSectionHead(context) {
     const modWord = context.overlayCount === 1 ? "module" : "modules";
@@ -343,7 +387,7 @@ export function buildPacksSectionHead(context) {
         </button>`
         : "";
 
-    const title = context.isConnected ? "Content Packs" : "Your Library";
+    const title = context.isConnected ? "Modules" : "Your Library";
 
     return `
     <header class="overlay-mgr-section-head overlay-mgr-section-head--packs">
@@ -467,6 +511,10 @@ export function buildDetailPanel(group, state) {
         </div>
     </div>
     <div class="overlay-detail-accent" style="background:${group.moduleAccent}"></div>`;
+
+    if (group.premiumInfo) {
+        html += buildPremiumDetailStrip(group.premiumInfo);
+    }
 
     if (!group.isModuleActive) {
         html += `<p class="overlay-detail-muted">Enable ${sName} in Manage Modules before installing.</p>`;

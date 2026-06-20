@@ -44,16 +44,20 @@
                 </div>
                 <div class="subtitle">
                     <i class="fas fa-database"></i> {{this.source}}
-                    <!-- Optional: Tags if relevant, but often noisy -->
                 </div>
             </div>
 
             <div class="badges">
-                <!-- Class Badge -->
-                <span class="ionrift-badge {{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}"
-                    title="Detected Class">
-                    <i class="fas fa-chess-piece"></i> {{this.classId}}
-                </span>
+                <!-- Class Badge (click to override) -->
+                <button type="button"
+                    class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}{{/if}}"
+                    title="{{#if this.isManual}}Manual classification{{else}}Detected class — click to override{{/if}}"
+                    data-actor-id="{{this.actorId}}"
+                    data-uuid="{{this.uuid}}"
+                    data-class-id="{{this.rawClassId}}"
+                    data-manual="{{this.isManual}}">
+                    <i class="fas {{#if this.isManual}}fa-lock{{else}}fa-chess-piece{{/if}}"></i> {{this.classId}}
+                </button>
 
                 <!-- Sound Badge -->
                 <span class="ionrift-badge {{#if (eq this.soundKey 'Generic Monster')}}warning{{else}}success{{/if}}"

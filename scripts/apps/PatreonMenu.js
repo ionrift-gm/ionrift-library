@@ -41,6 +41,7 @@ export class PatreonMenu extends FormApplication {
         const modules = registryData?.modules;
 
         const earlyAccessOffers = [];
+        const premiumModuleOffers = [];
 
         if (modules && typeof modules === "object") {
             const userRank = userTier
@@ -48,6 +49,35 @@ export class PatreonMenu extends FormApplication {
                 : -1;
 
             for (const [moduleId, entry] of Object.entries(modules)) {
+                if (PackRegistryService.isPremiumModule(entry)) {
+                    const version = entry.latest;
+                    const tier = entry.tier;
+                    if (!version || !tier) continue;
+
+                    const meta = PackRegistryService.MODULE_DISPLAY_META[moduleId] ?? {};
+                    const mod = game.modules.get(moduleId);
+                    const reqRank = PackRegistryService.TIER_ORDER.indexOf(tier);
+                    const isQualified = userRank >= 0 && userRank >= reqRank;
+                    const isInstalled = mod
+                        ? PackManifestSchema.compareVersions(mod.version, version) >= 0
+                        : false;
+
+                    premiumModuleOffers.push({
+                        moduleId,
+                        title: meta.title || mod?.title || moduleId,
+                        icon: meta.icon || "fas fa-cube",
+                        version,
+                        requiredTier: tier,
+                        releaseStatus: entry.releaseStatus === "ea" ? "ea" : "ga",
+                        isGa: entry.releaseStatus !== "ea",
+                        isQualified,
+                        isInstalled
+                    });
+                    continue;
+                }
+
+                if (PackRegistryService.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
+
                 const ea = entry.earlyAccess;
                 if (!ea?.version || !ea?.tier) continue;
                 if (ea.publicAt && new Date(ea.publicAt) <= new Date()) continue;
@@ -75,7 +105,7 @@ export class PatreonMenu extends FormApplication {
             }
         }
 
-        return { isConnected, userTier, expiryStatus, earlyAccessOffers };
+        return { isConnected, userTier, expiryStatus, earlyAccessOffers, premiumModuleOffers };
     }
 
     /**
@@ -126,6 +156,18 @@ export class PatreonMenu extends FormApplication {
 
             btn.disabled = true;
             PackRegistryService.clearSnooze(`ea:${moduleId}`);
+            await ModuleInstallerService.installModule(moduleId, version);
+            this.close();
+        });
+
+        html.find("[data-action='install-premium']").on("click", async (event) => {
+            const btn = event.currentTarget;
+            const moduleId = btn.dataset.moduleId;
+            const version = btn.dataset.version;
+            if (!moduleId || !version) return;
+
+            btn.disabled = true;
+            PackRegistryService.clearSnooze(`premium:${moduleId}`);
             await ModuleInstallerService.installModule(moduleId, version);
             this.close();
         });

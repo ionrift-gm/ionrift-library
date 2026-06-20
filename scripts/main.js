@@ -1,4 +1,4 @@
-import { classifyCreature, runSelfTests } from "./creatureClassifier.js";
+import { classifyCreature, listClassifierOptions, runSelfTests, setActorClassification } from "./creatureClassifier.js";
 import { SidebarHelper } from "./SidebarHelper.js";
 import { DiagnosticApp } from "./apps/DiagnosticApp.js";
 import { DiagnosticService } from "./services/DiagnosticService.js";
@@ -33,6 +33,7 @@ import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";
 import { TerrainRegistry, terrainRegistry, normalizeTerrainCategory } from "./services/TerrainRegistry.js";
 import { OverlayService } from "./services/OverlayService.js";
+import { OverlayItemMaterialiser } from "./services/OverlayItemMaterialiser.js";
 import { PackNudgeService } from "./services/PackNudgeService.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
 import { ItemMintingService } from "./services/ItemMintingService.js";
@@ -89,6 +90,8 @@ Hooks.once('init', () => {
     game.ionrift.library = {
         SidebarHelper,
         classifyCreature,
+        listClassifierOptions,
+        setActorClassification,
         runSelfTests,
         SettingsStatusHelper, // Expose Class
 
@@ -194,6 +197,13 @@ Hooks.once('init', () => {
         },
         /** Preview the EA notification dialog. Console: game.ionrift.library.previewEADialog() */
         previewEADialog: (moduleId, overrides) => PackRegistryService.previewEADialog(moduleId, overrides),
+        /** Preview the premium module dialog. Console: game.ionrift.library.previewPremiumDialog("ionrift-cursewright") */
+        previewPremiumDialog: (moduleId, overrides) => PackRegistryService.previewPremiumDialog(moduleId, overrides),
+        /**
+         * Inject registry JSON into the local cache before pack-registry is published.
+         * GM only. Console: await game.ionrift.library.debugApplyRegistry(data)
+         */
+        debugApplyRegistry: (registryData) => PackRegistryService.debugApplyRegistry(registryData),
         /** Base class for pack management UIs. Consumer modules extend this. */
         AbstractPackRegistryApp,
         /** Platform abstraction — FilePicker, file source, Forge detection, directory creation, JSZip, asset URL resolution. */
@@ -206,6 +216,12 @@ Hooks.once('init', () => {
         PartyRosterApp,
         /** Overlay service: premium content check, download, and extraction. */
         overlay: OverlayService,
+        /**
+         * Shared overlay item materialiser. Consumer modules call with a config
+         * object to turn overlay item payloads into world compendiums.
+         * Usage: game.ionrift.library.materialiser.materialiseAll(config)
+         */
+        materialiser: OverlayItemMaterialiser,
         /** Install a specific pending overlay. Usage: game.ionrift.library.installOverlay("respite-supplement-overlay") */
         installOverlay: (overlayId) => OverlayService.installOverlay(overlayId),
         /** Install all pending overlays. Usage: game.ionrift.library.installAllPending() */
@@ -499,6 +515,13 @@ Hooks.once('init', () => {
         default: {}
     });
 
+    game.settings.register("ionrift-library", "classificationOverrides", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {}
+    });
+
     game.settings.register("ionrift-library", "installedPacks", {
         scope: "world",
         config: false,
@@ -587,6 +610,16 @@ Hooks.once('init', () => {
         restricted: true
     });
 
+    // Shared overlay-item materialisation state, keyed by moduleId:
+    //   { [moduleId]: { [overlayId]: { version, packs: [collectionId], packHashes } } }
+    // Owned by OverlayItemMaterialiser so every consumer module shares one store.
+    game.settings.register("ionrift-library", "materialisedOverlayPacks", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {}
+    });
+
     game.settings.register("ionrift-library", "overlayWorldState", {
         scope: "world",
         config: false,
@@ -604,6 +637,20 @@ Hooks.once('init', () => {
         config: false,
         type: Boolean,
         default: false
+    });
+
+    // Local dev overlay registry. Lets a module surface disk-staged overlays in
+    // the Patreon Library for local e2e simulation without publishing entries to
+    // the remote registry. Shape mirrors registry.overlays:
+    //   { [overlayId]: { latest, tier, sublayer, moduleId, minModuleVersion, packLabel, description } }
+    // Entries here are merged into the Library overlay list and always shown
+    // (they bypass the preview gate). Empty by default, so no production effect.
+    game.settings.register("ionrift-library", "devOverlayRegistry", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {},
+        restricted: true
     });
 
     // Legacy cleanup UI force-mode. Dev-only, off-config, controlled

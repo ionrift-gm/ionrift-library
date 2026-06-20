@@ -402,8 +402,23 @@ export class SettingsLayout {
 
             btn.querySelector(".ionrift-ea-badge")?.remove();
 
-            const lines = offers.map(o => `\u2022 ${o.moduleId}  v${o.version} (${o.tier}+)`).join("\n");
-            const tooltip = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available:\n${lines}\n\nEarly access available \u2014 click to view`;
+            const lines = offers.map(o => {
+                const label = o.kind === "premium"
+                    ? `${o.moduleId} v${o.version} (${o.tier}+, premium)`
+                    : `${o.moduleId} v${o.version} (${o.tier}+)`;
+                return `\u2022 ${label}`;
+            }).join("\n");
+            const premiumCount = offers.filter(o => o.kind === "premium").length;
+            const eaCount = offers.length - premiumCount;
+            let tooltipHead = "";
+            if (premiumCount && eaCount) {
+                tooltipHead = `${premiumCount} premium and ${eaCount} early access offer${offers.length === 1 ? "" : "s"} available`;
+            } else if (premiumCount) {
+                tooltipHead = `${premiumCount} premium module offer${premiumCount === 1 ? "" : "s"} available`;
+            } else {
+                tooltipHead = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available`;
+            }
+            const tooltip = `${tooltipHead}:\n${lines}\n\nOpen Patreon Library to install`;
 
             const badge = document.createElement("span");
             badge.className = "ionrift-ea-badge";
@@ -424,7 +439,7 @@ export class SettingsLayout {
                 "vertical-align: middle",
                 "cursor: pointer"
             ].join(";");
-            badge.innerHTML = `<i class="fas fa-info-circle" style="font-size:0.85em"></i> ${offers.length} early access`;
+            badge.innerHTML = `<i class="fas fa-info-circle" style="font-size:0.85em"></i> ${offers.length} pending`;
 
             btn.appendChild(badge);
 

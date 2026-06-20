@@ -83,8 +83,11 @@ export class PackRegistryService {
             }
             // Module+EA checks still run so badge count stays accurate
             if (registryData.modules) {
+                const pendingModuleOffers = [];
                 this._checkModuleUpdates(registryData);
-                this._checkEarlyAccess(registryData);
+                this._checkEarlyAccess(registryData, pendingModuleOffers);
+                this._checkPremiumModules(registryData, pendingModuleOffers);
+                this._assignPendingModuleOffers(pendingModuleOffers);
             }
             return;
         }
@@ -96,8 +99,11 @@ export class PackRegistryService {
 
         // Module updates (schema v2+)
         if (registryData.modules) {
+            const pendingModuleOffers = [];
             this._checkModuleUpdates(registryData);
-            this._checkEarlyAccess(registryData);
+            this._checkEarlyAccess(registryData, pendingModuleOffers);
+            this._checkPremiumModules(registryData, pendingModuleOffers);
+            this._assignPendingModuleOffers(pendingModuleOffers);
         }
     }
 
@@ -340,14 +346,84 @@ export class PackRegistryService {
         "ionrift-arbiter": {
             title: "Ionrift Arbiter",
             icon:  "fas fa-crosshairs",
-            desc:  "Rules-driven targeting intelligence and encounter balance analysis."
+            desc:  "Rules-driven targeting intelligence and encounter balance analysis.",
+            distribution: "premium"
         },
         "ionrift-cursewright": {
             title: "Ionrift Cursewright",
             icon:  "fas fa-skull-crossbones",
-            desc:  "Cursed item engine for Ionrift Quartermaster: phased recipes, crafting, and curse mechanics."
+            desc:  "The Ionrift curse engine. Phased recipes, escalating curses, and intervention mechanics.",
+            distribution: "premium",
+            patreonUrl: "https://www.patreon.com/collection/2221410?view=expanded"
         }
     };
+
+    /**
+     * Patreon collection or post URL for a module install offer.
+     * Registry is authoritative; MODULE_DISPLAY_META is the dev fallback.
+     * @param {string} moduleId
+     * @param {Object} [source]  Registry module entry or earlyAccess block
+     * @returns {string}
+     */
+    static resolveModulePatreonUrl(moduleId, source = {}) {
+        return source.patreonUrl
+            ?? source.earlyAccess?.patreonUrl
+            ?? this.MODULE_DISPLAY_META[moduleId]?.patreonUrl
+            ?? "";
+    }
+
+    /**
+     * True when a registry module entry is a Patreon-delivered premium module
+     * (never graduates to the public Foundry browser listing).
+     * @param {Object} entry
+     * @returns {boolean}
+     */
+    static isPremiumModule(entry) {
+        return entry?.distribution === "premium";
+    }
+
+    /**
+     * Module ids that are Patreon-delivered premium modules, not content-pack hosts.
+     * Registry is authoritative; MODULE_DISPLAY_META covers dev and transition windows.
+     * @param {Object|null} registry
+     * @returns {Set<string>}
+     */
+    static getPremiumModuleIds(registry) {
+        const ids = new Set();
+        for (const [moduleId, entry] of Object.entries(registry?.modules ?? {})) {
+            if (this.isPremiumModule(entry)) ids.add(moduleId);
+        }
+        for (const [moduleId, meta] of Object.entries(this.MODULE_DISPLAY_META)) {
+            if (meta.distribution === "premium") ids.add(moduleId);
+        }
+        return ids;
+    }
+
+    /**
+     * Install/update version for a registry module entry.
+     * @param {Object} entry
+     * @returns {string|null}
+     */
+    static getModuleTargetVersion(entry) {
+        if (!entry) return null;
+        if (this.isPremiumModule(entry)) return entry.latest ?? null;
+        const ea = entry.earlyAccess;
+        if (ea?.version && (!ea.publicAt || new Date(ea.publicAt) > new Date())) {
+            return ea.version;
+        }
+        return entry.latest ?? null;
+    }
+
+    /**
+     * Required Patreon tier for a registry module entry.
+     * @param {Object} entry
+     * @returns {string|null}
+     */
+    static getModuleRequiredTier(entry) {
+        if (!entry) return null;
+        if (this.isPremiumModule(entry)) return entry.tier ?? null;
+        return entry.earlyAccess?.tier ?? null;
+    }
 
     /**
      * Check installed modules against registry for available updates.
@@ -376,10 +452,21 @@ export class PackRegistryService {
     }
 
     /**
-     * Check for early access modules the user is entitled to.
-     * @param {Object} registryData
+     * @param {Object[]} pendingModuleOffers
      */
-    static _checkEarlyAccess(registryData) {
+    static _assignPendingModuleOffers(pendingModuleOffers) {
+        if (game?.ionrift?.library) {
+            game.ionrift.library._pendingEarlyAccess = pendingModuleOffers;
+        }
+    }
+
+    /**
+     * Check for early access modules the user is entitled to.
+     * Public MIT modules only; premium modules use {@link _checkPremiumModules}.
+     * @param {Object} registryData
+     * @param {Object[]} [pendingModuleOffers]
+     */
+    static _checkEarlyAccess(registryData, pendingModuleOffers = []) {
         const modules = registryData.modules;
         if (!modules || typeof modules !== "object") return;
 
@@ -389,9 +476,10 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
-        const pendingEarlyAccess = [];
-
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (this.isPremiumModule(entry)) continue;
+            if (this.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
+
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
 
@@ -411,12 +499,57 @@ export class PackRegistryService {
             if (!snoozed) {
                 this._showEarlyAccessNotification(moduleId, ea);
             } else {
-                pendingEarlyAccess.push({ moduleId, version: ea.version, tier: ea.tier });
+                pendingModuleOffers.push({
+                    moduleId,
+                    version: ea.version,
+                    tier: ea.tier,
+                    kind: "early-access"
+                });
             }
         }
+    }
 
-        if (game?.ionrift?.library) {
-            game.ionrift.library._pendingEarlyAccess = pendingEarlyAccess;
+    /**
+     * Check for Patreon-delivered premium modules the user can install or update.
+     * @param {Object} registryData
+     * @param {Object[]} [pendingModuleOffers]
+     */
+    static _checkPremiumModules(registryData, pendingModuleOffers = []) {
+        const modules = registryData.modules;
+        if (!modules || typeof modules !== "object") return;
+
+        const userTier = CloudRelayService.getTierClaim();
+        if (!userTier) return;
+
+        const userRank = this.TIER_ORDER.indexOf(userTier);
+        if (userRank === -1) return;
+
+        for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!this.isPremiumModule(entry)) continue;
+
+            const version = entry.latest;
+            const tier = entry.tier;
+            if (!version || !tier) continue;
+
+            const reqRank = this.TIER_ORDER.indexOf(tier);
+            if (reqRank === -1 || userRank < reqRank) continue;
+
+            const installed = game.modules.get(moduleId);
+            if (installed && this._compareVersions(installed.version, version) >= 0) continue;
+
+            const releaseStatus = entry.releaseStatus === "ea" ? "ea" : "ga";
+            const snoozed = this._isPackSnoozed(`premium:${moduleId}`);
+            if (!snoozed) {
+                this._showPremiumModuleNotification(moduleId, entry, releaseStatus);
+            } else {
+                pendingModuleOffers.push({
+                    moduleId,
+                    version,
+                    tier,
+                    kind: "premium",
+                    releaseStatus
+                });
+            }
         }
     }
 
@@ -501,7 +634,7 @@ export class PackRegistryService {
         const title = meta.title || mod?.title || moduleId;
         const icon  = meta.icon  || "fas fa-cube";
         const desc  = meta.desc  || mod?.description || "";
-        const patreonUrl = earlyAccess.patreonUrl || "";
+        const patreonUrl = this.resolveModulePatreonUrl(moduleId, earlyAccess);
 
         return `
 <div class="ionrift-ea-dialog-content">
@@ -533,11 +666,115 @@ export class PackRegistryService {
     ${action === "install" ? `
     <div class="ionrift-ea-activate-hint">
         <i class="fas fa-info-circle"></i>
-        After install, enable the module in <strong>Settings → Manage Modules</strong>.
+        After install, enable the module in <strong>Module Settings</strong>.
     </div>` : ""}
 
     <div class="ionrift-ea-snooze-note">
         "Later" snoozes this for 3 days. Find it again in Module Settings.
+    </div>
+</div>`;
+    }
+
+    /**
+     * Show notification for an available premium module install or update.
+     * @param {string} moduleId
+     * @param {Object} registryEntry
+     * @param {"ea"|"ga"} releaseStatus
+     */
+    static _showPremiumModuleNotification(moduleId, registryEntry, releaseStatus) {
+        if (this._isPackSnoozed(`premium:${moduleId}`)) return;
+
+        const installed = game.modules.get(moduleId);
+        const action = installed ? "update" : "install";
+        const isGa = releaseStatus === "ga";
+
+        setTimeout(async () => {
+            const content = this._buildPremiumDialogContent(moduleId, registryEntry, action, releaseStatus);
+
+            const confirmed = await foundry.applications.api.DialogV2.confirm({
+                window: {
+                    title: isGa ? "Premium Module Available" : "Premium Early Access",
+                    icon:  isGa ? "fas fa-gem" : "fas fa-bolt"
+                },
+                content,
+                yes: {
+                    label: action === "install" ? "Install Now" : "Update Now",
+                    icon:  "fas fa-download"
+                },
+                no: {
+                    label: "Later",
+                    icon:  "fas fa-clock"
+                }
+            });
+
+            if (confirmed) {
+                await ModuleInstallerService.installModule(moduleId, registryEntry.latest);
+            } else {
+                this._snoozePack(`premium:${moduleId}`);
+            }
+        }, 3000);
+    }
+
+    /**
+     * Build rich HTML for the premium module dialog.
+     * @param {string} moduleId
+     * @param {Object} registryEntry
+     * @param {"install"|"update"} action
+     * @param {"ea"|"ga"} releaseStatus
+     * @returns {string}
+     */
+    static _buildPremiumDialogContent(moduleId, registryEntry, action, releaseStatus) {
+        const meta = this.MODULE_DISPLAY_META[moduleId] ?? {};
+        const mod  = game.modules.get(moduleId);
+        const title = meta.title || mod?.title || moduleId;
+        const icon  = meta.icon  || "fas fa-cube";
+        const desc  = meta.desc  || registryEntry.description || mod?.description || "";
+        const patreonUrl = this.resolveModulePatreonUrl(moduleId, registryEntry);
+        const version = registryEntry.latest ?? "";
+        const tier = registryEntry.tier ?? "Acolyte";
+        const isGa = releaseStatus === "ga";
+        const statusPill = isGa
+            ? `<span class="ionrift-ea-tier-pill ionrift-premium-status-pill ionrift-premium-status-pill--ga">General Availability</span>`
+            : `<span class="ionrift-ea-tier-pill ionrift-premium-status-pill ionrift-premium-status-pill--ea">Early Access</span>`;
+
+        return `
+<div class="ionrift-ea-dialog-content ionrift-premium-dialog-content">
+    <div class="ionrift-ea-identity">
+        <div class="ionrift-ea-icon ionrift-premium-dialog-icon"><i class="${icon}"></i></div>
+        <div class="ionrift-ea-meta">
+            <div class="ionrift-ea-name">
+                ${title}
+                <span class="ionrift-ea-version-pill">v${version}</span>
+                <span class="ionrift-ea-tier-pill">${tier}+</span>
+                ${statusPill}
+            </div>
+            <div class="ionrift-premium-kind-label">Premium module</div>
+            ${desc ? `<div class="ionrift-ea-desc">${desc}</div>` : ""}
+            <div class="ionrift-premium-delivery-note">Delivered through Patreon. Not listed on the public Foundry module browser.</div>
+        </div>
+    </div>
+
+    <div class="ionrift-ea-divider"></div>
+
+    ${patreonUrl ? `
+    <a class="ionrift-ea-patreon-link" href="${patreonUrl}" target="_blank">
+        <i class="fab fa-patreon"></i>
+        <span>Read the full announcement on Patreon</span>
+        <i class="fas fa-arrow-right ionrift-ea-arrow"></i>
+    </a>` : `
+    <div class="ionrift-ea-patreon-link ionrift-ea-patreon-link--placeholder">
+        <i class="fab fa-patreon"></i>
+        <span>Check Patreon for full details</span>
+    </div>`}
+
+    ${action === "install" ? `
+    <div class="ionrift-ea-activate-hint">
+        <i class="fas fa-info-circle"></i>
+        After install, enable the module in <strong>Module Settings</strong>.
+    </div>` : ""}
+
+    <div class="ionrift-ea-snooze-note">
+        "Later" snoozes this for 3 days. Find it again in the Patreon Library.
     </div>
 </div>`;
     }
@@ -576,6 +813,64 @@ export class PackRegistryService {
                 callback: () => ui.notifications.info("Preview only, no snooze triggered.")
             }
         });
+    }
+
+    /**
+     * Preview the premium module dialog in a running Foundry instance.
+     * Call from console: `game.ionrift.library.previewPremiumDialog("ionrift-cursewright")`
+     * @param {string} [moduleId="ionrift-cursewright"]
+     * @param {Object} [overrides]  Partial registry entry fields
+     */
+    static previewPremiumDialog(moduleId = "ionrift-cursewright", overrides = {}) {
+        const registryEntry = {
+            latest: "1.1.1",
+            tier: "Acolyte",
+            releaseStatus: "ga",
+            patreonUrl: "https://www.patreon.com/collection/2221410?view=expanded",
+            description: "The Ionrift curse engine.",
+            ...overrides
+        };
+        const releaseStatus = registryEntry.releaseStatus === "ea" ? "ea" : "ga";
+        const installed = game.modules.get(moduleId);
+        const action = installed ? "update" : "install";
+        const isGa = releaseStatus === "ga";
+        const content = this._buildPremiumDialogContent(moduleId, registryEntry, action, releaseStatus);
+
+        foundry.applications.api.DialogV2.confirm({
+            window: {
+                title: isGa ? "Premium Module Available" : "Premium Early Access",
+                icon:  isGa ? "fas fa-gem" : "fas fa-bolt"
+            },
+            content,
+            yes: {
+                label: action === "install" ? "Install Now" : "Update Now",
+                icon:  "fas fa-download",
+                callback: () => ui.notifications.info("Preview only, no install triggered.")
+            },
+            no: {
+                label: "Later",
+                icon:  "fas fa-clock",
+                callback: () => ui.notifications.info("Preview only, no snooze triggered.")
+            }
+        });
+    }
+
+    /**
+     * Inject registry data into the local cache for dev verification before
+     * ionrift-pack-registry is published. GM only.
+     * @param {Object} registryData  Full registry.json payload
+     * @returns {Promise<void>}
+     */
+    static async debugApplyRegistry(registryData) {
+        if (!game.user.isGM) {
+            ui.notifications.warn("GM only.");
+            return;
+        }
+        await game.settings.set("ionrift-library", "registryLastCheck", {
+            timestamp: Date.now(),
+            data: registryData
+        });
+        ui.notifications.info("Registry cache updated. Reopen Patreon Library to verify.");
     }
 
     // ── Graduated EA Nudge ──────────────────────────────────────

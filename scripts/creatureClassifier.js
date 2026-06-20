@@ -1,6 +1,133 @@
 import { Logger } from "./services/Logger.js";
 import { getClassifierData } from "./data/classifierData.js";
 
+const LIB_MODULE = "ionrift-library";
+const CLASSIFICATION_OVERRIDES_KEY = "classificationOverrides";
+
+function _getWorldClassificationOverrides() {
+    const settingKey = `${LIB_MODULE}.${CLASSIFICATION_OVERRIDES_KEY}`;
+    if (!game?.settings?.settings?.has?.(settingKey)) return {};
+    return game.settings.get(LIB_MODULE, CLASSIFICATION_OVERRIDES_KEY) ?? {};
+}
+
+function _isCompendiumActor(actor) {
+    if (!actor) return false;
+    if (actor.uuid?.startsWith("Compendium.")) return true;
+    return !!actor.pack;
+}
+
+function _titleCaseId(id) {
+    if (!id) return "";
+    return id.split("_").map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
+}
+
+function _lookupClassifierEntry(classId, classifierData) {
+    if (!classId || classId === "unknown") return null;
+    const parts = classId.split("_");
+    const typeKey = parts[0];
+    const typeData = classifierData[typeKey];
+    if (!typeData) return null;
+
+    let sound = typeData.sound ?? "MONSTER_GENERIC";
+    const tags = new Set(typeData.defaultTags ?? []);
+
+    if (parts.length > 1 && typeData.subtypes?.length) {
+        const subtypeKey = parts.slice(1).join("_");
+        const subtype = typeData.subtypes.find(s => s.id === subtypeKey);
+        if (subtype) {
+            sound = subtype.sound ?? sound;
+            subtype.defaultTags?.forEach(t => tags.add(t));
+            subtype.tags?.forEach(t => tags.add(t));
+        }
+    }
+
+    return { sound, tags };
+}
+
+function _materializeClassificationOverride(raw, classifierData) {
+    const id = String(raw.id ?? "").trim();
+    if (!id) return null;
+
+    const resolved = _lookupClassifierEntry(id, classifierData);
+    const sound = raw.sound ?? resolved?.sound ?? "MONSTER_GENERIC";
+    const tags = raw.tags?.length
+        ? new Set(raw.tags)
+        : (resolved?.tags ?? new Set());
+
+    return {
+        id,
+        sound,
+        tags,
+        confidence: 1.0,
+        isOverride: true
+    };
+}
+
+function _resolveActorClassificationOverride(actorOrName) {
+    if (typeof actorOrName !== "object" || !actorOrName) return null;
+    const raw = actorOrName.flags?.[LIB_MODULE]?.classification;
+    if (raw?.id) {
+        return _materializeClassificationOverride(raw, getClassifierData());
+    }
+    const uuid = actorOrName.uuid;
+    if (!uuid) return null;
+    const worldRaw = _getWorldClassificationOverrides()[uuid];
+    if (!worldRaw?.id) return null;
+    return _materializeClassificationOverride(worldRaw, getClassifierData());
+}
+
+/**
+ * List selectable classifier IDs for manual entity overrides.
+ * @returns {{ id: string, label: string }[]}
+ */
+export function listClassifierOptions() {
+    const classifierData = getClassifierData();
+    const options = [];
+
+    for (const [typeKey, typeData] of Object.entries(classifierData)) {
+        if (typeKey === "exceptions") continue;
+        options.push({ id: typeKey, label: _titleCaseId(typeKey) });
+        for (const subtype of typeData.subtypes ?? []) {
+            const id = `${typeKey}_${subtype.id}`;
+            options.push({
+                id,
+                label: `${_titleCaseId(typeKey)} (${_titleCaseId(subtype.id)})`
+            });
+        }
+    }
+
+    options.sort((a, b) => a.label.localeCompare(b.label));
+    return options;
+}
+
+/**
+ * Set or clear a manual classification override on an actor document.
+ * World actors store the override on the actor. Compendium actors use a
+ * world-level map keyed by UUID because locked packs cannot be edited.
+ * @param {Actor} actor
+ * @param {string|null} classId - Classifier ID, or null to clear
+ */
+export async function setActorClassification(actor, classId) {
+    if (!actor) return;
+
+    if (_isCompendiumActor(actor)) {
+        const uuid = actor.uuid;
+        if (!uuid) return;
+        const overrides = { ..._getWorldClassificationOverrides() };
+        if (!classId) delete overrides[uuid];
+        else overrides[uuid] = { id: classId };
+        await game.settings.set(LIB_MODULE, CLASSIFICATION_OVERRIDES_KEY, overrides);
+        return;
+    }
+
+    if (!actor.setFlag) return;
+    if (!classId) {
+        await actor.unsetFlag(LIB_MODULE, "classification");
+        return;
+    }
+    await actor.setFlag(LIB_MODULE, "classification", { id: classId });
+}
+
 /**
  * Analyzes an actor to determine its concept (Visuals/Sound).
  * @param {Actor|string} actorOrName - The Foundry Actor or just a name string.
@@ -20,6 +147,9 @@ export function classifyCreature(actorOrName) {
             confidence: 1.0
         };
     }
+
+    const manual = _resolveActorClassificationOverride(actorOrName);
+    if (manual) return manual;
 
     // Extract Description
     let description = (typeof actorOrName === 'object' && actorOrName.system?.description?.value)
