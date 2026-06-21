@@ -16,7 +16,6 @@ import { Logger } from "./services/Logger.js";
 import { DialogHelper } from "./DialogHelper.js";
 import { ZipImporterService } from "./services/ZipImporterService.js";
 import { JsonPackService } from "./services/JsonPackService.js";
-import { SessionTracker } from "./services/SessionTracker.js";
 import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
 import { adapterRegistry } from "./services/SystemAdapterRegistry.js";
 import { IonriftSystemAdapter } from "./services/IonriftSystemAdapter.js";
@@ -149,7 +148,6 @@ Hooks.once('init', () => {
         log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults(),
-        sessions: SessionTracker,
         /** System Adapter — system-agnostic actor queries (level, spells, classes). */
         system: adapterRegistry,
         adapterRegistry,
@@ -491,14 +489,6 @@ Hooks.once('init', () => {
         default: false
     });
 
-    // Session Log
-    game.settings.register("ionrift-library", "sessionLog", {
-        scope: "world",
-        config: false,
-        type: Array, // Expected: [{ id, date, number, players }]
-        default: []
-    });
-
     // Register Setup Version
     game.settings.register("ionrift-library", "indexSetupVersion", {
         scope: "world",
@@ -752,9 +742,6 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', async () => {
     RollRequestService.init();
-
-    // Init Session Tracker
-    SessionTracker.init();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
