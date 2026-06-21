@@ -1,9 +1,15 @@
 # Changelog
 
-## [2.4.1] - 2026-06-15
+## [2.4.2] - 2026-06-21
 
 ### Added
-- **Story moment panel.** GM-only glass modal for cursed-item beats and table guidance. Exposed on `game.ionrift.library.storyMoment.open()`.
+- **Story moment panel.** A shared narrative surface that gives modules one consistent way to present story beats to the GM.
+
+### Changed
+- Overlay manager and pack catalogue now recognise provision overlays, so Respite forage and provision content lists alongside other overlays.
+
+### Removed
+- Retired the unused legacy session tracking service.
 
 ## [2.4.0] - 2026-06-15
 
