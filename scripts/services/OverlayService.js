@@ -604,7 +604,15 @@ export class OverlayService {
             for (const dirPath of dirs) {
                 const sublayer = dirPath.split("/").pop();
                 const manifest = await this._readManifestAt(moduleId, sublayer);
-                if (manifest) installed.push(sublayer);
+                if (manifest) {
+                    installed.push(sublayer);
+                    continue;
+                }
+                // On Sqyre, browse lists sublayer directories but freshly uploaded
+                // files (including overlay-manifest.json) may not appear in browse
+                // yet. A present file index means the install completed.
+                const index = await this.readFileIndex(moduleId, sublayer);
+                if (index?.length) installed.push(sublayer);
             }
 
             return installed.sort();
