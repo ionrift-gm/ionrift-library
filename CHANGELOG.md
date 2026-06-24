@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.2] - 2026-06-24
+
+### Fixed
+- Fixed sublayer discovery failing on Sqyre-hosted games. Installed sublayers are now enumerated from the file index when directory listing is unavailable.
+
 ## [2.5.1] - 2026-06-24
 
 ### Changed
