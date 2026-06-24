@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.0] - 2026-06-24
+
+### Fixed
+- Overlay content now loads reliably on Sqyre hosting. Installed packs are tracked by a file index instead of relying on directory listings, which were unreliable on that platform.
+
 ## [2.4.2] - 2026-06-21
 
 ### Added
