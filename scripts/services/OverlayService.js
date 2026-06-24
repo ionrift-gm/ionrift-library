@@ -63,6 +63,9 @@ export class OverlayService {
     /** Root directory for all overlay content (data-relative). */
     static OVERLAY_ROOT = "ionrift-data/overlays";
 
+    /** Browse-independent file index written at install, read for enumeration. */
+    static FILE_INDEX_NAME = "overlay-files.json";
+
     /**
      * Dev-only: when true, install paths behave as if on hosted Foundry
      * (warning dialog, Forge throttle). Toggled via `game.ionrift.library.dev`.
@@ -1246,6 +1249,7 @@ export class OverlayService {
 
         let uploaded = 0;
         let cancelled = false;
+        const uploadedPaths = [];
 
         await PlatformHelper.withSuppressedToasts(async () => {
             for (let i = 0; i < entries.length; i++) {
@@ -1262,6 +1266,7 @@ export class OverlayService {
                     const uploadFile = new File([fileBlob], entry.fileName, { type: this._mimeType(entry.fileName) });
                     await FP.upload(source, entry.fileDir, uploadFile, {});
                     uploaded++;
+                    uploadedPaths.push(entry.path);
                     progressApp?.update?.(i + 1, entry.fileName);
                 } catch (uploadErr) {
                     Logger.warn(MODULE_LABEL, `Upload failed for ${entry.path}:`, uploadErr);
@@ -1279,6 +1284,16 @@ export class OverlayService {
         });
 
         Logger.log(MODULE_LABEL, `Extracted ${uploaded}/${entries.length} file(s) to ${targetDir}${cancelled ? " (cancelled)" : ""}`);
+
+        // Write a browse-independent file index. Enumeration on Sqyre cannot
+        // rely on FilePicker.browse (it does not list freshly uploaded files),
+        // so consumers read this index and fetch each path directly. Written
+        // on every platform; self-hosted and Forge keep the browse fallback.
+        if (uploadedPaths.length && !cancelled) {
+            try { await this._writeFileIndex(targetDir, uploadedPaths); }
+            catch (e) { Logger.warn(MODULE_LABEL, `Failed to write overlay file index for ${targetDir}:`, e?.message ?? e); }
+        }
+
         return { uploaded, total: entries.length, cancelled };
     }
 
@@ -1294,6 +1309,36 @@ export class OverlayService {
         const blob = new Blob([json], { type: "application/json" });
         const file = new File([blob], "overlay-manifest.json", { type: "application/json" });
         await FP.upload(source, targetDir, file, {});
+    }
+
+    /**
+     * Write the overlay file index. Lists every uploaded file path relative
+     * to the sublayer root so enumeration does not depend on FilePicker.browse.
+     * @param {string} targetDir  Sublayer root directory.
+     * @param {string[]} relativePaths  Paths relative to targetDir (e.g. "items/containers/x.json").
+     * @private
+     */
+    static async _writeFileIndex(targetDir, relativePaths) {
+        const FP = PlatformHelper.FP;
+        const source = PlatformHelper.fileSource;
+        const payload = { schema: 1, generatedAt: new Date().toISOString(), files: relativePaths };
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const file = new File([blob], OverlayService.FILE_INDEX_NAME, { type: "application/json" });
+        await FP.upload(source, targetDir, file, {});
+    }
+
+    /**
+     * Read the overlay file index for an installed sublayer.
+     * @param {string} moduleId
+     * @param {string} sublayer
+     * @returns {Promise<string[]|null>}  Relative file paths, or null when no index is present.
+     */
+    static async readFileIndex(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
+        const path = `${this.getOverlayPath(moduleId, sublayer)}/${OverlayService.FILE_INDEX_NAME}`;
+        const data = await PlatformHelper.readDataJson(path);
+        if (data && Array.isArray(data.files)) return data.files;
+        return null;
     }
 
     static _hasTierAccess(userTier, requiredTier) {

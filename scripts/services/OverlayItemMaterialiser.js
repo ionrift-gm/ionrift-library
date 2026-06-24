@@ -197,8 +197,18 @@ export class OverlayItemMaterialiser {
     static async _materialiseSublayerContent(sublayer, overlayId, overlayVersion, config) {
         const { moduleId, compendiumPrefix } = config;
 
-        const itemsListing = await OverlayService.listOverlayDir(moduleId, sublayer, "items");
-        const packDirs = (itemsListing?.dirs ?? []).filter(d => d && !d.startsWith("."));
+        // Prefer the browse-independent file index. It is the only reliable
+        // enumeration source on Sqyre, where FilePicker.browse does not list
+        // freshly uploaded files. Fall back to a browse walk for legacy
+        // installs (no index) and self-hosted/Forge, which keep working as before.
+        const fileIndex = await OverlayService.readFileIndex(moduleId, sublayer);
+        let packDirs;
+        if (fileIndex) {
+            packDirs = this._packDirsFromIndex(fileIndex);
+        } else {
+            const itemsListing = await OverlayService.listOverlayDir(moduleId, sublayer, "items");
+            packDirs = (itemsListing?.dirs ?? []).filter(d => d && !d.startsWith("."));
+        }
         if (!packDirs.length) {
             Logger.log(this._label(config),
                 `OverlayItemMaterialiser | "${overlayId}" has no items/ payload.`
@@ -214,7 +224,9 @@ export class OverlayItemMaterialiser {
         for (const packDir of packDirs.sort()) {
             const itemsPath = `items/${packDir}`;
             const folderDefs = await this._readFolders(moduleId, sublayer, itemsPath);
-            const items = await this._collectItemsRecursive(moduleId, sublayer, itemsPath);
+            const items = fileIndex
+                ? await this._collectItemsFromIndex(moduleId, sublayer, packDir, fileIndex)
+                : await this._collectItemsRecursive(moduleId, sublayer, itemsPath);
             if (!items.length) {
                 Logger.warn(this._label(config),
                     `OverlayItemMaterialiser | "${overlayId}" packDir "${packDir}" yielded zero items.`
@@ -371,6 +383,43 @@ export class OverlayItemMaterialiser {
         const data = await OverlayService.readOverlayFile(moduleId, sublayer, `${itemsPath}/${FOLDERS_FILE}`);
         if (Array.isArray(data)) return data;
         return [];
+    }
+
+    /**
+     * Derive the packDir names from a file index. Paths look like
+     * `items/{packDir}/...`; the first segment under `items/` is the packDir.
+     * @param {string[]} fileIndex
+     * @returns {string[]}
+     * @private
+     */
+    static _packDirsFromIndex(fileIndex) {
+        const set = new Set();
+        for (const path of fileIndex ?? []) {
+            const match = /^items\/([^/]+)\//.exec(path);
+            if (match && !match[1].startsWith(".")) set.add(match[1]);
+        }
+        return [...set];
+    }
+
+    /**
+     * Collect items for a packDir from the file index, fetching each `.json`
+     * by direct path. Mirrors {@link _collectItemsRecursive} but never browses,
+     * so it works on Sqyre. `_folders.json` files load via {@link _readFolders}.
+     * @private
+     */
+    static async _collectItemsFromIndex(moduleId, sublayer, packDir, fileIndex) {
+        const prefix = `items/${packDir}/`;
+        const itemPaths = (fileIndex ?? []).filter(path =>
+            path.startsWith(prefix)
+            && path.endsWith(".json")
+            && path.split("/").pop() !== FOLDERS_FILE
+        );
+        const collected = [];
+        for (const relPath of itemPaths) {
+            const data = await OverlayService.readOverlayFile(moduleId, sublayer, relPath);
+            if (data && data.name) collected.push(data);
+        }
+        return collected;
     }
 
     /**

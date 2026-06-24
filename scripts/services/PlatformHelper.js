@@ -22,6 +22,21 @@ export class PlatformHelper {
         return (typeof ForgeVTT !== "undefined" && ForgeVTT.usingTheForge === true);
     }
 
+    /**
+     * True on Sqyre cloud hosting (*.sqyre.app).
+     *
+     * Sqyre stores uploaded files correctly and serves them by direct path,
+     * but its FilePicker.browse does not list freshly written files. Code
+     * that enumerates or existence-checks via browse must take a
+     * browse-free path on Sqyre (read the overlay file index, fetch by path).
+     * @returns {boolean}
+     */
+    static get isSqyre() {
+        const hostname = globalThis.window?.location?.hostname;
+        if (!hostname) return false;
+        return /\.sqyre\.app$/i.test(hostname);
+    }
+
     // ─── FilePicker Resolution ────────────────────────────────────
 
     /**
@@ -244,7 +259,11 @@ export class PlatformHelper {
         const fileName = normalized.substring(slash + 1);
         const FP = this.FP;
 
-        if (FP) {
+        // The browse-exists pre-check suppresses noisy 404s when a file is
+        // genuinely absent. Skip it on Sqyre: there browse does not list
+        // freshly uploaded files, so the check would report present files
+        // as missing. Direct fetch below resolves them correctly.
+        if (FP && !this.isSqyre) {
             try {
                 const browse = await FP.browse(this.fileSource, dir);
                 const files = browse.files ?? [];
