@@ -719,7 +719,9 @@ export class OverlayService {
 
     /**
      * Whether an installed overlay is active in this world.
-     * Missing state defaults to active when the overlay is installed.
+     * Requires an explicit entry in overlayWorldState. Installed folders on
+     * disk without world state (e.g. manual sideloads) are inactive until
+     * enabled in Pack Registry. Proper installs set active: true on extract.
      * @param {string} overlayId
      * @param {string} [moduleId]
      * @param {string} [sublayer]
@@ -728,11 +730,6 @@ export class OverlayService {
     static async isOverlayActive(overlayId, moduleId, sublayer) {
         const state = this._getWorldStateMap()[overlayId];
         if (state && typeof state.active === "boolean") return state.active;
-
-        if (moduleId && sublayer) {
-            const local = await this.getLocalManifest(moduleId, sublayer);
-            return !!(local && local.overlayId === overlayId);
-        }
         return false;
     }
 
