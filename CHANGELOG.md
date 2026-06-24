@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.5.1] - 2026-06-24
+
+### Changed
+- Changed large content packs materialise faster after install.
+
 ## [2.5.0] - 2026-06-24
 
 ### Fixed
