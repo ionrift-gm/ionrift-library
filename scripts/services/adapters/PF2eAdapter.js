@@ -1,7 +1,7 @@
 import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
 
 export class PF2eAdapter extends IonriftSystemAdapter {
-    static #SUPPORTED = new Set(["signature-items", "workshop", "qm-loot-cache", "scroll-forge"]);
+    static #SUPPORTED = new Set(["signature-items", "workshop", "qm-loot-cache", "scroll-forge", "srd-curses"]);
 
     get systemId() { return "pf2e"; }
 
