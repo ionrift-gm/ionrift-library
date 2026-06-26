@@ -57,6 +57,10 @@ export class SystemAdapterRegistry {
     getAbilityScore(actor, abbr) { return this.current.getAbilityScore(actor, abbr); }
     getSituationalConsumables() { return this.current.getSituationalConsumables(); }
     isSupported(featureId) { return this.current.isSupported(featureId); }
+    isMagical(item) { return this.current.isMagical(item); }
+    getPowerScoreContribution(item, weights) {
+        return this.current.getPowerScoreContribution(item, weights);
+    }
 }
 
 /** Singleton — created once, exposed as game.ionrift.library.system */

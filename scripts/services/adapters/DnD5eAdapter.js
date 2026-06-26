@@ -1,9 +1,30 @@
 import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
 
 export class DnD5eAdapter extends IonriftSystemAdapter {
-    static #SUPPORTED = new Set(["signature-items", "scroll-forge", "srd-curses", "workshop"]);
+    static #SUPPORTED = new Set([
+        "signature-items", "scroll-forge", "srd-curses", "workshop",
+        "qm-loot-cache", "qm-loot-pool-compile", "qm-latent-masking"
+    ]);
 
     isSupported(featureId) { return DnD5eAdapter.#SUPPORTED.has(featureId); }
+
+    isMagical(item) {
+        if (!item) return false;
+        const system = item.system ?? {};
+        const props = system.properties;
+        const hasMgc = props instanceof Set
+            ? props.has("mgc")
+            : false;
+        const rarity = system.rarity || "common";
+        return hasMgc || rarity !== "common" || !!system.attunement;
+    }
+
+    getPowerScoreContribution(item, weights) {
+        if (!item || !this.isMagical(item)) return 0;
+        const eligible = new Set(["weapon", "equipment", "tool", "container"]);
+        if (!eligible.has(item.type)) return 0;
+        return super.getPowerScoreContribution(item, weights);
+    }
 
     get systemId() { return "dnd5e"; }
 
@@ -54,7 +75,7 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
 
     requiresAttunement(item) {
         const att = item?.system?.attunement;
-        return att === "required" || att === "attuned";
+        return att === "required" || att === "attuned" || att === true;
     }
 
     getItemCategory(item) {

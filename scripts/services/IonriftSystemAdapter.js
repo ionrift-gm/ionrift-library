@@ -80,4 +80,41 @@ export class IonriftSystemAdapter {
      * @returns {boolean}
      */
     isSupported(featureId) { return false; }
+
+    /**
+     * Whether an item counts as magical for power-score and loot classification.
+     * @param {Item|object} item
+     * @returns {boolean}
+     */
+    isMagical(item) {
+        const rarity = (this.getRarity(item) ?? "common").toLowerCase();
+        return rarity !== "common" && rarity !== "none";
+    }
+
+    /**
+     * Contribution to Signature Ledger power score for one inventory item.
+     * @param {Item|object} item
+     * @param {object} [weights]  Optional override of POWER_WEIGHTS shape
+     * @returns {number}
+     */
+    getPowerScoreContribution(item, weights) {
+        if (!item || !this.isMagical(item)) return 0;
+        const w = weights ?? {
+            rarity: { common: 1, uncommon: 3, rare: 8, veryRare: 15, legendary: 25, artifact: 40 },
+            attunement: 1.5,
+            charges: 0.3,
+            flatBonus: 2.0
+        };
+        const rarityKey = (this.getRarity(item) ?? "common").replace(/\s+/g, "");
+        const rarityTable = w.rarity ?? {};
+        let score = rarityTable[rarityKey] ?? rarityTable[this.getRarity(item)] ?? 0;
+        if (this.requiresAttunement(item)) score *= w.attunement ?? 1;
+        const usesMax = item.system?.uses?.max;
+        if (usesMax) score += usesMax * (w.charges ?? 0);
+        const attackBonus = item.system?.attackBonus;
+        if (attackBonus && !Number.isNaN(parseInt(attackBonus, 10))) {
+            score += parseInt(attackBonus, 10) * (w.flatBonus ?? 0);
+        }
+        return score;
+    }
 }

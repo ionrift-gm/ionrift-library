@@ -1,7 +1,40 @@
 import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
 
 export class PF2eAdapter extends IonriftSystemAdapter {
+    static #SUPPORTED = new Set(["signature-items", "workshop", "qm-loot-cache"]);
+
     get systemId() { return "pf2e"; }
+
+    isSupported(featureId) { return PF2eAdapter.#SUPPORTED.has(featureId); }
+
+    isMagical(item) {
+        if (!item) return false;
+        const traits = item.system?.traits?.value ?? [];
+        if (traits.includes("magical")) return true;
+        const rarity = (this.getRarity(item) ?? "common").toLowerCase();
+        return rarity !== "common" && rarity !== "none";
+    }
+
+    getPowerScoreContribution(item, weights) {
+        if (!item || !this.isMagical(item)) return 0;
+        const eligible = new Set(["weapon", "armor", "shield", "equipment", "consumable"]);
+        if (!eligible.has(item.type)) return 0;
+        const w = weights ?? {
+            rarity: { common: 1, uncommon: 3, rare: 8, unique: 15 },
+            attunement: 1.0,
+            charges: 0.3,
+            flatBonus: 2.0
+        };
+        const rarity = (this.getRarity(item) ?? "common").toLowerCase();
+        let score = w.rarity[rarity] ?? 0;
+        const traits = item.system?.traits?.value ?? [];
+        if (traits.includes("invested")) score *= w.attunement ?? 1;
+        const potency = item.system?.runes?.potency;
+        if (potency && !Number.isNaN(Number(potency))) {
+            score += Number(potency) * (w.flatBonus ?? 0);
+        }
+        return score;
+    }
 
     getLevel(actor) {
         if (!actor) return 1;
