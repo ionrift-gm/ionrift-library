@@ -1,3 +1,4 @@
+import { Logger } from "../services/Logger.js";
 import { BugReportService } from "../services/BugReportService.js";
 
 export const LIBRARY_BUG_REPORT_CONTEXT = "library-settings";
@@ -171,7 +172,7 @@ export class BugReportApp extends FormApplication {
             this._setStatus("success", "Ready to paste", detail);
             ui.notifications.info(detail);
         } catch (err) {
-            console.error("Ionrift | Copy bug report failed:", err);
+            Logger.error("BugReport", "Copy bug report failed:", err);
             this._setStatus("error", "Copy failed", "Check the browser console for details.");
             ui.notifications.error("Could not copy debug report. Check the browser console.");
         } finally {
@@ -221,7 +222,7 @@ export class BugReportApp extends FormApplication {
 
             await BugReportService.showSubmitSuccess(result);
         } catch (err) {
-            console.error("Ionrift | Send bug report failed:", err);
+            Logger.error("BugReport", "Send bug report failed:", err);
             const msg = BugReportService.formatSubmitError(err?.message ?? String(err));
             this._setStatus("error", "Send failed", msg);
             ui.notifications.error("Could not send bug report. Try copy and Discord instead.");
