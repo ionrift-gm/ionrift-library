@@ -18,6 +18,8 @@
  * Fires `ionrift.partyChanged` hook when the roster is saved.
  */
 
+import { Logger } from "./Logger.js";
+
 const LIB_ID = "ionrift-library";
 
 export class PartyRoster {
@@ -292,7 +294,7 @@ export class PartyRoster {
             const respiteRoster = game.settings.get("ionrift-respite", "partyRoster");
             if (respiteRoster?.length) {
                 await game.settings.set(LIB_ID, "partyRoster", respiteRoster);
-                console.log(`Ionrift | PartyRoster: migrated ${respiteRoster.length} actors from Respite`);
+                Logger.log("PartyRoster", `Migrated ${respiteRoster.length} actors from Respite`);
             }
         } catch {
             // Respite not active or setting not registered; skip silently

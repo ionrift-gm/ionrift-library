@@ -1,4 +1,5 @@
 import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
+import { Logger } from "../Logger.js";
 
 export class DnD5eAdapter extends IonriftSystemAdapter {
     static #SUPPORTED = new Set([
@@ -140,8 +141,8 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
             if (group.id === primary?.id) continue;
             members = extractMembers(group);
             if (members.length) {
-                console.warn(
-                    `Ionrift | Primary party "${primary?.name ?? "unset"}" has no usable members; `
+                Logger.warn("DnD5eAdapter",
+                    `Primary party "${primary?.name ?? "unset"}" has no usable members; `
                     + `using "${group.name}". Right-click that group and choose Make Primary Party.`
                 );
                 return members;

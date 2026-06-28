@@ -26,6 +26,8 @@
  * @property {object} [flags]       Free-form metadata for consumers.
  */
 
+import { Logger } from "./Logger.js";
+
 /** Legacy category values folded into {@link TerrainCategory}. */
 export const TERRAIN_CATEGORY_ALIASES = Object.freeze({
     dungeon: "built",
@@ -85,7 +87,7 @@ export class TerrainRegistry {
      */
     register(def) {
         if (!def?.id || !def?.label) {
-            console.warn("Ionrift | TerrainRegistry.register: def must have id and label.");
+            Logger.warn("TerrainRegistry", "register: def must have id and label.");
             return;
         }
         this._terrains.set(def.id, {
@@ -104,7 +106,7 @@ export class TerrainRegistry {
      */
     unregister(id) {
         if (this._baseIds.has(id)) {
-            console.warn(`Ionrift | TerrainRegistry.unregister: cannot remove base terrain "${id}".`);
+            Logger.warn("TerrainRegistry", `unregister: cannot remove base terrain "${id}".`);
             return false;
         }
         return this._terrains.delete(id);
