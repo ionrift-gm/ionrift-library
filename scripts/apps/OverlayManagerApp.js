@@ -1,3 +1,4 @@
+import { Logger } from "../services/Logger.js";
 import { OverlayService } from "../services/OverlayService.js";
 import { CloudRelayService } from "../services/CloudRelayService.js";
 import { PackRegistryService } from "../services/PackRegistryService.js";
@@ -726,7 +727,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         try {
             manifest = await this._readOverlayManifestFromZip(file);
         } catch (e) {
-            console.warn("OverlayManagerApp | Failed to read overlay manifest from zip:", e);
+            Logger.warn("OverlayManager", "Failed to read overlay manifest from zip:", e);
         }
 
         if (!manifest) {
@@ -782,7 +783,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
             ui.notifications?.info(`Installed "${overlayId}" v${version} into ${moduleLabel}.`);
         } catch (e) {
-            console.error("OverlayManagerApp | Zip import failed:", e);
+            Logger.error("OverlayManager", "Zip import failed:", e);
             ui.notifications?.error(`Zip import failed: ${e.message}`);
         } finally {
             btn.disabled = false;
@@ -1225,7 +1226,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 }
                 group.cleanup = detection;
             } catch (e) {
-                console.warn("OverlayManagerApp | Cleanup detection failed for", group.moduleId, e);
+                Logger.warn("OverlayManager", "Cleanup detection failed for", group.moduleId, e);
                 group.cleanup = null;
             }
         }));
