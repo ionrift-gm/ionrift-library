@@ -26,7 +26,6 @@ import { BugReportService } from "./services/BugReportService.js";
 import { ConsoleCapture } from "./services/ConsoleCapture.js";
 import { ModuleInstallerService } from "./services/ModuleInstallerService.js";
 import { PlatformHelper } from "./services/PlatformHelper.js";
-import { PatreonMenu } from "./apps/PatreonMenu.js";
 import { PartyRoster } from "./services/PartyRoster.js";
 import { PartyRosterApp } from "./apps/PartyRosterApp.js";
 import { OverlayManagerApp } from "./apps/OverlayManagerApp.js";

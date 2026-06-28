@@ -838,15 +838,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /**
-     * @deprecated Legacy manifest.json zips are no longer supported.
-     * @param {File} file
-     * @returns {Promise<Object|null>}
-     */
-    async _readManifestFromZip(file) {
-        return this._readOverlayManifestFromZip(file);
-    }
-
-    /**
      * Local dev overlay entries from the `devOverlayRegistry` setting. These are
      * disk-staged overlays surfaced for e2e simulation without a remote registry
      * publish. Returns an empty object in normal use.

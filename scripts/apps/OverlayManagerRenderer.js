@@ -1,20 +1,6 @@
 import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
 import { PackRegistryService } from "../services/PackRegistryService.js";
 
-/** Status priority for rolling up a module's tiers to a single tile state. */
-const STATUS_PRIORITY = [
-    "not-installed",
-    "update-available",
-    "module-outdated",
-    "installed-outdated",
-    "installed-locked",
-    "installed-inactive",
-    "up-to-date",
-    "no-content",
-    "module-inactive",
-    "locked"
-];
-
 // ── Pure display helpers ─────────────────────────────────────────────
 
 export function shortModuleName(name) {

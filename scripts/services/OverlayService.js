@@ -642,15 +642,6 @@ export class OverlayService {
     /**
      * @param {string} moduleId
      * @param {string} sublayer
-     * @returns {boolean}
-     */
-    static hasOverlay(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
-        return this._manifestCache.has(`${moduleId}:${sublayer}`);
-    }
-
-    /**
-     * @param {string} moduleId
-     * @param {string} sublayer
      * @param {string} relativePath
      * @returns {Promise<Object|null>}
      */
