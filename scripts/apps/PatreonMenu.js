@@ -1,3 +1,4 @@
+import { Logger } from "../services/Logger.js";
 import { CloudRelayService } from "../services/CloudRelayService.js";
 import { PackRegistryService } from "../services/PackRegistryService.js";
 import { ModuleInstallerService } from "../services/ModuleInstallerService.js";
@@ -184,7 +185,7 @@ export class PatreonMenu extends FormApplication {
                     timestamp: Date.now(),
                     data
                 });
-                console.log("PackRegistry | Manual refresh completed.");
+                Logger.log("PackRegistry", "Manual refresh completed.");
             } else {
                 ui.notifications.warn("Could not reach the update registry. Try again later.");
             }

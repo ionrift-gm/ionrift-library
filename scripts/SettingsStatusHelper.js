@@ -46,7 +46,7 @@ export class SettingsStatusHelper {
             });
 
         } else {
-            console.warn(`Ionrift Lib | Could not find Settings Setup button: ${buttonKey}`);
+            Logger.warn("SettingsStatus", `Could not find Settings Setup button: ${buttonKey}`);
         }
     }
 }

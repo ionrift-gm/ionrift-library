@@ -1,3 +1,5 @@
+import { Logger } from "../services/Logger.js";
+
 /**
  * PackManifestSchema
  * Validation and utility functions for Ionrift content pack manifests.
@@ -175,7 +177,7 @@ export class PackManifestSchema {
     }
 
     if (Array.isArray(root)) {
-      console.warn("PackManifestSchema | No _manifest found (top-level array). Importing in legacy mode.");
+      Logger.warn("PackManifest", "No _manifest found (top-level array). Importing in legacy mode.");
       return {
         valid: true,
         manifest: { ...this.#LEGACY_STUB },
@@ -188,7 +190,7 @@ export class PackManifestSchema {
     const manifest = record._manifest;
 
     if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) {
-      console.warn("PackManifestSchema | No _manifest block found. Importing in legacy mode.");
+      Logger.warn("PackManifest", "No _manifest block found. Importing in legacy mode.");
       return {
         valid: true,
         manifest: { ...this.#LEGACY_STUB },

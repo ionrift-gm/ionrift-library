@@ -81,30 +81,14 @@ export class PackRegistryService {
             } else {
                 Logger.log("PackRegistry", "All installed packs are up to date.");
             }
-            // Module+EA checks still run so badge count stays accurate
-            if (registryData.modules) {
-                const pendingModuleOffers = [];
-                this._checkModuleUpdates(registryData);
-                this._checkEarlyAccess(registryData, pendingModuleOffers);
-                this._checkPremiumModules(registryData, pendingModuleOffers);
-                this._assignPendingModuleOffers(pendingModuleOffers);
+        } else {
+            Logger.log("PackRegistry", `${notifiable.length} update(s) to notify (${updates.length - notifiable.length} snoozed).`);
+            for (const { packId, installed: inst, available } of notifiable) {
+                this._showUpdateNotification(packId, inst, available);
             }
-            return;
         }
 
-        Logger.log("PackRegistry", `${notifiable.length} update(s) to notify (${updates.length - notifiable.length} snoozed).`);
-        for (const { packId, installed: inst, available } of notifiable) {
-            this._showUpdateNotification(packId, inst, available);
-        }
-
-        // Module updates (schema v2+)
-        if (registryData.modules) {
-            const pendingModuleOffers = [];
-            this._checkModuleUpdates(registryData);
-            this._checkEarlyAccess(registryData, pendingModuleOffers);
-            this._checkPremiumModules(registryData, pendingModuleOffers);
-            this._assignPendingModuleOffers(pendingModuleOffers);
-        }
+        this._processModuleOffers(registryData);
     }
 
     /**
@@ -423,6 +407,20 @@ export class PackRegistryService {
         if (!entry) return null;
         if (this.isPremiumModule(entry)) return entry.tier ?? null;
         return entry.earlyAccess?.tier ?? null;
+    }
+
+    /**
+     * Run module update, early-access, and premium offer checks if the
+     * registry payload contains a `modules` block.
+     * @param {Object} registryData
+     */
+    static _processModuleOffers(registryData) {
+        if (!registryData?.modules) return;
+        const pendingModuleOffers = [];
+        this._checkModuleUpdates(registryData);
+        this._checkEarlyAccess(registryData, pendingModuleOffers);
+        this._checkPremiumModules(registryData, pendingModuleOffers);
+        this._assignPendingModuleOffers(pendingModuleOffers);
     }
 
     /**

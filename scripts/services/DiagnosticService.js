@@ -1,6 +1,5 @@
 import { Logger } from "./Logger.js";
 import { ReportBuilder } from "./ReportBuilder.js";
-import { DiagnosticApp } from "../apps/DiagnosticApp.js";
 
 /**
  * Singleton service to orchestrate system diagnostics.
@@ -47,6 +46,7 @@ export class DiagnosticService {
      */
     async showResults() {
         const results = await this.runDiagnostics();
+        const { DiagnosticApp } = await import("../apps/DiagnosticApp.js");
         new DiagnosticApp(results).render(true);
     }
 }

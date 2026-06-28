@@ -1,3 +1,5 @@
+import { Logger } from "../services/Logger.js";
+
 const Parent = globalThis.FormApplication || globalThis.Application;
 export class AbstractWelcomeApp extends Parent {
     constructor(moduleTitle, settingsKey, currentVersion) {
@@ -137,7 +139,7 @@ export class AbstractWelcomeApp extends Parent {
             ui.notifications.info(`${this.moduleTitle} | Step Complete: ${stepId}`);
 
         } catch (err) {
-            console.error(`${this.moduleTitle} | Step Failed: ${stepId}`, err);
+            Logger.error(this.moduleTitle, `Step Failed: ${stepId}`, err);
             ui.notifications.error(`${this.moduleTitle} | Error: ${err.message}`);
             // Reset button
             btn.prop("disabled", false);

@@ -364,7 +364,7 @@ export async function runSelfTests({ limit = 0, random = false } = {}) {
         }
 
         if (failReason) {
-            console.warn(`Ionrift Lib | Test FAILED for '${test.input}': ${failReason}`);
+            Logger.warn("Classifier", `Test FAILED for '${test.input}': ${failReason}`);
             results.push({
                 input: test.input,
                 status: "fail",

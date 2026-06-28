@@ -1,3 +1,4 @@
+import { Logger } from "../services/Logger.js";
 import { classifyCreature, listClassifierOptions, setActorClassification } from "../creatureClassifier.js";
 
 export class ClassifierValidatorApp extends FormApplication {
@@ -261,7 +262,7 @@ export class ClassifierValidatorApp extends FormApplication {
                                     finish(true);
                                     dlg.close();
                                 } catch (err) {
-                                    console.error(err);
+                                    Logger.error("Classifier", "Could not save classification override:", err);
                                     ui.notifications.error("Ionrift | Could not save classification override.");
                                     finish(false);
                                 }
@@ -407,7 +408,7 @@ export class ClassifierValidatorApp extends FormApplication {
                         try {
                             actor = await fromUuid(r.uuid);
                         } catch (e) {
-                            console.warn(`Ionrift | Could not fetch actor ${r.name}`, e);
+                            Logger.warn("Classifier", `Could not fetch actor ${r.name}`, e);
                         }
                     }
 
@@ -500,7 +501,7 @@ export class ClassifierValidatorApp extends FormApplication {
                 }).render(true);
 
             } catch (err) {
-                console.error(err);
+                Logger.error("Classifier", "Export generation failed:", err);
                 ui.notifications.error("Export generation failed. See Console.");
             } finally {
                 btn.html(icon);

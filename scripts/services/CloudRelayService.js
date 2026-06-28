@@ -29,12 +29,6 @@ export class CloudRelayService {
     /** Shared user-facing copy for an expired connection. */
     static EXPIRED_COPY = "Your Patreon connection has expired. Go to <strong>Ionrift Library</strong>, disconnect, and reconnect.";
 
-    // Lazy-loaded to avoid circular import at parse time
-    static async _getDialogHelper() {
-        const { DialogHelper } = await import("../DialogHelper.js");
-        return DialogHelper;
-    }
-
     // ── Sigil Access ─────────────────────────────────────────
 
     /**
