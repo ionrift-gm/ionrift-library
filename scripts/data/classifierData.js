@@ -1,3 +1,4 @@
+import { Logger } from "../services/Logger.js";
 import { DND5E_DATA } from "./dnd5eData.js";
 
 const DAGGERHEART_DATA = {
@@ -315,7 +316,7 @@ export function getClassifierData() {
         return DAGGERHEART_DATA;
     }
 
-    console.warn(`Ionrift Lib | Unsupported system: '${game.system.id}'. Using generic classifier data.`);
+    Logger.warn("Classifier", `Unsupported system: '${game.system.id}'. Using generic classifier data.`);
     return DAGGERHEART_DATA;
 }
 
