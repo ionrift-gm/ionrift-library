@@ -107,6 +107,71 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
         return actor?.system?.abilities?.[abbr]?.value ?? 10;
     }
 
+    normalizeSkillKey(skillKey) { return skillKey; }
+
+    getSkillTotal(actor, skillKey) {
+        return actor?.system?.skills?.[skillKey]?.total ?? 0;
+    }
+
+    isSkillProficient(actor, skillKey) {
+        return (actor?.system?.skills?.[skillKey]?.proficient ?? 0) > 0;
+    }
+
+    getProficiencyBonus(actor) {
+        return actor?.system?.attributes?.prof ?? 2;
+    }
+
+    getSaveBonus(actor, saveKey) {
+        const rollData = actor?.getRollData?.() ?? {};
+        const fromRollData = rollData?.abilities?.[saveKey]?.save;
+        if (typeof fromRollData === "number") return fromRollData;
+        const mod = actor?.system?.abilities?.[saveKey]?.mod ?? 0;
+        const prof = actor?.system?.attributes?.prof ?? 0;
+        const proficient = actor?.system?.abilities?.[saveKey]?.proficient ?? 0;
+        return mod + (proficient > 0 ? prof : 0);
+    }
+
+    getToolProficiencies(actor) {
+        const profKeys = new Set();
+        const tools = actor?.system?.tools ?? {};
+        for (const [key, data] of Object.entries(tools)) {
+            if ((data?.value ?? 0) > 0 || (data?.effectValue ?? 0) > 0) {
+                profKeys.add(key);
+            }
+        }
+        for (const item of actor?.items ?? []) {
+            const baseItem = item.system?.type?.baseItem;
+            if (baseItem) profKeys.add(baseItem);
+            const nameLower = (item.name ?? "").toLowerCase();
+            if (item.type === "tool" && nameLower) {
+                const match = nameLower.match(/^(\w+)/);
+                if (match) profKeys.add(match[1]);
+            }
+        }
+        return [...profKeys];
+    }
+
+    isToolProficient(actor, toolKey) {
+        const toolData = actor?.system?.tools?.[toolKey];
+        if (toolData && (toolData.proficient ?? 0) > 0) return true;
+        if (toolData && ((toolData.value ?? 0) > 0 || (toolData.effectValue ?? 0) > 0)) return true;
+        return (actor?.items ?? []).some(item =>
+            item.type === "tool" &&
+            (item.system?.type?.value === toolKey ||
+             item.system?.type?.baseItem === toolKey ||
+             item.name?.toLowerCase().includes(toolKey))
+        );
+    }
+
+    findItemByName(actor, name) {
+        const lower = String(name ?? "").toLowerCase();
+        return (actor?.items ?? []).find(item => item.name?.toLowerCase().includes(lower)) ?? null;
+    }
+
+    hasItemByName(actor, name) {
+        return this.findItemByName(actor, name) !== null;
+    }
+
     /**
      * dnd5e exposes the designated primary party as a Group actor via
      * game.actors.party (backed by the "dnd5e.primaryParty" setting). Its

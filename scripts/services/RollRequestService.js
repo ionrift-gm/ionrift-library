@@ -3,6 +3,7 @@ import {
     executeSaveRoll,
     executeSkillRoll,
     executeAbilityRoll,
+    executeFormulaRoll,
     rollForPlayer,
     evaluatePassed,
     SKILL_DISPLAY_NAMES
@@ -108,6 +109,7 @@ export class RollRequestService {
                 actorName: actor.name,
                 typeKey: opts.type ?? "skill",
                 key: opts.key ?? "wis",
+                formula: opts.formula ?? "",
                 dc,
                 rollMode,
                 chatMode: opts.chatMode ?? "public",
@@ -192,6 +194,7 @@ export class RollRequestService {
                 actor,
                 type: data.typeKey ?? "skill",
                 key: data.key,
+                formula: data.formula,
                 dc: data.dc,
                 rollMode: data.rollMode ?? "normal",
                 chatMode: data.chatMode ?? "public",
@@ -408,6 +411,12 @@ export class RollRequestService {
         if (opts.type === "skill") {
             return executeSkillRoll(actor, opts.key ?? "sur", dc, flavor, rollMode, chatMode);
         }
+        if (opts.type === "formula") {
+            return executeFormulaRoll(actor, opts.formula ?? "1d4", {
+                flavor: context,
+                chatMode
+            });
+        }
         return executeAbilityRoll(actor, opts.key ?? "wis", dc, flavor, rollMode, chatMode);
     }
 
@@ -423,6 +432,7 @@ export class RollRequestService {
             actor,
             type: opts.type ?? "skill",
             key: opts.key ?? "wis",
+            formula: opts.formula,
             dc: opts.dc,
             rollMode: opts.rollMode ?? "normal",
             chatMode: opts.chatMode ?? "public",
@@ -446,6 +456,7 @@ export {
     executeSaveRoll,
     executeSkillRoll,
     executeAbilityRoll,
+    executeFormulaRoll,
     rollForPlayer,
     SKILL_DISPLAY_NAMES
 } from "./RollRequestMechanics.js";

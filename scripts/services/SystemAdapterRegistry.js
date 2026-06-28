@@ -55,6 +55,16 @@ export class SystemAdapterRegistry {
     getItemCategory(item) { return this.current.getItemCategory(item); }
     getHP(actor) { return this.current.getHP(actor); }
     getAbilityScore(actor, abbr) { return this.current.getAbilityScore(actor, abbr); }
+    hasFeat(actor, nameOrSlug) { return this.current.hasFeat(actor, nameOrSlug); }
+    normalizeSkillKey(skillKey) { return this.current.normalizeSkillKey(skillKey); }
+    getSkillTotal(actor, skillKey) { return this.current.getSkillTotal(actor, skillKey); }
+    isSkillProficient(actor, skillKey) { return this.current.isSkillProficient(actor, skillKey); }
+    getProficiencyBonus(actor) { return this.current.getProficiencyBonus(actor); }
+    getSaveBonus(actor, saveKey) { return this.current.getSaveBonus(actor, saveKey); }
+    isToolProficient(actor, toolKey) { return this.current.isToolProficient(actor, toolKey); }
+    getToolProficiencies(actor) { return this.current.getToolProficiencies(actor); }
+    findItemByName(actor, name) { return this.current.findItemByName(actor, name); }
+    hasItemByName(actor, name) { return this.current.hasItemByName(actor, name); }
     getSituationalConsumables() { return this.current.getSituationalConsumables(); }
     isSupported(featureId) { return this.current.isSupported(featureId); }
     isMagical(item) { return this.current.isMagical(item); }

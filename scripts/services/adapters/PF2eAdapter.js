@@ -3,7 +3,44 @@ import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
 export class PF2eAdapter extends IonriftSystemAdapter {
     static #SUPPORTED = new Set(["signature-items", "workshop", "qm-loot-cache", "scroll-forge", "srd-curses"]);
 
+    static SKILL_KEY_MAP = {
+        acr: "acrobatics",
+        ani: "nature",
+        arc: "arcana",
+        ath: "athletics",
+        dec: "deception",
+        his: "society",
+        ins: "perception",
+        itm: "intimidation",
+        inv: "perception",
+        med: "medicine",
+        nat: "nature",
+        prc: "perception",
+        prf: "performance",
+        per: "diplomacy",
+        rel: "religion",
+        slt: "thievery",
+        ste: "stealth",
+        sur: "survival"
+    };
+
+    static SAVE_KEY_MAP = {
+        str: "fortitude",
+        dex: "reflex",
+        con: "fortitude",
+        int: "will",
+        wis: "will",
+        cha: "will",
+        fortitude: "fortitude",
+        reflex: "reflex",
+        will: "will"
+    };
+
     get systemId() { return "pf2e"; }
+
+    normalizeSkillKey(skillKey) {
+        return PF2eAdapter.SKILL_KEY_MAP[skillKey] ?? skillKey;
+    }
 
     isSupported(featureId) { return PF2eAdapter.#SUPPORTED.has(featureId); }
 
@@ -97,5 +134,64 @@ export class PF2eAdapter extends IonriftSystemAdapter {
 
     getAbilityScore(actor, abbr) {
         return actor?.system?.abilities?.[abbr]?.mod ?? 0;
+    }
+
+    getSkillTotal(actor, skillKey) {
+        const key = this.normalizeSkillKey(skillKey);
+        return actor?.system?.skills?.[key]?.totalModifier ?? 0;
+    }
+
+    isSkillProficient(actor, skillKey) {
+        const key = this.normalizeSkillKey(skillKey);
+        return (actor?.system?.skills?.[key]?.rank ?? 0) >= 1;
+    }
+
+    getProficiencyBonus(actor) {
+        const level = Math.max(1, Number(this.getLevel(actor)) || 1);
+        return Math.min(6, Math.max(2, Math.floor((level - 1) / 4) + 2));
+    }
+
+    getSaveBonus(actor, saveKey) {
+        const pf2eKey = PF2eAdapter.SAVE_KEY_MAP[saveKey] ?? saveKey;
+        try {
+            const stat = actor?.saves?.[pf2eKey];
+            if (stat) return stat.totalModifier ?? stat.mod ?? 0;
+        } catch {
+            /* fall through */
+        }
+        const abilityMap = { fortitude: "con", reflex: "dex", will: "wis" };
+        const abbr = abilityMap[pf2eKey] ?? saveKey;
+        return actor?.system?.abilities?.[abbr]?.mod ?? 0;
+    }
+
+    getToolProficiencies(actor) {
+        const profKeys = [];
+        if (this.isSkillProficient(actor, "crafting")) {
+            profKeys.push("crafting", "cook", "herb", "alchemist", "smith");
+        }
+        for (const item of actor?.items ?? []) {
+            if (item.type === "lore") {
+                profKeys.push(item.name?.toLowerCase().replace(/\s+lore$/i, "") ?? "");
+            }
+        }
+        return profKeys.filter(Boolean);
+    }
+
+    isToolProficient(actor, toolKey) {
+        if (toolKey === "cook" || toolKey === "cook's utensils") {
+            return this.isSkillProficient(actor, "crafting");
+        }
+        return (actor?.items ?? []).some(item =>
+            item.type === "lore" && item.name?.toLowerCase().includes(String(toolKey).toLowerCase())
+        );
+    }
+
+    findItemByName(actor, name) {
+        const lower = String(name ?? "").toLowerCase();
+        return (actor?.items ?? []).find(item => item.name?.toLowerCase().includes(lower)) ?? null;
+    }
+
+    hasItemByName(actor, name) {
+        return this.findItemByName(actor, name) !== null;
     }
 }

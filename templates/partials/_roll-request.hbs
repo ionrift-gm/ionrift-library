@@ -149,7 +149,7 @@
             {{#if ../rollRequest.meta.activityId}}data-activity-id="{{../rollRequest.meta.activityId}}"{{/if}}
             {{#if ../rollRequest.meta.day}}data-day="{{../rollRequest.meta.day}}"{{/if}}>
             <i class="fas fa-dice-d20"></i>
-            Roll {{../rollRequest.skillName}} · {{name}}
+            Roll {{#if (eq ../rollRequest.meta.rollType "formula")}}{{../rollRequest.skillName}}{{else}}{{../rollRequest.skillName}}{{/if}} · {{name}}
         </button>
         {{/each}}
     </div>

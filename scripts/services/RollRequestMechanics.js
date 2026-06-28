@@ -222,6 +222,32 @@ export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = 
 }
 
 /**
+ * Roll an arbitrary dice formula (no DC or pass/fail).
+ * @param {Actor} actor
+ * @param {string} formula
+ * @param {object} [opts]
+ * @param {string} [opts.flavor]
+ * @param {"public"|"gmroll"|"blind"|"self"} [opts.chatMode="public"]
+ * @returns {Promise<{ total: number, formula: string, passed: null, natD20: null, roll: Roll }>}
+ */
+export async function executeFormulaRoll(actor, formula, { flavor = "", chatMode = "public" } = {}) {
+    const roll = new Roll(String(formula ?? "0"));
+    await roll.evaluate();
+    const flavorText = flavor
+        ? `<strong>${actor.name}</strong> - ${flavor}`
+        : `<strong>${actor.name}</strong> - ${formula}`;
+    await postRollToChat(actor, roll, flavorText, chatMode);
+    await waitForDiceSoNice();
+    return {
+        total: roll.total ?? 0,
+        formula: String(formula ?? "0"),
+        passed: null,
+        natD20: null,
+        roll
+    };
+}
+
+/**
  * GM fallback roll.
  * @param {Actor} actor
  * @param {string|string[]} skills

@@ -483,10 +483,12 @@ export function buildPromptRollContext(payload = {}) {
     let skillName = keyLabel;
     if (type === "save") skillName = `${keyLabel} Saving Throw`;
     else if (type === "ability") skillName = `${keyLabel} Ability Check`;
+    else if (type === "formula") skillName = payload.formula ?? "Roll";
 
     const rolled = !!payload.rolled;
     const total = payload.total;
     const passed = payload.passed;
+    const isFormula = type === "formula";
 
     const participants = [{
         id: actor.id,
@@ -506,11 +508,13 @@ export function buildPromptRollContext(payload = {}) {
         showRoster: false,
         skillKey: key,
         skillName,
-        dc: payload.dc ?? 10,
+        dc: isFormula ? null : (payload.dc ?? 10),
+        meta: isFormula ? { noDc: true } : {},
         participants,
         flow: payload.flow ?? "library",
         targetLabel: payload.flavor ?? "",
-        state: rolled ? "submitted" : "pending"
+        state: rolled ? "submitted" : "pending",
+        dcPulseActive: !isFormula
     });
 }
 

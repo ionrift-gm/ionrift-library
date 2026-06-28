@@ -2,6 +2,7 @@ import {
     executeSaveRoll,
     executeSkillRoll,
     executeAbilityRoll,
+    executeFormulaRoll,
     SKILL_DISPLAY_NAMES
 } from "../services/RollRequestMechanics.js";
 import { buildPromptRollContext, centerRollRequestRoster } from "../services/RollRequestView.js";
@@ -92,14 +93,19 @@ export class RollRequestPromptApp {
                 const type = payload.type ?? "skill";
                 const typeLabel = type === "save" ? "Saving Throw"
                     : type === "skill" ? "Skill Check"
-                        : type === "ability" ? "Ability Check" : "Roll";
-                const keyLabel = SKILL_DISPLAY_NAMES[payload.key] ?? String(payload.key ?? "").toUpperCase();
+                        : type === "formula" ? "Roll"
+                            : type === "ability" ? "Ability Check" : "Roll";
+                const keyLabel = type === "formula"
+                    ? (payload.formula ?? "dice")
+                    : (SKILL_DISPLAY_NAMES[payload.key] ?? String(payload.key ?? "").toUpperCase());
                 const chatMode = payload.chatMode ?? "public";
                 const rollMode = payload.rollMode ?? "normal";
                 const dc = Number.isFinite(payload.dc) ? payload.dc : null;
                 const flavorText = payload.flavor
                     ? `<strong>${actor.name}</strong> - ${payload.flavor}`
-                    : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
+                    : type === "formula"
+                        ? `<strong>${actor.name}</strong> - ${payload.formula ?? "Roll"}`
+                        : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
 
                 try {
                     let result;
@@ -107,6 +113,11 @@ export class RollRequestPromptApp {
                         result = await executeSaveRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
                     } else if (type === "skill") {
                         result = await executeSkillRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
+                    } else if (type === "formula") {
+                        result = await executeFormulaRoll(actor, payload.formula ?? "1d4", {
+                            flavor: payload.flavor ?? payload.formula ?? "Roll",
+                            chatMode
+                        });
                     } else {
                         result = await executeAbilityRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
                     }

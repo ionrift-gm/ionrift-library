@@ -58,6 +58,83 @@ export class IonriftSystemAdapter {
     getAbilityScore(actor, abbr) { return 10; }
 
     /**
+     * Whether the actor has a feat or feature matching the given name or slug.
+     * @param {Actor} actor
+     * @param {string} nameOrSlug
+     * @returns {boolean}
+     */
+    hasFeat(actor, nameOrSlug) {
+        if (!actor || !nameOrSlug) return false;
+        const target = String(nameOrSlug).toLowerCase().trim();
+        return (actor.items ?? []).some(item => {
+            if (item.type !== "feat" && item.type !== "feature") return false;
+            const name = String(item.name ?? "").toLowerCase();
+            const slug = String(item.system?.slug ?? item.system?.identifier ?? "").toLowerCase();
+            return name === target || name.includes(target) || slug === target;
+        });
+    }
+
+    /**
+     * @param {string} skillKey
+     * @returns {string}
+     */
+    normalizeSkillKey(skillKey) { return skillKey; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} skillKey
+     * @returns {number}
+     */
+    getSkillTotal(actor, skillKey) { return 0; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} skillKey
+     * @returns {boolean}
+     */
+    isSkillProficient(actor, skillKey) { return false; }
+
+    /**
+     * @param {Actor} actor
+     * @returns {number}
+     */
+    getProficiencyBonus(actor) { return 2; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} saveKey
+     * @returns {number}
+     */
+    getSaveBonus(actor, saveKey) { return 0; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} toolKey
+     * @returns {boolean}
+     */
+    isToolProficient(actor, toolKey) { return false; }
+
+    /**
+     * @param {Actor} actor
+     * @returns {string[]}
+     */
+    getToolProficiencies(actor) { return []; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} name
+     * @returns {Item|null}
+     */
+    findItemByName(actor, name) { return null; }
+
+    /**
+     * @param {Actor} actor
+     * @param {string} name
+     * @returns {boolean}
+     */
+    hasItemByName(actor, name) { return false; }
+
+    /**
      * Returns a Set of lowercase item names that should receive reduced draw
      * weight when picked from a random consumable pool. Situational or niche
      * items that would feel odd appearing constantly in loot caches.
