@@ -38,6 +38,7 @@ import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
+import { cooking, initCooking } from "./services/cooking/index.js";
 import { StoryMomentApp } from "./apps/StoryMomentApp.js";
 import {
     buildRollRequestContext,
@@ -133,6 +134,14 @@ Hooks.once('init', () => {
             watchAnimation: watchDcAnimation,
             forceDcPulseTest
         },
+        /**
+         * Shared cooking/feeding abstraction. Four sub-services:
+         *   cooking.buffs  — canonical buff model + dnd5e Active Effect mapping
+         *   cooking.match  — contents/charge-aware ingredient matching
+         *   cooking.gmExec — GM-routing primitive for cross-owner writes
+         *   cooking.feed   — feed-the-party registration and dispatch
+         */
+        cooking,
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
@@ -742,6 +751,7 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', async () => {
     RollRequestService.init();
+    initCooking();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
