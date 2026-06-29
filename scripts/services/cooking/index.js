@@ -16,6 +16,7 @@ import { CookingMatch } from "./CookingMatch.js";
 import { CookingGMExec } from "./CookingGMExec.js";
 import { CookingFeed } from "./CookingFeed.js";
 import { CookingBuffHandlers } from "./CookingBuffHandlers.js";
+import { CookingBuffCharges } from "./CookingBuffCharges.js";
 
 /** The `game.ionrift.library.cooking` namespace object. */
 export const cooking = {
@@ -33,6 +34,7 @@ export const cooking = {
 export function initCooking() {
     CookingGMExec.init();
     CookingFeed.init();
+    CookingBuffCharges.init();
 }
 
-export { CookingBuffs, CookingMatch, CookingGMExec, CookingFeed, CookingBuffHandlers };
+export { CookingBuffs, CookingMatch, CookingGMExec, CookingFeed, CookingBuffHandlers, CookingBuffCharges };
