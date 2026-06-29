@@ -241,6 +241,18 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             });
         }
 
+        // Surface local on-disk overlays the registry never advertised (e.g. a
+        // sideloaded premium pack) so they list and toggle alongside cloud packs.
+        const registryOverlayIds = new Set(Object.keys(rawOverlayMap));
+        const localOverlays = await this._collectLocalOverlays();
+        let worldState = {};
+        try {
+            worldState = game.settings.get("ionrift-library", "overlayWorldState") ?? {};
+        } catch {
+            worldState = {};
+        }
+        OverlayManagerApp.mergeLocalOnlyOverlays(overlays, localOverlays, registryOverlayIds, worldState);
+
         const allGroups = this._buildGroups(overlays);
         this._appendModulesWithoutContent(allGroups, overlayMap, registry);
         await this._attachCleanupInfo(allGroups);
@@ -1045,6 +1057,39 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             updateCount: 0,
             cleanup: null
         };
+    }
+
+    /**
+     * Merge local on-disk overlays that the registry does not advertise into
+     * the connected-mode overlay list. Real cloud packs are already shown from
+     * the registry, so only overlays whose id never appears in the registry
+     * are added here; this keeps registered packs single-sourced and leaves
+     * preview-gated registry entries hidden (their ids are still in the raw
+     * map). A sideloaded overlay with no world-state entry is treated as
+     * active, matching the consumer loader's "present on disk means on unless
+     * explicitly turned off" sideload semantics, so the toggle reflects what
+     * is actually loaded.
+     *
+     * @param {Object[]} overlays  Registry-derived overlays; mutated in place.
+     * @param {Object[]} localOverlays  Result of {@link _collectLocalOverlays}.
+     * @param {Set<string>} registryOverlayIds  Every id in the raw registry overlay map.
+     * @param {Record<string, { active?: boolean }>} worldState
+     * @returns {Object[]} the mutated overlays array
+     */
+    static mergeLocalOnlyOverlays(overlays, localOverlays, registryOverlayIds, worldState = {}) {
+        for (const local of localOverlays) {
+            if (registryOverlayIds.has(local.overlayId)) continue;
+            if (overlays.some(o => o.overlayId === local.overlayId)) continue;
+
+            const active = worldState?.[local.overlayId]?.active !== false;
+            overlays.push({
+                ...local,
+                isLocalOnly: true,
+                isActive: active,
+                status: active ? "up-to-date" : "installed-inactive"
+            });
+        }
+        return overlays;
     }
 
     /**

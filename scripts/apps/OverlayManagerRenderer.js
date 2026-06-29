@@ -836,7 +836,9 @@ export function renderDetailAction(overlay, isConnected = true) {
 
 export function renderOverlayLifecycleControls(overlay, isConnected = true) {
     const checked = overlay.isActive ? "checked" : "";
-    const reinstallBtn = isConnected
+    // Local-only overlays (on disk, absent from the registry) have nothing to
+    // re-download, so the reinstall control is omitted for them.
+    const reinstallBtn = isConnected && !overlay.isLocalOnly
         ? `<button type="button" class="overlay-detail-btn overlay-detail-btn--icon"
             data-action="reinstall-overlay"
             data-overlay-id="${overlay.overlayId}"

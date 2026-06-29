@@ -327,6 +327,12 @@ export class PackRegistryService {
             // affordance for current-format overlay zips.
             acceptsZipImport: true
         },
+        "ionrift-monstrous-feast": {
+            title: "Monstrous Feast",
+            icon:  "fas fa-drumstick-bite",
+            desc:  "Cook monstrous ingredients into meals that grant lasting buffs.",
+            acceptsZipImport: true
+        },
         "ionrift-arbiter": {
             title: "Ionrift Arbiter",
             icon:  "fas fa-crosshairs",
