@@ -351,5 +351,26 @@ export const CookingBuffs = {
         return summary
             ? `Gains ${summary} ${duration} (track manually).`
             : "Gains a meal buff (track manually).";
+    },
+
+    /**
+     * Whether an actor already carries the anti-overeating marker: a cooking-slot
+     * effect. This marker is the "well fed" gate. It is deliberately separate
+     * from the stat changes it rides on; the changes give the mechanical benefit,
+     * the marker is the signal that the recipient has eaten and should not take
+     * another buffing meal until it clears.
+     * @param {Actor|null} actor
+     * @param {{ slot?: string }} [opts] When `slot` is given, only that slot counts.
+     * @returns {boolean}
+     */
+    isWellFed(actor, { slot } = {}) {
+        const effects = actor?.effects ?? [];
+        for (const effect of effects) {
+            const f = effect?.flags?.[COOKING_BUFF_FLAG_NAMESPACE];
+            if (f?.[COOKING_BUFF_FLAG] !== true) continue;
+            if (slot && f?.[COOKING_SLOT_FLAG] && f[COOKING_SLOT_FLAG] !== slot) continue;
+            return true;
+        }
+        return false;
     }
 };

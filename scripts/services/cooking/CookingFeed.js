@@ -66,14 +66,42 @@ export const CookingFeed = {
     },
 
     /**
-     * Register a serving provider.
-     * @param {{ id: string, canHandle: (item) => boolean, serve: (ctx) => Promise<any> }} provider
+     * Register a serving provider. A provider may declare `tracksRest: true` to
+     * signal that it tracks rest cycles and clears the anti-overeating marker
+     * itself (Respite does this). When such a provider is present, the kernel
+     * enforces the block/no-replace gate; with no rest tracker, the kernel
+     * replaces an existing meal buff instead, since nothing else would ever
+     * clear it (standalone Monstrous Feast).
+     * @param {{ id: string, canHandle: (item) => boolean, serve: (ctx) => Promise<any>, tracksRest?: boolean }} provider
      */
     registerProvider(provider) {
         if (!provider?.id || typeof provider.canHandle !== "function" || typeof provider.serve !== "function") {
             throw new Error("CookingFeed.registerProvider: { id, canHandle, serve } required.");
         }
         _providers.set(provider.id, provider);
+    },
+
+    /**
+     * Whether a rest-tracking provider is registered. Drives the anti-overeating
+     * branch: enforce block/no-replace only when something owns the rest cycle
+     * and can clear the marker; otherwise replace on serve.
+     * @returns {boolean}
+     */
+    tracksRest() {
+        for (const provider of _providers.values()) {
+            if (provider?.tracksRest === true) return true;
+        }
+        return false;
+    },
+
+    /**
+     * Whether an actor already carries the anti-overeating marker.
+     * @param {Actor|null} actor
+     * @param {{ slot?: string }} [opts]
+     * @returns {boolean}
+     */
+    isFed(actor, { slot } = {}) {
+        return CookingBuffs.isWellFed(actor, { slot });
     },
 
     /**
@@ -317,6 +345,13 @@ export const CookingFeed = {
     /**
      * The Kernel default provider: apply buffs into the shared slot and consume
      * the dish. Used when no consumer provider handles the item.
+     *
+     * Anti-overeating branch (per recipient):
+     *   - A rest-tracking provider is registered: a recipient who already carries
+     *     the marker is skipped (block, no replace). The tracker clears the marker
+     *     on rest, so the recipient eats again next cycle.
+     *   - No rest-tracking provider (standalone): replace the prior meal buff.
+     *     Nothing else would ever clear it, so replacement is the safe fallback.
      * @private
      */
     _buildDefaultProvider() {
@@ -325,8 +360,14 @@ export const CookingFeed = {
             canHandle: () => true,
             async serve({ item, recipients = [], buffs = [], opts = {} }) {
                 const applied = [];
+                const skipped = [];
+                const enforceGate = CookingFeed.tracksRest();
                 for (const actor of recipients) {
                     if (!actor) continue;
+                    if (enforceGate && CookingFeed.isFed(actor, { slot: opts.slot })) {
+                        skipped.push({ actorId: actor.id ?? null, reason: "well-fed" });
+                        continue;
+                    }
                     const effectData = CookingFeed.buildSlotEffect(actor, buffs, {
                         item,
                         slot: opts.slot,
@@ -335,8 +376,8 @@ export const CookingFeed = {
                     const route = await CookingFeed.applyToActor(actor, effectData, { slot: opts.slot });
                     if (route !== "blocked") applied.push({ actorId: actor.id ?? null, route });
                 }
-                if (item && opts.consume !== false) await CookingFeed._consumeDish(item);
-                return { applied, buffs };
+                if (item && opts.consume !== false && applied.length) await CookingFeed._consumeDish(item);
+                return { applied, skipped, buffs };
             }
         };
     },
