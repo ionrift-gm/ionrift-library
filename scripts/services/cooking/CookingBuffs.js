@@ -23,6 +23,8 @@
  * @property {number} [feet] Sense range in feet (darkvision).
  * @property {string} [ability] Ability key (check advantage).
  * @property {string} [skill] Skill key (skill advantage).
+ * @property {number} [bonus] Flat bonus (passive perception, save bonus).
+ * @property {number|string} [uses] Rolled charge count for Amber save_bonus (e.g. "1d4").
  * @property {{ dimLight?: boolean }} [conditions] Situational gates (flavor only).
  */
 
@@ -229,6 +231,70 @@ defineType("skill_advantage", {
             description: `Advantage on ${skill.toUpperCase()} checks${dimNote}.`,
             summaryLine: `advantage on ${skill.toUpperCase()} checks${dim ? " (dim light)" : ""}`,
             daeSpecialDuration: []
+        };
+    }
+});
+
+defineType("passive_perception", {
+    label: "Passive Perception bonus",
+    render(actor, buff) {
+        const bonus = Number(buff.bonus ?? buff.formula ?? 2);
+        return {
+            changes: [{
+                key: "system.skills.prc.passive",
+                mode: aeMode("ADD"),
+                value: String(bonus),
+                priority: 20
+            }],
+            description: `+${bonus} passive Perception.`,
+            summaryLine: `+${bonus} passive Perception`,
+            daeSpecialDuration: []
+        };
+    }
+});
+
+defineType("ability_bonus", {
+    label: "Ability check bonus",
+    render(actor, buff) {
+        const ability = String(buff.ability ?? buff.formula ?? "wis").toLowerCase();
+        const bonus = Number(buff.bonus ?? 1);
+        return {
+            changes: [{
+                key: `system.abilities.${ability}.bonuses.check`,
+                mode: aeMode("ADD"),
+                value: String(bonus),
+                priority: 20
+            }],
+            description: `+${bonus} to ${ability.toUpperCase()} ability checks.`,
+            summaryLine: `+${bonus} ${ability.toUpperCase()} checks`,
+            daeSpecialDuration: []
+        };
+    }
+});
+
+defineType("save_bonus", {
+    label: "Saving throw bonus (limited uses)",
+    render(actor, buff) {
+        const ability = String(buff.save?.ability ?? buff.ability ?? "con").toLowerCase();
+        const bonus = Number(buff.bonus ?? 1);
+        const uses = buff.uses ?? buff.charges ?? 1;
+        const usesLabel = typeof uses === "string" ? uses : String(uses);
+        const charges = Number(buff.chargesRemaining ?? uses);
+        const chargeNote = Number.isFinite(charges) && charges > 0
+            ? ` (${charges} remaining, until long rest)`
+            : ` (next ${usesLabel} saves, until long rest)`;
+        return {
+            changes: [{
+                key: `system.abilities.${ability}.bonuses.save`,
+                mode: aeMode("ADD"),
+                value: String(bonus),
+                priority: 20
+            }],
+            description: `+${bonus} to ${ability.toUpperCase()} saves${chargeNote}.`,
+            summaryLine: `+${bonus} ${ability.toUpperCase()} saves (${usesLabel} uses)`,
+            daeSpecialDuration: [`isSave.${ability}`],
+            chargesRemaining: Number.isFinite(charges) ? charges : null,
+            chargesMax: Number(buff.chargesMax ?? charges) || null
         };
     }
 });
