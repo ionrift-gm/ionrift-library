@@ -7,28 +7,75 @@ import {
 } from "../services/RollRequestMechanics.js";
 import { buildPromptRollContext, centerRollRequestRoster } from "../services/RollRequestView.js";
 import { ensureDcPulseAnimation } from "../services/RollRequestDcPulse.js";
+import { PromptQueue, DISMISSED } from "./PromptQueue.js";
 
 const PARTIAL_NAME = "rollRequest";
 const TEMPLATE_PATH = "modules/ionrift-library/templates/partials/_roll-request.hbs";
+
+/** Marks a prompt promise that was dismissed externally rather than rolled. */
+export class RollRequestDismissedError extends Error {
+    constructor(requestId) {
+        super("Roll request dismissed");
+        this.name = "RollRequestDismissedError";
+        this.code = "dismissed";
+        this.requestId = requestId ?? null;
+    }
+}
 
 /**
  * Standalone player prompt for a shared roll request.
  * Uses the Ionrift Glass roll-request component (same as Respite).
  * Closing the overlay (backdrop, Escape) executes the roll; there is no decline path.
+ *
+ * A single-active queue keeps at most one overlay on a client at a time;
+ * additional requests wait FIFO and render when the active one settles. Each
+ * prompt is keyed by its request id so a resolved-elsewhere or abandoned request
+ * can be dismissed by id and the queue advances.
  */
 export class RollRequestPromptApp {
+    /** @type {PromptQueue} */
+    static #queue = new PromptQueue();
+
     /**
      * @param {object} payload
      * @returns {Promise<{ total: number, passed: boolean|null, natD20: number|null }>}
      */
     static prompt(payload) {
-        return new Promise((resolve, reject) => {
-            const actor = payload.actor ?? game.actors.get(payload.actorId);
-            if (!actor) {
-                reject(new Error("RollRequestPromptApp: actor not found"));
-                return;
-            }
+        const actor = payload.actor ?? game.actors.get(payload.actorId);
+        if (!actor) {
+            return Promise.reject(new Error("RollRequestPromptApp: actor not found"));
+        }
 
+        return RollRequestPromptApp.#queue.enqueue({
+            id: payload.requestId ?? null,
+            run: (handle) => RollRequestPromptApp.#renderOverlay(payload, actor, handle)
+        }).then((result) => {
+            if (result === DISMISSED) {
+                throw new RollRequestDismissedError(payload.requestId);
+            }
+            return result;
+        });
+    }
+
+    /**
+     * Dismiss an open or queued prompt by request id (e.g. a GM resolved it). The
+     * matching prompt's promise rejects with {@link RollRequestDismissedError} and
+     * the queue advances.
+     * @param {string} requestId
+     * @returns {boolean} Whether a matching prompt was found.
+     */
+    static dismiss(requestId) {
+        return RollRequestPromptApp.#queue.dismiss(requestId);
+    }
+
+    /**
+     * @param {object} payload
+     * @param {Actor} actor
+     * @param {{ onDismiss: (cb: () => void) => void }} handle
+     * @returns {Promise<{ total: number, passed: boolean|null, natD20: number|null }>}
+     */
+    static #renderOverlay(payload, actor, handle) {
+        return new Promise((resolve, reject) => {
             const overlay = document.createElement("div");
             overlay.classList.add("ionrift-armor-modal-overlay", "ionrift-roll-request-overlay");
 
@@ -43,8 +90,13 @@ export class RollRequestPromptApp {
 
             let rolling = false;
             let settled = false;
+            let finishTimer = null;
 
             const cleanup = () => {
+                if (finishTimer !== null) {
+                    window.clearTimeout(finishTimer);
+                    finishTimer = null;
+                }
                 overlay.removeEventListener("click", onOverlayClick);
                 document.removeEventListener("keydown", onKeyDown, true);
                 overlay.remove();
@@ -53,7 +105,8 @@ export class RollRequestPromptApp {
             const finish = (result) => {
                 if (settled) return;
                 settled = true;
-                window.setTimeout(() => {
+                finishTimer = window.setTimeout(() => {
+                    finishTimer = null;
                     cleanup();
                     resolve(result);
                 }, 900);
@@ -65,6 +118,12 @@ export class RollRequestPromptApp {
                 cleanup();
                 reject(err);
             };
+
+            handle.onDismiss(() => {
+                if (settled) return;
+                settled = true;
+                cleanup();
+            });
 
             const render = async (viewPayload = {}) => {
                 const rollRequest = buildPromptRollContext({

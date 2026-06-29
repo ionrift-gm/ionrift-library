@@ -14,6 +14,7 @@ const MODULE_ID = "ionrift-library";
 const SOCKET_CHANNEL = `module.${MODULE_ID}`;
 const SOCKET_REQUEST = "rollRequest";
 const SOCKET_RESULT = "rollResult";
+const SOCKET_DISMISS = "rollDismiss";
 const RELAY_CHANNEL = "module.ionrift-cursewright";
 const RELAY_REQUEST = "libraryRollRequest";
 const RELAY_RESULT = "libraryRollResult";
@@ -121,6 +122,34 @@ export class RollRequestService {
     }
 
     /**
+     * Dismiss an outstanding roll request. Closes any open or queued prompt for
+     * the id on every client and settles the requester's pending wait. Use when
+     * a request is resolved or abandoned elsewhere (a GM steps in, a flow is
+     * cancelled) so a target client is never left with an orphaned prompt.
+     *
+     * Additive API; the public {@link request} contract is unchanged.
+     * @param {string} requestId
+     * @returns {boolean} Whether anything was dismissed locally.
+     */
+    static dismiss(requestId) {
+        if (!requestId) return false;
+        RollRequestService.init();
+
+        const pending = _pending.get(requestId);
+        if (pending) {
+            if (pending.timer) clearTimeout(pending.timer);
+            _pending.delete(requestId);
+            const err = new Error("Roll request dismissed");
+            err.code = "dismissed";
+            pending.reject(err);
+        }
+
+        const dismissedLocally = RollRequestPromptApp.dismiss(requestId);
+        RollRequestService._broadcast({ type: SOCKET_DISMISS, requestId });
+        return dismissedLocally || Boolean(pending);
+    }
+
+    /**
      * Entry point for cursewright socket relay payloads.
      * @param {object} data
      */
@@ -147,6 +176,11 @@ export class RollRequestService {
 
         if (data.type === SOCKET_REQUEST) {
             Logger.info("Library", `RollRequest socket received: target=${data.targetUserId} me=${game.user.id} match=${RollRequestService._isTargetUser(data.targetUserId)}`);
+        }
+
+        if (data.type === SOCKET_DISMISS) {
+            if (data.requestId) RollRequestPromptApp.dismiss(data.requestId);
+            return;
         }
 
         if (data.type === SOCKET_REQUEST && RollRequestService._isTargetUser(data.targetUserId)) {
@@ -190,6 +224,7 @@ export class RollRequestService {
 
         try {
             const result = await RollRequestPromptApp.prompt({
+                requestId: data.requestId,
                 actorId: actor.id,
                 actor,
                 type: data.typeKey ?? "skill",
@@ -211,6 +246,10 @@ export class RollRequestService {
                 mode: "rolled"
             });
         } catch (err) {
+            if (err?.code === "dismissed") {
+                Logger.info("Library", `RollRequest ${data.requestId} dismissed before roll; no result emitted.`);
+                return;
+            }
             RollRequestService._emitResult(data.requesterUserId, {
                 requestId: data.requestId,
                 error: err?.message ?? "declined"
@@ -428,6 +467,7 @@ export class RollRequestService {
      */
     static async _promptLocal(actor, opts, requestId, rolledBy) {
         const result = await RollRequestPromptApp.prompt({
+            requestId,
             actorId: actor.id,
             actor,
             type: opts.type ?? "skill",

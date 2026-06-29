@@ -110,6 +110,7 @@ Hooks.once('init', () => {
         rollRequest: {
             request: (opts) => RollRequestService.request(opts),
             requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback),
+            dismiss: (requestId) => RollRequestService.dismiss(requestId),
             onSocketRelay: (data) => RollRequestService.onSocketRelay(data),
             buildContext: buildRollRequestContext,
             buildEventPlayerContext: buildEventPlayerRollContext,
