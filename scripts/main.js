@@ -140,6 +140,7 @@ Hooks.once('init', () => {
          *   cooking.match  — contents/charge-aware ingredient matching
          *   cooking.gmExec — GM-routing primitive for cross-owner writes
          *   cooking.feed   — feed-the-party registration and dispatch
+         *   cooking.buffHandlers — registry for consumer/overlay buff handlers
          */
         cooking,
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
