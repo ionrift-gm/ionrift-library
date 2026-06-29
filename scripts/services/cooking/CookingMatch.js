@@ -15,7 +15,8 @@ import {
     getContainerParentId,
     iterInventoryItems,
     collectWaterSourceContainerIds,
-    readResourceFlag
+    readResourceFlag,
+    itemNamesMatch
 } from "./CookingClassifier.js";
 
 /**
@@ -33,7 +34,7 @@ import {
 
 function nameEquals(item, name) {
     if (!item || !name) return false;
-    return String(item.name ?? "").trim().toLowerCase() === String(name).trim().toLowerCase();
+    return itemNamesMatch(item.name, name);
 }
 
 /**

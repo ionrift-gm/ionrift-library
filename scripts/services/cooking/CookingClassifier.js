@@ -23,6 +23,31 @@ const WATER_NAMES = new Set([
 /** Item types that hold other items. DnD5e uses "container"; PF2e "backpack". */
 const CONTAINER_ITEM_TYPES = new Set(["container", "backpack"]);
 
+/** Perishable cohort labels on item names, e.g. "Bird Eggs (3d)" or "Fish (<1h)". */
+export const SPOILAGE_COHORT_SUFFIX_RE = /\s+\((\d+d|<\d+h|\d+h)\)$/i;
+
+/**
+ * Strip a spoilage cohort suffix from a display name for recipe and classification matching.
+ * @param {string} name
+ * @returns {string}
+ */
+export function stripSpoilageCohortSuffix(name) {
+    if (!name) return "";
+    return String(name).replace(SPOILAGE_COHORT_SUFFIX_RE, "").trim();
+}
+
+/**
+ * Case-insensitive item name match, ignoring spoilage cohort suffixes on inventory rows.
+ * @param {string} itemName
+ * @param {string} targetName
+ * @returns {boolean}
+ */
+export function itemNamesMatch(itemName, targetName) {
+    const left = stripSpoilageCohortSuffix(itemName).trim().toLowerCase();
+    const right = stripSpoilageCohortSuffix(targetName).trim().toLowerCase();
+    return Boolean(left && right && left === right);
+}
+
 /**
  * Read a resource flag across both namespaces (kernel first, Respite fallback).
  * @param {Item|object} item
