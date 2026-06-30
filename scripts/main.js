@@ -38,6 +38,7 @@ import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
+import { EffectAutomation } from "./services/EffectAutomation.js";
 import { cooking, initCooking } from "./services/cooking/index.js";
 import { reach } from "./services/tokenReach/index.js";
 import { StoryMomentApp } from "./apps/StoryMomentApp.js";
@@ -144,6 +145,16 @@ Hooks.once('init', () => {
          *   cooking.buffHandlers — registry for consumer/overlay buff handlers
          */
         cooking,
+        /**
+         * Effect automation stack detection. Single decision point for DAE,
+         * Midi-QoL, Times-Up, and (last-resort) Convenient Effects. See
+         * CONDITION_AUTHORING.md "Effect automation stack".
+         *   effects.hasDae() / hasMidi() / hasTimesUp() / hasCe()
+         *   effects.tier()            -> "full" | "durations" | "basic"
+         *   effects.stampDaeDuration(aeData, ["longRest"])
+         *   effects.buildGmAdvisory({ title, actorName, duration })
+         */
+        effects: EffectAutomation,
         /**
          * Token reach checks. Delegates to Arms Reach when installed; otherwise
          * measures on the scene grid with a configurable square cap.
@@ -789,6 +800,7 @@ Hooks.once('init', () => {
 Hooks.once('ready', async () => {
     RollRequestService.init();
     initCooking();
+    EffectAutomation.logCapabilities();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
