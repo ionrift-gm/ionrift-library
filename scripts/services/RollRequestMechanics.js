@@ -231,7 +231,8 @@ export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = 
  * @returns {Promise<{ total: number, formula: string, passed: null, natD20: null, roll: Roll }>}
  */
 export async function executeFormulaRoll(actor, formula, { flavor = "", chatMode = "public" } = {}) {
-    const roll = new Roll(String(formula ?? "0"));
+    const rollData = typeof actor?.getRollData === "function" ? actor.getRollData() : {};
+    const roll = new Roll(String(formula ?? "0"), rollData);
     await roll.evaluate();
     const flavorText = flavor
         ? `<strong>${actor.name}</strong> - ${flavor}`

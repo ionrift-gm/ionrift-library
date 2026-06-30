@@ -24,7 +24,7 @@
  * @property {string} [ability] Ability key (check advantage).
  * @property {string} [skill] Skill key (skill advantage).
  * @property {number} [bonus] Flat bonus (passive perception, save bonus).
- * @property {number|string} [uses] Rolled charge count for Amber save_bonus (e.g. "1d4").
+ * @property {number|string} [uses] Rolled charge count for Amber save_bonus / check_advantage (e.g. "1d4").
  * @property {{ dimLight?: boolean }} [conditions] Situational gates (flavor only).
  */
 
@@ -39,6 +39,12 @@ export const COOKING_SLOT_FLAG = "slot";
 
 /** Default slot discriminator when a consumer does not name one. */
 export const DEFAULT_COOKING_SLOT = "cooking";
+
+/** Active Effect fallback when no long-rest hook clears the buff (8 hours). */
+export const LONG_REST_FALLBACK_SECONDS = 28800;
+
+/** Active Effect fallback for `untilShortRest` buffs if no short rest occurs first (4 hours). */
+export const SHORT_REST_FALLBACK_SECONDS = 4 * 3600;
 
 /** Active Effect change modes, resilient to a missing global CONST (tests). */
 const AE_MODE_FALLBACK = { CUSTOM: 0, MULTIPLY: 1, ADD: 2, DOWNGRADE: 3, UPGRADE: 4, OVERRIDE: 5 };
@@ -165,6 +171,30 @@ defineType("resistance", {
     label: "Damage resistance",
     render(actor, buff) {
         const damageType = String(buff.damageType ?? buff.formula ?? "poison").toLowerCase();
+        const uses = buff.uses ?? buff.charges;
+        const window = buff.duration === "untilShortRest"
+            ? "until short rest or 4 hours"
+            : "until long rest";
+        if (uses) {
+            const usesLabel = typeof uses === "string" ? uses : String(uses);
+            const charges = Number(buff.chargesRemaining ?? uses);
+            const chargeNote = Number.isFinite(charges) && charges > 0
+                ? ` (${charges} poison hits remaining, ${window})`
+                : ` (next ${usesLabel} poison hits, ${window})`;
+            return {
+                changes: [{
+                    key: "system.traits.dr.value",
+                    mode: aeMode("ADD"),
+                    value: damageType,
+                    priority: 20
+                }],
+                description: `Damage resistance (${damageType})${chargeNote}.`,
+                summaryLine: `resistance (${damageType}, ${usesLabel} hits)`,
+                daeSpecialDuration: [],
+                chargesRemaining: Number.isFinite(charges) ? charges : null,
+                chargesMax: Number(buff.chargesMax ?? charges) || null
+            };
+        }
         return {
             changes: [{
                 key: "system.traits.dr.value",
@@ -201,6 +231,28 @@ defineType("check_advantage", {
     label: "Advantage on ability checks",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.save?.ability ?? buff.formula ?? "str").toLowerCase();
+        const uses = buff.uses ?? buff.charges;
+        const checkWindow = buff.duration === "untilShortRest" ? "until short rest" : "until long rest";
+        if (uses) {
+            const usesLabel = typeof uses === "string" ? uses : String(uses);
+            const charges = Number(buff.chargesRemaining ?? uses);
+            const chargeNote = Number.isFinite(charges) && charges > 0
+                ? ` (${charges} remaining, ${checkWindow})`
+                : ` (next ${usesLabel} checks, ${checkWindow})`;
+            return {
+                changes: [{
+                    key: `system.abilities.${ability}.check.roll.mode`,
+                    mode: aeMode("ADD"),
+                    value: "1",
+                    priority: 20
+                }],
+                description: `Advantage on ${ability.toUpperCase()} ability checks${chargeNote}.`,
+                summaryLine: `advantage on ${ability.toUpperCase()} checks (${usesLabel} uses)`,
+                daeSpecialDuration: [`isCheck.${ability}`],
+                chargesRemaining: Number.isFinite(charges) ? charges : null,
+                chargesMax: Number(buff.chargesMax ?? charges) || null
+            };
+        }
         return {
             changes: [{
                 key: `system.abilities.${ability}.check.roll.mode`,
@@ -208,7 +260,7 @@ defineType("check_advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${ability.toUpperCase()} ability checks.`,
+            description: `Advantage on ${ability.toUpperCase()} ability checks (until long rest).`,
             summaryLine: `advantage on ${ability.toUpperCase()} checks`,
             daeSpecialDuration: []
         };
@@ -280,9 +332,10 @@ defineType("save_bonus", {
         const uses = buff.uses ?? buff.charges ?? 1;
         const usesLabel = typeof uses === "string" ? uses : String(uses);
         const charges = Number(buff.chargesRemaining ?? uses);
+        const saveWindow = buff.duration === "untilLongRest" ? "until long rest" : "until short rest";
         const chargeNote = Number.isFinite(charges) && charges > 0
-            ? ` (${charges} remaining, until long rest)`
-            : ` (next ${usesLabel} saves, until long rest)`;
+            ? ` (${charges} remaining, ${saveWindow})`
+            : ` (next ${usesLabel} saves, ${saveWindow})`;
         return {
             changes: [{
                 key: `system.abilities.${ability}.bonuses.save`,
@@ -412,7 +465,7 @@ export const CookingBuffs = {
     degradeNote(buff) {
         const summary = this.describe(buff);
         const duration = buff?.duration === "untilShortRest"
-            ? "until the next short rest"
+            ? "until the next short rest or 4 hours, whichever comes first"
             : "until the next long rest";
         return summary
             ? `Gains ${summary} ${duration} (track manually).`

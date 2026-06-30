@@ -20,12 +20,11 @@ import {
     COOKING_BUFF_FLAG_NAMESPACE as NS,
     COOKING_BUFF_FLAG as FLAG,
     COOKING_SLOT_FLAG as SLOT,
-    DEFAULT_COOKING_SLOT
+    DEFAULT_COOKING_SLOT,
+    LONG_REST_FALLBACK_SECONDS,
+    SHORT_REST_FALLBACK_SECONDS
 } from "./CookingBuffs.js";
 import { CookingGMExec } from "./CookingGMExec.js";
-
-/** Fallback Active Effect duration (8h) when the system has no rest hook. */
-const FALLBACK_DURATION_SECONDS = 28800;
 
 /** @type {Map<string, object>} provider id -> provider */
 const _providers = new Map();
@@ -225,8 +224,10 @@ export const CookingFeed = {
         const changes = [];
         const descriptions = [];
         const daeSpecial = [];
+        const list = buffs ?? [];
+        const shortRestWindow = list.some(buff => buff?.duration === "untilShortRest");
 
-        for (const buff of buffs ?? []) {
+        for (const buff of list) {
             const built = CookingBuffs.build(actor, buff);
             if (!built) continue;
             if (built.changes.length) changes.push(...built.changes);
@@ -234,19 +235,27 @@ export const CookingFeed = {
             if (built.daeSpecialDuration?.length) daeSpecial.push(...built.daeSpecialDuration);
         }
 
-        const flags = {
-            [NS]: { [FLAG]: true, [SLOT]: slot ?? DEFAULT_COOKING_SLOT }
+        const slotFlags = {
+            [FLAG]: true,
+            [SLOT]: slot ?? DEFAULT_COOKING_SLOT
         };
+        if (shortRestWindow) slotFlags.expiresOnShortRest = true;
+
+        const flags = { [NS]: slotFlags };
         if (daeSpecial.length) {
             flags.dae = { specialDuration: [...new Set(daeSpecial)] };
         }
+
+        const seconds = shortRestWindow
+            ? SHORT_REST_FALLBACK_SECONDS
+            : LONG_REST_FALLBACK_SECONDS;
 
         return {
             name: title ?? (item?.name ? `Well Fed: ${item.name}` : "Well Fed"),
             img: item?.img ?? "icons/consumables/food/bowl-stew-brown.webp",
             origin: actor?.uuid,
             disabled: false,
-            duration: { seconds: FALLBACK_DURATION_SECONDS },
+            duration: { seconds },
             changes,
             description: descriptions.join(" "),
             flags

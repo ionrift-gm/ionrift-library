@@ -39,6 +39,7 @@ import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
 import { cooking, initCooking } from "./services/cooking/index.js";
+import { reach } from "./services/tokenReach/index.js";
 import { StoryMomentApp } from "./apps/StoryMomentApp.js";
 import {
     buildRollRequestContext,
@@ -143,6 +144,11 @@ Hooks.once('init', () => {
          *   cooking.buffHandlers — registry for consumer/overlay buff handlers
          */
         cooking,
+        /**
+         * Token reach checks. Delegates to Arms Reach when installed; otherwise
+         * measures on the scene grid with a configurable square cap.
+         */
+        reach,
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
@@ -590,6 +596,36 @@ Hooks.once('init', () => {
         config: false,
         type: Array,
         default: []
+    });
+
+    game.settings.register("ionrift-library", "tokenReachDefaultSquares", {
+        name: "Default token reach (grid squares)",
+        hint: "How many grid squares apart tokens may be for Ionrift reach checks when a module does not set its own limit.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 1,
+        restricted: true
+    });
+
+    game.settings.register("ionrift-library", "tokenReachBypassGM", {
+        name: "GMs ignore token reach checks",
+        hint: "When enabled, GMs can interact without a reach check. Players are still limited.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register("ionrift-library", "tokenReachUseGrid", {
+        name: "Measure token reach on the grid",
+        hint: "When enabled, reach uses grid path distance. Disable for ruler-style scene distance.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        restricted: true
     });
 
     game.settings.register("ionrift-library", "partyRosterMigrated", {
