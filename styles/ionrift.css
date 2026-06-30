@@ -1,0 +1,3248 @@
+/* Ionrift Shared Design System */
+/* Merged from Ionrift Sounds & Ionrift Lib */
+
+:root {
+    --ionrift-glass-bg: rgba(15, 15, 20, 0.96);
+    --ionrift-glass-border: 1px solid rgba(139, 92, 246, 0.4);
+    --ionrift-glass-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+    --ionrift-font-stack: "Signika", sans-serif;
+    --ionrift-accent: #8b5cf6;
+    /* Violet */
+    --ionrift-accent-glow: 0 0 15px rgba(139, 92, 246, 0.5);
+    --ionrift-text-main: #ffffff;
+    --ionrift-text-muted: #e0e0e0;
+}
+
+/* Base Window Styling (The "Purple/Black Glass" Look) */
+.ionrift-window.window-app.glass-ui,
+.ionrift-window.window-app.ionrift,
+.ionrift-window.dialog {
+    background: var(--ionrift-glass-bg) !important;
+    backdrop-filter: blur(24px);
+    border: var(--ionrift-glass-border) !important;
+    box-shadow: var(--ionrift-glass-shadow) !important;
+    color: var(--ionrift-text-muted);
+    font-family: var(--ionrift-font-stack);
+    border-radius: 8px;
+    /* Smooth corners */
+}
+
+/* Dialog shells (legacy Dialog + DialogV2) */
+.ionrift-window.dialog .window-content {
+    padding: 16px 20px !important;
+    overflow: visible;
+    height: auto;
+}
+
+.ionrift-window.dialog .dialog-content {
+    padding: 4px 0 12px;
+    color: var(--ionrift-text-muted);
+    line-height: 1.5;
+}
+
+.ionrift-window.dialog .dialog-content p,
+.ionrift-window.dialog form > .notes {
+    margin: 0 0 12px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.45;
+}
+
+.ionrift-window.dialog .dialog-buttons,
+.ionrift-window.dialog .form-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 0 0;
+    margin-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ionrift-window.dialog .dialog-buttons button,
+.ionrift-window.dialog .form-footer button {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    background: linear-gradient(to bottom, #4a4a4a, #2a2a2a) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #fff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.2;
+    transition: all 0.2s ease;
+}
+
+.ionrift-window.dialog .dialog-buttons button:hover,
+.ionrift-window.dialog .form-footer button:hover {
+    background: rgba(139, 92, 246, 0.6) !important;
+    border-color: var(--ionrift-accent) !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4) !important;
+}
+
+.ionrift-classifier-override-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+}
+
+.ionrift-classifier-override-form .form-group label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ionrift-classifier-override-form .form-group select {
+    width: 100%;
+}
+
+/* Ensure background applies to content if needed, but main window usually handles it */
+/* Ensure background applies to content if needed, but main window usually handles it */
+.ionrift-window .window-content {
+    background: transparent !important;
+    color: inherit;
+    padding: 0;
+    /* FIX: Layout for Scrolling */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    /* Prevent double scrollbars */
+}
+
+/* FIX: Welcome/Attunement Window specific scrolling */
+.ionrift-window.welcome-window .window-content {
+    max-height: 80vh !important;
+    /* Constraint */
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* crucial: The form must fill the content area */
+.ionrift-window.welcome-window form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.ionrift-window.welcome-window .welcome-body {
+    flex: 1;
+    overflow-y: auto;
+    /* Scroll ONLY the body */
+    padding: 10px;
+    /* Firefox scrollbar fix */
+    scrollbar-color: #6d28d9 rgba(0, 0, 0, 0.4);
+    scrollbar-width: thin;
+}
+
+/* Header */
+.ionrift-window .window-header {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--ionrift-text-main);
+    flex: 0 0 38px !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    align-items: center;
+}
+
+.ionrift-window .window-title {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Headings within content */
+.ionrift-window h1,
+.ionrift-window h2,
+.ionrift-window h3 {
+    border-bottom: 2px solid var(--ionrift-accent) !important;
+    color: var(--ionrift-text-main) !important;
+}
+
+/* Tab Navigation - Clean & High Contrast */
+.ionrift-window nav.tabs .item {
+    background: rgba(60, 60, 60, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    border-radius: 4px;
+    margin: 0 4px;
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 1.1em;
+    transition: all 0.2s;
+}
+
+.ionrift-window nav.tabs .item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.ionrift-window nav.tabs .item.active {
+    background: rgba(139, 92, 246, 0.8);
+    border-color: #a78bfa;
+    color: #ffffff;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+/* Data Tables */
+.ionrift-window .ionrift-table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.ionrift-window .ionrift-table th {
+    text-align: left;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 700;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.5);
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.ionrift-window .ionrift-table td {
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    vertical-align: middle;
+    color: #ccc;
+}
+
+.ionrift-window .ionrift-table tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.ionrift-window .ionrift-table td:first-child {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.ionrift-window .ionrift-table td:last-child {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* Input Fields - High Contrast */
+.ionrift-window input[type="text"],
+.ionrift-window input[type="number"],
+.ionrift-window textarea,
+.ionrift-window select {
+    background-color: rgba(10, 10, 15, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+    border-radius: 4px;
+    padding: 4px 8px;
+    /* Reduce vertical padding to prevent overflow */
+    font-family: "Consolas", "Courier New", monospace;
+    /* Good for IDs */
+    font-weight: 500;
+    min-height: 28px;
+    /* Standard Foundry height */
+    height: auto !important;
+    line-height: normal;
+    /* Center text */
+}
+
+/* Ensure textareas look consistent */
+.ionrift-window textarea {
+    resize: vertical;
+    padding: 8px !important;
+}
+
+/* Themed dropdown chevron: replace the native arrow so the indicator keeps
+   consistent breathing room from the right edge across every module. */
+.ionrift-window select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-opacity='0.55' stroke-width='2' d='M4 6l4 4 4-4'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.55rem center !important;
+    background-size: 0.6rem !important;
+    padding-right: 1.5rem !important;
+}
+
+.ionrift-window input:focus,
+.ionrift-window textarea:focus,
+.ionrift-window select:focus {
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    border-color: #a78bfa !important;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
+    outline: none;
+}
+
+/* ── Focus rings: suppress Foundry's red mouse-focus residue ──────────
+   Foundry's application stylesheet sets a warm/red outline on buttons,
+   tabs, cards, and any [tabindex] element after a click or drag-drop.
+   The outline persists until the user clicks elsewhere, creating a
+   stale red border that bleeds outside container boundaries.
+
+   Suppress mouse-triggered :focus across the .ionrift-window contract,
+   but keep keyboard focus visible via :focus-visible with a violet ring
+   for a11y compliance. Documented in IONRIFT_UI_HANDBOOK.md §3. */
+.ionrift-window button:focus,
+.ionrift-window [role="button"]:focus,
+.ionrift-window [tabindex]:focus,
+.ionrift-window a:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.ionrift-window button:focus-visible,
+.ionrift-window [role="button"]:focus-visible,
+.ionrift-window [tabindex]:focus-visible,
+.ionrift-window a:focus-visible {
+    outline: 2px solid rgba(139, 92, 246, 0.85) !important;
+    outline-offset: 2px !important;
+    box-shadow: none !important;
+}
+
+.ionrift-window input::placeholder,
+.ionrift-window textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ionrift-window select option {
+    background: #222;
+    color: #fff;
+}
+
+/* Buttons */
+.ionrift-window button {
+    background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+    border: 1px solid #000;
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.ionrift-window button:hover {
+    background: rgba(139, 92, 246, 0.6);
+    box-shadow: var(--ionrift-accent-glow);
+    border-color: var(--ionrift-accent);
+}
+
+.ionrift-window button:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.3);
+    box-shadow: none;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* --- Integration UI (Twin System) --- */
+/* Identical look to Status Bar but for neutral integrations */
+
+.ionrift-integration-bar {
+    /* Standard Flow - Pushes content down */
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.4);
+
+    /* NUCLEAR HEIGHT CONSTRAINT */
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    padding: 0 8px !important;
+    flex: 0 0 24px !important;
+    overflow: hidden;
+
+    border-radius: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+    cursor: default;
+    transition: all 0.2s;
+    margin-bottom: 5px;
+}
+
+.ionrift-integration-bar:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ionrift-integration-bar.status-connected {
+    color: #4ff !important;
+    border-bottom-color: rgba(0, 255, 255, 0.3) !important;
+}
+
+.ionrift-integration-bar.status-offline {
+    color: #ef4444;
+    border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.ionrift-integration-bar.status-warning {
+    color: #facc15;
+    border-bottom-color: rgba(250, 204, 21, 0.3);
+}
+
+.ionrift-integration-bar.status-unknown {
+    color: #888;
+}
+
+/* Integration Pill (Stadium) */
+.ionrift-integration-pill {
+    /* Flow Layout - Inside Bar */
+    font-size: 10px;
+    /* Small, crisp font */
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    /* Not interactive */
+    cursor: default;
+    transition: all 0.2s;
+    line-height: 1;
+
+    /* Stadium Shape */
+    padding: 1px 10px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    height: 18px;
+    /* Fixed height for consistency */
+}
+
+.ionrift-integration-pill.status-connected {
+    background: rgba(0, 255, 255, 0.15);
+    border: 1px solid #4ff !important;
+    /* Solid Border */
+    color: #4ff !important;
+    /* Cyan-400 */
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+    text-shadow: none;
+    /* Removed glow to match solid look */
+}
+
+.ionrift-integration-pill.status-offline {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #f87171;
+    /* Solid Border */
+    color: #f87171;
+    /* Red-400 */
+    text-shadow: none;
+}
+
+.ionrift-integration-pill.status-warning {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid #facc15;
+    /* Solid Border */
+    color: #facc15;
+}
+
+.ionrift-integration-pill.status-unknown {
+    background: rgba(80, 80, 80, 0.3);
+    border: 1px solid #aaa;
+    /* Solid Border */
+    color: #ccc;
+}
+
+.ionrift-window .play-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.ionrift-window .play-preview:hover {
+    background: #8b5cf6;
+    border-color: #a78bfa;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+    transform: scale(1.1);
+}
+
+/* Settings Icon Standardization */
+.ionrift-integration-icon {
+    font-size: 1.1em;
+    vertical-align: middle;
+    transition: color 0.3s;
+}
+
+.ionrift-integration-icon.status-connected {
+    color: #4ff !important;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
+}
+
+.ionrift-integration-icon.status-offline {
+    color: #f87171 !important;
+    text-shadow: 0 0 5px rgba(248, 113, 113, 0.4);
+}
+
+.ionrift-integration-icon.status-warning {
+    color: #facc15 !important;
+}
+
+.ionrift-integration-icon.status-unknown {
+    color: #888 !important;
+}
+
+/* Footer */
+.ionrift-window .sheet-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.notes {
+    font-size: 0.85em;
+    color: #aaa;
+}
+
+/* --- LEGACY / ADDITIONAL LIB STYLES --- */
+
+/* Art Review Dialog (Preserved from Lib) */
+.ionrift-window .art-review-dialog {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ... (Shortened for brevity, assuming generic classes cover most needs, 
+   but ensuring specific layout classes remain if needed) ... */
+
+.ionrift-window .img-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ionrift-window img.token-thumb {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50%;
+    border: 1px solid var(--ionrift-text-muted);
+    vertical-align: middle;
+    margin-right: 8px;
+    object-fit: cover;
+}
+
+/* --- Status Indicators (Standardized) --- */
+/* Extracted from ionrift-tokens (inline) to Lib */
+.ionrift-status {
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-status.success {
+    color: #4ff;
+    /* Cyan/Electric Blue */
+}
+
+.ionrift-status.error {
+    color: #ef4444;
+    /* Red-500 */
+}
+
+.ionrift-status.loading {
+    color: #aaa;
+}
+
+.ionrift-status.unverified {
+    color: #aaa;
+    opacity: 0.5;
+}
+
+.ionrift-status.unverified {
+    color: #aaa;
+    opacity: 0.5;
+}
+
+/* Standard Status Bar (In-Content, Top Right) */
+.ionrift-status-bar {
+    /* Standard Flow - Pushes content down */
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.4);
+
+    /* Nuclear Height Constraint */
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    padding: 0 8px !important;
+    flex: 0 0 24px !important;
+    overflow: hidden;
+
+    border-radius: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+    cursor: default;
+    transition: all 0.2s;
+    margin-bottom: 5px;
+}
+
+.ionrift-status-bar:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.ionrift-status-bar.status-connected {
+    color: #4ff;
+    border-bottom-color: rgba(0, 255, 255, 0.3);
+}
+
+.ionrift-status-bar.status-offline {
+    color: #ef4444;
+    border-bottom-color: rgba(239, 68, 68, 0.3);
+}
+
+.ionrift-status-bar.status-warning {
+    color: #facc15;
+    border-bottom-color: rgba(250, 204, 21, 0.3);
+}
+
+.ionrift-status-bar.status-unknown {
+    color: #888;
+}
+
+/* Standard Status Pill (Minimalist, Text+Glow) */
+.ionrift-status-pill {
+    /* Flow Layout - Inside Bar */
+    font-size: 10px;
+    /* Small, crisp font */
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    /* Not interactive */
+    cursor: default;
+    transition: all 0.2s;
+    line-height: 1;
+
+    /* Stadium Shape */
+    padding: 1px 10px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    height: 18px;
+    /* Fixed height for consistency */
+}
+
+.ionrift-status-pill.status-connected {
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid #22d3ee;
+    /* Solid Border */
+    color: #22d3ee;
+    /* Cyan-400 */
+    box-shadow: 0 0 5px rgba(6, 182, 212, 0.2);
+    text-shadow: none;
+    /* Removed glow to match solid look */
+}
+
+.ionrift-status-pill.status-offline {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid #f87171;
+    /* Solid Border */
+    color: #f87171;
+    /* Red-400 */
+    text-shadow: none;
+}
+
+.ionrift-status-pill.status-warning {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid #facc15;
+    /* Solid Border */
+    color: #facc15;
+}
+
+.ionrift-status-pill.status-unknown {
+    background: rgba(80, 80, 80, 0.3);
+    border: 1px solid #aaa;
+    /* Solid Border */
+    color: #ccc;
+}
+
+/* Status Badges - Art Director Standard */
+.ionrift-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.ionrift-badge.success {
+    background: rgba(34, 211, 238, 0.15);
+    /* Cyan-400 tint */
+    border-color: rgba(34, 211, 238, 0.5);
+    color: #22d3ee;
+    /* Cyan-400 */
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.2);
+    text-shadow: 0 0 5px rgba(34, 211, 238, 0.4);
+}
+
+.ionrift-badge.error {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.5);
+    color: #f87171;
+    /* Red-400 */
+    box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
+}
+
+button.ionrift-badge.classifier-override-btn {
+    cursor: pointer;
+    font: inherit;
+}
+
+button.ionrift-badge.classifier-override-btn:hover {
+    filter: brightness(1.15);
+}
+
+.ionrift-badge.manual {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.5);
+    color: #c4b5fd;
+    box-shadow: 0 0 12px rgba(167, 139, 250, 0.2);
+}
+
+.ionrift-badge.loading {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: rgba(167, 139, 250, 0.4);
+    color: #a78bfa;
+}
+
+/* --- Login App (Auth) --- */
+.login-app .content {
+    text-align: center;
+    padding: 10px;
+}
+
+.user-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.user-card.Free {
+    border-color: #aaa;
+}
+
+.user-card.Initiate {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+.user-card.Acolyte {
+    border-color: #4ff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.tier-badge {
+    font-size: 1.5em;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.credits {
+    margin: 20px 0;
+}
+
+.credits .count {
+    display: block;
+    font-size: 3em;
+    font-weight: 700;
+    line-height: 1;
+    color: #4ff;
+    /* Cyan */
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+.credits .label {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+.patreon-id {
+    font-family: monospace;
+    opacity: 0.5;
+    font-size: 0.8em;
+    margin-bottom: 20px;
+}
+
+.patreon-btn {
+    background: #FF424D !important;
+    /* Patreon Coral */
+    color: #fff !important;
+    font-weight: 700;
+    border: none;
+    padding: 10px 20px;
+}
+
+.patreon-btn:hover {
+    background: #ff5c66 !important;
+    box-shadow: 0 0 15px rgba(255, 66, 77, 0.5);
+}
+
+.login-prompt .hint {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+.login-prompt .sub-hint {
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #888;
+    font-style: italic;
+}
+
+.login-prompt .sub-hint {
+    margin-top: 10px;
+    font-size: 0.8em;
+    color: #888;
+    font-style: italic;
+}
+
+/* --- Shared Components --- */
+
+/* Purple Save Button */
+.ionrift-save-btn {
+    background: rgba(139, 92, 246, 0.3);
+    border: 1px solid rgba(139, 92, 246, 0.6);
+    color: #fff;
+    padding: 6px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    font-size: 0.95em;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.1);
+}
+
+.ionrift-save-btn:hover {
+    background: rgba(139, 92, 246, 0.5);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+}
+
+/* Custom Scrollbars - Purple Theme */
+.ionrift-window,
+.ionrift-sound-config .content,
+.ionrift-window .results-table,
+.ionrift-window .scrollable,
+.ionrift-list {
+    scrollbar-color: #6d28d9 rgba(0, 0, 0, 0.4) !important;
+    scrollbar-width: thin !important;
+}
+
+.ionrift-window ::-webkit-scrollbar,
+.ionrift-window *::-webkit-scrollbar,
+.ionrift-window .window-content::-webkit-scrollbar,
+.ionrift-window .sheet-body::-webkit-scrollbar,
+.ionrift-window .tab::-webkit-scrollbar,
+.ionrift-window ul::-webkit-scrollbar,
+.ionrift-window ol::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.ionrift-window ::-webkit-scrollbar-track,
+.ionrift-window *::-webkit-scrollbar-track,
+.ionrift-window .window-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-radius: 4px;
+}
+
+.ionrift-window ::-webkit-scrollbar-thumb,
+.ionrift-window *::-webkit-scrollbar-thumb,
+.ionrift-window .window-content::-webkit-scrollbar-thumb {
+    background: #6d28d9 !important;
+    /* Purple-700 */
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.ionrift-window ::-webkit-scrollbar-thumb:hover,
+.ionrift-window *::-webkit-scrollbar-thumb:hover {
+    background: #8b5cf6 !important;
+    /* Purple-500 */
+}
+
+/* ----------------------------------------- */
+/*  Diagnostic Suite                         */
+/* ----------------------------------------- */
+
+.ionrift.diagnostics .window-content {
+    background: transparent !important;
+    color: var(--ionrift-text-main);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.ionrift.diagnostics form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.diagnostic-header {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ionrift-text-main);
+    padding: 10px 15px;
+    border-bottom: 2px solid var(--ionrift-accent);
+    flex: 0 0 auto;
+}
+
+.diagnostic-header h1 {
+    margin: 0;
+    border: none;
+    font-family: var(--ionrift-font-stack);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.diagnostic-header .summary {
+    margin: 5px 0 0 0;
+    font-size: 13px;
+    opacity: 0.9;
+    display: flex;
+    gap: 15px;
+    color: var(--ionrift-text-muted);
+}
+
+.diagnostic-header .count {
+    font-weight: bold;
+}
+
+.diagnostic-header .count.pass {
+    color: #2ecc71;
+}
+
+.diagnostic-header .count.warn {
+    color: #f1c40f;
+}
+
+.diagnostic-header .count.fail {
+    color: #e74c3c;
+}
+
+.diagnostic-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.module-group {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.module-title {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px 10px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--ionrift-text-muted);
+    text-transform: uppercase;
+}
+
+.test-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.test-item {
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--ionrift-text-muted);
+}
+
+.test-item:last-child {
+    border-bottom: none;
+}
+
+.test-item .status-icon {
+    flex: 0 0 20px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.test-item.status-pass .status-icon {
+    color: #27ae60;
+}
+
+.test-item.status-warn .status-icon {
+    color: #f39c12;
+}
+
+.test-item.status-fail .status-icon {
+    color: #c0392b;
+}
+
+.test-item .test-name {
+    flex: 0 0 150px;
+    font-weight: bold;
+    color: var(--ionrift-text-main);
+}
+
+.test-item .test-message {
+    flex: 1;
+    font-style: italic;
+    color: var(--ionrift-text-muted);
+    opacity: 0.8;
+}
+
+.no-results {
+    text-align: center;
+    padding: 20px;
+    color: var(--ionrift-text-muted);
+    font-style: italic;
+}
+
+.ionrift.diagnostics .sheet-footer {
+    flex: 0 0 auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ionrift.diagnostics button {
+    background: linear-gradient(to bottom, #4a4a4a, #2a2a2a);
+    border: 1px solid #000;
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.ionrift.diagnostics button:hover {
+    background: rgba(139, 92, 246, 0.6);
+    box-shadow: var(--ionrift-accent-glow);
+    border-color: var(--ionrift-accent);
+}
+
+/* --- INTEGRATION STATUS BAR (Generic) --- */
+/* "Twin" of the Status Bar - Pixel Perfect Match */
+.ionrift-integration-bar {
+    /* Standard Flow - Pushes content down */
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.4);
+
+    /* NUCLEAR HEIGHT CONSTRAINT */
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    padding: 0 8px !important;
+    flex: 0 0 24px !important;
+    overflow: hidden;
+
+    border-radius: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: auto;
+    cursor: default;
+    transition: all 0.2s;
+    margin-bottom: 5px;
+}
+
+.ionrift-integration-bar.status-connected {
+    background: rgba(46, 204, 113, 0.1);
+    border-bottom: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.ionrift-integration-bar.status-offline {
+    background: rgba(231, 76, 60, 0.1);
+    border-bottom: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.ionrift-integration-bar.status-warning {
+    background: rgba(241, 196, 15, 0.1);
+    border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.ionrift-integration-pill {
+    /* Flow Layout - Inside Bar */
+    font-size: 10px;
+    /* Small, crisp font */
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+    /* Not interactive */
+    cursor: default;
+    transition: all 0.2s;
+    line-height: 1;
+
+    /* Stadium Shape */
+    padding: 1px 10px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+
+    height: 18px;
+    /* Fixed height for consistency */
+}
+
+.ionrift-integration-pill.status-connected {
+    background: rgba(46, 204, 113, 0.2);
+    border-color: #2ecc71;
+    color: #2ecc71;
+    box-shadow: 0 0 5px rgba(46, 204, 113, 0.2);
+}
+
+.ionrift-integration-pill.status-offline {
+    background: rgba(231, 76, 60, 0.2);
+    border-color: #e74c3c;
+    color: #e74c3c;
+    box-shadow: 0 0 5px rgba(231, 76, 60, 0.2);
+}
+
+.ionrift-integration-pill.status-warning {
+    background: rgba(241, 196, 15, 0.2);
+    border-color: #f1c40f;
+    color: #f1c40f;
+    box-shadow: 0 0 5px rgba(241, 196, 15, 0.2);
+}
+
+.ionrift-integration-icon.status-connected {
+    color: #2ecc71;
+}
+
+.ionrift-integration-icon.status-offline {
+    color: #e74c3c;
+}
+
+.ionrift-integration-icon.status-warning {
+    color: #f1c40f;
+}
+
+.ionrift-integration-icon.status-unknown {
+    color: #95a5a6;
+}
+
+/* --- Welcome App Branding (Shared) --- */
+
+.ionrift.welcome-window .window-content {
+    padding: 0;
+    overflow: hidden;
+    background: transparent !important;
+}
+
+.welcome-header {
+    background: linear-gradient(135deg, rgba(50, 20, 70, 0.8), rgba(20, 20, 30, 0.0));
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.welcome-header.glass-header {
+    background: linear-gradient(135deg, rgba(50, 20, 70, 0.8), rgba(20, 20, 30, 0.0));
+}
+
+.welcome-header h1 {
+    font-family: "Modesto Condensed", serif;
+    font-size: 2em;
+    border: none;
+    margin: 0;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(180, 100, 255, 0.5);
+}
+
+.welcome-header p {
+    margin: 5px 0 0 0;
+    opacity: 0.8;
+    font-style: italic;
+}
+
+.welcome-body {
+    padding: 20px;
+}
+
+.welcome-body.glass-body {
+    padding: 20px;
+}
+
+.intro-text {
+    font-size: 1.1em;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.2s;
+}
+
+.step-item.current {
+    background: rgba(100, 50, 180, 0.2);
+    border-color: rgba(150, 100, 255, 0.4);
+}
+
+.step-item.completed {
+    opacity: 0.7;
+    background: rgba(50, 100, 50, 0.2);
+}
+
+.step-icon {
+    font-size: 1.5em;
+    width: 40px;
+    text-align: center;
+    color: var(--ionrift-text-main);
+}
+
+.step-icon .success {
+    color: #4cd137;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content h3 {
+    margin: 0 0 5px 0;
+    border: none;
+    font-size: 1.1em;
+}
+
+.step-content p {
+    margin: 0;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.step-content code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    color: #e0e0e0;
+}
+
+.step-action button {
+    width: auto;
+    padding: 5px 15px;
+    background: rgba(100, 50, 180, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.step-action button:hover:not(:disabled) {
+    background: rgba(120, 70, 200, 0.8);
+    box-shadow: 0 0 10px rgba(150, 100, 255, 0.4);
+}
+
+.step-action button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: rgba(80, 80, 80, 0.2);
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.step-action .status-tag.success {
+    color: #4cd137;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+.welcome-footer {
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.finish-btn {
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+    border: 1px solid #2ecc71;
+    color: white;
+    font-weight: bold;
+}
+
+.skip-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+}
+
+/* --- Ionrift List Component (Standard) --- */
+.ionrift-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.ionrift-list>* {
+    flex-shrink: 0;
+}
+
+.ionrift-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.ionrift-list-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(139, 92, 246, 0.3);
+    transform: translateX(2px);
+    box-shadow: -2px 0 0 var(--ionrift-accent);
+}
+
+.ionrift-list-item .avatar {
+    flex: 0 0 40px;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    object-fit: cover;
+    background: #000;
+}
+
+.ionrift-list-item .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.ionrift-list-item .title {
+    font-weight: 700;
+    color: var(--ionrift-text-main);
+    font-size: 1.05em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ionrift-list-item .subtitle {
+    font-size: 0.85em;
+    color: var(--ionrift-text-muted);
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-list-item .badges {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 20px;
+}
+
+.dashboard-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dashboard-gauge {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: conic-gradient(var(--ionrift-accent) var(--pct), rgba(255, 255, 255, 0.1) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-gauge::after {
+    content: "";
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    background: #222;
+    border-radius: 50%;
+}
+
+.dashboard-gauge span {
+    position: relative;
+    z-index: 1;
+    font-size: 0.9em;
+    font-weight: 700;
+    color: #fff;
+}
+
+.dashboard-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-text .label {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #aaa;
+}
+
+.dashboard-text .value {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.ionrift-search-container {
+    flex: 1;
+    position: relative;
+    max-width: 400px;
+}
+
+.ionrift-search-container i {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    pointer-events: none;
+}
+
+.ionrift-search-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 8px 10px 8px 34px !important;
+    border-radius: 20px !important;
+    color: #fff !important;
+    transition: all 0.2s;
+}
+
+.ionrift-search-input:focus {
+    background: rgba(0, 0, 0, 0.5) !important;
+    border-color: var(--ionrift-accent) !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+}
+
+/* --- Resonance Calibration (Sidebar & Cards) --- */
+
+.ionrift-sidebar {
+    background: rgba(0, 0, 0, 0.3);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 0;
+    overflow-y: auto;
+}
+
+.ionrift-sidebar .item {
+    background: transparent !important;
+    /* Force remove default backgrounds */
+    border: none !important;
+    /* Force remove default borders */
+    border-left: 3px solid transparent !important;
+    /* Keep our accent border */
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 10px 15px;
+    /* Tighter padding */
+    color: #ccc !important;
+    /* Force high contrast */
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95em;
+    font-weight: 600;
+    margin-bottom: 1px;
+    /* Tighter gap */
+    text-shadow: none !important;
+}
+
+.ionrift-sidebar .item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #fff;
+}
+
+.ionrift-sidebar .item.active {
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0) 100%) !important;
+    border-left-color: #8b5cf6 !important;
+    color: #fff !important;
+    text-shadow: 0 0 10px rgba(139, 92, 246, 0.5) !important;
+}
+
+.ionrift-sidebar .item i {
+    width: 20px;
+    text-align: center;
+    color: inherit !important;
+    /* Ensure icon matches text */
+    opacity: 0.8;
+}
+
+/* Fix specific Auditor tab if it has unique overrides */
+.ionrift-sidebar .item.auditor-tab {
+    margin-top: auto;
+}
+
+.ionrift-sidebar .header {
+    text-transform: uppercase;
+    font-size: 0.75em;
+    color: #555;
+    margin: 20px 15px 5px;
+    letter-spacing: 1px;
+    font-weight: 800;
+    pointer-events: none;
+}
+
+
+
+.ionrift-list-header {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #fff;
+    border-bottom: 2px solid rgba(139, 92, 246, 0.5);
+    padding-bottom: 5px;
+    margin: 15px 0 10px;
+    text-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ionrift-list-item {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.2s;
+}
+
+.ionrift-list-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(139, 92, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.entity-info {
+    min-width: 0;
+    /* Flexbox text truncate fix */
+}
+
+.entity-name {
+    font-weight: 700;
+    font-size: 1em;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.entity-meta {
+    font-size: 0.8em;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Badges */
+/* Badges */
+.ionrift-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    /* Slightly less rounded */
+    font-size: 0.8em;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    letter-spacing: 0.5px;
+}
+
+.ionrift-badge.success {
+    background: rgba(16, 185, 129, 0.15);
+    color: #4ade80;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+.ionrift-badge.loading {
+    background: rgba(255, 255, 255, 0.05);
+    color: #666;
+    border-style: dashed;
+}
+
+/* For numeric IDs */
+.ionrift-badge.id-tag {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.75em;
+    background: rgba(0, 0, 0, 0.3);
+    color: #aaa;
+}
+
+/* Action Buttons */
+/* Action Buttons */
+.entity-actions button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #aaa;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px !important;
+    /* Force square */
+    padding: 0;
+    line-height: 26px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.entity-actions button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+.entity-actions button.play-preview:hover {
+    background: rgba(139, 92, 246, 0.15);
+    /* Purple tint */
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+/* Footer Secondary Buttons */
+.sheet-footer button.load-preset,
+.sheet-footer button.import-config,
+.sheet-footer button.export-config {
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    /* Increased visibility */
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 4px;
+    padding: 2px 10px;
+}
+
+.sheet-footer button:hover {
+    border-color: rgba(255, 255, 255, 0.6) !important;
+    color: #fff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.ionrift-save-btn {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    border: none;
+    color: white;
+    padding: 6px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+}
+
+.ionrift-save-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+}
+
+/* Settings panel divider (injected by SettingsLayout.injectLayout) */
+.ionrift-settings-divider {
+    height: 2px;
+    min-height: 2px;
+    flex-shrink: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(200, 160, 60, 0.5),
+        rgba(200, 160, 60, 0.6),
+        rgba(200, 160, 60, 0.5),
+        transparent
+    );
+    margin: 0.75rem 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Item Enrichment Block (injected into Foundry item sheets)          */
+/* ─────────────────────────────────────────────────────────────────── */
+.ionrift-enrichment {
+    margin: 8px 0 12px;
+    padding: 8px 10px;
+    background: rgba(155, 89, 182, 0.10);
+    border-left: 3px solid rgba(155, 89, 182, 0.6);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9em;
+    line-height: 1.5;
+}
+
+.ionrift-enrichment i.fa-campground {
+    color: rgba(155, 89, 182, 0.9);
+    margin-right: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Early Access Dialog (PackRegistryService hybrid notification)      */
+/* ─────────────────────────────────────────────────────────────────── */
+.ionrift-ea-dialog-content {
+    padding: 4px 0 0;
+}
+
+.ionrift-ea-identity {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.ionrift-ea-icon {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.15));
+    border: 1px solid rgba(139,92,246,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+    color: #a78bfa;
+    box-shadow: 0 0 14px rgba(139,92,246,0.12);
+}
+
+.ionrift-ea-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.ionrift-ea-name {
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+
+.ionrift-ea-version-pill {
+    font-size: 0.65em;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.18);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    color: #c4b5fd;
+    letter-spacing: 0.03em;
+}
+
+.ionrift-ea-tier-pill {
+    font-size: 0.65em;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    color: #67e8f9;
+    letter-spacing: 0.03em;
+}
+
+.ionrift-ea-desc {
+    font-size: 0.85em;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.5;
+}
+
+.ionrift-ea-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.2), transparent);
+    margin: 12px 0;
+}
+
+.ionrift-ea-patreon-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.ionrift-ea-patreon-link:hover {
+    background: rgba(139,92,246,0.08);
+    border-color: rgba(139,92,246,0.25);
+    text-decoration: none;
+    color: inherit;
+}
+
+.ionrift-ea-patreon-link i.fa-patreon {
+    font-size: 1.1em;
+    color: #f96854;
+    flex: 0 0 auto;
+}
+
+.ionrift-ea-patreon-link span {
+    flex: 1;
+    font-size: 0.85em;
+    color: #c4b5fd;
+    font-weight: 500;
+}
+
+.ionrift-ea-arrow {
+    color: rgba(139,92,246,0.4);
+    font-size: 0.8em;
+    transition: transform 0.2s;
+    flex: 0 0 auto;
+}
+
+.ionrift-ea-patreon-link:hover .ionrift-ea-arrow {
+    transform: translateX(3px);
+    color: #a78bfa;
+}
+
+.ionrift-ea-patreon-link--placeholder {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.ionrift-ea-snooze-note {
+    text-align: center;
+    font-size: 0.72em;
+    color: rgba(255,255,255,0.18);
+    margin-top: 10px;
+}
+
+.ionrift-ea-activate-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 6px;
+    font-size: 0.8em;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.4;
+}
+
+.ionrift-ea-activate-hint i {
+    color: #a78bfa;
+    flex: 0 0 auto;
+    font-size: 0.95em;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Patreon Menu (PatreonMenu FormApplication)                        */
+/* ─────────────────────────────────────────────────────────────────── */
+.ionrift-patreon-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ionrift-patreon-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #fff;
+}
+
+.ionrift-patreon-title i.fa-patreon {
+    color: #f96854;
+    font-size: 1.15em;
+}
+
+.ionrift-patreon-tier-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 0.78em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    color: #fbbf24;
+}
+
+.ionrift-patreon-expiry {
+    margin: 8px 16px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(148, 163, 184, 0.08);
+}
+
+.ionrift-patreon-expiry--ok {
+    border-color: rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.07);
+    color: #86efac;
+}
+
+.ionrift-patreon-expiry--soon {
+    border-color: rgba(251, 191, 36, 0.45);
+    background: rgba(251, 191, 36, 0.07);
+    color: #fbbf24;
+}
+
+.ionrift-patreon-expiry--expired {
+    border-color: rgba(248, 113, 113, 0.5);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+}
+
+.ionrift-patreon-expiry-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.ionrift-patreon-expiry-label {
+    flex: 1;
+}
+
+.ionrift-patreon-expiry-hint {
+    margin-top: 4px;
+    font-size: 0.85em;
+    opacity: 0.85;
+    font-weight: 400;
+}
+
+.ionrift-patreon-btn-reconnect {
+    background: rgba(34, 211, 238, 0.12) !important;
+    border: 1px solid rgba(34, 211, 238, 0.4) !important;
+    color: #67e8f9!important;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ionrift-patreon-btn-reconnect:hover {
+    background: rgba(34, 211, 238, 0.22) !important;
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.2);
+}
+
+.ionrift-patreon-body {
+    padding: 0 16px 8px;
+}
+
+.ionrift-patreon-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+.ionrift-patreon-footer button {
+    white-space: nowrap;
+}
+
+.ionrift-patreon-btn-disconnect {
+    background: rgba(251, 191, 36, 0.15) !important;
+    border: 1px solid rgba(251, 191, 36, 0.45) !important;
+    color: #fbbf24 !important;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ionrift-patreon-btn-disconnect:hover {
+    background: rgba(251, 191, 36, 0.3) !important;
+    border-color: #fbbf24 !important;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.25);
+}
+
+.ionrift-patreon-btn-cancel {
+    background: rgba(148, 163, 184, 0.12);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ionrift-patreon-btn-cancel:hover {
+    background: rgba(148, 163, 184, 0.22);
+    border-color: #94a3b8;
+    color: #cbd5e1;
+}
+
+
+.ionrift-patreon-footer-spacer {
+    flex: 1;
+}
+
+.ionrift-patreon-btn-refresh {
+    background: rgba(34, 211, 238, 0.1);
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    color: #67e8f9;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-patreon-btn-refresh:hover {
+    background: rgba(34, 211, 238, 0.2);
+    border-color: #67e8f9;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.2);
+    color: #a5f3fc;
+}
+
+.ionrift-patreon-btn-refresh:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+/* EA Card Row */
+.ionrift-ea-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.ionrift-ea-card:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ionrift-ea-card--locked {
+    opacity: 0.42;
+    border-style: dashed;
+    filter: saturate(0.3);
+}
+
+.ionrift-ea-section-heading {
+    color: #4ff;
+    font-size: 0.78em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 12px 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-ea-card-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.12));
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1em;
+    color: #a78bfa;
+}
+
+.ionrift-ea-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.ionrift-ea-card-name {
+    font-weight: 700;
+    font-size: 0.95em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+
+.ionrift-ea-card-hint {
+    font-size: 0.78em;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 3px;
+}
+
+.ionrift-ea-card-action {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.ionrift-ea-lock {
+    color: #888;
+    font-size: 0.8em;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ionrift-ea-installed {
+    color: #4ff;
+    font-size: 0.85em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+/* == Armor Modal (Shared Base) ============================== */
+
+.ionrift-armor-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.ionrift-armor-modal {
+    background: rgb(22, 24, 34);
+    border: 1px solid rgba(126, 184, 218, 0.3);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    max-width: 380px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.ionrift-armor-modal h3 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: rgba(255, 200, 100, 0.9);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ionrift-armor-modal p {
+    margin: 0 0 0.5rem;
+}
+
+.ionrift-armor-modal-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    justify-content: flex-end;
+}
+
+/* Bug Report window (matches Patreon Menu header/body rhythm) */
+.ionrift-window.bug-report .window-content {
+    display: block !important;
+    height: auto !important;
+    max-height: 85vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    scrollbar-color: #6d28d9 rgba(0, 0, 0, 0.4);
+}
+
+.ionrift-window.bug-report .ionrift-bug-report-form {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    height: auto;
+    min-height: 0;
+}
+
+.ionrift-bug-report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    flex: 0 0 auto;
+}
+
+.ionrift-bug-report-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #fff;
+}
+
+.ionrift-bug-report-title i {
+    color: rgba(255, 200, 100, 0.85);
+    font-size: 1.05em;
+}
+
+.ionrift-bug-report-body {
+    padding: 14px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1 1 auto;
+    box-sizing: border-box;
+}
+
+.ionrift-bug-report-form .ionrift-bug-report-lead {
+    margin: 0 0 14px;
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.65);
+    line-height: 1.5;
+}
+
+.ionrift-bug-report-form .form-group {
+    margin: 0 0 14px;
+}
+
+.ionrift-bug-report-form .form-group label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ionrift-bug-report-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 4.5rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.9);
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+.ionrift-bug-report-form .ionrift-bug-report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.ionrift-bug-report-form .ionrift-btn-secondary {
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.ionrift-bug-report-form .ionrift-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ionrift-bug-report-status {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.ionrift-bug-report-status.is-hidden {
+    display: none;
+}
+
+.ionrift-bug-report-status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.ionrift-bug-report-status .status-detail {
+    margin: 6px 0 0;
+    font-size: 0.92em;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.ionrift-bug-report-status.is-submitting,
+.ionrift-bug-report-status.is-copying {
+    border-color: rgba(139, 92, 246, 0.35);
+    background: rgba(139, 92, 246, 0.08);
+    color: #c4b5fd;
+}
+
+.ionrift-bug-report-status.is-submitting .status-icon,
+.ionrift-bug-report-status.is-copying .status-icon {
+    color: #a78bfa;
+}
+
+.ionrift-bug-report-status.is-success {
+    border-color: rgba(74, 222, 128, 0.35);
+    background: rgba(74, 222, 128, 0.08);
+    color: #86efac;
+}
+
+.ionrift-bug-report-status.is-success .status-icon {
+    color: #4ade80;
+}
+
+.ionrift-bug-report-status.is-error {
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.08);
+    color: #fca5a5;
+}
+
+.ionrift-bug-report-status.is-error .status-icon {
+    color: #f87171;
+}
+
+.ionrift-bug-report-form .ionrift-bug-report-footnote {
+    margin: 0 0 12px;
+    padding: 0;
+    border-top: none;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+}
+
+.ionrift-bug-report-modal.ionrift-armor-modal {
+    padding: 1.5rem 1.75rem;
+    max-width: 420px;
+}
+
+.ionrift-bug-report-modal .ionrift-bug-report-ref {
+    margin: 8px 0;
+    font-size: 1.35em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(253, 230, 138, 0.95);
+    text-align: center;
+}
+
+.ionrift-bug-report-modal .ionrift-bug-report-hint,
+.ionrift-bug-report-modal .ionrift-bug-report-id {
+    font-size: 0.88em;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.45;
+    text-align: center;
+}
+
+.ionrift-bug-report-modal .ionrift-bug-report-id code {
+    font-size: 0.82em;
+    word-break: break-all;
+}
+
+.ionrift-armor-modal-buttons button,
+.ionrift-armor-modal-buttons a.btn-armor-confirm {
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    text-decoration: none;
+}
+
+.btn-armor-confirm {
+    background: rgba(220, 120, 40, 0.25);
+    border-color: rgba(220, 120, 40, 0.5) !important;
+    color: #f0a848;
+}
+
+.btn-armor-confirm:hover {
+    background: rgba(220, 120, 40, 0.4);
+}
+
+/* == Forge Install Dialog =================================== */
+
+.ionrift-forge-install-modal {
+    max-width: 420px;
+}
+
+.ionrift-forge-install-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+
+.ionrift-forge-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.ionrift-forge-step-num {
+    width: 1.4rem;
+    height: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(139, 92, 246, 0.2);
+    color: rgba(180, 140, 255, 0.9);
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.ionrift-forge-download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    border-radius: 4px;
+    color: #c4a7f7;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ionrift-forge-download-btn:hover {
+    background: rgba(139, 92, 246, 0.35);
+    color: #e0d4f5;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+}
+
+.ionrift-forge-install-note {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+}
+
+.ionrift-forge-install-note i {
+    margin-right: 0.25rem;
+    color: rgba(255, 200, 100, 0.5);
+}
+
+/* ── Party Roster Config ─────────────────────────────────────────── */
+
+.ionrift-party-roster {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ionrift-party-roster .roster-summary-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-party-roster .roster-summary-count {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ionrift-party-roster .roster-summary-count strong {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.ionrift-party-roster .roster-select-actions {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.ionrift-party-roster .roster-select-actions button {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.65rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ionrift-party-roster .roster-select-actions button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.ionrift-party-roster .roster-first-use-hint {
+    padding: 0.4rem 0.6rem;
+    background: rgba(100, 180, 255, 0.06);
+    border: 1px solid rgba(100, 180, 255, 0.1);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    color: rgba(200, 220, 255, 0.7);
+}
+
+.ionrift-party-roster .roster-first-use-hint i {
+    margin-right: 0.3rem;
+    color: rgba(100, 180, 255, 0.5);
+}
+
+.ionrift-party-roster .roster-actor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.ionrift-party-roster .roster-actor-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.ionrift-party-roster .roster-actor-row:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ionrift-party-roster .roster-actor-row.checked {
+    border-color: rgba(155, 89, 182, 0.25);
+    background: rgba(155, 89, 182, 0.04);
+}
+
+.ionrift-party-roster .roster-actor-checkbox {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    accent-color: #9b59b6;
+    cursor: pointer;
+}
+
+.ionrift-party-roster .roster-actor-portrait {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ionrift-party-roster .roster-actor-row:not(.checked) .roster-actor-portrait {
+    filter: grayscale(0.6);
+    opacity: 0.6;
+}
+
+.ionrift-party-roster .roster-actor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.ionrift-party-roster .roster-actor-name {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ionrift-party-roster .roster-actor-row:not(.checked) .roster-actor-name {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.ionrift-party-roster .roster-actor-detail {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ionrift-party-roster .roster-new-badge {
+    display: inline-block;
+    padding: 0.05rem 0.3rem;
+    font-size: 0.5rem;
+    font-weight: 700;
+    background: rgba(100, 180, 255, 0.15);
+    color: rgba(100, 180, 255, 0.8);
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-left: 0.3rem;
+}
+
+.ionrift-party-roster .roster-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.4rem;
+}
+
+.ionrift-party-roster .roster-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(155, 89, 182, 0.15);
+    border: 1px solid rgba(155, 89, 182, 0.25);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ionrift-party-roster .roster-save-btn:hover {
+    background: rgba(155, 89, 182, 0.25);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.ionrift-party-roster .roster-save-btn i {
+    font-size: 0.7rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Overlay Manager                                                            */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+.ionrift-overlay-manager {
+    padding: 0 1rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.ionrift-overlay-manager .overlay-mgr-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.ionrift-overlay-manager .overlay-mgr-header-title {
+    flex: 1;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.02em;
+}
+
+.ionrift-overlay-manager .overlay-mgr-check-btn {
+    background: transparent !important;
+    border: 1px solid rgba(139,92,246,0.6) !important;
+    color: #a78bfa !important;
+    border-radius: 4px;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: none !important;
+    transition: background 0.15s;
+}
+.ionrift-overlay-manager .overlay-mgr-check-btn:hover {
+    background: rgba(139,92,246,0.12) !important;
+    box-shadow: none !important;
+}
+
+.ionrift-overlay-manager .overlay-mgr-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.ionrift-overlay-manager .overlay-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* Card — horizontal flex row */
+.ionrift-overlay-manager .overlay-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.15s, border-color 0.15s;
+}
+.ionrift-overlay-manager .overlay-card:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(139,92,246,0.18);
+}
+.ionrift-overlay-manager .overlay-card[data-status="locked"]          { opacity: 0.45; }
+.ionrift-overlay-manager .overlay-card[data-status="module-inactive"] { opacity: 0.6; }
+
+/* Icon column */
+.ionrift-overlay-manager .overlay-card-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    color: var(--ionrift-accent, #8b5cf6);
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+/* Body column */
+.ionrift-overlay-manager .overlay-card-body {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+}
+
+.ionrift-overlay-manager .overlay-card-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #e8e8f0;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.ionrift-overlay-manager .overlay-tier-pill {
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 0.07rem 0.38rem;
+    border-radius: 3px;
+    background: rgba(139,92,246,0.18);
+    color: #c4b5fd;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid rgba(139,92,246,0.28);
+    line-height: 1.5;
+}
+
+.ionrift-overlay-manager .overlay-version-info {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.32);
+}
+
+.ionrift-overlay-manager .overlay-card-desc {
+    font-size: 0.71rem;
+    color: rgba(255,255,255,0.38);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Action column */
+.ionrift-overlay-manager .overlay-card-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 84px;
+}
+
+/* Install / Update button — override ionrift.css .ionrift-window button gradient */
+.ionrift-overlay-manager .overlay-card-action button {
+    font-size: 0.73rem !important;
+    padding: 0.25rem 0.65rem !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    border: none !important;
+    background: rgba(139,92,246,0.8) !important;
+    color: #fff !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+    box-shadow: none !important;
+    line-height: 1.4;
+    transition: filter 0.15s !important;
+}
+.ionrift-overlay-manager .overlay-card-action button:hover {
+    filter: brightness(1.12);
+    background: rgba(139,92,246,0.95) !important;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3) !important;
+}
+.ionrift-overlay-manager .overlay-card-action button:disabled {
+    opacity: 0.4 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* Status spans */
+.ionrift-overlay-manager .overlay-status-ok {
+    color: #86efac;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+.ionrift-overlay-manager .overlay-status-hint {
+    color: rgba(255,255,255,0.35);
+    font-size: 0.7rem;
+    font-style: italic;
+    white-space: nowrap;
+}
+.ionrift-overlay-manager .overlay-status-lock {
+    color: rgba(255,255,255,0.28);
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    white-space: nowrap;
+}
+
+/* Footer */
+.ionrift-overlay-manager .overlay-mgr-footer {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    text-align: right;
+    padding-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Not connected */
+.ionrift-overlay-manager .overlay-not-connected {
+    padding: 1.5rem 1rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/*  Module settings: Quick Setup profiles and group headers            */
+/*  Injected by ionrift-library ModuleConfigProfiles.js                */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.ionrift-quick-setup,
+.respite-quick-setup {
+    margin: 0 0 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(200, 160, 60, 0.28);
+    border-radius: 6px;
+    background: rgba(200, 160, 60, 0.06);
+}
+
+.ionrift-quick-setup-head,
+.respite-quick-setup-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 0.5rem;
+}
+
+.ionrift-quick-setup-head-top,
+.respite-quick-setup-head-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.ionrift-quick-setup-title,
+.respite-quick-setup-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.ionrift-quick-setup-title i,
+.respite-quick-setup-title i {
+    color: rgba(200, 160, 60, 0.9);
+    margin-right: 0.35rem;
+}
+
+.ionrift-quick-setup-sub,
+.respite-quick-setup-sub {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    line-height: 1.45;
+    padding-right: 0.15rem;
+}
+
+.ionrift-quick-setup-guide-link,
+.respite-quick-setup-guide-link {
+    flex-shrink: 0;
+    background: rgba(200, 160, 60, 0.12);
+    border: 1px solid rgba(200, 160, 60, 0.35);
+    color: rgba(220, 190, 110, 0.95);
+    font-size: 0.72rem;
+    padding: 0.18rem 0.55rem;
+    border-radius: 4px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ionrift-quick-setup-guide-link:hover,
+.respite-quick-setup-guide-link:hover {
+    background: rgba(200, 160, 60, 0.22);
+    border-color: rgba(200, 160, 60, 0.6);
+}
+
+.ionrift-quick-setup-guide-link i,
+.respite-quick-setup-guide-link i {
+    margin-right: 0.3rem;
+}
+
+.ionrift-quick-setup-options,
+.respite-quick-setup-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ionrift-quick-setup-row,
+.respite-quick-setup-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ionrift-quick-setup-row-secondary .ionrift-profile-btn,
+.ionrift-quick-setup-row-secondary .respite-profile-btn,
+.respite-quick-setup-row-secondary .ionrift-profile-btn,
+.respite-quick-setup-row-secondary .respite-profile-btn {
+    flex: 1;
+}
+
+.ionrift-profile-btn,
+.respite-profile-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.6rem;
+    line-height: 1.3;
+    text-align: left;
+    border: 1px solid rgba(200, 160, 60, 0.28);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.ionrift-profile-btn:hover,
+.respite-profile-btn:hover {
+    border-color: rgba(200, 160, 60, 0.6);
+}
+
+.ionrift-profile-name,
+.ionrift-profile-btn .rp-name,
+.respite-profile-btn .rp-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.ionrift-profile-name i,
+.ionrift-profile-btn .rp-name i,
+.respite-profile-btn .rp-name i {
+    color: rgba(200, 160, 60, 0.9);
+    margin-right: 0.3rem;
+}
+
+.ionrift-profile-desc,
+.ionrift-profile-btn .rp-desc,
+.respite-profile-btn .rp-desc {
+    font-size: 0.68rem;
+    opacity: 0.6;
+    white-space: normal;
+}
+
+.ionrift-profile-custom,
+.respite-profile-custom {
+    cursor: default;
+    border-style: dashed;
+}
+
+.ionrift-profile-custom:not(.is-active),
+.respite-profile-custom:not(.is-active) {
+    opacity: 0.5;
+}
+
+.ionrift-profile-custom:hover,
+.respite-profile-custom:hover {
+    border-color: rgba(200, 160, 60, 0.28);
+}
+
+.ionrift-profile-active,
+.ionrift-profile-btn .rp-active,
+.respite-profile-btn .rp-active {
+    display: none;
+    margin-top: 0.15rem;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: #7ddc8f;
+    letter-spacing: 0.02em;
+}
+
+.ionrift-profile-active i,
+.ionrift-profile-btn .rp-active i,
+.respite-profile-btn .rp-active i {
+    margin-right: 0.25rem;
+}
+
+.ionrift-profile-btn.is-active,
+.respite-profile-btn.is-active {
+    border-color: rgba(125, 220, 143, 0.7);
+    box-shadow: 0 0 0 1px rgba(125, 220, 143, 0.35), 0 0 10px rgba(125, 220, 143, 0.18);
+    background: rgba(125, 220, 143, 0.06);
+}
+
+.ionrift-profile-btn.is-active:hover,
+.respite-profile-btn.is-active:hover {
+    border-color: rgba(125, 220, 143, 0.85);
+}
+
+.ionrift-profile-btn.is-active .ionrift-profile-active,
+.ionrift-profile-btn.is-active .rp-active,
+.respite-profile-btn.is-active .rp-active {
+    display: inline-flex;
+    align-items: center;
+}
+
+.ionrift-profile-confirm tr.ionrift-profile-confirm-group td,
+.ionrift-profile-confirm tr.rp-group td,
+.respite-profile-confirm tr.rp-group td {
+    padding-top: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.55;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ionrift-profile-confirm table,
+.respite-profile-confirm table {
+    width: 100%;
+    margin: 0.4rem 0;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+
+.ionrift-profile-confirm td,
+.respite-profile-confirm td {
+    padding: 0.15rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-profile-confirm td:last-child,
+.respite-profile-confirm td:last-child {
+    text-align: right;
+    font-weight: 600;
+}
+
+.ionrift-profile-confirm td.on,
+.respite-profile-confirm td.on {
+    color: #7ddc8f;
+}
+
+.ionrift-profile-confirm td.value,
+.respite-profile-confirm td.value {
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.ionrift-profile-confirm td.off,
+.respite-profile-confirm td.off {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.ionrift-profile-note,
+.respite-profile-note {
+    font-size: 0.72rem;
+    opacity: 0.6;
+    margin-top: 0.4rem;
+}
+
+.ionrift-settings-group-header,
+.respite-settings-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0.75rem 0 0.25rem;
+    padding-bottom: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.75;
+    border-bottom: 1px solid rgba(200, 160, 60, 0.22);
+}
+
+.ionrift-settings-group-header i,
+.respite-settings-group-header i {
+    color: rgba(200, 160, 60, 0.85);
+    font-size: 0.75rem;
+}
+

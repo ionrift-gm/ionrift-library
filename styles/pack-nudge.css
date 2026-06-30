@@ -1,0 +1,25 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Pack Nudge Banner — hover/focus states only.
+   Layout + colours are inline-styled in PackNudgeService.buildBanner so the
+   card visual survives Foundry's `.form-group button { width: 100% }` and
+   `.window-content button` overrides. Keep this file focused on states the
+   inline style cannot express (:hover, :focus-visible).
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ionrift-pack-nudge .ionrift-pack-nudge__btn--secondary:hover {
+    background: rgba(88, 166, 255, 0.25) !important;
+}
+
+.ionrift-pack-nudge .ionrift-pack-nudge__btn--primary:hover {
+    background: rgba(139, 92, 246, 0.25) !important;
+}
+
+.ionrift-pack-nudge .ionrift-pack-nudge__btn--dismiss:hover {
+    background: rgba(139, 148, 158, 0.1) !important;
+    color: #c9d1d9 !important;
+}
+
+.ionrift-pack-nudge .ionrift-pack-nudge__btn:focus-visible {
+    outline: 2px solid rgba(88, 166, 255, 0.55);
+    outline-offset: 1px;
+}

@@ -1,0 +1,15 @@
+{
+    "name": "ionrift-library",
+    "version": "1.3.0",
+    "description": "Shared logic for Ionrift modules.",
+    "type": "module",
+    "scripts": {
+        "check:sublayer": "node scripts/dev/verifySublayerConvention.mjs",
+        "test": "vitest run --config scripts/tests/vitest.config.js"
+    },
+    "author": "Ionrift",
+    "license": "SEE LICENSE IN LICENSE.md",
+    "devDependencies": {
+        "vitest": "^4.1.8"
+    }
+}

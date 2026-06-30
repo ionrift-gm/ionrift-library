@@ -1,0 +1,66 @@
+<form class="ionrift welcome-container">
+    <header class="welcome-header">
+        <h1>{{title}}</h1>
+    </header>
+
+    <div class="welcome-body glass-body">
+
+        {{#if alreadyVerified}}
+        <div class="already-verified"
+            style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 209, 55, 0.1); border: 1px solid #4cd137; border-radius: 4px;">
+            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> Protocol Complete</h3>
+            <p style="margin: 0; opacity: 0.9;">{{completeMessage}}</p>
+            <button class="reset-btn"
+                style="margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #4cd137; color: #fff;">
+                <i class="fas fa-redo"></i> Re-Run Protocol
+            </button>
+        </div>
+        {{else}}
+        <p class="intro-text">
+            {{introText}}
+        </p>
+        {{/if}}
+
+        <div class="step-list">
+            {{#each steps}}
+            <div class="step-item {{#if this.isCompleted}}completed{{/if}} {{#if this.isCurrent}}current{{/if}}">
+                <div class="step-icon">
+                    {{#if this.isCompleted}}
+                    <i class="fas fa-check-circle success"></i>
+                    {{else}}
+                    <i class="{{this.icon}}"></i>
+                    {{/if}}
+                </div>
+
+                <div class="step-content"
+                    style="{{#if this.isCompleted}}pointer-events: none; opacity: 0.7; filter: grayscale(0.5);{{/if}}">
+                    <h3>{{this.title}}</h3>
+                    <p>{{this.description}}</p>
+
+                    {{#if this.content}}
+                    {{{this.content}}}
+                    {{/if}}
+                </div>
+
+                <div class="step-action">
+                    {{#if this.isCompleted}}
+                    <span class="status-done"><i class="fas fa-check-circle success"></i> Done</span>
+                    {{else}}
+                    <button class="step-action-btn" data-step="{{this.id}}" {{#if this.isPending}}disabled{{/if}}>
+                        {{this.actionLabel}}
+                    </button>
+                    {{/if}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+
+    <footer class="welcome-footer">
+        {{#if isFinished}}
+        <button class="finish-btn">Finish</button>
+        {{else}}
+        <button class="skip-btn">Skip</button>
+        {{/if}}
+    </footer>
+</form>

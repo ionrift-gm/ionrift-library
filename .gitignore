@@ -1,0 +1,55 @@
+# Dependency directories
+node_modules/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# IDE settings
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Foundry/Ionrift specifics
+ionrift_debug/
+audit_*.json
+audit_*.txt
+debug_*.js
+debug_*.log
+*.lock
+
+# Unreleased cross-module files (prevent accidental commit)
+scripts/services/TokenArtResolver.js
+
+# Test suites (IP-sensitive — housed in private ionrift-testharness)
+tests/
+scripts/tests/
+package-lock.json
+
+# Test vectors (IP-sensitive — classifier mapping data)
+scripts/data/classifierTestVectors.js
+
+# Dev documents (canonical copies live in ionrift-brand)
+BACKLOG.md
+
+# Agent handoff specs (ephemeral — see DEV_PROTOCOLS.md §30)
+.cursor/
+CURSOR_TASK_*
+CURSOR_SPEC_*
+CURSOR_PLAN_*
+
+# Internal brand/workspace content - must never be committed to public module repos
+ionrift-brand/
+
+
+test_imports.ps1

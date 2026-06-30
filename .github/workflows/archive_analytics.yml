@@ -1,0 +1,78 @@
+name: Archive Analytics to GCS
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday at midnight UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Fetch GitHub Analytics
+        env:
+          GITHUB_TOKEN: ${{ secrets.ANALYTICS_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          REPO_SLUG=$(echo $REPO_NAME | cut -d'/' -f2)
+          
+          # --- Traffic (14-day rolling window, lost if not archived) ---
+          
+          # Fetch traffic views
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/traffic/views" \
+            > "views_${TIMESTAMP}.json"
+          
+          # Fetch traffic clones
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/traffic/clones" \
+            > "clones_${TIMESTAMP}.json"
+          
+          # Fetch top referral sources (where users come from)
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/traffic/popular/referrers" \
+            > "referrers_${TIMESTAMP}.json"
+          
+          # Fetch popular content paths (which pages users visit)
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/traffic/popular/paths" \
+            > "paths_${TIMESTAMP}.json"
+          
+          # --- Snapshots (cumulative, but tracked for growth rate) ---
+          
+          # Fetch repo metrics
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME" \
+            | jq '{stars: .stargazers_count, forks: .forks_count, watchers: .watchers_count, open_issues: .open_issues_count, timestamp: now | todate}' \
+            > "metrics_${TIMESTAMP}.json"
+          
+          # Fetch release download counts (best proxy for active installs)
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/releases" \
+            | jq '[.[] | {tag: .tag_name, published: .published_at, assets: [.assets[] | {name: .name, downloads: .download_count}]}]' \
+            > "releases_${TIMESTAMP}.json"
+          
+          # Fetch community health profile
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/community/profile" \
+            > "community_${TIMESTAMP}.json"
+          
+          # --- Upload all to GCS ---
+          gsutil cp "views_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/views/"
+          gsutil cp "clones_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/clones/"
+          gsutil cp "referrers_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/referrers/"
+          gsutil cp "paths_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/paths/"
+          gsutil cp "metrics_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/metrics/"
+          gsutil cp "releases_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/releases/"
+          gsutil cp "community_${TIMESTAMP}.json" "gs://ionrift-analytics/$REPO_SLUG/community/"
+          
+          echo "✅ Analytics archived for $REPO_NAME (7 datasets)"

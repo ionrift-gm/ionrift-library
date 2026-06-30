@@ -1,0 +1,92 @@
+name: CI — Lint & Static Analysis
+
+on:
+  push:
+    branches:
+      - main
+    tags-ignore:
+      - '**'
+
+  workflow_dispatch:
+
+# ionrift-library does NOT receive repository_dispatch — it IS the library.
+# It triggers fan-out to consumers after all checks pass.
+
+jobs:
+
+  lint:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/lint.yml@main
+    with:
+      # Library scans scripts/ + styles/ (CSS). No lang/ directory.
+      include_html: false
+      include_styles: true
+      inclusion_scan_dirs: 'scripts/ styles/'
+      # Vendor exclusion — library ships a bundled vendor copy.
+      eslint_extra_args: "--ignore-pattern 'scripts/vendor/**'"
+      eslint_max_warnings: 50
+      # Test-vector imports (classifierTestVectors.js, PatreonStatusTests.js) are
+      # dev-only files excluded from the public repo — all imports are try/catch guarded.
+      # The static checker can't evaluate those guards, so skip import integrity here.
+      skip_import_integrity: true
+      # signal_check.js is optional in library (guard in place upstream).
+      signal_check_required: false
+
+  hygiene:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/hygiene.yml@main
+
+  module-manifest:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/module-manifest.yml@main
+
+  vitest:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
+    with:
+      testharness_repo: 'ionrift-gm/ionrift-testharness'
+      testharness_config: 'vitest/library/vitest.config.js'
+    secrets:
+      CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
+
+  forge-safety:
+    uses: ionrift-gm/ionrift-ci/.github/workflows/vitest.yml@main
+    with:
+      testharness_repo: 'ionrift-gm/ionrift-testharness'
+      testharness_config: 'vitest/forge-safety/vitest.config.js'
+    secrets:
+      CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Fan-out — trigger consumer CIs after all library checks pass.
+  # Gated on every check; any failure blocks propagation.
+  # ─────────────────────────────────────────────────────────────────────────────
+  fan-out:
+    name: Trigger Consumer CIs
+    runs-on: ubuntu-latest
+    needs: [lint, hygiene, module-manifest, vitest, forge-safety]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger ionrift-respite CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-respite
+          event-type: lib-updated
+
+      - name: Trigger ionrift-workshop CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-workshop
+          event-type: lib-updated
+
+      - name: Trigger ionrift-arbiter CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-arbiter
+          event-type: lib-updated
+
+      - name: Trigger ionrift-resonance CI
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          repository: ionrift-gm/ionrift-resonance
+          event-type: lib-updated
