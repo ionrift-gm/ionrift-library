@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.5.3] - 2026-06-30
+
+### Added
+- Shared cooking and feeding kernel for Ionrift modules: canonical meal buffs, ingredient matching, GM feed routing, and a buff-handler registry overlays can plug into.
+- New meal buff types: passive perception, flat ability bonus, and save bonus (with per-rest charge tracking).
+- Effect automation helper on `game.ionrift.library.effects` so modules detect DAE, Midi-QoL, Times-Up, and Convenient Effects consistently and pick the right apply path.
+- Formula roll requests with a queued prompt UI and a dismiss control.
+- Local overlay packs now appear in the Patreon Library list alongside remote packs.
+- PF2e system adapter: scroll-forge and SRD curse hooks enabled where supported.
+
+### Changed
+- Orphan overlay sideloads no longer default to active.
+- Ingredient matching treats spoilage cohort suffixes on item names as the same base item.
+- Token reach for station interactions delegates to Arms Reach when that module is installed.
+- Cooking buff windows align more reliably with feed timing at camp.
+
+### Fixed
+- Save-bonus meal buffs now lose one charge per save rolled, not only on the first save in a rest.
+- Feeding while a character is already Well Fed is blocked at the kernel layer (anti-overeating gate).
+
 ## [2.5.2] - 2026-06-24
 
 ### Fixed
