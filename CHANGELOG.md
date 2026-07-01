@@ -6,6 +6,8 @@
 - Cross-system buff adapter registry (`Dnd5eBuffAdapter`, `Pf2eBuffAdapter`, `FallbackBuffAdapter`) and `BuffApplicator` for dnd5e Active Effects and pf2e Effect items.
 - `BuffApplicator.applyBuffsRouted()` and `CookingGMExec` handler for cross-owner PF2e meal applies.
 - `CookingBuffs.isWellFed()` checks pf2e Effect items on the shared cooking slot.
+- Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
+- `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
 ## [2.5.3] - 2026-06-30
 

@@ -291,6 +291,7 @@ export function buildEarlyAccessSection(context) {
         <div class="overlay-ea-row ${ea.isQualified ? "" : "overlay-ea-row--locked"}">
             <span class="overlay-ea-row-icon"><i class="fas ${ea.icon}"></i></span>
             <span class="overlay-ea-row-name">${sName}</span>
+            ${ea.preview ? `<span class="overlay-tier-pill overlay-tier-pill--preview" title="Preview, hidden from public registry">Preview</span>` : ""}
             <span class="overlay-tier-pill">${ea.requiredTier}+</span>
             <span class="overlay-ea-row-version">v${ea.version}</span>
             <span class="overlay-ea-row-action">${action}</span>
@@ -330,11 +331,16 @@ export function buildPremiumDetailStrip(premiumInfo) {
         ? `<p class="overlay-detail-premium-desc">${premiumInfo.description}</p>`
         : "";
 
+    const previewPill = premiumInfo.preview
+        ? `<span class="overlay-tier-pill overlay-tier-pill--preview" title="Preview, hidden from public registry">Preview</span>`
+        : "";
+
     return `
     <section class="overlay-detail-premium">
         <div class="overlay-detail-premium-head">
             <span class="overlay-detail-premium-label"><i class="fas fa-gem"></i> Premium module</span>
             <span class="overlay-detail-premium-badges">
+                ${previewPill}
                 <span class="overlay-premium-status-pill ${statusClass}">${statusLabel}</span>
                 <span class="overlay-tier-pill">${premiumInfo.requiredTier}+</span>
                 <span class="overlay-detail-premium-version">v${premiumInfo.version}</span>
