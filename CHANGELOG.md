@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Cross-system buff adapter registry (`Dnd5eBuffAdapter`, `Pf2eBuffAdapter`, `FallbackBuffAdapter`) and `BuffApplicator` for dnd5e Active Effects and pf2e Effect items.
+- `BuffApplicator.applyBuffsRouted()` and `CookingGMExec` handler for cross-owner PF2e meal applies.
+- `CookingBuffs.isWellFed()` checks pf2e Effect items on the shared cooking slot.
+
 ## [2.5.3] - 2026-06-30
 
 ### Added

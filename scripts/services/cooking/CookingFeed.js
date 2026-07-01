@@ -54,6 +54,10 @@ export const CookingFeed = {
             const actor = await resolveActor(actorUuid);
             if (actor) await CookingFeed._clearSlotEffects(actor, slot);
         });
+        CookingGMExec.registerHandler("applyCookingBuffs", async ({ actorUuid, buffs, opts }) => {
+            const actor = await resolveActor(actorUuid);
+            if (actor) await BuffApplicator.applyBuffs(actor, buffs ?? [], opts ?? {});
+        });
         if (!_defaultProvider) _defaultProvider = CookingFeed._buildDefaultProvider();
     },
 
@@ -337,20 +341,16 @@ export const CookingFeed = {
                     }
 
                     if (BuffApplicator.systemId() === "pf2e") {
-                        if (!actor.isOwner && !game.user?.isGM) {
-                            skipped.push({ actorId: actor.id ?? null, reason: "needs-gm" });
-                            continue;
-                        }
-                        const pf2eResult = await BuffApplicator.applyBuffs(actor, buffs, {
+                        const pf2eResult = await BuffApplicator.applyBuffsRouted(actor, buffs, {
                             item,
                             slot: opts.slot,
                             title: opts.title,
                             clearSlot: true
                         });
-                        if (pf2eResult.applied) {
-                            applied.push({ actorId: actor.id ?? null, route: "local" });
+                        if (pf2eResult.applied && pf2eResult.route !== "blocked") {
+                            applied.push({ actorId: actor.id ?? null, route: pf2eResult.route });
                         } else {
-                            skipped.push({ actorId: actor.id ?? null, reason: "no-automation" });
+                            skipped.push({ actorId: actor.id ?? null, reason: pf2eResult.route === "blocked" ? "needs-gm" : "no-automation" });
                         }
                         continue;
                     }
