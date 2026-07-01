@@ -373,6 +373,37 @@ export class PackRegistryService {
     }
 
     /**
+     * True when a registry module or overlay entry should appear in the Patreon
+     * Library and module-offer checks. Entries with `preview: true` are hidden
+     * unless {@link showPreviewContent} is enabled on this client.
+     * @param {Object|null|undefined} entry  Registry module or overlay entry
+     * @param {boolean|null|undefined} [showPreview]  Override; reads client setting when omitted
+     * @returns {boolean}
+     */
+    static isRegistryPreviewVisible(entry, showPreview) {
+        if (!entry?.preview) return true;
+        if (showPreview === true) return true;
+        if (showPreview === false) return false;
+        try {
+            return !!game?.settings?.get("ionrift-library", "showPreviewContent");
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Read the per-client preview flag used to surface registry `preview: true` entries.
+     * @returns {boolean}
+     */
+    static showPreviewContent() {
+        try {
+            return !!game?.settings?.get("ionrift-library", "showPreviewContent");
+        } catch {
+            return false;
+        }
+    }
+
+    /**
      * Module ids that are Patreon-delivered premium modules, not content-pack hosts.
      * Registry is authoritative; MODULE_DISPLAY_META covers dev and transition windows.
      * @param {Object|null} registry
@@ -437,7 +468,11 @@ export class PackRegistryService {
         const modules = registryData.modules;
         if (!modules || typeof modules !== "object") return;
 
+        const showPreview = this.showPreviewContent();
+
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
+
             const installed = game.modules.get(moduleId);
             if (!installed) continue;
 
@@ -480,7 +515,10 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
+        const showPreview = this.showPreviewContent();
+
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (this.isPremiumModule(entry)) continue;
             if (this.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
 
@@ -507,7 +545,8 @@ export class PackRegistryService {
                     moduleId,
                     version: ea.version,
                     tier: ea.tier,
-                    kind: "early-access"
+                    kind: "early-access",
+                    preview: !!entry.preview
                 });
             }
         }
@@ -528,7 +567,10 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
+        const showPreview = this.showPreviewContent();
+
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (!this.isPremiumModule(entry)) continue;
 
             const version = entry.latest;
@@ -551,7 +593,8 @@ export class PackRegistryService {
                     version,
                     tier,
                     kind: "premium",
-                    releaseStatus
+                    releaseStatus,
+                    preview: !!entry.preview
                 });
             }
         }

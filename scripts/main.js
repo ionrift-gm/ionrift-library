@@ -227,6 +227,15 @@ Hooks.once('init', () => {
         /** Preview the premium module dialog. Console: game.ionrift.library.previewPremiumDialog("ionrift-cursewright") */
         previewPremiumDialog: (moduleId, overrides) => PackRegistryService.previewPremiumDialog(moduleId, overrides),
         /**
+         * Read or set the client preview flag for registry `preview: true` overlays and modules.
+         * @param {boolean} [enabled]
+         * @returns {boolean|Promise<boolean>}
+         */
+        showPreviewContent: (enabled) => {
+            if (enabled === undefined) return PackRegistryService.showPreviewContent();
+            return game.settings.set("ionrift-library", "showPreviewContent", !!enabled);
+        },
+        /**
          * Inject registry JSON into the local cache before pack-registry is published.
          * GM only. Console: await game.ionrift.library.debugApplyRegistry(data)
          */
@@ -678,9 +687,10 @@ Hooks.once('init', () => {
     });
 
     // Preview content access — per-user, off by default. Registry entries
-    // marked `preview: true` are hidden from the Patreon Library unless this
-    // flag is set. Toggle via console:
+    // marked `preview: true` (overlays and modules) are hidden from the Patreon
+    // Library unless this flag is set. Toggle via console:
     //   game.settings.set("ionrift-library", "showPreviewContent", true)
+    //   game.ionrift.library.showPreviewContent(true)
     game.settings.register("ionrift-library", "showPreviewContent", {
         scope: "client",
         config: false,

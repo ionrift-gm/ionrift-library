@@ -878,9 +878,11 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const userRank = userTier
             ? PackRegistryService.TIER_ORDER.indexOf(userTier)
             : -1;
+        const showPreview = !!game.settings.get("ionrift-library", "showPreviewContent");
         const offers = [];
 
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (PackRegistryService.isPremiumModule(entry)) continue;
             if (PackRegistryService.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
 
@@ -902,6 +904,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 icon: meta.icon || "fas fa-cube",
                 version: ea.version,
                 requiredTier: ea.tier,
+                preview: !!entry.preview,
                 isQualified,
                 isInstalled
             });
@@ -922,9 +925,11 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const userRank = userTier
             ? PackRegistryService.TIER_ORDER.indexOf(userTier)
             : -1;
+        const showPreview = !!game.settings.get("ionrift-library", "showPreviewContent");
         const offers = [];
 
         for (const [moduleId, entry] of Object.entries(modules)) {
+            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (!PackRegistryService.isPremiumModule(entry)) continue;
 
             const version = entry.latest;
@@ -947,6 +952,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 version,
                 requiredTier: tier,
                 releaseStatus,
+                preview: !!entry.preview,
                 isQualified,
                 isInstalled
             });
@@ -957,6 +963,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             if (meta.distribution !== "premium" || seen.has(moduleId)) continue;
 
             const entry = modules[moduleId];
+            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (PackRegistryService.isPremiumModule(entry)) continue;
 
             const version = entry?.latest ?? entry?.earlyAccess?.version;
@@ -977,6 +984,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 version,
                 requiredTier: tier,
                 releaseStatus: entry?.releaseStatus === "ea" ? "ea" : "ga",
+                preview: !!entry?.preview,
                 isQualified,
                 isInstalled
             });
