@@ -7,6 +7,7 @@
 
 import { Logger } from "../Logger.js";
 import { CookingBuffs, COOKING_BUFF_FLAG_NAMESPACE as NS, COOKING_BUFF_FLAG as FLAG, COOKING_SLOT_FLAG as SLOT, DEFAULT_COOKING_SLOT, LONG_REST_FALLBACK_SECONDS, SHORT_REST_FALLBACK_SECONDS } from "./CookingBuffs.js";
+import { CookingGMExec } from "./CookingGMExec.js";
 
 function activeSystemId() {
     return game?.system?.id ?? "unknown";
@@ -249,5 +250,30 @@ export const BuffApplicator = {
 
         Logger.warn("Library", `BuffApplicator: no apply path for system "${activeSystemId()}".`);
         return { applied: false, lines, approximateNotes };
+    },
+
+    /**
+     * Apply buffs locally or relay to a connected GM for cross-owner writes.
+     * @param {Actor} actor
+     * @param {object[]} buffs
+     * @param {{ item?: object, slot?: string, title?: string, extraFlags?: object, clearSlot?: boolean }} [opts]
+     * @returns {Promise<{ applied: boolean, route: "local"|"relay"|"blocked", lines: string[], approximateNotes: string[] }>}
+     */
+    async applyBuffsRouted(actor, buffs, opts = {}) {
+        const approximateNotes = this.advisoryLines(buffs ?? []);
+        const route = CookingGMExec.route({ isOwner: Boolean(actor?.isOwner) });
+        if (route === "blocked") {
+            return { applied: false, route: "blocked", lines: [], approximateNotes };
+        }
+        if (route === "relay") {
+            CookingGMExec.request("applyCookingBuffs", {
+                actorUuid: actor?.uuid,
+                buffs,
+                opts
+            });
+            return { applied: true, route: "relay", lines: [], approximateNotes };
+        }
+        const result = await this.applyBuffs(actor, buffs, opts);
+        return { ...result, route: "local" };
     }
 };

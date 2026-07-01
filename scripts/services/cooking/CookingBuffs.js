@@ -186,6 +186,12 @@ export const CookingBuffs = {
             if (slot && f?.[COOKING_SLOT_FLAG] && f[COOKING_SLOT_FLAG] !== slot) continue;
             return true;
         }
+        for (const item of actor?.items ?? []) {
+            const f = item?.flags?.[COOKING_BUFF_FLAG_NAMESPACE];
+            if (f?.[COOKING_BUFF_FLAG] !== true) continue;
+            if (slot && f?.[COOKING_SLOT_FLAG] && f[COOKING_SLOT_FLAG] !== slot) continue;
+            return true;
+        }
         return false;
     }
 };
