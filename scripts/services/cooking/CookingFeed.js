@@ -15,15 +15,8 @@
  */
 
 import { Logger } from "../Logger.js";
-import {
-    CookingBuffs,
-    COOKING_BUFF_FLAG_NAMESPACE as NS,
-    COOKING_BUFF_FLAG as FLAG,
-    COOKING_SLOT_FLAG as SLOT,
-    DEFAULT_COOKING_SLOT,
-    LONG_REST_FALLBACK_SECONDS,
-    SHORT_REST_FALLBACK_SECONDS
-} from "./CookingBuffs.js";
+import { CookingBuffs, DEFAULT_COOKING_SLOT } from "./CookingBuffs.js";
+import { BuffApplicator } from "./BuffApplicator.js";
 import { CookingGMExec } from "./CookingGMExec.js";
 
 /** @type {Map<string, object>} provider id -> provider */
@@ -221,45 +214,17 @@ export const CookingFeed = {
      * @returns {object}
      */
     buildSlotEffect(actor, buffs, { item = null, slot, title } = {}) {
-        const changes = [];
-        const descriptions = [];
-        const daeSpecial = [];
-        const list = buffs ?? [];
-        const shortRestWindow = list.some(buff => buff?.duration === "untilShortRest");
-
-        for (const buff of list) {
-            const built = CookingBuffs.build(actor, buff);
-            if (!built) continue;
-            if (built.changes.length) changes.push(...built.changes);
-            if (built.description) descriptions.push(built.description);
-            if (built.daeSpecialDuration?.length) daeSpecial.push(...built.daeSpecialDuration);
-        }
-
-        const slotFlags = {
-            [FLAG]: true,
-            [SLOT]: slot ?? DEFAULT_COOKING_SLOT
-        };
-        if (shortRestWindow) slotFlags.expiresOnShortRest = true;
-
-        const flags = { [NS]: slotFlags };
-        if (daeSpecial.length) {
-            flags.dae = { specialDuration: [...new Set(daeSpecial)] };
-        }
-
-        const seconds = shortRestWindow
-            ? SHORT_REST_FALLBACK_SECONDS
-            : LONG_REST_FALLBACK_SECONDS;
-
-        return {
-            name: title ?? (item?.name ? `Well Fed: ${item.name}` : "Well Fed"),
-            img: item?.img ?? "icons/consumables/food/bowl-stew-brown.webp",
-            origin: actor?.uuid,
-            disabled: false,
-            duration: { seconds },
-            changes,
-            description: descriptions.join(" "),
-            flags
-        };
+        return BuffApplicator.buildDnd5eSlotEffect(actor, buffs, { item, slot, title })
+            ?? {
+                name: title ?? (item?.name ? `Well Fed: ${item.name}` : "Well Fed"),
+                img: item?.img ?? "icons/consumables/food/bowl-stew-brown.webp",
+                origin: actor?.uuid,
+                disabled: false,
+                duration: { seconds: 0 },
+                changes: [],
+                description: "",
+                flags: {}
+            };
     },
 
     /**
@@ -304,9 +269,10 @@ export const CookingFeed = {
      */
     async _writeSlotEffect(actor, effectData, slot) {
         if (!actor?.createEmbeddedDocuments) return;
-        await this._clearSlotEffects(actor, slot);
-        if (!effectData?.changes?.length) return;
-        await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+        await BuffApplicator.clearCookingSlot(actor, { slot });
+        if (effectData?.changes?.length) {
+            await actor.createEmbeddedDocuments("ActiveEffect", [effectData]);
+        }
     },
 
     /**
@@ -315,15 +281,7 @@ export const CookingFeed = {
      * @private
      */
     async _clearSlotEffects(actor, slot) {
-        const existing = (actor?.effects ?? []).filter(effect => {
-            const f = effect.flags?.[NS];
-            if (f?.[FLAG] !== true) return false;
-            if (slot && f?.[SLOT] && f[SLOT] !== slot) return false;
-            return true;
-        });
-        if (existing.length) {
-            await actor.deleteEmbeddedDocuments("ActiveEffect", existing.map(e => e.id));
-        }
+        await BuffApplicator.clearCookingSlot(actor, { slot });
     },
 
     /**
@@ -377,6 +335,26 @@ export const CookingFeed = {
                         skipped.push({ actorId: actor.id ?? null, reason: "well-fed" });
                         continue;
                     }
+
+                    if (BuffApplicator.systemId() === "pf2e") {
+                        if (!actor.isOwner && !game.user?.isGM) {
+                            skipped.push({ actorId: actor.id ?? null, reason: "needs-gm" });
+                            continue;
+                        }
+                        const pf2eResult = await BuffApplicator.applyBuffs(actor, buffs, {
+                            item,
+                            slot: opts.slot,
+                            title: opts.title,
+                            clearSlot: true
+                        });
+                        if (pf2eResult.applied) {
+                            applied.push({ actorId: actor.id ?? null, route: "local" });
+                        } else {
+                            skipped.push({ actorId: actor.id ?? null, reason: "no-automation" });
+                        }
+                        continue;
+                    }
+
                     const effectData = CookingFeed.buildSlotEffect(actor, buffs, {
                         item,
                         slot: opts.slot,

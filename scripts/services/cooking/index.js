@@ -18,11 +18,13 @@ import { CookingFeed } from "./CookingFeed.js";
 import { CookingBuffHandlers } from "./CookingBuffHandlers.js";
 import { CookingBuffCharges } from "./CookingBuffCharges.js";
 import { buffAdapterRegistry } from "./BuffAdapterRegistry.js";
+import { BuffApplicator } from "./BuffApplicator.js";
 
 /** The `game.ionrift.library.cooking` namespace object. */
 export const cooking = {
     buffs: CookingBuffs,
     buffAdapters: buffAdapterRegistry,
+    applicator: BuffApplicator,
     match: CookingMatch,
     gmExec: CookingGMExec,
     feed: CookingFeed,
@@ -39,4 +41,4 @@ export function initCooking() {
     CookingBuffCharges.init();
 }
 
-export { CookingBuffs, CookingMatch, CookingGMExec, CookingFeed, CookingBuffHandlers, CookingBuffCharges, buffAdapterRegistry };
+export { CookingBuffs, CookingMatch, CookingGMExec, CookingFeed, CookingBuffHandlers, CookingBuffCharges, buffAdapterRegistry, BuffApplicator };
