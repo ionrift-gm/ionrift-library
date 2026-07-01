@@ -140,6 +140,7 @@ Hooks.once('init', () => {
          * Shared cooking/feeding abstraction. Four sub-services:
          *   cooking.buffs  — canonical buff model + per-system resolver dispatch
          *   cooking.buffAdapters — per-system IonriftBuff resolution registry
+         *   cooking.applicator — per-system buff apply (AE on dnd5e, Effect items on pf2e)
          *   cooking.match  — contents/charge-aware ingredient matching
          *   cooking.gmExec — GM-routing primitive for cross-owner writes
          *   cooking.feed   — feed-the-party registration and dispatch

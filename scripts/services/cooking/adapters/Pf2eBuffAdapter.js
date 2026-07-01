@@ -1,6 +1,12 @@
 import { IonriftBuffAdapter, manualAdvisory } from "../IonriftBuffAdapter.js";
 import { emptyResolvedEffect } from "../ResolvedEffect.js";
 import { TYPES } from "../BuffTypeRegistry.js";
+import {
+    COOKING_BUFF_FLAG_NAMESPACE as NS,
+    COOKING_BUFF_FLAG as FLAG,
+    COOKING_SLOT_FLAG as SLOT,
+    DEFAULT_COOKING_SLOT
+} from "../CookingBuffs.js";
 
 const SAVE_SELECTOR = {
     str: "fortitude",
@@ -65,7 +71,10 @@ function buildEffectItem(name, rules, buff) {
             target: null
         },
         flags: {
-            "ionrift-library": { cookingBuffEffect: true }
+            [NS]: {
+                [FLAG]: true,
+                [SLOT]: DEFAULT_COOKING_SLOT
+            }
         }
     };
 }
