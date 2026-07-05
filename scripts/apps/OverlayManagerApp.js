@@ -10,13 +10,9 @@ import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
 import { DialogHelper } from "../DialogHelper.js";
 import {
     hasError,
-    shortModuleName,
     pickDefaultExpandedOverlay,
     buildGridMarkup,
-    buildDetailMarkup,
-    renderModuleTile,
-    buildSubscriptionStrip,
-    buildDetailPanel
+    buildDetailMarkup
 } from "./OverlayManagerRenderer.js";
 
 /** Module accent stripes for detail panel (from MODULE_COLORS.md). */
