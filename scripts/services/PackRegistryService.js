@@ -19,14 +19,6 @@ export class PackRegistryService {
     static SNOOZE_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 
     /**
-     * Number of pending updates after snooze filtering.
-     * Set after each checkForUpdates() run; read by SettingsLayout to inject
-     * the warning badge next to the Respite "Manage Packs" button.
-     * @type {number}
-     */
-    static pendingUpdateCount = 0;
-
-    /**
      * Full list of pending pack updates (pre-snooze, all packs with newer versions).
      * Set after each checkForUpdates() run. Each entry: { packId, installed, available }.
      * Consumed by PackRegistryApp for per-card update indicators and buttons.
@@ -64,12 +56,8 @@ export class PackRegistryService {
             }
         }
 
-        // Split into actionable (unfiltered for badge) and notifiable (snooze-filtered)
-        this.pendingUpdateCount = updates.length;
         this.pendingUpdates = updates;
-        // Mirror onto game.ionrift.library so SettingsLayout + PackRegistryApp can read without circular imports
         if (game?.ionrift?.library) {
-            game.ionrift.library._pendingPackUpdates = this.pendingUpdateCount;
             game.ionrift.library._packUpdates = this.pendingUpdates;
         }
 
@@ -327,12 +315,6 @@ export class PackRegistryService {
             // affordance for current-format overlay zips.
             acceptsZipImport: true
         },
-        "ionrift-monstrous-feast": {
-            title: "Monstrous Feast",
-            icon:  "fas fa-drumstick-bite",
-            desc:  "Cook monstrous ingredients into meals that grant lasting buffs.",
-            acceptsZipImport: true
-        },
         "ionrift-arbiter": {
             title: "Ionrift Arbiter",
             icon:  "fas fa-crosshairs",
@@ -370,37 +352,6 @@ export class PackRegistryService {
      */
     static isPremiumModule(entry) {
         return entry?.distribution === "premium";
-    }
-
-    /**
-     * True when a registry module or overlay entry should appear in the Patreon
-     * Library and module-offer checks. Entries with `preview: true` are hidden
-     * unless {@link showPreviewContent} is enabled on this client.
-     * @param {Object|null|undefined} entry  Registry module or overlay entry
-     * @param {boolean|null|undefined} [showPreview]  Override; reads client setting when omitted
-     * @returns {boolean}
-     */
-    static isRegistryPreviewVisible(entry, showPreview) {
-        if (!entry?.preview) return true;
-        if (showPreview === true) return true;
-        if (showPreview === false) return false;
-        try {
-            return !!game?.settings?.get("ionrift-library", "showPreviewContent");
-        } catch {
-            return false;
-        }
-    }
-
-    /**
-     * Read the per-client preview flag used to surface registry `preview: true` entries.
-     * @returns {boolean}
-     */
-    static showPreviewContent() {
-        try {
-            return !!game?.settings?.get("ionrift-library", "showPreviewContent");
-        } catch {
-            return false;
-        }
     }
 
     /**
@@ -468,11 +419,7 @@ export class PackRegistryService {
         const modules = registryData.modules;
         if (!modules || typeof modules !== "object") return;
 
-        const showPreview = this.showPreviewContent();
-
         for (const [moduleId, entry] of Object.entries(modules)) {
-            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
-
             const installed = game.modules.get(moduleId);
             if (!installed) continue;
 
@@ -515,10 +462,7 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
-        const showPreview = this.showPreviewContent();
-
         for (const [moduleId, entry] of Object.entries(modules)) {
-            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (this.isPremiumModule(entry)) continue;
             if (this.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
 
@@ -545,8 +489,7 @@ export class PackRegistryService {
                     moduleId,
                     version: ea.version,
                     tier: ea.tier,
-                    kind: "early-access",
-                    preview: !!entry.preview
+                    kind: "early-access"
                 });
             }
         }
@@ -567,10 +510,7 @@ export class PackRegistryService {
         const userRank = this.TIER_ORDER.indexOf(userTier);
         if (userRank === -1) return;
 
-        const showPreview = this.showPreviewContent();
-
         for (const [moduleId, entry] of Object.entries(modules)) {
-            if (!this.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (!this.isPremiumModule(entry)) continue;
 
             const version = entry.latest;
@@ -593,8 +533,7 @@ export class PackRegistryService {
                     version,
                     tier,
                     kind: "premium",
-                    releaseStatus,
-                    preview: !!entry.preview
+                    releaseStatus
                 });
             }
         }

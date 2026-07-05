@@ -10,13 +10,9 @@ import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
 import { DialogHelper } from "../DialogHelper.js";
 import {
     hasError,
-    shortModuleName,
     pickDefaultExpandedOverlay,
     buildGridMarkup,
-    buildDetailMarkup,
-    renderModuleTile,
-    buildSubscriptionStrip,
-    buildDetailPanel
+    buildDetailMarkup
 } from "./OverlayManagerRenderer.js";
 
 /** Module accent stripes for detail panel (from MODULE_COLORS.md). */
@@ -89,6 +85,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
     /** @type {boolean} */
     _overlayRegistrySynced = false;
+
+    /** @type {string[]} Overlay IDs with available actions (install/update). */
+    _actionableOverlayIds = [];
 
     /** @override */
     async _prepareContext() {
@@ -240,18 +239,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 hasError: hasError(status, lastError)
             });
         }
-
-        // Surface local on-disk overlays the registry never advertised (e.g. a
-        // sideloaded premium pack) so they list and toggle alongside cloud packs.
-        const registryOverlayIds = new Set(Object.keys(rawOverlayMap));
-        const localOverlays = await this._collectLocalOverlays();
-        let worldState = {};
-        try {
-            worldState = game.settings.get("ionrift-library", "overlayWorldState") ?? {};
-        } catch {
-            worldState = {};
-        }
-        OverlayManagerApp.mergeLocalOnlyOverlays(overlays, localOverlays, registryOverlayIds, worldState);
 
         const allGroups = this._buildGroups(overlays);
         this._appendModulesWithoutContent(allGroups, overlayMap, registry);
@@ -878,11 +865,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const userRank = userTier
             ? PackRegistryService.TIER_ORDER.indexOf(userTier)
             : -1;
-        const showPreview = !!game.settings.get("ionrift-library", "showPreviewContent");
         const offers = [];
 
         for (const [moduleId, entry] of Object.entries(modules)) {
-            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (PackRegistryService.isPremiumModule(entry)) continue;
             if (PackRegistryService.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
 
@@ -904,7 +889,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 icon: meta.icon || "fas fa-cube",
                 version: ea.version,
                 requiredTier: ea.tier,
-                preview: !!entry.preview,
                 isQualified,
                 isInstalled
             });
@@ -925,11 +909,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const userRank = userTier
             ? PackRegistryService.TIER_ORDER.indexOf(userTier)
             : -1;
-        const showPreview = !!game.settings.get("ionrift-library", "showPreviewContent");
         const offers = [];
 
         for (const [moduleId, entry] of Object.entries(modules)) {
-            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (!PackRegistryService.isPremiumModule(entry)) continue;
 
             const version = entry.latest;
@@ -952,7 +934,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 version,
                 requiredTier: tier,
                 releaseStatus,
-                preview: !!entry.preview,
                 isQualified,
                 isInstalled
             });
@@ -963,7 +944,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             if (meta.distribution !== "premium" || seen.has(moduleId)) continue;
 
             const entry = modules[moduleId];
-            if (!PackRegistryService.isRegistryPreviewVisible(entry, showPreview)) continue;
             if (PackRegistryService.isPremiumModule(entry)) continue;
 
             const version = entry?.latest ?? entry?.earlyAccess?.version;
@@ -984,7 +964,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 version,
                 requiredTier: tier,
                 releaseStatus: entry?.releaseStatus === "ea" ? "ea" : "ga",
-                preview: !!entry?.preview,
                 isQualified,
                 isInstalled
             });
@@ -1065,39 +1044,6 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             updateCount: 0,
             cleanup: null
         };
-    }
-
-    /**
-     * Merge local on-disk overlays that the registry does not advertise into
-     * the connected-mode overlay list. Real cloud packs are already shown from
-     * the registry, so only overlays whose id never appears in the registry
-     * are added here; this keeps registered packs single-sourced and leaves
-     * preview-gated registry entries hidden (their ids are still in the raw
-     * map). A sideloaded overlay with no world-state entry is treated as
-     * active, matching the consumer loader's "present on disk means on unless
-     * explicitly turned off" sideload semantics, so the toggle reflects what
-     * is actually loaded.
-     *
-     * @param {Object[]} overlays  Registry-derived overlays; mutated in place.
-     * @param {Object[]} localOverlays  Result of {@link _collectLocalOverlays}.
-     * @param {Set<string>} registryOverlayIds  Every id in the raw registry overlay map.
-     * @param {Record<string, { active?: boolean }>} worldState
-     * @returns {Object[]} the mutated overlays array
-     */
-    static mergeLocalOnlyOverlays(overlays, localOverlays, registryOverlayIds, worldState = {}) {
-        for (const local of localOverlays) {
-            if (registryOverlayIds.has(local.overlayId)) continue;
-            if (overlays.some(o => o.overlayId === local.overlayId)) continue;
-
-            const active = worldState?.[local.overlayId]?.active !== false;
-            overlays.push({
-                ...local,
-                isLocalOnly: true,
-                isActive: active,
-                status: active ? "up-to-date" : "installed-inactive"
-            });
-        }
-        return overlays;
     }
 
     /**
