@@ -479,38 +479,10 @@ export class OverlayService {
                     return false;
                 }
 
-                const manifest = {
-                    overlayId,
-                    version,
-                    moduleId,
-                    tier,
-                    sublayer,
-                    installedAt: new Date().toISOString()
-                };
-                await this._writeManifest(targetDir, manifest);
-
-                this._manifestCache.set(`${moduleId}:${sublayer}`, manifest);
-                this._contentsCache.delete(`${moduleId}:${sublayer}`);
-                this._clearError(overlayId);
-
-                const map = { ...this._getWorldStateMap() };
-                map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
-                await game.settings.set("ionrift-library", "overlayWorldState", map);
-
-                this._emitContentChanged({
-                    overlayId,
-                    moduleId,
-                    sublayer,
-                    active: true,
-                    installed: true
+                return this._finalizeInstall({
+                    overlayId, version, moduleId, tier, sublayer, targetDir,
+                    extractResult, progressApp: app, userInitiated, logPrefix: "Manual"
                 });
-
-                Logger.info(MODULE_LABEL, `Manual overlay installed: ${overlayId} v${version}`);
-                app?.complete?.(extractResult.uploaded, 0, []);
-                if (userInitiated && !app) {
-                    ui?.notifications?.info(`Content installed: ${overlayId} (${version})`);
-                }
-                return true;
             } catch (e) {
                 this._recordError(overlayId, "extract", e?.message ?? "Install failed");
                 Logger.error(MODULE_LABEL, `Manual overlay install failed for ${overlayId}:`, e);
@@ -1078,39 +1050,11 @@ export class OverlayService {
                 return false;
             }
 
-            const manifest = {
-                overlayId,
-                version: entry.latest,
-                moduleId: entry.moduleId,
-                tier: entry.tier,
-                sublayer,
-                installedAt: new Date().toISOString()
-            };
-            await this._writeManifest(targetDir, manifest);
-
-            this._manifestCache.set(`${entry.moduleId}:${sublayer}`, manifest);
-            this._contentsCache.delete(`${entry.moduleId}:${sublayer}`);
-
-            this._clearError(overlayId);
-
-            const map = { ...this._getWorldStateMap() };
-            map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
-            await game.settings.set("ionrift-library", "overlayWorldState", map);
-
-            this._emitContentChanged({
-                overlayId,
-                moduleId: entry.moduleId,
-                sublayer,
-                active: true,
-                installed: true
+            return this._finalizeInstall({
+                overlayId, version: entry.latest, moduleId: entry.moduleId,
+                tier: entry.tier, sublayer, targetDir,
+                extractResult, progressApp, userInitiated, logPrefix: "Overlay"
             });
-
-            Logger.info(MODULE_LABEL, `Overlay installed: ${overlayId} v${entry.latest}`);
-            progressApp?.complete?.(extractResult.uploaded, 0, []);
-            if (userInitiated && !progressApp) {
-                ui?.notifications?.info(`Content installed: ${overlayId} (${entry.latest})`);
-            }
-            return true;
 
         } catch (e) {
             this._recordError(overlayId, "extract", e?.message ?? "Install failed");
@@ -1335,6 +1279,48 @@ export class OverlayService {
         const data = await PlatformHelper.readDataJson(path);
         if (data && Array.isArray(data.files)) return data.files;
         return null;
+    }
+
+    /**
+     * Shared post-extract finalization: write manifest, update caches, persist
+     * world state, and notify.
+     * @param {object} opts
+     * @returns {Promise<boolean>}
+     */
+    static async _finalizeInstall({ overlayId, version, moduleId, tier, sublayer, targetDir,
+                                     extractResult, progressApp, userInitiated, logPrefix }) {
+        const manifest = {
+            overlayId,
+            version,
+            moduleId,
+            tier,
+            sublayer,
+            installedAt: new Date().toISOString()
+        };
+        await this._writeManifest(targetDir, manifest);
+
+        this._manifestCache.set(`${moduleId}:${sublayer}`, manifest);
+        this._contentsCache.delete(`${moduleId}:${sublayer}`);
+        this._clearError(overlayId);
+
+        const map = { ...this._getWorldStateMap() };
+        map[overlayId] = { ...(map[overlayId] ?? {}), active: true };
+        await game.settings.set("ionrift-library", "overlayWorldState", map);
+
+        this._emitContentChanged({
+            overlayId,
+            moduleId,
+            sublayer,
+            active: true,
+            installed: true
+        });
+
+        Logger.info(MODULE_LABEL, `${logPrefix} overlay installed: ${overlayId} v${version}`);
+        progressApp?.complete?.(extractResult.uploaded, 0, []);
+        if (userInitiated && !progressApp) {
+            ui?.notifications?.info(`Content installed: ${overlayId} (${version})`);
+        }
+        return true;
     }
 
     static _hasTierAccess(userTier, requiredTier) {
