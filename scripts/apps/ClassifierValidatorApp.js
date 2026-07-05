@@ -64,7 +64,7 @@ export class ClassifierValidatorApp extends FormApplication {
         const paginated = filtered.slice(startIndex, endIndex);
 
         // Calculate Statistics (Global for Dashboard)
-        let stats = { mean: 0, median: 0, total: this._results.length, identified: 0 };
+        let stats = { mean: 0, total: this._results.length, identified: 0 };
         if (this._results.length > 0) {
             const sum = this._results.reduce((acc, r) => acc + r.confidence, 0);
             stats.mean = Math.round((sum / this._results.length) * 100);
