@@ -104,7 +104,7 @@ describe("RollRequestView", () => {
         });
 
         expect(context.title).toBe("Custom Roll");
-        expect(context.dc).toBeNull();
+        expect(context.dc).toBe(10);
         expect(context.meta).toEqual({ noDc: true });
         expect(context.dcPulseActive).toBe(false);
         expect(context.state).toBe("submitted");
