@@ -38,9 +38,6 @@ import { ItemMintingService } from "./services/ItemMintingService.js";
 import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
 import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
 import { RollRequestService } from "./services/RollRequestService.js";
-import { EffectAutomation } from "./services/EffectAutomation.js";
-import { cooking, initCooking } from "./services/cooking/index.js";
-import { reach } from "./services/tokenReach/index.js";
 import { StoryMomentApp } from "./apps/StoryMomentApp.js";
 import {
     buildRollRequestContext,
@@ -136,32 +133,6 @@ Hooks.once('init', () => {
             watchAnimation: watchDcAnimation,
             forceDcPulseTest
         },
-        /**
-         * Shared cooking/feeding abstraction. Four sub-services:
-         *   cooking.buffs  — canonical buff model + per-system resolver dispatch
-         *   cooking.buffAdapters — per-system IonriftBuff resolution registry
-         *   cooking.applicator — per-system buff apply (AE on dnd5e, Effect items on pf2e)
-         *   cooking.match  — contents/charge-aware ingredient matching
-         *   cooking.gmExec — GM-routing primitive for cross-owner writes
-         *   cooking.feed   — feed-the-party registration and dispatch
-         *   cooking.buffHandlers — registry for consumer/overlay buff handlers
-         */
-        cooking,
-        /**
-         * Effect automation stack detection. Single decision point for DAE,
-         * Midi-QoL, Times-Up, and (last-resort) Convenient Effects. See
-         * CONDITION_AUTHORING.md "Effect automation stack".
-         *   effects.hasDae() / hasMidi() / hasTimesUp() / hasCe()
-         *   effects.tier()            -> "full" | "durations" | "basic"
-         *   effects.stampDaeDuration(aeData, ["longRest"])
-         *   effects.buildGmAdvisory({ title, actorName, duration })
-         */
-        effects: EffectAutomation,
-        /**
-         * Token reach checks. Delegates to Arms Reach when installed; otherwise
-         * measures on the scene grid with a configurable square cap.
-         */
-        reach,
         importZipPack: (opts) => ZipImporterService.importZipPack(opts),
         importZipFromFile: (file, opts) => ZipImporterService.importFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
@@ -198,11 +169,6 @@ Hooks.once('init', () => {
         /** Install a module update via the cloud relay. */
         installModule: (moduleId, version) => ModuleInstallerService.installModule(moduleId, version),
         /**
-         * Live count of available pack updates; set after PackRegistryService.checkForUpdates().
-         * Read by SettingsLayout.injectPackUpdateBadge() — avoids circular imports.
-         */
-        _pendingPackUpdates: 0,
-        /**
          * Full pending updates array [{packId, installed, available}].
          * Read by PackRegistryApp to render per-card update indicators.
          */
@@ -226,15 +192,6 @@ Hooks.once('init', () => {
         previewEADialog: (moduleId, overrides) => PackRegistryService.previewEADialog(moduleId, overrides),
         /** Preview the premium module dialog. Console: game.ionrift.library.previewPremiumDialog("ionrift-cursewright") */
         previewPremiumDialog: (moduleId, overrides) => PackRegistryService.previewPremiumDialog(moduleId, overrides),
-        /**
-         * Read or set the client preview flag for registry `preview: true` overlays and modules.
-         * @param {boolean} [enabled]
-         * @returns {boolean|Promise<boolean>}
-         */
-        showPreviewContent: (enabled) => {
-            if (enabled === undefined) return PackRegistryService.showPreviewContent();
-            return game.settings.set("ionrift-library", "showPreviewContent", !!enabled);
-        },
         /**
          * Inject registry JSON into the local cache before pack-registry is published.
          * GM only. Console: await game.ionrift.library.debugApplyRegistry(data)
@@ -620,36 +577,6 @@ Hooks.once('init', () => {
         default: []
     });
 
-    game.settings.register("ionrift-library", "tokenReachDefaultSquares", {
-        name: "Default token reach (grid squares)",
-        hint: "How many grid squares apart tokens may be for Ionrift reach checks when a module does not set its own limit.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 1,
-        restricted: true
-    });
-
-    game.settings.register("ionrift-library", "tokenReachBypassGM", {
-        name: "GMs ignore token reach checks",
-        hint: "When enabled, GMs can interact without a reach check. Players are still limited.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
-    game.settings.register("ionrift-library", "tokenReachUseGrid", {
-        name: "Measure token reach on the grid",
-        hint: "When enabled, reach uses grid path distance. Disable for ruler-style scene distance.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        restricted: true
-    });
-
     game.settings.register("ionrift-library", "partyRosterMigrated", {
         scope: "world",
         config: false,
@@ -687,10 +614,9 @@ Hooks.once('init', () => {
     });
 
     // Preview content access — per-user, off by default. Registry entries
-    // marked `preview: true` (overlays and modules) are hidden from the Patreon
-    // Library unless this flag is set. Toggle via console:
+    // marked `preview: true` are hidden from the Patreon Library unless this
+    // flag is set. Toggle via console:
     //   game.settings.set("ionrift-library", "showPreviewContent", true)
-    //   game.ionrift.library.showPreviewContent(true)
     game.settings.register("ionrift-library", "showPreviewContent", {
         scope: "client",
         config: false,
@@ -811,8 +737,6 @@ Hooks.once('init', () => {
 
 Hooks.once('ready', async () => {
     RollRequestService.init();
-    initCooking();
-    EffectAutomation.logCapabilities();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 

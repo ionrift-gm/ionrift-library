@@ -27,6 +27,17 @@ export class IntegrationStatus {
         };
     }
 
+    /** @param {string} status — one of the STATUS.* values */
+    _iconClass(status) {
+        const map = {
+            [this.STATUS.CONNECTED]: 'fa-check-circle',
+            [this.STATUS.OFFLINE]: 'fa-exclamation-circle',
+            [this.STATUS.WARNING]: 'fa-exclamation-triangle',
+            [this.STATUS.UNKNOWN]: 'fa-circle-notch'
+        };
+        return map[status] || 'fa-circle';
+    }
+
     static get instance() {
         if (!game.ionrift._integrationStatus) {
             game.ionrift._integrationStatus = new IntegrationStatus();
@@ -263,13 +274,7 @@ export class IntegrationStatus {
 
         const status = this.getStatus(appId);
 
-        const iconMap = {
-            [this.STATUS.CONNECTED]: 'fa-check-circle',
-            [this.STATUS.OFFLINE]: 'fa-exclamation-circle',
-            [this.STATUS.WARNING]: 'fa-exclamation-triangle',
-            [this.STATUS.UNKNOWN]: 'fa-circle-notch'
-        };
-        const iconClass = iconMap[status.status] || 'fa-circle';
+        const iconClass = this._iconClass(status.status);
 
         const bar = $(`<div class="ionrift-integration-bar status-${status.status}">
             <div class="status-left"></div>
@@ -305,14 +310,7 @@ export class IntegrationStatus {
 
             const labelText = newState.label || (newState.status === this.STATUS.CONNECTED ? 'Connected' : 'Offline');
 
-            // Icon Map
-            const iconMap = {
-                [this.STATUS.CONNECTED]: 'fa-check-circle',
-                [this.STATUS.OFFLINE]: 'fa-exclamation-circle',
-                [this.STATUS.WARNING]: 'fa-exclamation-triangle',
-                [this.STATUS.UNKNOWN]: 'fa-circle-notch'
-            };
-            const iconClass = iconMap[newState.status] || 'fa-circle';
+            const iconClass = this._iconClass(newState.status);
 
             pill.html(`<i class="fas ${iconClass}"></i> ${labelText}`);
         });
@@ -415,15 +413,7 @@ export class IntegrationStatus {
             // Remove old
             label.find('.ionrift-integration-icon').remove();
 
-            // Create Icon
-            const iconMap = {
-                [this.STATUS.CONNECTED]: 'fa-check-circle',
-                [this.STATUS.OFFLINE]: 'fa-exclamation-circle',
-                [this.STATUS.WARNING]: 'fa-exclamation-triangle',
-                [this.STATUS.UNKNOWN]: 'fa-circle-notch'
-            };
-
-            const iconClass = iconMap[status.status] || 'fa-circle';
+            const iconClass = this._iconClass(status.status);
             const icon = $(`<i class="fas ${iconClass} ionrift-integration-icon status-${status.status}" style="margin-left: 8px;" title="${status.message}"></i>`);
 
             label.append(icon);
