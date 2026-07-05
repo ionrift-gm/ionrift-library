@@ -169,11 +169,6 @@ Hooks.once('init', () => {
         /** Install a module update via the cloud relay. */
         installModule: (moduleId, version) => ModuleInstallerService.installModule(moduleId, version),
         /**
-         * Live count of available pack updates; set after PackRegistryService.checkForUpdates().
-         * Read by SettingsLayout.injectPackUpdateBadge() — avoids circular imports.
-         */
-        _pendingPackUpdates: 0,
-        /**
          * Full pending updates array [{packId, installed, available}].
          * Read by PackRegistryApp to render per-card update indicators.
          */

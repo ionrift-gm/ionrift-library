@@ -19,14 +19,6 @@ export class PackRegistryService {
     static SNOOZE_DURATION_MS = 3 * 24 * 60 * 60 * 1000;
 
     /**
-     * Number of pending updates after snooze filtering.
-     * Set after each checkForUpdates() run; read by SettingsLayout to inject
-     * the warning badge next to the Respite "Manage Packs" button.
-     * @type {number}
-     */
-    static pendingUpdateCount = 0;
-
-    /**
      * Full list of pending pack updates (pre-snooze, all packs with newer versions).
      * Set after each checkForUpdates() run. Each entry: { packId, installed, available }.
      * Consumed by PackRegistryApp for per-card update indicators and buttons.
@@ -64,12 +56,8 @@ export class PackRegistryService {
             }
         }
 
-        // Split into actionable (unfiltered for badge) and notifiable (snooze-filtered)
-        this.pendingUpdateCount = updates.length;
         this.pendingUpdates = updates;
-        // Mirror onto game.ionrift.library so SettingsLayout + PackRegistryApp can read without circular imports
         if (game?.ionrift?.library) {
-            game.ionrift.library._pendingPackUpdates = this.pendingUpdateCount;
             game.ionrift.library._packUpdates = this.pendingUpdates;
         }
 
