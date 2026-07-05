@@ -86,6 +86,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     /** @type {boolean} */
     _overlayRegistrySynced = false;
 
+    /** @type {string[]} Overlay IDs with available actions (install/update). */
+    _actionableOverlayIds = [];
+
     /** @override */
     async _prepareContext() {
         const isConnected = CloudRelayService.isConnected();
