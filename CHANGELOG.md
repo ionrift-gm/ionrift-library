@@ -9,6 +9,14 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.4] - 2026-07-07
+
+### Fixed
+- **Patreon Library on Forge.** Opening the library no longer hangs for 30 seconds on a blank window. The panel appears instantly with a loading indicator while pack data loads in the background.
+- **Check for updates on Forge.** Pack availability checks now run in parallel instead of one-by-one, reducing wait times from 15 seconds to a few seconds.
+- **Grid and detail navigation.** Switching between the tile grid and pack details in the Patreon Library is now instant instead of re-fetching all data on each click.
+
+
 ## [2.5.3] - 2026-06-30
 
 ### Added
