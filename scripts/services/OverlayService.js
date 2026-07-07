@@ -255,32 +255,38 @@ export class OverlayService {
 
         this.pendingOverlays = [];
 
+        // Pre-filter entries that can't possibly be pending (cheap sync checks)
+        const candidates = [];
         for (const [overlayId, entry] of Object.entries(registry.overlays)) {
             const mod = game.modules.get(entry.moduleId);
             if (!mod?.active) continue;
-
             if (!this._hasTierAccess(userTier, entry.tier)) continue;
-
             if (entry.minModuleVersion && this._compareVersions(mod.version, entry.minModuleVersion) < 0) {
                 Logger.log(MODULE_LABEL, `${overlayId}: module ${mod.version} < required ${entry.minModuleVersion}, skipping.`);
                 continue;
             }
-
-            const sublayer = await this.resolveInstallSublayer(entry);
-
-            const local = await this.getLocalManifest(entry.moduleId, sublayer);
-            const isCurrent = local
-                && local.overlayId === overlayId
-                && this._compareVersions(local.version, entry.latest) >= 0;
-            if (isCurrent) continue;
-
-            this.pendingOverlays.push({
-                overlayId,
-                entry,
-                sublayer,
-                isNew: !local || local.overlayId !== overlayId
-            });
+            candidates.push([overlayId, entry]);
         }
+
+        // Resolve sublayers + manifests in parallel (the expensive I/O)
+        const results = await Promise.all(
+            candidates.map(async ([overlayId, entry]) => {
+                const sublayer = await this.resolveInstallSublayer(entry);
+                const local = await this.getLocalManifest(entry.moduleId, sublayer);
+                const isCurrent = local
+                    && local.overlayId === overlayId
+                    && this._compareVersions(local.version, entry.latest) >= 0;
+                if (isCurrent) return null;
+                return {
+                    overlayId,
+                    entry,
+                    sublayer,
+                    isNew: !local || local.overlayId !== overlayId
+                };
+            })
+        );
+
+        this.pendingOverlays = results.filter(Boolean);
 
         this._lastCheckTimestamp = Date.now();
 
@@ -571,23 +577,22 @@ export class OverlayService {
         try {
             const result = await FP.browse(PlatformHelper.fileSource, moduleRoot);
             const dirs = result.dirs ?? [];
-            const installed = [];
 
-            for (const dirPath of dirs) {
-                const sublayer = dirPath.split("/").pop();
-                const manifest = await this._readManifestAt(moduleId, sublayer);
-                if (manifest) {
-                    installed.push(sublayer);
-                    continue;
-                }
-                // On Sqyre, browse lists sublayer directories but freshly uploaded
-                // files (including overlay-manifest.json) may not appear in browse
-                // yet. A present file index means the install completed.
-                const index = await this.readFileIndex(moduleId, sublayer);
-                if (index?.length) installed.push(sublayer);
-            }
+            const checks = await Promise.all(
+                dirs.map(async (dirPath) => {
+                    const sublayer = dirPath.split("/").pop();
+                    const manifest = await this._readManifestAt(moduleId, sublayer);
+                    if (manifest) return sublayer;
+                    // On Sqyre, browse lists sublayer directories but freshly uploaded
+                    // files (including overlay-manifest.json) may not appear in browse
+                    // yet. A present file index means the install completed.
+                    const index = await this.readFileIndex(moduleId, sublayer);
+                    if (index?.length) return sublayer;
+                    return null;
+                })
+            );
 
-            return installed.sort();
+            return checks.filter(Boolean).sort();
         } catch {
             return [];
         }

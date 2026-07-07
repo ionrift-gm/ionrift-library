@@ -89,8 +89,64 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     /** @type {string[]} Overlay IDs with available actions (install/update). */
     _actionableOverlayIds = [];
 
+    /** @type {Promise|null} Tracks in-flight context load so we don't double-fire. */
+    _contextLoadPromise = null;
+
+    /** @type {Object|null} Cached context from the last successful load. */
+    _cachedContext = null;
+
     /** @override */
     async _prepareContext() {
+        // Fast path: return cached context for re-renders (view switches, etc.)
+        if (this._cachedContext && !this._contextInvalidated) {
+            // Re-apply mutable view state so grid/detail navigation works
+            this._cachedContext.view = this._view;
+            this._cachedContext.selected = this._selectedModuleId
+                ? this._cachedContext.groups.find(g => g.moduleId === this._selectedModuleId) ?? null
+                : null;
+            this._cachedContext.manageOpen = this._manageOpen;
+            return this._cachedContext;
+        }
+
+        // If a load is already in flight, show spinner
+        if (this._contextLoadPromise) return { loading: true };
+
+        // Kick off async load and show spinner immediately
+        this._contextLoadPromise = this._loadContextAsync();
+        return { loading: true };
+    }
+
+    /**
+     * Heavy async context builder. Runs in the background while the window
+     * shows a loading spinner. Calls `this.render()` when done.
+     * @private
+     */
+    async _loadContextAsync() {
+        try {
+            const context = await this._buildFullContext();
+            this._cachedContext = context;
+            this._contextInvalidated = false;
+        } finally {
+            this._contextLoadPromise = null;
+        }
+        this.render();
+    }
+
+    /**
+     * Invalidate the cached context so the next render triggers a fresh load.
+     * Called after installs, uninstalls, and "Check for updates".
+     */
+    invalidateContext() {
+        this._contextInvalidated = true;
+        this._cachedContext = null;
+    }
+
+    /**
+     * Full context builder — extracted from the former `_prepareContext`.
+     * @returns {Promise<Object>}
+     * @private
+     */
+    async _buildFullContext() {
         const isConnected = CloudRelayService.isConnected();
         const userTier = isConnected ? (CloudRelayService.getTierClaim() || "Free") : null;
         const expiryStatus = isConnected
@@ -165,80 +221,81 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         }
         const TIER_ORDER = PackRegistryService.TIER_ORDER;
         const userRank = TIER_ORDER.indexOf(userTier);
-        const overlays = [];
 
-        for (const [overlayId, entry] of Object.entries(overlayMap)) {
-            const mod = game.modules.get(entry.moduleId);
-            const sublayer = OverlayService.resolveSublayer(entry);
-            const meta = PackRegistryService.MODULE_DISPLAY_META[entry.moduleId] ?? {};
-            const reqRank = TIER_ORDER.indexOf(entry.tier);
-            const hasAccess = userRank >= 0 && userRank >= reqRank;
-            const local = await OverlayService.getLocalManifest(entry.moduleId, sublayer);
-            const lastError = OverlayService.getLastError(overlayId);
-            const localMatches = local && local.overlayId === overlayId;
+        const overlays = await Promise.all(
+            Object.entries(overlayMap).map(async ([overlayId, entry]) => {
+                const mod = game.modules.get(entry.moduleId);
+                const sublayer = OverlayService.resolveSublayer(entry);
+                const meta = PackRegistryService.MODULE_DISPLAY_META[entry.moduleId] ?? {};
+                const reqRank = TIER_ORDER.indexOf(entry.tier);
+                const hasAccess = userRank >= 0 && userRank >= reqRank;
+                const local = await OverlayService.getLocalManifest(entry.moduleId, sublayer);
+                const lastError = OverlayService.getLastError(overlayId);
+                const localMatches = local && local.overlayId === overlayId;
 
-            const isModuleOutdated = !!(entry.minModuleVersion && mod?.active
-                && PackRegistryService._compareVersions(mod.version, entry.minModuleVersion) < 0);
+                const isModuleOutdated = !!(entry.minModuleVersion && mod?.active
+                    && PackRegistryService._compareVersions(mod.version, entry.minModuleVersion) < 0);
 
-            let status;
-            let active = false;
-            if (!hasAccess) {
-                if (localMatches) {
-                    status = "installed-locked";
+                let status;
+                let active = false;
+                if (!hasAccess) {
+                    if (localMatches) {
+                        status = "installed-locked";
+                        active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+                    } else {
+                        status = "locked";
+                    }
+                }
+                else if (!mod?.active) status = "module-inactive";
+                else if (isModuleOutdated) {
+                    if (localMatches) {
+                        status = "installed-outdated";
+                        active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
+                    } else {
+                        status = "module-outdated";
+                    }
+                }
+                else if (!localMatches) status = "not-installed";
+                else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) {
+                    status = "update-available";
                     active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
                 } else {
-                    status = "locked";
-                }
-            }
-            else if (!mod?.active) status = "module-inactive";
-            else if (isModuleOutdated) {
-                if (localMatches) {
-                    status = "installed-outdated";
                     active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
-                } else {
-                    status = "module-outdated";
+                    status = active ? "up-to-date" : "installed-inactive";
                 }
-            }
-            else if (!localMatches) status = "not-installed";
-            else if (PackRegistryService._compareVersions(local.version, entry.latest) < 0) {
-                status = "update-available";
-                active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
-            } else {
-                active = await OverlayService.isOverlayActive(overlayId, entry.moduleId, sublayer);
-                status = active ? "up-to-date" : "installed-inactive";
-            }
 
-            let contents = null;
-            if (localMatches) {
-                contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
-            }
+                let contents = null;
+                if (localMatches) {
+                    contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
+                }
 
-            overlays.push({
-                overlayId,
-                moduleId: entry.moduleId,
-                moduleName: mod?.title ?? meta.title ?? entry.moduleId,
-                moduleIcon: meta.icon ?? "fas fa-cube",
-                moduleAccent: MODULE_ACCENT[entry.moduleId] ?? "#8B5CF6",
-                tier: entry.tier,
-                tierRank: reqRank,
-                sublayer,
-                packLabel: entry.packLabel ?? null,
-                description: entry.description ?? "",
-                latestVersion: entry.latest,
-                installedVersion: local?.version ?? null,
-                installedAt: local?.installedAt ?? null,
-                minModuleVersion: entry.minModuleVersion ?? null,
-                installedModuleVersion: mod?.version ?? null,
-                preview: !!entry.preview,
-                status,
-                isActive: active,
-                hasAccess,
-                isModuleActive: !!mod?.active,
-                contents,
-                lastError,
-                hasError: hasError(status, lastError)
-            });
-        }
+                return {
+                    overlayId,
+                    moduleId: entry.moduleId,
+                    moduleName: mod?.title ?? meta.title ?? entry.moduleId,
+                    moduleIcon: meta.icon ?? "fas fa-cube",
+                    moduleAccent: MODULE_ACCENT[entry.moduleId] ?? "#8B5CF6",
+                    tier: entry.tier,
+                    tierRank: reqRank,
+                    sublayer,
+                    packLabel: entry.packLabel ?? null,
+                    description: entry.description ?? "",
+                    latestVersion: entry.latest,
+                    installedVersion: local?.version ?? null,
+                    installedAt: local?.installedAt ?? null,
+                    minModuleVersion: entry.minModuleVersion ?? null,
+                    installedModuleVersion: mod?.version ?? null,
+                    preview: !!entry.preview,
+                    status,
+                    isActive: active,
+                    hasAccess,
+                    isModuleActive: !!mod?.active,
+                    contents,
+                    lastError,
+                    hasError: hasError(status, lastError)
+                };
+            })
+        );
 
         const allGroups = this._buildGroups(overlays);
         this._appendModulesWithoutContent(allGroups, overlayMap, registry);
@@ -339,6 +396,16 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     async _renderHTML(context) {
         const el = document.createElement("div");
         el.classList.add("ionrift-overlay-manager", "ionrift-patreon-library");
+
+        if (context.loading) {
+            el.innerHTML = `
+                <div class="overlay-mgr-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading Patreon Library…</span>
+                </div>`;
+            return el;
+        }
+
         if (context.view) el.dataset.view = context.view;
 
         const state = this._getRenderState();
@@ -399,6 +466,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Connecting...`;
             await CloudRelayService.connect();
             SettingsLayout.injectPatreonStatus();
+            this.invalidateContext();
             this.render();
         });
 
@@ -413,6 +481,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             await CloudRelayService.disconnect();
             this._manageOpen = false;
             SettingsLayout.injectPatreonStatus();
+            this.invalidateContext();
             this.render();
         });
 
@@ -425,6 +494,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             this._manageOpen = false;
             this._overlayRegistrySynced = false;
             SettingsLayout.injectPatreonStatus();
+            this.invalidateContext();
             this.render();
         });
 
@@ -443,6 +513,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 ui.notifications?.warn("Could not reach the update registry. Try again later.");
             }
             await OverlayService.refresh();
+            this.invalidateContext();
             this.render();
         });
 
@@ -455,6 +526,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
                 PackRegistryService.clearSnooze(`ea:${moduleId}`);
                 await ModuleInstallerService.installModule(moduleId, version);
+                this.invalidateContext();
                 this.render();
             });
         });
@@ -468,6 +540,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
                 PackRegistryService.clearSnooze(`premium:${moduleId}`);
                 await ModuleInstallerService.installModule(moduleId, version);
+                this.invalidateContext();
                 this.render();
             });
         });
@@ -479,6 +552,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.querySelector("i")?.classList.add("fa-spin");
             }
             await OverlayService.refresh();
+            this.invalidateContext();
             this.render();
         });
 
@@ -506,6 +580,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 if (btn) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing ${done}/${ids.length}...`;
                 await OverlayService.installOverlay(id);
             }
+            this.invalidateContext();
             this.render();
         });
 
@@ -545,6 +620,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     ui?.notifications?.warn(
                         `Could not start install for <strong>${overlayId}</strong>. The registry did not list it as installable. Use <strong>Check for updates</strong>, then try again.`
                     );
+                    this.invalidateContext();
                     this.render();
                     return;
                 }
@@ -564,6 +640,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${label}...`;
                 await OverlayService.installOverlay(overlayId);
+                this.invalidateContext();
                 this.render();
             });
         });
@@ -576,6 +653,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 if (!overlayId || !moduleId || !sublayer) return;
                 input.disabled = true;
                 await OverlayService.setOverlayActive(overlayId, input.checked, { moduleId, sublayer });
+                this.invalidateContext();
                 this.render();
             });
         });
@@ -603,6 +681,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 btn.disabled = true;
                 btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
                 await OverlayService.reinstallOverlay(overlayId);
+                this.invalidateContext();
                 this.render();
             });
         });
@@ -685,6 +764,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             return;
         }
 
+        this.invalidateContext();
         this.render();
     }
 
@@ -787,6 +867,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
+            this.invalidateContext();
             this.render();
         }
     }
@@ -1053,51 +1134,66 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
      * @returns {Promise<Object[]>}
      */
     async _collectLocalOverlays() {
-        const overlays = [];
+        const moduleEntries = Object.entries(PackRegistryService.MODULE_DISPLAY_META);
 
-        for (const [moduleId, meta] of Object.entries(PackRegistryService.MODULE_DISPLAY_META)) {
-            const mod = game.modules.get(moduleId);
-            const sublayers = await OverlayService.listInstalledSublayers(moduleId);
+        // Phase 1: discover sublayers per module (parallel)
+        const moduleSublayers = await Promise.all(
+            moduleEntries.map(async ([moduleId]) => ({
+                moduleId,
+                sublayers: await OverlayService.listInstalledSublayers(moduleId)
+            }))
+        );
+
+        // Phase 2: load manifest + contents for each sublayer (parallel)
+        const tasks = [];
+        for (const { moduleId, sublayers } of moduleSublayers) {
             if (!sublayers.length) continue;
+            const mod = game.modules.get(moduleId);
+            const meta = PackRegistryService.MODULE_DISPLAY_META[moduleId] ?? {};
 
             for (const sublayer of sublayers) {
-                const local = await OverlayService.getLocalManifest(moduleId, sublayer);
-                if (!local?.overlayId) continue;
+                tasks.push((async () => {
+                    const local = await OverlayService.getLocalManifest(moduleId, sublayer);
+                    if (!local?.overlayId) return null;
 
-                const active = await OverlayService.isOverlayActive(local.overlayId, moduleId, sublayer);
-                const contents = await OverlayService.getOverlayContents(moduleId, sublayer);
-                const tier = local.tier ?? "Free";
-                const tierRank = PackRegistryService.TIER_ORDER.indexOf(tier);
+                    const [active, contents] = await Promise.all([
+                        OverlayService.isOverlayActive(local.overlayId, moduleId, sublayer),
+                        OverlayService.getOverlayContents(moduleId, sublayer)
+                    ]);
+                    const tier = local.tier ?? "Free";
+                    const tierRank = PackRegistryService.TIER_ORDER.indexOf(tier);
 
-                overlays.push({
-                    overlayId: local.overlayId,
-                    moduleId,
-                    moduleName: mod?.title ?? meta.title ?? moduleId,
-                    moduleIcon: meta.icon ?? "fas fa-cube",
-                    moduleAccent: MODULE_ACCENT[moduleId] ?? "#8B5CF6",
-                    tier,
-                    tierRank: tierRank >= 0 ? tierRank : 0,
-                    sublayer,
-                    packLabel: local.packLabel ?? null,
-                    description: local.description ?? "",
-                    latestVersion: local.version ?? null,
-                    installedVersion: local.version ?? null,
-                    installedAt: local.installedAt ?? null,
-                    minModuleVersion: null,
-                    installedModuleVersion: mod?.version ?? null,
-                    preview: false,
-                    status: active ? "up-to-date" : "installed-inactive",
-                    isActive: active,
-                    hasAccess: true,
-                    isModuleActive: !!mod?.active,
-                    contents,
-                    lastError: null,
-                    hasError: false
-                });
+                    return {
+                        overlayId: local.overlayId,
+                        moduleId,
+                        moduleName: mod?.title ?? meta.title ?? moduleId,
+                        moduleIcon: meta.icon ?? "fas fa-cube",
+                        moduleAccent: MODULE_ACCENT[moduleId] ?? "#8B5CF6",
+                        tier,
+                        tierRank: tierRank >= 0 ? tierRank : 0,
+                        sublayer,
+                        packLabel: local.packLabel ?? null,
+                        description: local.description ?? "",
+                        latestVersion: local.version ?? null,
+                        installedVersion: local.version ?? null,
+                        installedAt: local.installedAt ?? null,
+                        minModuleVersion: null,
+                        installedModuleVersion: mod?.version ?? null,
+                        preview: false,
+                        status: active ? "up-to-date" : "installed-inactive",
+                        isActive: active,
+                        hasAccess: true,
+                        isModuleActive: !!mod?.active,
+                        contents,
+                        lastError: null,
+                        hasError: false
+                    };
+                })());
             }
         }
 
-        return overlays;
+        const results = await Promise.all(tasks);
+        return results.filter(Boolean);
     }
 
     /**
