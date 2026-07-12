@@ -39,6 +39,7 @@
 import { PlatformHelper } from "./PlatformHelper.js";
 import { CloudRelayService } from "./CloudRelayService.js";
 import { PackRegistryService } from "./PackRegistryService.js";
+import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { Logger } from "./Logger.js";
 
 const MODULE_LABEL = "OverlayService";
@@ -1337,18 +1338,7 @@ export class OverlayService {
     }
 
     static _compareVersions(a, b) {
-        if (typeof PackRegistryService._compareVersions === "function") {
-            return PackRegistryService._compareVersions(a, b);
-        }
-        const pa = (a || "0.0.0").split(/[-.]/).map(Number);
-        const pb = (b || "0.0.0").split(/[-.]/).map(Number);
-        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-            const va = pa[i] ?? 0;
-            const vb = pb[i] ?? 0;
-            if (va < vb) return -1;
-            if (va > vb) return 1;
-        }
-        return 0;
+        return PackManifestSchema.compareVersions(a, b);
     }
 
     static _mimeType(fileName) {
