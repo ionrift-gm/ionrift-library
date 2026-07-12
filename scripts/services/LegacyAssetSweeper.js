@@ -29,6 +29,7 @@
  */
 
 import { PlatformHelper } from "./PlatformHelper.js";
+import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { Logger } from "./Logger.js";
 
 const LABEL = "LegacyAssetSweeper";
@@ -605,28 +606,15 @@ export class LegacyAssetSweeper {
     }
 
     /**
-     * Numeric semver compare. Returns negative when a < b, positive
-     * when a > b, zero when equal. Tolerates pre-release suffixes by
-     * comparing only the leading dot-separated digit groups.
+     * Semver compare delegated to canonical PackManifestSchema implementation.
+     * Returns -1 | 0 | 1.
      *
      * @param {string} a
      * @param {string} b
-     * @returns {number}
+     * @returns {-1 | 0 | 1}
      * @private
      */
     static _compareVersions(a, b) {
-        const parse = (v) => String(v ?? "0")
-            .split("-")[0]
-            .split(".")
-            .map(n => parseInt(n, 10) || 0);
-        const aa = parse(a);
-        const bb = parse(b);
-        const len = Math.max(aa.length, bb.length);
-        for (let i = 0; i < len; i++) {
-            const x = aa[i] ?? 0;
-            const y = bb[i] ?? 0;
-            if (x !== y) return x - y;
-        }
-        return 0;
+        return PackManifestSchema.compareVersions(a, b);
     }
 }
