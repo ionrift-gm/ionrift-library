@@ -372,32 +372,6 @@ export class PackRegistryService {
     }
 
     /**
-     * Install/update version for a registry module entry.
-     * @param {Object} entry
-     * @returns {string|null}
-     */
-    static getModuleTargetVersion(entry) {
-        if (!entry) return null;
-        if (this.isPremiumModule(entry)) return entry.latest ?? null;
-        const ea = entry.earlyAccess;
-        if (ea?.version && (!ea.publicAt || new Date(ea.publicAt) > new Date())) {
-            return ea.version;
-        }
-        return entry.latest ?? null;
-    }
-
-    /**
-     * Required Patreon tier for a registry module entry.
-     * @param {Object} entry
-     * @returns {string|null}
-     */
-    static getModuleRequiredTier(entry) {
-        if (!entry) return null;
-        if (this.isPremiumModule(entry)) return entry.tier ?? null;
-        return entry.earlyAccess?.tier ?? null;
-    }
-
-    /**
      * Run module update, early-access, and premium offer checks if the
      * registry payload contains a `modules` block.
      * @param {Object} registryData
