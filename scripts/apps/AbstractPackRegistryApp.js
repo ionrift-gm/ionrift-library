@@ -1,3 +1,5 @@
+import { PackRegistryService } from "../services/PackRegistryService.js";
+
 /**
  * AbstractPackRegistryApp
  *
@@ -25,15 +27,14 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
         const rawUpdates = game?.ionrift?.library?._packUpdates ?? [];
         const isConnected = !!game?.ionrift?.library?.cloud?.isConnected?.();
         const userTier = game?.ionrift?.library?.cloud?.getTierClaim?.() ?? null;
-        const TIER_ORDER = ["Free", "Initiate", "Acolyte", "Weaver", "Artificer"];
-        const userRank = userTier ? TIER_ORDER.indexOf(userTier) : -1;
+        const userRank = userTier ? PackRegistryService.TIER_ORDER.indexOf(userTier) : -1;
 
         const moduleId = this._getModuleId();
         const pendingUpdates = rawUpdates
             .filter(u => this._isUpdateRelevant(u))
             .map(u => {
                 const requiredTier = u.available?.tier ?? "Free";
-                const reqRank = TIER_ORDER.indexOf(requiredTier);
+                const reqRank = PackRegistryService.TIER_ORDER.indexOf(requiredTier);
                 const canUpdate = isConnected && userRank >= reqRank;
                 return {
                     ...u,
