@@ -95,6 +95,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
     /** @type {Object|null} Cached context from the last successful load. */
     _cachedContext = null;
 
+    /** @type {boolean} When true, the next _prepareContext rebuilds the full context instead of returning the cache. */
+    _contextInvalidated = false;
+
     /** @override */
     async _prepareContext() {
         // Fast path: return cached context for re-renders (view switches, etc.)
