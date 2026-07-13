@@ -28,8 +28,6 @@ jobs:
       # dev-only files excluded from the public repo — all imports are try/catch guarded.
       # The static checker can't evaluate those guards, so skip import integrity here.
       skip_import_integrity: true
-      # signal_check.js is optional in library (guard in place upstream).
-      signal_check_required: false
 
   hygiene:
     uses: ionrift-gm/ionrift-ci/.github/workflows/hygiene.yml@main
