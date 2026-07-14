@@ -428,12 +428,11 @@ export class PackRegistryService {
      */
     static async openModuleZipDownload(moduleId, source = null) {
         const entry = source ?? {};
-        const version = entry.latest
-            ?? entry.version
-            ?? entry.earlyAccess?.version
-            ?? null;
+        // Prefer catalog "latest" so CDN bumps do not require a Library retag.
+        // Fall back to a pinned registry version when offline / older middleware.
+        const version = "latest";
 
-        if (CloudRelayService.isConnected() && version) {
+        if (CloudRelayService.isConnected()) {
             const urlData = await CloudRelayService.requestDownload(moduleId, version, { silent: true });
             if (urlData?.url) {
                 window.open(urlData.url, "_blank", "noopener");
@@ -441,6 +440,21 @@ export class PackRegistryService {
                     "Zip download started. Install it with Foundry's Add-on Modules installer."
                 );
                 return true;
+            }
+
+            const pinned = entry.latest
+                ?? entry.version
+                ?? entry.earlyAccess?.version
+                ?? null;
+            if (pinned) {
+                const pinnedData = await CloudRelayService.requestDownload(moduleId, pinned, { silent: true });
+                if (pinnedData?.url) {
+                    window.open(pinnedData.url, "_blank", "noopener");
+                    ui.notifications?.info(
+                        "Zip download started. Install it with Foundry's Add-on Modules installer."
+                    );
+                    return true;
+                }
             }
         }
 
