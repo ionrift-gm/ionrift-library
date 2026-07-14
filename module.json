@@ -5,12 +5,6 @@
     "readme":  "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
     "version": "2.5.5",
     "bugs":  "https://discord.gg/vFGXf7Fncj",
-    "media":  [
-                  {
-                      "type":  "icon",
-                      "url":  "modules/ionrift-library/assets/module-icon.png"
-                  }
-              ],
     "compatibility":  {
                           "minimum":  "12",
                           "verified":  "14"
