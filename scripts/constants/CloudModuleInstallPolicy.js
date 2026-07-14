@@ -1,12 +1,12 @@
 /**
  * Cloud install policy for full Foundry module zips (not overlays).
  *
- * Listed ionrift-library must not extract/install premium or early-access
- * module zips via ModuleInstallerService. Patrons get a signed CDN zip in
- * the browser (CloudRelayService.requestDownload → window.open), then use
- * Foundry's Add-on Modules installer. Overlay Allow packs are unchanged.
+ * Option C (locked 2026-07-14): listed ionrift-library must not fetch or
+ * extract premium / early-access module zips. Patrons get the zip from the
+ * Patreon post and use Foundry's Add-on Modules installer. Overlay Allow
+ * packs are unchanged.
  *
- * Align with FOUNDRY_AI_POLICY_REMEDIATION.md premium sever.
+ * Align with FOUNDRY_AI_POLICY_REMEDIATION.md premium sever (Option C).
  */
 
 /** Hard deny when registry is stale. Overlay IDs never belong here. */
@@ -25,8 +25,8 @@ export const CLOUD_MODULE_INSTALL_DENY_IDS = Object.freeze(new Set([
  */
 export function isCloudModuleInstallBlocked(moduleId, entry = null, displayMeta = null) {
     if (!moduleId || typeof moduleId !== "string") return false;
-    // cloudInstall:false on overlays blocks ModuleInstaller too; module rows
-    // usually omit it so signed /packs/download can still mint a browser URL.
+    // cloudInstall:false blocks ModuleInstaller extract. Listed Library also
+    // refuses requestDownload for these module IDs (Option C).
     if (entry?.cloudInstall === false) return true;
     if (entry?.distribution === "premium") return true;
     if (displayMeta?.distribution === "premium") return true;

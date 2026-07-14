@@ -48,9 +48,11 @@ export class ModuleInstallerService {
         if (isCloudModuleInstallBlocked(moduleId, registryEntry, displayMeta)) {
             Logger.warn(
                 MODULE_LABEL,
-                `Cloud module install refused for ${moduleId}; use Patreon zip + Foundry installer.`
+                `Cloud module install refused for ${moduleId}; Patreon post + Foundry installer only.`
             );
-            PackRegistryService.openModuleZipDownload(moduleId, registryEntry);
+            ui.notifications?.warn(
+                "This module ships on Patreon. Download the zip from the Patreon post, then install it with Foundry's Add-on Modules installer."
+            );
             return false;
         }
 
