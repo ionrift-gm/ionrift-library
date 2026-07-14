@@ -1,4 +1,5 @@
 import { Logger } from "./Logger.js";
+import { isPreparedMediaCloudDenied } from "../constants/PreparedMediaCloudDenyList.js";
 
 /**
  * CloudRelayService
@@ -217,6 +218,16 @@ export class CloudRelayService {
     static async requestDownload(packId, version, options = {}) {
         const { silent = false } = options;
         const label = `${packId} v${version}`;
+
+        if (isPreparedMediaCloudDenied(packId)) {
+            const msg = "This content pack installs from a downloaded zip (Patreon Library → Import zip), not one-click cloud Install.";
+            Logger.warn(MODULE_LABEL, `Cloud download blocked for deny-listed pack ${label}.`);
+            if (!silent) {
+                ui.notifications?.warn(msg);
+            }
+            return { status: 403, error: msg };
+        }
+
         const sigil = this.getSigil();
         if (!sigil) {
             Logger.warn(MODULE_LABEL, `No Sigil — cannot request download for ${label}.`);

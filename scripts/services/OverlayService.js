@@ -40,6 +40,7 @@ import { PlatformHelper } from "./PlatformHelper.js";
 import { CloudRelayService } from "./CloudRelayService.js";
 import { PackRegistryService } from "./PackRegistryService.js";
 import { Logger } from "./Logger.js";
+import { isPreparedMediaCloudDenied } from "../constants/PreparedMediaCloudDenyList.js";
 
 const MODULE_LABEL = "OverlayService";
 
@@ -258,6 +259,7 @@ export class OverlayService {
         // Pre-filter entries that can't possibly be pending (cheap sync checks)
         const candidates = [];
         for (const [overlayId, entry] of Object.entries(registry.overlays)) {
+            if (isPreparedMediaCloudDenied(overlayId, entry)) continue;
             const mod = game.modules.get(entry.moduleId);
             if (!mod?.active) continue;
             if (!this._hasTierAccess(userTier, entry.tier)) continue;
@@ -309,6 +311,13 @@ export class OverlayService {
      */
     static async installOverlay(overlayId) {
         const pending = this.pendingOverlays.find(p => p.overlayId === overlayId);
+        if (isPreparedMediaCloudDenied(overlayId, pending?.entry)) {
+            Logger.warn(MODULE_LABEL, `Cloud install blocked for deny-listed overlay "${overlayId}". Use Import zip.`);
+            ui?.notifications?.warn(
+                "This pack installs from a downloaded zip (Patreon Library → Import zip), not one-click Install."
+            );
+            return false;
+        }
         if (!pending) {
             Logger.warn(MODULE_LABEL, `No pending overlay found for "${overlayId}".`);
             return false;
@@ -382,6 +391,13 @@ export class OverlayService {
     static async installById(overlayId, entry = {}) {
         if (!overlayId || typeof overlayId !== "string") {
             Logger.warn(MODULE_LABEL, "installById: overlayId is required.");
+            return false;
+        }
+        if (isPreparedMediaCloudDenied(overlayId, entry)) {
+            Logger.warn(MODULE_LABEL, `installById blocked for deny-listed overlay "${overlayId}".`);
+            ui?.notifications?.warn(
+                "This pack installs from a downloaded zip (Patreon Library → Import zip), not one-click Install."
+            );
             return false;
         }
         if (!entry?.version || !entry?.moduleId || !entry?.tier) {
@@ -795,6 +811,13 @@ export class OverlayService {
     static async reinstallOverlay(overlayId) {
         const cached = await PackRegistryService._fetchRegistry();
         const entry = cached?.overlays?.[overlayId];
+        if (isPreparedMediaCloudDenied(overlayId, entry)) {
+            Logger.warn(MODULE_LABEL, `Cloud reinstall blocked for deny-listed overlay "${overlayId}".`);
+            ui?.notifications?.warn(
+                "This pack updates via Import zip from Patreon, not cloud reinstall."
+            );
+            return false;
+        }
         if (!entry) {
             Logger.warn(MODULE_LABEL, `reinstallOverlay: ${overlayId} not found in registry.`);
             ui?.notifications?.warn(`Could not reinstall ${overlayId}. Not found in the registry.`);

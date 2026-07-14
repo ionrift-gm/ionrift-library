@@ -9,6 +9,10 @@ import { PlatformHelper } from "../services/PlatformHelper.js";
 import { LegacyAssetSweeper } from "../services/LegacyAssetSweeper.js";
 import { DialogHelper } from "../DialogHelper.js";
 import {
+    isPreparedMediaCloudDenied,
+    resolvePreparedMediaOfflineUrl
+} from "../constants/PreparedMediaCloudDenyList.js";
+import {
     hasError,
     pickDefaultExpandedOverlay,
     buildGridMarkup,
@@ -269,6 +273,9 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     contents = await OverlayService.getOverlayContents(entry.moduleId, sublayer);
                 }
 
+                const cloudInstallBlocked = isPreparedMediaCloudDenied(overlayId, entry);
+                const offlineUrl = resolvePreparedMediaOfflineUrl(overlayId, entry);
+
                 return {
                     overlayId,
                     moduleId: entry.moduleId,
@@ -290,6 +297,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                     isActive: active,
                     hasAccess,
                     isModuleActive: !!mod?.active,
+                    cloudInstallBlocked,
+                    offlineUrl,
                     contents,
                     lastError,
                     hasError: hasError(status, lastError)
@@ -318,6 +327,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         const actionableOverlayIds = [];
         for (const group of groups) {
             for (const ov of group.overlays) {
+                if (ov.cloudInstallBlocked) continue;
                 if (ov.status === "not-installed" || ov.status === "update-available") {
                     actionableOverlayIds.push(ov.overlayId);
                 }
@@ -954,6 +964,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
 
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
+            if (ea.inviteOnly) continue;
             if (ea.publicAt && new Date(ea.publicAt) <= new Date()) continue;
 
             const meta = PackRegistryService.MODULE_DISPLAY_META[moduleId] ?? {};
