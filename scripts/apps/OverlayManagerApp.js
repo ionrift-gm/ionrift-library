@@ -2,7 +2,6 @@ import { Logger } from "../services/Logger.js";
 import { OverlayService } from "../services/OverlayService.js";
 import { CloudRelayService } from "../services/CloudRelayService.js";
 import { PackRegistryService } from "../services/PackRegistryService.js";
-import { ModuleInstallerService } from "../services/ModuleInstallerService.js";
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { SettingsLayout } from "../SettingsLayout.js";
 import { PlatformHelper } from "../services/PlatformHelper.js";
@@ -527,31 +526,15 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             this.render();
         });
 
-        root.querySelectorAll("[data-action='install-ea']").forEach(btn => {
+        root.querySelectorAll("[data-action='open-module-patreon']").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const moduleId = btn.dataset.moduleId;
-                const version = btn.dataset.version;
-                if (!moduleId || !version) return;
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
+                if (!moduleId) return;
                 PackRegistryService.clearSnooze(`ea:${moduleId}`);
-                await ModuleInstallerService.installModule(moduleId, version);
-                this.invalidateContext();
-                this.render();
-            });
-        });
-
-        root.querySelectorAll("[data-action='install-premium']").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const moduleId = btn.dataset.moduleId;
-                const version = btn.dataset.version;
-                if (!moduleId || !version) return;
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Installing...`;
                 PackRegistryService.clearSnooze(`premium:${moduleId}`);
-                await ModuleInstallerService.installModule(moduleId, version);
-                this.invalidateContext();
-                this.render();
+                const registry = await PackRegistryService.resolveRegistryData();
+                const entry = registry?.modules?.[moduleId] ?? null;
+                PackRegistryService.openModulePatreonDownload(moduleId, entry);
             });
         });
 
@@ -961,6 +944,8 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
         for (const [moduleId, entry] of Object.entries(modules)) {
             if (PackRegistryService.isPremiumModule(entry)) continue;
             if (PackRegistryService.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
+            // Foundry browser channel only; never offer Library EA for these.
+            if (moduleId === "ionrift-monstrous-feast") continue;
 
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
@@ -1252,6 +1237,33 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
             if (meta?.acceptsZipImport) return true;
         }
         return false;
+    }
+
+    /**
+     * Merge on-disk overlays that the registry never advertised into the tile list.
+     * Sideloads with no world-state entry default to active (consumer loader semantics).
+     * @param {Object[]} overlays Mutated in place
+     * @param {Object[]} localOverlays From a local disk scan
+     * @param {Set<string>} registryIds Raw registry overlay ids (incl. preview-gated)
+     * @param {Object} worldState overlayId → { active?: boolean }
+     */
+    static mergeLocalOnlyOverlays(overlays, localOverlays, registryIds, worldState = {}) {
+        const present = new Set(overlays.map(o => o.overlayId));
+        for (const local of localOverlays ?? []) {
+            const overlayId = local?.overlayId;
+            if (!overlayId || present.has(overlayId)) continue;
+            if (registryIds?.has?.(overlayId)) continue;
+
+            const state = worldState?.[overlayId];
+            const isActive = state?.active !== undefined ? !!state.active : true;
+            overlays.push({
+                ...local,
+                isLocalOnly: true,
+                isActive,
+                status: isActive ? "up-to-date" : "installed-inactive"
+            });
+            present.add(overlayId);
+        }
     }
 
     _buildGroups(overlays) {

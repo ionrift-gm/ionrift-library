@@ -9,6 +9,11 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.7] - 2026-07-14
+
+### Changed
+- Premium and early-access modules no longer install through Patreon Library cloud download. Get the zip from Patreon, then use Foundry's Add-on Modules installer. Content pack overlays that are allowed for one-click Install are unchanged.
+
 ## [2.5.6] - 2026-07-14
 
 ### Changed

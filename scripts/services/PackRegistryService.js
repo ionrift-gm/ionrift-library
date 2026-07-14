@@ -7,6 +7,7 @@
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { CloudRelayService } from "./CloudRelayService.js";
 import { ModuleInstallerService } from "./ModuleInstallerService.js";
+import { isCloudModuleInstallBlocked as policyBlocksCloudModuleInstall } from "../constants/CloudModuleInstallPolicy.js";
 import { Logger } from "./Logger.js";
 import {
     isPreparedMediaCloudDenied,
@@ -385,6 +386,61 @@ export class PackRegistryService {
     }
 
     /**
+     * Whether a registry entry marked `preview: true` should surface to the GM.
+     * Matches overlay preview gating (`showPreviewContent` client setting).
+     * @param {Object|null} entry
+     * @param {boolean} [showPreviewOverride] When set, skip reading settings
+     * @returns {boolean}
+     */
+    static isRegistryPreviewVisible(entry, showPreviewOverride = undefined) {
+        if (!entry?.preview) return true;
+        if (typeof showPreviewOverride === "boolean") return showPreviewOverride;
+        try {
+            return !!game.settings.get("ionrift-library", "showPreviewContent");
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * Full module zips must not be fetched via listed Library → cloud.
+     * Premium and early-access modules use Patreon zip + Foundry Install Module.
+     * Overlay packs are unaffected.
+     * @param {string} moduleId
+     * @param {Object|null} [entry] Registry module entry when known
+     * @returns {boolean}
+     */
+    static isCloudModuleInstallBlocked(moduleId, entry = null) {
+        return policyBlocksCloudModuleInstall(
+            moduleId,
+            entry,
+            this.MODULE_DISPLAY_META[moduleId] ?? null
+        );
+    }
+
+    /**
+     * Open Patreon (or collection URL) for a module zip. Listed Library never
+     * downloads the bytes; GM installs via Foundry's module installer.
+     * @param {string} moduleId
+     * @param {Object|null} [source]
+     * @returns {boolean} true when a URL was opened
+     */
+    static openModulePatreonDownload(moduleId, source = null) {
+        const url = this.resolveModulePatreonUrl(moduleId, source ?? {});
+        if (!url) {
+            ui.notifications?.warn(
+                "Download this module zip from Patreon, then install it with Foundry's module installer."
+            );
+            return false;
+        }
+        window.open(url, "_blank", "noopener");
+        ui.notifications?.info(
+            "Download the module zip from Patreon, then install it with Foundry's Add-on Modules installer."
+        );
+        return true;
+    }
+
+    /**
      * Module ids that are Patreon-delivered premium modules, not content-pack hosts.
      * Registry is authoritative; MODULE_DISPLAY_META covers dev and transition windows.
      * @param {Object|null} registry
@@ -458,6 +514,9 @@ export class PackRegistryService {
             const ea = entry.earlyAccess;
             if (ea?.publicAt && new Date(ea.publicAt) <= new Date()) continue;
 
+            // Premium / EA module updates use Patreon zip, not cloud Install.
+            if (this.isCloudModuleInstallBlocked(moduleId, entry)) continue;
+
             const latest = entry.latest;
             if (!latest) continue;
 
@@ -495,6 +554,9 @@ export class PackRegistryService {
         for (const [moduleId, entry] of Object.entries(modules)) {
             if (this.isPremiumModule(entry)) continue;
             if (this.MODULE_DISPLAY_META[moduleId]?.distribution === "premium") continue;
+            // Foundry browser channel only; never offer Library cloud EA for these.
+            if (moduleId === "ionrift-monstrous-feast") continue;
+            if (!this.isRegistryPreviewVisible(entry)) continue;
 
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
@@ -543,6 +605,7 @@ export class PackRegistryService {
 
         for (const [moduleId, entry] of Object.entries(modules)) {
             if (!this.isPremiumModule(entry)) continue;
+            if (!this.isRegistryPreviewVisible(entry)) continue;
 
             const version = entry.latest;
             const tier = entry.tier;
@@ -615,7 +678,7 @@ export class PackRegistryService {
 
     /**
      * Show notification for an available early access module.
-     * Hybrid dialog (Option 3): module identity card + Patreon announcement link + Install Now.
+     * Patreon zip + Foundry module installer; listed Library does not cloud-fetch.
      * @param {string} moduleId
      * @param {{ version: string, tier: string, patreonUrl?: string }} earlyAccess
      */
@@ -635,8 +698,8 @@ export class PackRegistryService {
                 },
                 content,
                 yes: {
-                    label: action === "install" ? "Install Now" : "Update Now",
-                    icon:  "fas fa-download"
+                    label: "Get from Patreon",
+                    icon:  "fas fa-external-link-alt"
                 },
                 no: {
                     label: "Later",
@@ -645,7 +708,7 @@ export class PackRegistryService {
             });
 
             if (confirmed) {
-                await ModuleInstallerService.installModule(moduleId, earlyAccess.version);
+                this.openModulePatreonDownload(moduleId, earlyAccess);
             } else {
                 this._snoozePack(`ea:${moduleId}`);
             }
@@ -686,19 +749,19 @@ export class PackRegistryService {
     ${patreonUrl ? `
     <a class="ionrift-ea-patreon-link" href="${patreonUrl}" target="_blank">
         <i class="fab fa-patreon"></i>
-        <span>Read the full announcement on Patreon</span>
+        <span>Get the module zip on Patreon</span>
         <i class="fas fa-arrow-right ionrift-ea-arrow"></i>
     </a>` : `
     <div class="ionrift-ea-patreon-link ionrift-ea-patreon-link--placeholder">
         <i class="fab fa-patreon"></i>
-        <span>Check Patreon for full details</span>
+        <span>Check Patreon for the module zip</span>
     </div>`}
 
-    ${action === "install" ? `
     <div class="ionrift-ea-activate-hint">
         <i class="fas fa-info-circle"></i>
-        After install, enable the module in <strong>Module Settings</strong>.
-    </div>` : ""}
+        Download the zip from Patreon, then install it with Foundry's <strong>Add-on Modules</strong> installer.
+        ${action === "install" ? " Enable the module in Module Settings after install." : ""}
+    </div>
 
     <div class="ionrift-ea-snooze-note">
         "Later" snoozes this for 3 days. Find it again in Module Settings.
@@ -729,8 +792,8 @@ export class PackRegistryService {
                 },
                 content,
                 yes: {
-                    label: action === "install" ? "Install Now" : "Update Now",
-                    icon:  "fas fa-download"
+                    label: "Get from Patreon",
+                    icon:  "fas fa-external-link-alt"
                 },
                 no: {
                     label: "Later",
@@ -739,7 +802,7 @@ export class PackRegistryService {
             });
 
             if (confirmed) {
-                await ModuleInstallerService.installModule(moduleId, registryEntry.latest);
+                this.openModulePatreonDownload(moduleId, registryEntry);
             } else {
                 this._snoozePack(`premium:${moduleId}`);
             }
@@ -781,7 +844,7 @@ export class PackRegistryService {
             </div>
             <div class="ionrift-premium-kind-label">Premium module</div>
             ${desc ? `<div class="ionrift-ea-desc">${desc}</div>` : ""}
-            <div class="ionrift-premium-delivery-note">Delivered through Patreon. Not listed on the public Foundry module browser.</div>
+            <div class="ionrift-premium-delivery-note">Download the zip from Patreon. Not listed on the public Foundry module browser; install with Foundry's Add-on Modules installer.</div>
         </div>
     </div>
 
@@ -790,19 +853,19 @@ export class PackRegistryService {
     ${patreonUrl ? `
     <a class="ionrift-ea-patreon-link" href="${patreonUrl}" target="_blank">
         <i class="fab fa-patreon"></i>
-        <span>Read the full announcement on Patreon</span>
+        <span>Get the module zip on Patreon</span>
         <i class="fas fa-arrow-right ionrift-ea-arrow"></i>
     </a>` : `
     <div class="ionrift-ea-patreon-link ionrift-ea-patreon-link--placeholder">
         <i class="fab fa-patreon"></i>
-        <span>Check Patreon for full details</span>
+        <span>Check Patreon for the module zip</span>
     </div>`}
 
-    ${action === "install" ? `
     <div class="ionrift-ea-activate-hint">
         <i class="fas fa-info-circle"></i>
-        After install, enable the module in <strong>Module Settings</strong>.
-    </div>` : ""}
+        After downloading, install the zip with Foundry's <strong>Add-on Modules</strong> installer.
+        ${action === "install" ? " Then enable the module in Module Settings." : ""}
+    </div>
 
     <div class="ionrift-ea-snooze-note">
         "Later" snoozes this for 3 days. Find it again in the Patreon Library.
