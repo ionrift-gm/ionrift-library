@@ -1,7 +1,6 @@
 import { Logger } from "../services/Logger.js";
 import { CloudRelayService } from "../services/CloudRelayService.js";
 import { PackRegistryService } from "../services/PackRegistryService.js";
-import { ModuleInstallerService } from "../services/ModuleInstallerService.js";
 import { SettingsLayout } from "../SettingsLayout.js";
 import { PackManifestSchema } from "../data/PackManifestSchema.js";
 
@@ -149,27 +148,16 @@ export class PatreonMenu extends FormApplication {
     activateListeners(html) {
         super.activateListeners(html);
 
-        html.find("[data-action='install-ea']").on("click", async (event) => {
+        html.find("[data-action='open-module-patreon']").on("click", async (event) => {
             const btn = event.currentTarget;
             const moduleId = btn.dataset.moduleId;
-            const version = btn.dataset.version;
-            if (!moduleId || !version) return;
+            if (!moduleId) return;
 
-            btn.disabled = true;
             PackRegistryService.clearSnooze(`ea:${moduleId}`);
-            await ModuleInstallerService.installModule(moduleId, version);
-            this.close();
-        });
-
-        html.find("[data-action='install-premium']").on("click", async (event) => {
-            const btn = event.currentTarget;
-            const moduleId = btn.dataset.moduleId;
-            const version = btn.dataset.version;
-            if (!moduleId || !version) return;
-
-            btn.disabled = true;
             PackRegistryService.clearSnooze(`premium:${moduleId}`);
-            await ModuleInstallerService.installModule(moduleId, version);
+            const registry = await PackRegistryService.resolveRegistryData();
+            const entry = registry?.modules?.[moduleId] ?? null;
+            PackRegistryService.openModulePatreonDownload(moduleId, entry);
             this.close();
         });
 

@@ -9,6 +9,7 @@
  */
 
 import { CloudRelayService } from "./CloudRelayService.js";
+import { isCloudModuleInstallBlocked } from "../constants/CloudModuleInstallPolicy.js";
 import { PlatformHelper } from "./PlatformHelper.js";
 import { Logger } from "./Logger.js";
 
@@ -21,6 +22,8 @@ export class ModuleInstallerService {
 
     /**
      * Download and install a module update.
+     * Premium / early-access module zips are refused here: use Patreon zip +
+     * Foundry's module installer instead (listed Library must not cloud-fetch them).
      * @param {string} moduleId  e.g. "ionrift-quartermaster"
      * @param {string} version   e.g. "1.1.0-ea.3"
      * @returns {Promise<boolean>} true on success
@@ -28,6 +31,26 @@ export class ModuleInstallerService {
     static async installModule(moduleId, version) {
         if (!game.user.isGM) {
             ui.notifications.warn("Only the GM can install module updates.");
+            return false;
+        }
+
+        // Lazy import avoids circular init with PackRegistryService.
+        const { PackRegistryService } = await import("./PackRegistryService.js");
+        let registryEntry = null;
+        try {
+            const registry = await PackRegistryService.resolveRegistryData();
+            registryEntry = registry?.modules?.[moduleId] ?? null;
+        } catch {
+            registryEntry = null;
+        }
+
+        const displayMeta = PackRegistryService.MODULE_DISPLAY_META?.[moduleId] ?? null;
+        if (isCloudModuleInstallBlocked(moduleId, registryEntry, displayMeta)) {
+            Logger.warn(
+                MODULE_LABEL,
+                `Cloud module install refused for ${moduleId}; use Patreon zip + Foundry installer.`
+            );
+            PackRegistryService.openModulePatreonDownload(moduleId, registryEntry);
             return false;
         }
 
