@@ -157,7 +157,7 @@ export class PatreonMenu extends FormApplication {
             PackRegistryService.clearSnooze(`premium:${moduleId}`);
             const registry = await PackRegistryService.resolveRegistryData();
             const entry = registry?.modules?.[moduleId] ?? null;
-            PackRegistryService.openModulePatreonDownload(moduleId, entry);
+            PackRegistryService.openModuleZipDownload(moduleId, entry);
             this.close();
         });
 

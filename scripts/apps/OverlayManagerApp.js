@@ -534,7 +534,7 @@ export class OverlayManagerApp extends foundry.applications.api.ApplicationV2 {
                 PackRegistryService.clearSnooze(`premium:${moduleId}`);
                 const registry = await PackRegistryService.resolveRegistryData();
                 const entry = registry?.modules?.[moduleId] ?? null;
-                PackRegistryService.openModulePatreonDownload(moduleId, entry);
+                PackRegistryService.openModuleZipDownload(moduleId, entry);
             });
         });
 

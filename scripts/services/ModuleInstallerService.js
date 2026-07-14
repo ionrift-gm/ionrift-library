@@ -50,7 +50,7 @@ export class ModuleInstallerService {
                 MODULE_LABEL,
                 `Cloud module install refused for ${moduleId}; use Patreon zip + Foundry installer.`
             );
-            PackRegistryService.openModulePatreonDownload(moduleId, registryEntry);
+            PackRegistryService.openModuleZipDownload(moduleId, registryEntry);
             return false;
         }
 
