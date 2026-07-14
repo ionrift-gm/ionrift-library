@@ -8,6 +8,10 @@ import { PackManifestSchema } from "../data/PackManifestSchema.js";
 import { CloudRelayService } from "./CloudRelayService.js";
 import { ModuleInstallerService } from "./ModuleInstallerService.js";
 import { Logger } from "./Logger.js";
+import {
+    isPreparedMediaCloudDenied,
+    resolvePreparedMediaOfflineUrl
+} from "../constants/PreparedMediaCloudDenyList.js";
 
 export class PackRegistryService {
 
@@ -117,10 +121,11 @@ export class PackRegistryService {
      * @param {{ latest: string, patreonUrl?: string }} available
      */
     static _showUpdateNotification(packId, installed, available) {
-        const hasCloud = CloudRelayService.isConnected();
         const base = `Pack "${packId}" v${available.latest} available (you have v${installed.version}).`;
+        const offlineUrl = resolvePreparedMediaOfflineUrl(packId, available);
+        const cloudOk = CloudRelayService.isConnected() && !isPreparedMediaCloudDenied(packId, available);
 
-        if (hasCloud) {
+        if (cloudOk) {
             // Cloud is available. Offer one-click update via Dialog.
             ui.notifications.info(base + " Update available.", { permanent: true });
 
@@ -142,13 +147,17 @@ export class PackRegistryService {
             return;
         }
 
-        if (available.patreonUrl) {
+        const link = offlineUrl || available.patreonUrl;
+        if (link) {
             ui.notifications.info(
-                `${base} <a href="${available.patreonUrl}" target="_blank">Download from Patreon</a>`,
+                `${base} <a href="${link}" target="_blank">Download from Patreon</a>, then Import zip in Patreon Library.`,
                 { permanent: true }
             );
         } else {
-            ui.notifications.info(base);
+            ui.notifications.info(
+                `${base} Download the zip from Patreon, then Import zip in Patreon Library.`,
+                { permanent: true }
+            );
         }
     }
 
@@ -201,6 +210,15 @@ export class PackRegistryService {
      * @returns {Promise<Object|null>} Import result or null on failure
      */
     static async downloadAndInstall(packId, version, registryEntry) {
+        if (isPreparedMediaCloudDenied(packId, registryEntry)) {
+            const link = resolvePreparedMediaOfflineUrl(packId, registryEntry);
+            ui.notifications.warn(
+                link
+                    ? `This pack installs via Import zip. Download it from Patreon, then use Patreon Library → Import zip.`
+                    : `This pack installs via Import zip from Patreon, not one-click cloud Install.`
+            );
+            return null;
+        }
         if (!CloudRelayService.isConnected()) {
             ui.notifications.warn("Connect your Patreon account for direct downloads.");
             return null;
@@ -305,7 +323,8 @@ export class PackRegistryService {
         "ionrift-respite": {
             title: "Ionrift Respite",
             icon:  "fas fa-campfire",
-            desc:  "Structured downtime and rest management with activities, events, and crafting."
+            desc:  "Structured downtime and rest management with activities, events, and crafting.",
+            acceptsZipImport: true
         },
         "ionrift-resonance": {
             title: "Ionrift Resonance",
@@ -327,6 +346,17 @@ export class PackRegistryService {
             desc:  "The Ionrift curse engine. Phased recipes, escalating curses, and intervention mechanics.",
             distribution: "premium",
             patreonUrl: "https://www.patreon.com/collection/2221410?view=expanded"
+        },
+        "ionrift-monstrous-feast": {
+            title: "Monstrous Feast",
+            icon:  "fas fa-drumstick-bite",
+            desc:  "Butcher and cook the monsters you kill. Harvest ingredients from slain creatures, cook at camp, and feed the party."
+        },
+        "ionrift-cartographer": {
+            title: "Ionrift Cartographer",
+            icon:  "fas fa-map",
+            desc:  "Import signed-off layer stacks from the Cartographer site into Foundry scenes.",
+            patreonUrl: "https://www.patreon.com/ionrift"
         }
     };
 
@@ -468,6 +498,7 @@ export class PackRegistryService {
 
             const ea = entry.earlyAccess;
             if (!ea?.version || !ea?.tier) continue;
+            if (ea.inviteOnly) continue;
 
             // Module graduated from EA to public — check for stale EA installs
             if (ea.publicAt && new Date(ea.publicAt) <= new Date()) {
@@ -569,6 +600,20 @@ export class PackRegistryService {
     }
 
     /**
+     * Manual install prompt for closed-invite EA modules (direct link / Patreon post).
+     * Does not auto-run on startup; call from module init when appropriate.
+     * @param {string} moduleId
+     */
+    static async offerClosedInviteModule(moduleId) {
+        if (!game.user.isGM) return;
+        if (game.modules.get(moduleId)) return;
+        const registry = await this.resolveRegistryData();
+        const ea = registry?.modules?.[moduleId]?.earlyAccess;
+        if (!ea?.inviteOnly || !ea.version) return;
+        this._showEarlyAccessNotification(moduleId, ea);
+    }
+
+    /**
      * Show notification for an available early access module.
      * Hybrid dialog (Option 3): module identity card + Patreon announcement link + Install Now.
      * @param {string} moduleId
@@ -630,7 +675,7 @@ export class PackRegistryService {
             <div class="ionrift-ea-name">
                 ${title}
                 <span class="ionrift-ea-version-pill">v${earlyAccess.version}</span>
-                <span class="ionrift-ea-tier-pill">${earlyAccess.tier}+</span>
+                <span class="ionrift-ea-tier-pill">${earlyAccess.inviteOnly ? "Closed invite" : `${earlyAccess.tier}+`}</span>
             </div>
             ${desc ? `<div class="ionrift-ea-desc">${desc}</div>` : ""}
         </div>

@@ -9,6 +9,11 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.5] - 2026-07-14
+
+### Changed
+- Art and sound content packs (Core Art, Core SFX, and other image/audio packs) no longer use one-click Install in Patreon Library. Download the zip from Patreon, then use Import zip. Packs already on disk keep working. Data and plugin packs still install with one click.
+
 ## [2.5.4] - 2026-07-07
 
 ### Fixed

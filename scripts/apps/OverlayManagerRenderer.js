@@ -212,7 +212,7 @@ export function buildSubscriptionStrip(context) {
             <div class="overlay-mgr-strip-main">
                 <i class="fab fa-patreon overlay-mgr-strip-icon"></i>
                 <span class="overlay-mgr-strip-label">
-                    Connect your Patreon account to automatically download content packs for your tier.
+                    Connect your Patreon account to browse and install content packs for your tier.
                 </span>
             </div>
             <button type="button" class="overlay-mgr-strip-connect" data-action="connect-patreon"
@@ -822,6 +822,19 @@ export function renderTierBlock(overlay, { isExpanded = true, useAccordion = fal
 }
 
 export function renderDetailAction(overlay, isConnected = true) {
+    if (overlay.cloudInstallBlocked
+        && (overlay.status === "not-installed" || overlay.status === "update-available")) {
+        const href = overlay.offlineUrl
+            ? ` href="${overlay.offlineUrl}" target="_blank" rel="noopener"`
+            : "";
+        const linkLabel = overlay.status === "update-available" ? "Get update zip" : "Get from Patreon";
+        return `
+            <a class="overlay-detail-btn"${href}><i class="fas fa-external-link-alt"></i> ${linkLabel}</a>
+            <span class="overlay-detail-status-blocked" title="Download the zip, then use Import zip in Patreon Library">
+                Then Import zip
+            </span>`;
+    }
+
     switch (overlay.status) {
         case "not-installed":
             return `<button type="button" class="overlay-detail-btn" data-action="install" data-overlay-id="${overlay.overlayId}" data-install-label="Install"><i class="fas fa-download"></i> Install</button>`;
@@ -844,7 +857,8 @@ export function renderOverlayLifecycleControls(overlay, isConnected = true) {
     const checked = overlay.isActive ? "checked" : "";
     // Local-only overlays (on disk, absent from the registry) have nothing to
     // re-download, so the reinstall control is omitted for them.
-    const reinstallBtn = isConnected && !overlay.isLocalOnly
+    // Deny-listed prepared-media packs also skip cloud reinstall.
+    const reinstallBtn = isConnected && !overlay.isLocalOnly && !overlay.cloudInstallBlocked
         ? `<button type="button" class="overlay-detail-btn overlay-detail-btn--icon"
             data-action="reinstall-overlay"
             data-overlay-id="${overlay.overlayId}"
