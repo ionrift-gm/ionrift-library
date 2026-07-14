@@ -55,7 +55,7 @@ jobs:
 
       - name: Zip Module
         run: |
-          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*" "tests/*" "vitest*" ".eslintrc*"
+          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*" "tests/*" "vitest*" ".eslintrc*" "tools/*"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -163,8 +163,7 @@ jobs:
                 title: `📚 Ionrift Library — v${version}`,
                 description: desc,
                 color: 0x6B4FA0,
-                url: `https://github.com/${repo}/releases/tag/${tag}`,
-                thumbnail: { url: `https://raw.githubusercontent.com/${repo}/main/assets/module-icon.png` }
+                url: `https://github.com/${repo}/releases/tag/${tag}`
               }]
             };
 
