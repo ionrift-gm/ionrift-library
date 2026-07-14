@@ -1,5 +1,9 @@
 import { Logger } from "./Logger.js";
 import { isPreparedMediaCloudDenied } from "../constants/PreparedMediaCloudDenyList.js";
+import {
+    CLOUD_MODULE_INSTALL_DENY_IDS,
+    isCloudModuleInstallBlocked
+} from "../constants/CloudModuleInstallPolicy.js";
 
 /**
  * CloudRelayService
@@ -222,6 +226,19 @@ export class CloudRelayService {
         if (isPreparedMediaCloudDenied(packId)) {
             const msg = "This content pack installs from a downloaded zip (Patreon Library → Import zip), not one-click cloud Install.";
             Logger.warn(MODULE_LABEL, `Cloud download blocked for deny-listed pack ${label}.`);
+            if (!silent) {
+                ui.notifications?.warn(msg);
+            }
+            return { status: 403, error: msg };
+        }
+
+        // Option C: listed Library never brokers full module zips (CW/MF/etc.).
+        if (
+            CLOUD_MODULE_INSTALL_DENY_IDS.has(packId)
+            || isCloudModuleInstallBlocked(packId)
+        ) {
+            const msg = "This module is delivered on Patreon. Download the zip from the Patreon post, then install it with Foundry's Add-on Modules installer.";
+            Logger.warn(MODULE_LABEL, `Cloud module zip refused for ${label} (listed Library is not the broker).`);
             if (!silent) {
                 ui.notifications?.warn(msg);
             }

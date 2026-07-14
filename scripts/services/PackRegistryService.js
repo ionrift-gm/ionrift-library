@@ -419,50 +419,18 @@ export class PackRegistryService {
     }
 
     /**
-     * Open a module zip for manual Foundry install.
-     * Prefer authenticated CDN signed URL (browser download only; never
-     * ModuleInstaller extract). Fall back to Patreon collection/post URL.
+     * Hand off to Patreon for a module zip. Listed Library never requests
+     * cloud bytes for premium / EA modules (Option C).
      * @param {string} moduleId
      * @param {Object|null} [source] Registry module entry or earlyAccess block
-     * @returns {Promise<boolean>} true when a URL was opened
+     * @returns {Promise<boolean>} true when a Patreon URL was opened
      */
     static async openModuleZipDownload(moduleId, source = null) {
-        const entry = source ?? {};
-        // Prefer catalog "latest" so CDN bumps do not require a Library retag.
-        // Fall back to a pinned registry version when offline / older middleware.
-        const version = "latest";
-
-        if (CloudRelayService.isConnected()) {
-            const urlData = await CloudRelayService.requestDownload(moduleId, version, { silent: true });
-            if (urlData?.url) {
-                window.open(urlData.url, "_blank", "noopener");
-                ui.notifications?.info(
-                    "Zip download started. Install it with Foundry's Add-on Modules installer."
-                );
-                return true;
-            }
-
-            const pinned = entry.latest
-                ?? entry.version
-                ?? entry.earlyAccess?.version
-                ?? null;
-            if (pinned) {
-                const pinnedData = await CloudRelayService.requestDownload(moduleId, pinned, { silent: true });
-                if (pinnedData?.url) {
-                    window.open(pinnedData.url, "_blank", "noopener");
-                    ui.notifications?.info(
-                        "Zip download started. Install it with Foundry's Add-on Modules installer."
-                    );
-                    return true;
-                }
-            }
-        }
-
-        return this.openModulePatreonDownload(moduleId, entry);
+        return this.openModulePatreonDownload(moduleId, source ?? {});
     }
 
     /**
-     * Open Patreon (or collection URL) for a module zip when CDN is unavailable.
+     * Open Patreon (or collection URL) for a module zip.
      * @param {string} moduleId
      * @param {Object|null} [source]
      * @returns {boolean} true when a URL was opened
@@ -471,7 +439,7 @@ export class PackRegistryService {
         const url = this.resolveModulePatreonUrl(moduleId, source ?? {});
         if (!url) {
             ui.notifications?.warn(
-                "Connect Patreon in Ionrift Library to download this module zip, then install it with Foundry's module installer."
+                "This module ships on Patreon. Download the zip from the Patreon post, then install it with Foundry's Add-on Modules installer."
             );
             return false;
         }
@@ -733,15 +701,15 @@ export class PackRegistryService {
         setTimeout(async () => {
             const content = this._buildEADialogContent(moduleId, earlyAccess, action);
 
-            const confirmed = await foundry.applications.api.DialogV2.confirm({
+            await foundry.applications.api.DialogV2.confirm({
                 window: {
                     title: "Early Access Available",
                     icon:  "fas fa-bolt"
                 },
                 content,
                 yes: {
-                    label: "Download zip",
-                    icon:  "fas fa-download"
+                    label: "Got it",
+                    icon:  "fas fa-check"
                 },
                 no: {
                     label: "Later",
@@ -749,11 +717,8 @@ export class PackRegistryService {
                 }
             });
 
-            if (confirmed) {
-                this.openModuleZipDownload(moduleId, earlyAccess);
-            } else {
-                this._snoozePack(`ea:${moduleId}`);
-            }
+            // Option C: no Library download hop. Dialog is informational only.
+            this._snoozePack(`ea:${moduleId}`);
         }, 3000);
     }
 
@@ -801,7 +766,7 @@ export class PackRegistryService {
 
     <div class="ionrift-ea-activate-hint">
         <i class="fas fa-info-circle"></i>
-        Download zip starts the module archive in your browser. Install it with Foundry's <strong>Add-on Modules</strong> installer.
+        Download the zip from the Patreon post, then install it with Foundry's <strong>Add-on Modules</strong> installer.
         ${action === "install" ? " Enable the module in Module Settings after install." : ""}
     </div>
 
@@ -827,15 +792,15 @@ export class PackRegistryService {
         setTimeout(async () => {
             const content = this._buildPremiumDialogContent(moduleId, registryEntry, action, releaseStatus);
 
-            const confirmed = await foundry.applications.api.DialogV2.confirm({
+            await foundry.applications.api.DialogV2.confirm({
                 window: {
                     title: isGa ? "Premium Module Available" : "Premium Early Access",
                     icon:  isGa ? "fas fa-gem" : "fas fa-bolt"
                 },
                 content,
                 yes: {
-                    label: "Download zip",
-                    icon:  "fas fa-download"
+                    label: "Got it",
+                    icon:  "fas fa-check"
                 },
                 no: {
                     label: "Later",
@@ -843,11 +808,8 @@ export class PackRegistryService {
                 }
             });
 
-            if (confirmed) {
-                this.openModuleZipDownload(moduleId, registryEntry);
-            } else {
-                this._snoozePack(`premium:${moduleId}`);
-            }
+            // Option C: no Library download hop. Dialog is informational only.
+            this._snoozePack(`premium:${moduleId}`);
         }, 3000);
     }
 
@@ -886,7 +848,7 @@ export class PackRegistryService {
             </div>
             <div class="ionrift-premium-kind-label">Premium module</div>
             ${desc ? `<div class="ionrift-ea-desc">${desc}</div>` : ""}
-            <div class="ionrift-premium-delivery-note">Download zip saves the module archive. Not listed on the public Foundry module browser; install with Foundry's Add-on Modules installer.</div>
+            <div class="ionrift-premium-delivery-note">Get the zip from the Patreon post. Not listed on the public Foundry module browser; install with Foundry's Add-on Modules installer.</div>
         </div>
     </div>
 

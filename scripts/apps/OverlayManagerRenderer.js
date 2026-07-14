@@ -281,10 +281,9 @@ export function buildEarlyAccessSection(context) {
         } else if (ea.isInstalled) {
             action = `<span class="overlay-ea-row-installed"><i class="fas fa-check"></i> Installed</span>`;
         } else {
-            action = `<button type="button" class="overlay-ea-row-btn" data-action="open-module-patreon"
-                        data-module-id="${ea.moduleId}" title="Download zip, then install with Foundry's Add-on Modules installer">
-                        <i class="fas fa-download"></i> Download zip
-                    </button>`;
+            action = `<span class="overlay-ea-row-patreon" title="Download the zip from the Patreon post, then install with Foundry's Add-on Modules installer">
+                        <i class="fab fa-patreon"></i> On Patreon
+                    </span>`;
         }
 
         return `
@@ -321,10 +320,9 @@ export function buildPremiumDetailStrip(premiumInfo) {
     } else if (premiumInfo.isInstalled) {
         action = `<span class="overlay-detail-premium-installed"><i class="fas fa-check"></i> Module installed</span>`;
     } else {
-        action = `<button type="button" class="overlay-detail-btn overlay-detail-premium-install" data-action="open-module-patreon"
-                    data-module-id="${premiumInfo.moduleId}" title="Download zip, then install with Foundry's Add-on Modules installer">
-                    <i class="fas fa-download"></i> Download zip
-                </button>`;
+        action = `<span class="overlay-detail-premium-patreon" title="Download the zip from the Patreon post, then install with Foundry's Add-on Modules installer">
+                    <i class="fab fa-patreon"></i> On Patreon
+                </span>`;
     }
 
     const desc = premiumInfo.description
