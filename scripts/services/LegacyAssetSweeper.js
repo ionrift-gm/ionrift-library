@@ -25,7 +25,7 @@
  *   game.settings.set("ionrift-library", "legacyCleanupForceMode", "v14-advisory")
  *
  * @see PlatformHelper.deletePath  Used for the actual file removal.
- * @see OverlayManagerApp          Renders the panel.
+ * @see ionrift-connect OverlayManagerApp  Renders the panel when Connect is active.
  */
 
 import { PlatformHelper } from "./PlatformHelper.js";

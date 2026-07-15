@@ -28,6 +28,7 @@ import { dirname, resolve } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const libRoot = resolve(here, "..", "..");
+const connectRoot = resolve(libRoot, "..", "ionrift-connect");
 const workspaceRoot = resolve(libRoot, "..", "..");
 
 const ALLOWED_LEGACY_FREE_LOCK = new Set([
@@ -46,7 +47,7 @@ function fail(label, detail) {
 }
 
 // 1-3. OverlayService source contracts.
-const overlaySrcPath = resolve(libRoot, "scripts", "services", "OverlayService.js");
+const overlaySrcPath = resolve(connectRoot, "scripts", "services", "OverlayService.js");
 const overlaySrc = readFileSync(overlaySrcPath, "utf8");
 
 if (!/const\s+DEFAULT_CORE_SUBLAYER\s*=\s*["']core["']/.test(overlaySrc)) {

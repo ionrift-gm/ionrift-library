@@ -150,8 +150,13 @@ export class SettingsLayout {
             `);
 
             $group.find("button").on("click", async () => {
-                const { OverlayManagerApp } = await import("./apps/OverlayManagerApp.js");
-                await OverlayManagerApp.openToModule(moduleId);
+                const open = game.ionrift?.library?.openPatreonLibrary
+                    ?? game.ionrift?.connect?.openPatreonLibrary;
+                if (!open) {
+                    ui.notifications?.warn?.("Ionrift Connect is required for the content Library.");
+                    return;
+                }
+                await open({ moduleId });
             });
 
             const $quickSetup = $container.find(`.ionrift-quick-setup[data-module="${moduleId}"]`);
@@ -445,12 +450,13 @@ export class SettingsLayout {
 
             badge.addEventListener("click", async (e) => {
                 e.stopPropagation();
-                const { OverlayManagerApp } = await import("./apps/OverlayManagerApp.js");
-                if (moduleId === "ionrift-library") {
-                    new OverlayManagerApp().render(true);
-                } else {
-                    await OverlayManagerApp.openToModule(moduleId);
+                const open = game.ionrift?.library?.openPatreonLibrary
+                    ?? game.ionrift?.connect?.openPatreonLibrary;
+                if (!open) {
+                    ui.notifications?.warn?.("Ionrift Connect is required for the content Library.");
+                    return;
                 }
+                await open({ moduleId: moduleId === "ionrift-library" ? undefined : moduleId });
             });
         }
     }
@@ -564,25 +570,15 @@ export class SettingsLayout {
 
         if (!("isConnected" in overrides)) {
             try {
-                const sigil = game.settings.get("ionrift-library", "sigil") || "";
-                isConnected = !!sigil;
-                if (sigil) {
-                    let payload = {};
-                    try {
-                        payload = JSON.parse(atob(sigil.split(".")[1])) ?? {};
-                    } catch { /* ignore decode failure */ }
-                    if (tier === null) tier = payload.tier ?? null;
-                    if (!expiryStatus && typeof payload.exp === "number" && Number.isFinite(payload.exp)) {
-                        const msRemaining = (payload.exp * 1000) - Date.now();
-                        expiryStatus = {
-                            hasExpiry: true,
-                            expired: msRemaining <= 0,
-                            expiringSoon: msRemaining > 0 && msRemaining <= 7 * 24 * 60 * 60 * 1000,
-                            secondsRemaining: Math.floor(msRemaining / 1000)
-                        };
-                    }
+                const cloud = game.ionrift?.library?.cloud ?? game.ionrift?.connect?.cloud;
+                isConnected = cloud?.isConnected?.() ?? false;
+                if (isConnected) {
+                    if (tier === null) tier = cloud.getTierClaim?.() ?? null;
+                    if (!expiryStatus) expiryStatus = cloud.getExpiryStatus?.() ?? null;
                 }
-            } catch { /* settings not ready */ }
+            } catch {
+                isConnected = false;
+            }
         }
 
         for (const btn of buttons) {
@@ -742,14 +738,14 @@ export class SettingsLayout {
 
     /** @returns {Promise<void>} */
     static async #runPackAlertRefresh() {
-        const { PackRegistryService } = await import("./services/PackRegistryService.js");
-        const { OverlayService } = await import("./services/OverlayService.js");
-        const { CloudRelayService } = await import("./services/CloudRelayService.js");
+        const connect = game.ionrift?.connect;
+        if (!connect?.packRegistry?.checkForUpdates) return;
 
-        await PackRegistryService.checkForUpdates();
+        await connect.packRegistry.checkForUpdates();
 
-        if (SettingsLayout.isOverlayPackUiActive() && CloudRelayService.isConnected()) {
-            await OverlayService.checkAvailable();
+        const cloudConnected = connect.cloud?.isConnected?.() ?? false;
+        if (SettingsLayout.isOverlayPackUiActive() && cloudConnected) {
+            await connect.overlay?.checkAvailable?.();
         }
 
         SettingsLayout._packAlertLastRefresh = Date.now();
