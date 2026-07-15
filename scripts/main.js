@@ -1,303 +1,40 @@
-import { classifyCreature, listClassifierOptions, runSelfTests, setActorClassification } from "./creatureClassifier.js";
-import { SidebarHelper } from "./SidebarHelper.js";
-import { DiagnosticApp } from "./apps/DiagnosticApp.js";
-import { DiagnosticService } from "./services/DiagnosticService.js";
-import { ClassifierValidatorApp } from "./apps/ClassifierValidatorApp.js";
-import { CreatureIndexSetupApp } from "./apps/CreatureIndexSetupApp.js";
-import { AbstractWelcomeApp } from "./apps/AbstractWelcomeApp.js";
-import { SettingsStatusHelper } from "./SettingsStatusHelper.js";
-import { SettingsLayout } from "./SettingsLayout.js";
-import { ModuleConfigProfiles } from "./ModuleConfigProfiles.js";
-import * as SettingsVisibility from "./SettingsVisibility.js";
-import { IntegrationStatus } from "./services/IntegrationStatus.js";
-import { RuntimeValidator } from "./RuntimeValidator.js";
-import { WorldSchema } from "./data/WorldSchema.js";
-import { Logger } from "./services/Logger.js";
-import { DialogHelper } from "./DialogHelper.js";
-import { JsonPackService } from "./services/JsonPackService.js";
-import { ItemEnrichmentEngine } from "./services/ItemEnrichmentEngine.js";
-import { adapterRegistry } from "./services/SystemAdapterRegistry.js";
-import { IonriftSystemAdapter } from "./services/IonriftSystemAdapter.js";
-import { AbstractPackRegistryApp } from "./apps/AbstractPackRegistryApp.js";
-import { CloudRelayService } from "./services/CloudRelayService.js";
-import { BugReportService } from "./services/BugReportService.js";
-import { ConsoleCapture } from "./services/ConsoleCapture.js";
-import { PlatformHelper } from "./services/PlatformHelper.js";
-import { PartyRoster } from "./services/PartyRoster.js";
-import { PartyRosterApp } from "./apps/PartyRosterApp.js";
-import { TerrainRegistry, terrainRegistry, normalizeTerrainCategory } from "./services/TerrainRegistry.js";
-import { OverlayItemMaterialiser } from "./services/OverlayItemMaterialiser.js";
-import { ConnectFacade } from "./services/ConnectFacade.js";
-import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/LegacyAssetSweeper.js";
-import { ItemMintingService } from "./services/ItemMintingService.js";
-import { CompendiumConfigGuard } from "./services/CompendiumConfigGuard.js";
-import { InstallHealthCheck } from "./services/InstallHealthCheck.js";
-import { RollRequestService } from "./services/RollRequestService.js";
-import { StoryMomentApp } from "./apps/StoryMomentApp.js";
-import {
-    buildRollRequestContext,
-    buildEventPlayerRollContext,
-    buildEventGmRollContext,
-    buildTreePlayerRollContext,
-    buildCampActivityRollContext,
-    buildTravelActivityRollContext,
-    buildCopySpellRollContext,
-    buildMockRollRequestContext,
-    buildRollParticipants,
-    buildRollTargetLabel,
-    sortRollParticipants,
-    layoutRollParticipants,
-    findPreviewPlayerActor,
-    centerRollRequestRoster,
-    ROLL_REQUEST_PREVIEW_VARIANTS
-} from "./services/RollRequestView.js";
-import {
-    ensureDcPulseAnimation,
-    inspectDcAnimation,
-    watchDcAnimation,
-    forceDcPulseTest
-} from "./services/RollRequestDcPulse.js";
+import { MODULE_ID } from "./data/moduleId.js";
+import { createLibraryContext } from "./composition/createLibraryContext.js";
+import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
+import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
+import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.js";
+import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
+import { SettingsLayout } from "./utils/SettingsLayout.js";
+import { Logger } from "./services/platform/Logger.js";
+import { CloudRelayService } from "./services/platform/CloudRelayService.js";
+import { ConsoleCapture } from "./services/diagnostics/ConsoleCapture.js";
+import { PartyRoster } from "./services/party/PartyRoster.js";
+import { terrainRegistry } from "./services/terrain/TerrainRegistry.js";
+import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/packs/LegacyAssetSweeper.js";
+import { CompendiumConfigGuard } from "./services/packs/CompendiumConfigGuard.js";
+import { InstallHealthCheck } from "./services/packs/InstallHealthCheck.js";
+import { ItemEnrichmentEngine } from "./services/items/ItemEnrichmentEngine.js";
+import { RollRequestService } from "./services/rolls/RollRequestService.js";
 
-// ── Item Enrichment: wire hooks at top-level so they are never missed
-// regardless of script load order or hot-reloads. Item sheets don't
-// render until after ready, so early registration is always safe.
 const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
-Hooks.on("renderItemSheet",    _onEnrichSheet); // legacy dnd5e v2 / AppV1
-Hooks.on("renderItemSheet5e",  _onEnrichSheet); // dnd5e v3 (ApplicationV2)
-Hooks.on("renderItemSheet5e2", _onEnrichSheet); // dnd5e v3 alternate class
+Hooks.on("renderItemSheet", _onEnrichSheet);
+Hooks.on("renderItemSheet5e", _onEnrichSheet);
+Hooks.on("renderItemSheet5e2", _onEnrichSheet);
 
-// Initialize Library
-Hooks.once('init', () => {
+Hooks.once("init", () => {
     Logger.log("Library", "Initializing Shared Library");
     ConsoleCapture.install();
 
-    const rollRequestPartialPath = "modules/ionrift-library/templates/partials/_roll-request.hbs";
+    const rollRequestPartialPath = `modules/${MODULE_ID}/templates/partials/_roll-request.hbs`;
     foundry.applications.handlebars.loadTemplates([rollRequestPartialPath]);
     fetch(rollRequestPartialPath)
         .then((response) => response.text())
         .then((source) => Handlebars.registerPartial("rollRequest", source))
         .catch((err) => Logger.warn("Library", "Failed to load roll-request partial:", err));
 
-    // Expose API
-    game.ionrift = game.ionrift || {};
-    game.ionrift.library = {
-        SidebarHelper,
-        classifyCreature,
-        listClassifierOptions,
-        setActorClassification,
-        runSelfTests,
-        SettingsStatusHelper, // Expose Class
+    createLibraryContext();
 
-        WorldSchema, // Expose Schema
-        RuntimeValidator, // Expose Class
-        AbstractWelcomeApp, // Expose Class
-        DiagnosticService, // Expose Class
-        Logger, // Expose Class
-        SettingsLayout, // Expose Class
-        ModuleConfigProfiles,
-        SettingsVisibility,
-        confirm: DialogHelper.confirm, // Centralized confirm dialog utility
-        /** GM-only story moment panel for cursed item beats and table guidance. */
-        storyMoment: {
-            open: (opts) => StoryMomentApp.open(opts)
-        },
-        /** Shared player/GM roll request service (promise-based). */
-        rollRequest: {
-            request: (opts) => RollRequestService.request(opts),
-            requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback),
-            dismiss: (requestId) => RollRequestService.dismiss(requestId),
-            onSocketRelay: (data) => RollRequestService.onSocketRelay(data),
-            buildContext: buildRollRequestContext,
-            buildEventPlayerContext: buildEventPlayerRollContext,
-            buildEventGmContext: buildEventGmRollContext,
-            buildTreePlayerContext: buildTreePlayerRollContext,
-            buildCampActivityContext: buildCampActivityRollContext,
-            buildTravelActivityContext: buildTravelActivityRollContext,
-            buildCopySpellContext: buildCopySpellRollContext,
-            buildParticipants: buildRollParticipants,
-            sortParticipants: sortRollParticipants,
-            layoutParticipants: layoutRollParticipants,
-            centerRoster: centerRollRequestRoster,
-            findPreviewPlayerActor,
-            buildTargetLabel: buildRollTargetLabel,
-            buildMockContext: buildMockRollRequestContext,
-            variants: ROLL_REQUEST_PREVIEW_VARIANTS,
-            partial: "rollRequest",
-            ensureDcPulse: ensureDcPulseAnimation,
-            debugAnimation: inspectDcAnimation,
-            watchAnimation: watchDcAnimation,
-            forceDcPulseTest
-        },
-        importZipPack: (opts) => ConnectFacade.importZipPack(opts),
-        importZipFromFile: (file, opts) => ConnectFacade.importZipFromFile(file, opts),
-        importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
-        importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),
-        getZipTargetDir: (moduleId, assetType) => ConnectFacade.getZipTargetDir(moduleId, assetType),
-        getInstalledPack: (packId) => {
-            const packs = game.settings.get("ionrift-library", "installedPacks") ?? {};
-            return packs[packId] ?? null;
-        },
-        getInstalledPacks: () => {
-            return game.settings.get("ionrift-library", "installedPacks") ?? {};
-        },
-        log: (module, ...args) => Logger.log(module, ...args), // Shortcut for debug
-        openValidator: () => new ClassifierValidatorApp().render(true),
-        runDiagnostics: () => DiagnosticService.instance.showResults(),
-        /** System Adapter — system-agnostic actor queries (level, spells, classes). */
-        system: adapterRegistry,
-        adapterRegistry,
-        IonriftSystemAdapter,
-        /** Terrain registry. Canonical terrain list for all modules. */
-        terrains: terrainRegistry,
-        /** TerrainRegistry class. Exposed for consumers that need to extend or type-check. */
-        TerrainRegistry,
-        /** Canonical terrain category normalizer (built / safe-haven / wilderness). */
-        normalizeTerrainCategory,
-        /** Item Enrichment Engine — register module-specific enrichments here. */
-        enrichment: ItemEnrichmentEngine,
-        /** Cloud Relay facade — Patreon broker lives in ionrift-connect. */
-        cloud: CloudRelayService,
-        /** Support bug reports — collect, copy, submit (Sigil required for upload). */
-        bugReport: BugReportService,
-        /** Item mint validation — formula, enum, and slug guards before create/update. */
-        minting: ItemMintingService,
-        /** Install a module update via the cloud relay (Connect). */
-        installModule: (moduleId, version) => ConnectFacade.installModule(moduleId, version),
-        /**
-         * Full pending updates array [{packId, installed, available}].
-         * Read by PackRegistryApp to render per-card update indicators.
-         * Written by Connect PackRegistryService when present.
-         */
-        _packUpdates: [],
-        /**
-         * Pending overlay installs/updates from OverlayService.checkAvailable().
-         * Read by SettingsLayout for per-module pack alert badges.
-         * Written by Connect OverlayService when present.
-         */
-        _pendingOverlays: [],
-        /**
-         * Trigger a cloud download-and-install for a pack that has a pending update.
-         * No-ops gracefully if the pack isn't in the pending list.
-         * @param {string} packId
-         */
-        downloadPackUpdate: (packId) => ConnectFacade.downloadPackUpdate(packId),
-        /** Preview the EA notification dialog. Console: game.ionrift.library.previewEADialog() */
-        previewEADialog: (moduleId, overrides) => ConnectFacade.previewEADialog(moduleId, overrides),
-        /** Preview the premium module dialog. Console: game.ionrift.library.previewPremiumDialog("ionrift-cursewright") */
-        previewPremiumDialog: (moduleId, overrides) => ConnectFacade.previewPremiumDialog(moduleId, overrides),
-        /**
-         * Inject registry JSON into the local cache before pack-registry is published.
-         * GM only. Console: await game.ionrift.library.debugApplyRegistry(data)
-         */
-        debugApplyRegistry: (registryData) => ConnectFacade.debugApplyRegistry(registryData),
-        /** Base class for pack management UIs. Consumer modules extend this. */
-        AbstractPackRegistryApp,
-        /** Platform abstraction — FilePicker, file source, Forge detection, directory creation, JSZip, asset URL resolution. */
-        platform: PlatformHelper,
-        /** Creates a module-specific Logger proxy (log/info/warn/error). Usage: game.ionrift.library.createLogger("Respite") */
-        createLogger: (label) => Logger.createModuleProxy(label),
-        /** PartyRoster service: authoritative party membership (getMembers, getRosterIds, isRostered). */
-        party: PartyRoster,
-        /** PartyRosterApp: the settings-style UI for managing party membership. Available for consumer modules. */
-        PartyRosterApp,
-        /** Overlay service facade: premium content check, download, and extraction (Connect). */
-        overlay: ConnectFacade.overlay,
-        /**
-         * Shared overlay item materialiser. Consumer modules call with a config
-         * object to turn overlay item payloads into world compendiums.
-         * Usage: game.ionrift.library.materialiser.materialiseAll(config)
-         */
-        materialiser: OverlayItemMaterialiser,
-        /** Install a specific pending overlay. Usage: game.ionrift.library.installOverlay("respite-supplement-overlay") */
-        installOverlay: (overlayId) => ConnectFacade.installOverlay(overlayId),
-        /** Install all pending overlays. Usage: game.ionrift.library.installAllPending() */
-        installAllPending: () => ConnectFacade.installAllPending(),
-        /**
-         * Force-install an overlay directly by id, bypassing the daily registry check.
-         * For pre-GA testing of overlays staged in PACK_CATALOG but not yet in registry.json.
-         * Server-side tier gating still applies.
-         *
-         * Usage:
-         *   game.ionrift.library.installById("quartermaster-core-overlay",
-         *       { version: "0.1.0", moduleId: "ionrift-quartermaster", tier: "Free" });
-         */
-        installById: (overlayId, entry) => ConnectFacade.installById(overlayId, entry),
-        /** True when Patreon Library owns per-module pack install UI. */
-        isOverlayDistributionActive: () => ConnectFacade.isOverlayDistributionActive(),
-        setOverlayActive: (overlayId, active, meta) => ConnectFacade.setOverlayActive(overlayId, active, meta),
-        uninstallOverlay: (overlayId, moduleId, sublayer) => ConnectFacade.uninstallOverlay(overlayId, moduleId, sublayer),
-        /** Force-reinstall: re-download and overwrite existing assets. */
-        reinstallOverlay: (overlayId) => ConnectFacade.reinstallOverlay(overlayId),
-        getOverlayState: (overlayId, moduleId, sublayer) => ConnectFacade.getOverlayState(overlayId, moduleId, sublayer),
-        /**
-         * Gather destructive-action warnings from consumer modules.
-         * Fires the `ionrift.collectDestructiveWarnings` hook synchronously.
-         */
-        collectDestructiveWarnings: (payload) => ConnectFacade.collectDestructiveWarnings(payload),
-        /**
-         * Show the Glass-themed destructive-action modal. Returns true when the
-         * user confirms, false when they cancel. Skips the modal entirely when
-         * no listener reports a warning, unless skipWhenEmpty: false.
-         */
-        confirmDestructiveAction: (options) => ConnectFacade.confirmDestructiveAction(options),
-        /**
-         * Open Patreon Library, optionally focused on a module detail panel.
-         * Requires ionrift-connect.
-         * @param {{ moduleId?: string }} [options]
-         */
-        openPatreonLibrary: (options = {}) => ConnectFacade.openPatreonLibrary(options),
-        /**
-         * Shared "install the free pack" banner. Consumer modules register a
-         * config during init and call `packNudge.inject(moduleId, $anchor)`
-         * from each surface where the banner should appear.
-         */
-        packNudge: ConnectFacade.packNudge,
-        /**
-         * Compendium configuration self-heal. Repairs the world-side compendium
-         * folder state behind "Folder validation errors: name: may not be
-         * undefined" (Foundry #13225 / #11800). Runs automatically on ready for
-         * the GM; also callable for support.
-         *
-         * Console helpers:
-         *   game.ionrift.library.diagnoseCompendiumConfig()         // report only
-         *   await game.ionrift.library.repairCompendiumConfig({ dryRun: true })
-         *   await game.ionrift.library.repairCompendiumConfig()     // apply
-         */
-        compendiumGuard: CompendiumConfigGuard,
-        diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
-        repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
-        /**
-         * Legacy asset sweeper. Detects and removes files orphaned inside
-         * a module's own folder after an architectural change moved content
-         * to a separate pack. Surfaced through the Patreon Library detail
-         * panel for each covered module.
-         *
-         * Console helpers:
-         *   game.ionrift.library.cleanup.detect("ionrift-resonance")
-         *   game.ionrift.library.cleanup.sweep("ionrift-resonance", "resonance-prepack-sounds")
-         *   game.ionrift.library.cleanup.forceMode("v14-advisory")  // preview
-         *   game.ionrift.library.cleanup.forceMode("auto")          // reset
-         */
-        cleanup: LegacyAssetSweeper,
-        /**
-         * Dev-only install simulation knobs. Not persisted, not surfaced in UI.
-         * Use from the console to rehearse the Patreon Library install flow
-         * locally without round-tripping to The Forge.
-         *
-         * Typical workflow:
-         *   game.ionrift.library.dev.simulateHostedInstall(true);
-         *   game.ionrift.library.dev.installPerFileDelayMs(200);
-         *   // Click Install... in the Patreon Library.
-         *   game.ionrift.library.dev.resetInstallSimulation();
-         */
-        dev: ConnectFacade.buildDevHelpers({ Logger, PlatformHelper })
-    };
-
-    // Expose Service Globally (outside lib namespace)
-    game.ionrift.integration = IntegrationStatus.instance;
-
-    // Register Debug Setting (Forces Settings Section to appear)
-    game.settings.register("ionrift-library", "debug", {
+    game.settings.register(MODULE_ID, "debug", {
         name: "Debug Mode",
         hint: "Enable verbose logging for library functions.",
         scope: "client",
@@ -306,54 +43,49 @@ Hooks.once('init', () => {
         default: false
     });
 
-    // Register Setup Version
-    game.settings.register("ionrift-library", "indexSetupVersion", {
+    game.settings.register(MODULE_ID, "indexSetupVersion", {
         scope: "world",
         config: false,
         type: String,
         default: "0.0.0"
     });
 
-    // Register Custom Index Data
-    game.settings.register("ionrift-library", "customCreatureIndex", {
+    game.settings.register(MODULE_ID, "customCreatureIndex", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
 
-    game.settings.register("ionrift-library", "classificationOverrides", {
+    game.settings.register(MODULE_ID, "classificationOverrides", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
 
-    game.settings.register("ionrift-library", "installedPacks", {
+    game.settings.register(MODULE_ID, "installedPacks", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
 
-    game.settings.register("ionrift-library", "registryLastCheck", {
+    game.settings.register(MODULE_ID, "registryLastCheck", {
         scope: "world",
         config: false,
         type: Object,
         default: { timestamp: 0, data: null }
     });
 
-    // Per-pack snooze map: { [packId]: timestamp } — populated when GM clicks "Later".
-    game.settings.register("ionrift-library", "registrySnoozed", {
+    game.settings.register(MODULE_ID, "registrySnoozed", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
 
-    // Legacy Patreon Sigil key — migration source for ionrift-connect only.
-    // New reads/writes go through Connect (`game.ionrift.connect.cloud`).
-    game.settings.register("ionrift-library", "sigil", {
+    game.settings.register(MODULE_ID, "sigil", {
         name: "Patreon Connection Token (legacy)",
         scope: "world",
         config: false,
@@ -362,8 +94,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Legacy expiry keys — Connect owns the live settings after migrate.
-    game.settings.register("ionrift-library", "expiryWarnings", {
+    game.settings.register(MODULE_ID, "expiryWarnings", {
         scope: "world",
         config: false,
         type: Boolean,
@@ -371,7 +102,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    game.settings.register("ionrift-library", "expiryWarningSnooze", {
+    game.settings.register(MODULE_ID, "expiryWarningSnooze", {
         scope: "world",
         config: false,
         type: Number,
@@ -379,35 +110,28 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // One-time advisory flag (Resonance v2.2.2) — kept for backward compat;
-    // the notification was removed in a later release. Existing worlds may have
-    // this stored; re-registering prevents a settings-load error.
-    game.settings.register("ionrift-library", "resonanceAdvisory222Shown", {
+    game.settings.register(MODULE_ID, "resonanceAdvisory222Shown", {
         scope: "world",
         config: false,
         type: Boolean,
         default: true
     });
 
-    // Party Roster
-    game.settings.register("ionrift-library", "partyRoster", {
+    game.settings.register(MODULE_ID, "partyRoster", {
         scope: "world",
         config: false,
         type: Array,
         default: []
     });
 
-    game.settings.register("ionrift-library", "partyRosterMigrated", {
+    game.settings.register(MODULE_ID, "partyRosterMigrated", {
         scope: "world",
         config: false,
         type: Boolean,
         default: false
     });
 
-    // Overlay distribution feature flag — GM-only, defaults false.
-    // Keeps OverlayService inert on all EA user worlds until explicitly
-    // enabled by the GM. Flip true in a dev world to test the pipeline.
-    game.settings.register("ionrift-library", "overlayDistributionEnabled", {
+    game.settings.register(MODULE_ID, "overlayDistributionEnabled", {
         scope: "world",
         config: false,
         type: Boolean,
@@ -415,17 +139,14 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Shared overlay-item materialisation state, keyed by moduleId:
-    //   { [moduleId]: { [overlayId]: { version, packs: [collectionId], packHashes } } }
-    // Owned by OverlayItemMaterialiser so every consumer module shares one store.
-    game.settings.register("ionrift-library", "materialisedOverlayPacks", {
+    game.settings.register(MODULE_ID, "materialisedOverlayPacks", {
         scope: "world",
         config: false,
         type: Object,
         default: {}
     });
 
-    game.settings.register("ionrift-library", "overlayWorldState", {
+    game.settings.register(MODULE_ID, "overlayWorldState", {
         scope: "world",
         config: false,
         type: Object,
@@ -433,24 +154,14 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Preview content access — per-user, off by default. Registry entries
-    // marked `preview: true` are hidden from the Patreon Library unless this
-    // flag is set. Toggle via console:
-    //   game.settings.set("ionrift-library", "showPreviewContent", true)
-    game.settings.register("ionrift-library", "showPreviewContent", {
+    game.settings.register(MODULE_ID, "showPreviewContent", {
         scope: "client",
         config: false,
         type: Boolean,
         default: false
     });
 
-    // Local dev overlay registry. Lets a module surface disk-staged overlays in
-    // the Patreon Library for local e2e simulation without publishing entries to
-    // the remote registry. Shape mirrors registry.overlays:
-    //   { [overlayId]: { latest, tier, sublayer, moduleId, minModuleVersion, packLabel, description } }
-    // Entries here are merged into the Library overlay list and always shown
-    // (they bypass the preview gate). Empty by default, so no production effect.
-    game.settings.register("ionrift-library", "devOverlayRegistry", {
+    game.settings.register(MODULE_ID, "devOverlayRegistry", {
         scope: "world",
         config: false,
         type: Object,
@@ -458,11 +169,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Legacy cleanup UI force-mode. Dev-only, off-config, controlled
-    // from the console for preview testing across platforms:
-    //   game.ionrift.library.cleanup.forceMode("v14-advisory")
-    // Valid values: auto, v13-button, v14-advisory, forge-readonly, hide.
-    game.settings.register("ionrift-library", "legacyCleanupForceMode", {
+    game.settings.register(MODULE_ID, "legacyCleanupForceMode", {
         scope: "client",
         config: false,
         type: String,
@@ -470,11 +177,7 @@ Hooks.once('init', () => {
         default: "auto"
     });
 
-    // Per-world record of completed sweeps. Shape:
-    //   { [moduleId]: { [entryId]: { sweptAt: <ms>, freedBytes: <number> } } }
-    // Detection re-runs FilePicker.browse anyway, so this is informational
-    // rather than authoritative; useful for diagnostics and future audits.
-    game.settings.register("ionrift-library", "legacyCleanupHistory", {
+    game.settings.register(MODULE_ID, "legacyCleanupHistory", {
         scope: "world",
         config: false,
         type: Object,
@@ -482,10 +185,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // Patreon Library settings button is registered by ionrift-connect when present.
-
-    // BODY
-    game.settings.registerMenu("ionrift-library", "setupWizard", {
+    game.settings.registerMenu(MODULE_ID, "setupWizard", {
         name: "Creature Database",
         label: "Initialize Database",
         hint: "Build the local creature index. Required for Resonance and other monster-aware modules.",
@@ -494,7 +194,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    game.settings.registerMenu("ionrift-library", "partyRosterMenu", {
+    game.settings.registerMenu(MODULE_ID, "partyRosterMenu", {
         name: "Party Roster",
         label: "Edit Roster",
         hint: "Choose which characters are in the active adventuring party. Used by Respite, Workshop, and other modules.",
@@ -503,7 +203,7 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    game.settings.registerMenu("ionrift-library", "validatorMenu", {
+    game.settings.registerMenu(MODULE_ID, "validatorMenu", {
         name: "Logic Inspector",
         label: "Inspect Logic",
         hint: "Debug: Inspect how creatures are classified.",
@@ -512,20 +212,12 @@ Hooks.once('init', () => {
         restricted: true
     });
 
-    // FOOTER
-    SettingsLayout.registerFooter("ionrift-library", {
-        diagnostics: DiagnosticApp,
+    SettingsLayout.registerFooter(MODULE_ID, {
+        diagnostics: DiagnosticApp
     });
 
-
-
-    // Pack nudge settings injection lives in ionrift-connect.
-
-    // Self-Reporting Diagnostic Hook
     Hooks.on("ionrift.runDiagnostics", (reportBuilder) => {
         reportBuilder.addResult("Ionrift Library", "Modules Loaded", "PASS", "Library Active");
-
-        // Optional: Check if we can write to logs
         try {
             Logger.log("Library", "Diagnostic Write Test");
             reportBuilder.addResult("Ionrift Library", "Console Access", "PASS", "Can write to console.");
@@ -535,49 +227,34 @@ Hooks.once('init', () => {
     });
 });
 
-Hooks.once('ready', async () => {
+Hooks.once("ready", async () => {
     RollRequestService.init();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
-    // Migrate party roster from Respite if needed
     PartyRoster.migrateFromRespite().catch(e =>
         Logger.warn("Library", "PartyRoster migration check failed:", e)
     );
 
-    // Bridge native party changes (v14+) to the ionrift.partyChanged hook
     PartyRoster.installNativePartyBridge();
 
     if (game.user.isGM) {
-        // Self-heal corrupted compendium-folder state before anything that
-        // reads it. Idempotent: a healthy world performs no writes. Guards
-        // against "Folder validation errors: name: may not be undefined"
-        // (Foundry #13225 / #11800) recurring across module updates.
         CompendiumConfigGuard.repairWorld().catch(e =>
             Logger.warn("Library", "Compendium config self-heal failed:", e)
         );
 
-        // Static protocol version - only bump when indexing steps change,
-        // NOT on every module patch release.
         const INDEXING_PROTOCOL_VERSION = "1";
-        const storedVersion = game.settings.get("ionrift-library", "indexSetupVersion");
+        const storedVersion = game.settings.get(MODULE_ID, "indexSetupVersion");
 
-        // Backward compatibility: existing users have semver strings (e.g. "1.4.0").
-        // Silently migrate them without re-prompting.
         if (storedVersion.includes(".") && storedVersion !== "0.0.0") {
-            game.settings.set("ionrift-library", "indexSetupVersion", INDEXING_PROTOCOL_VERSION);
+            game.settings.set(MODULE_ID, "indexSetupVersion", INDEXING_PROTOCOL_VERSION);
         }
 
-        // Register Status Indicator for the Creature Database.
-        // Only surfaces a warning when the index is OUTDATED (mismatched protocol
-        // version after a known-good run). A fresh world with no index simply shows
-        // CONNECTED with a "Pending" label — the Initialize button itself is the
-        // call to action, no urgency badge needed.
         if (game.ionrift.integration) {
-            game.ionrift.integration.registerApp("ionrift-library", {
-                settingsKey: ["ionrift-library.setupWizard"],
+            game.ionrift.integration.registerApp(MODULE_ID, {
+                settingsKey: [`${MODULE_ID}.setupWizard`],
                 checkStatus: async () => {
-                    const currentStored = game.settings.get("ionrift-library", "indexSetupVersion");
+                    const currentStored = game.settings.get(MODULE_ID, "indexSetupVersion");
 
                     if (currentStored === INDEXING_PROTOCOL_VERSION) {
                         return {
@@ -589,39 +266,24 @@ Hooks.once('ready', async () => {
                         return {
                             status: game.ionrift.integration.STATUS.WARNING,
                             label: "Outdated",
-                            message: "Index Version Mismatch — Re-Initialize"
-                        };
-                    } else {
-                        return {
-                            status: game.ionrift.integration.STATUS.CONNECTED,
-                            label: "Not yet built",
-                            message: "Initialize when ready."
+                            message: "Index Version Mismatch. Re-Initialize"
                         };
                     }
+                    return {
+                        status: game.ionrift.integration.STATUS.CONNECTED,
+                        label: "Not yet built",
+                        message: "Initialize when ready."
+                    };
                 }
             });
         }
 
-        // The Creature Index wizard is no longer auto-launched on startup.
-        // Consumers that need the index (e.g. Resonance for Adaptive Sounds) enforce
-        // setup through their own attunement UI. The wizard remains accessible via
-        // the Settings header button (ionrift-library settings page).
-
-        // Backward-compat shim: if ionrift-cloud module is NOT installed,
-        // expose downloadPack on game.ionrift.cloud for any consumer still using the old path.
         if (!game.modules.get("ionrift-cloud")?.active) {
             game.ionrift.cloud = {
                 downloadPack: (packId, version) => CloudRelayService.requestDownload(packId, version)
             };
         }
 
-        // Pack / overlay alert checks run in ionrift-connect ready when present.
-
-        // Diagnose broken installs (zip-in-folder, double-nested, missing module.json)
         InstallHealthCheck.run().catch(e => Logger.warn("Library", "Install health check failed:", e));
-
-        // Enable overlays in a dev world via:
-        //   game.settings.set("ionrift-library", "overlayDistributionEnabled", true)
     }
 });
-

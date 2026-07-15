@@ -1,26 +1,13 @@
-/**
- * Shared cooking/feeding abstraction for the Ionrift kernel.
- *
- * Exposes the additive sub-services under `game.ionrift.library.cooking`:
- *   - buffs:        canonical buff-descriptor model and dnd5e Active Effect mapping.
- *   - match:        contents/charge-aware ingredient matching and consumption.
- *   - gmExec:       generic GM-routing primitive for cross-owner writes.
- *   - feed:         feed-the-party registration and dispatch.
- *   - buffHandlers: registry for consumer/overlay buff handlers (premium seam).
- *
- * Nothing here removes or alters existing library API; it is additive only.
- */
+/** Barrel for `game.ionrift.library.cooking`. See LIBRARY_ARCHITECTURE.md. */
+import { CookingBuffs } from "./buffs/CookingBuffs.js";
+import { CookingMatch } from "./match/CookingMatch.js";
+import { CookingGMExec } from "./feed/CookingGMExec.js";
+import { CookingFeed } from "./feed/CookingFeed.js";
+import { CookingBuffHandlers } from "./buffs/CookingBuffHandlers.js";
+import { CookingBuffCharges } from "./buffs/CookingBuffCharges.js";
+import { buffAdapterRegistry } from "./adapters/BuffAdapterRegistry.js";
+import { BuffApplicator } from "./buffs/BuffApplicator.js";
 
-import { CookingBuffs } from "./CookingBuffs.js";
-import { CookingMatch } from "./CookingMatch.js";
-import { CookingGMExec } from "./CookingGMExec.js";
-import { CookingFeed } from "./CookingFeed.js";
-import { CookingBuffHandlers } from "./CookingBuffHandlers.js";
-import { CookingBuffCharges } from "./CookingBuffCharges.js";
-import { buffAdapterRegistry } from "./BuffAdapterRegistry.js";
-import { BuffApplicator } from "./BuffApplicator.js";
-
-/** The `game.ionrift.library.cooking` namespace object. */
 export const cooking = {
     buffs: CookingBuffs,
     buffAdapters: buffAdapterRegistry,
@@ -31,14 +18,19 @@ export const cooking = {
     buffHandlers: CookingBuffHandlers
 };
 
-/**
- * Initialise the socket-backed pieces. Call once on ready, alongside
- * RollRequestService.init().
- */
 export function initCooking() {
     CookingGMExec.init();
     CookingFeed.init();
     CookingBuffCharges.init();
 }
 
-export { CookingBuffs, CookingMatch, CookingGMExec, CookingFeed, CookingBuffHandlers, CookingBuffCharges, buffAdapterRegistry, BuffApplicator };
+export {
+    CookingBuffs,
+    CookingMatch,
+    CookingGMExec,
+    CookingFeed,
+    CookingBuffHandlers,
+    CookingBuffCharges,
+    buffAdapterRegistry,
+    BuffApplicator
+};

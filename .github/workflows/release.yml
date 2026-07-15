@@ -22,8 +22,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Checkout private module tools
+        uses: actions/checkout@v4
+        with:
+          repository: ionrift-gm/ionrift-testharness
+          token: ${{ secrets.IONRIFT_CI_PAT }}
+          path: ionrift-testharness
+
       - name: Validate CHANGELOG
-        run: node tools/validate-changelog.mjs
+        env:
+          MODULE_ROOT: ${{ github.workspace }}
+        run: node ionrift-testharness/tools/modules/library/validate-changelog.mjs
 
       - name: Verify version matches tag
         run: |
