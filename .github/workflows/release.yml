@@ -64,7 +64,7 @@ jobs:
 
       - name: Zip Module
         run: |
-          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*" "tests/*" "vitest*" ".eslintrc*" "tools/*"
+          zip -r module.zip . -x ".git/*" ".github/*" ".gitignore" "RELEASE_WORKFLOW.md" "task.md" "package.json" "package-lock.json" "node_modules/*" "dist/*" "debug_*.js" "debug_*.log" "audit_*.json" "audit_*.txt" "wiki-images/*" "BACKLOG.md" "SETUP_GUIDE.md" "docs/*" "tests/*" "vitest*" ".eslintrc*" "tools/*" "ionrift-testharness/*" ".cursor/*"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
