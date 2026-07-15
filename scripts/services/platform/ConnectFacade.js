@@ -1,9 +1,12 @@
 /**
- * ConnectFacade
- *
  * Soft-degrade bridge from listed Library API to ionrift-connect.
  * Call sites keep using game.ionrift.library.*; Connect owns the real services.
  */
+
+import {
+    getWorldSetting as getConnectOwnedSetting,
+    setWorldSetting as setConnectOwnedSetting
+} from "./connectOwnedSettings.js";
 
 const CONNECT_REQUIRED = "Ionrift Connect is required for the content Library.";
 
@@ -174,173 +177,12 @@ export const ConnectFacade = {
         dismiss: (...args) => connect()?.packNudge?.dismiss?.(...args)
     },
 
-    /**
-     * Dev console helpers that read OverlayService / PackRegistry from Connect.
-     * @param {{ Logger: object, PlatformHelper: object }} deps
-     */
-    buildDevHelpers({ Logger, PlatformHelper }) {
-        const overlay = () => connect()?.overlay;
-        const packRegistry = () => connect()?.packRegistry;
+    getWorldSetting(key, fallback) {
+        return getConnectOwnedSetting(key, fallback);
+    },
 
-        return {
-            simulateHostedInstall(enabled) {
-                const svc = overlay();
-                if (!svc) {
-                    warnMissing();
-                    return false;
-                }
-                if (enabled === undefined) return svc._devSimulateHosted;
-                svc._devSimulateHosted = Boolean(enabled);
-                Logger.log("Library", `Hosted install simulation: ${svc._devSimulateHosted ? "on" : "off"}.`);
-                return svc._devSimulateHosted;
-            },
-            installPerFileDelayMs(ms) {
-                const svc = overlay();
-                if (!svc) {
-                    warnMissing();
-                    return 0;
-                }
-                if (ms === undefined) return svc._devPerFileDelayMs;
-                const value = Math.max(0, Number(ms) || 0);
-                svc._devPerFileDelayMs = value;
-                Logger.log("Library", `Per-file install delay: ${value}ms.`);
-                return value;
-            },
-            resetInstallSimulation() {
-                const svc = overlay();
-                if (!svc) {
-                    warnMissing();
-                    return;
-                }
-                svc._devSimulateHosted = false;
-                svc._devPerFileDelayMs = 0;
-                Logger.log("Library", "Install simulation reset.");
-            },
-            async inspectOverlayFiles(spec) {
-                const OverlayService = overlay();
-                const PackRegistryService = packRegistry();
-                if (!OverlayService) {
-                    warnMissing();
-                    return null;
-                }
-
-                let targetDir = null;
-                let overlayLabel = "(unknown)";
-
-                if (typeof spec === "string") {
-                    overlayLabel = spec;
-                    const pending = OverlayService.pendingOverlays?.find(p => p.overlayId === spec);
-                    if (pending) {
-                        targetDir = `${OverlayService.OVERLAY_ROOT}/${pending.entry.moduleId}/${pending.sublayer}`;
-                    } else if (PackRegistryService) {
-                        try {
-                            const registry = await PackRegistryService._fetchRegistry();
-                            const entry = registry?.overlays?.[spec];
-                            if (entry) {
-                                const sublayer = OverlayService.resolveSublayer(entry);
-                                targetDir = `${OverlayService.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
-                            }
-                        } catch (e) {
-                            Logger.warn("Library", `inspectOverlayFiles: registry lookup failed: ${e?.message ?? e}`);
-                        }
-                    }
-                } else if (spec?.moduleId && spec?.sublayer) {
-                    targetDir = `${OverlayService.OVERLAY_ROOT}/${spec.moduleId}/${spec.sublayer}`;
-                    overlayLabel = spec.overlayId ?? `${spec.moduleId}/${spec.sublayer}`;
-                }
-
-                if (!targetDir) {
-                    Logger.warn("Library", "inspectOverlayFiles: could not resolve target directory.");
-                    Logger.warn("Library", "  Try: game.ionrift.library.dev.listOverlays()");
-                    Logger.warn("Library", '  Or:  game.ionrift.library.dev.inspectOverlayFiles({ moduleId: "ionrift-resonance", sublayer: "core" })');
-                    return null;
-                }
-
-                const source = PlatformHelper.fileSource;
-                const FP = PlatformHelper.FP;
-                if (!FP) {
-                    Logger.warn("Library", "inspectOverlayFiles: FilePicker unavailable.");
-                    return null;
-                }
-
-                const allFiles = [];
-                const allDirs = [];
-                const walk = async (dir) => {
-                    try {
-                        const result = await FP.browse(source, dir);
-                        for (const filePath of result?.files ?? []) {
-                            allFiles.push(filePath);
-                        }
-                        for (const subDir of result?.dirs ?? []) {
-                            allDirs.push(subDir);
-                            await walk(subDir);
-                        }
-                    } catch (e) {
-                        Logger.warn("Library", `inspectOverlayFiles: browse failed for ${dir}: ${e?.message ?? e}`);
-                    }
-                };
-
-                allDirs.push(targetDir);
-                await walk(targetDir);
-
-                Logger.info("Library", `inspectOverlayFiles: ${overlayLabel}`);
-                Logger.info("Library", `  targetDir: ${targetDir}`);
-                Logger.info("Library", `  source:    ${source}`);
-                Logger.info("Library", `  dirs:      ${allDirs.length}`);
-                Logger.info("Library", `  files:     ${allFiles.length}`);
-                if (allFiles.length > 0) {
-                    Logger.info("Library", `  first 5 files: ${allFiles.slice(0, 5).join(", ")}`);
-                }
-                return { targetDir, files: allFiles, dirs: allDirs };
-            },
-            async listOverlays() {
-                const OverlayService = overlay();
-                const PackRegistryService = packRegistry();
-                if (!OverlayService) {
-                    warnMissing();
-                    return [];
-                }
-
-                const rows = [];
-                const pending = OverlayService.pendingOverlays ?? [];
-                let registry = null;
-                try {
-                    registry = await PackRegistryService?._fetchRegistry?.();
-                } catch (e) {
-                    Logger.warn("Library", `listOverlays: registry fetch failed (${e?.message ?? e}). Showing pending only.`);
-                }
-
-                const seen = new Set();
-                const overlayEntries = registry?.overlays ?? {};
-                for (const [overlayId, entry] of Object.entries(overlayEntries)) {
-                    const sublayer = OverlayService.resolveSublayer(entry);
-                    const targetDir = `${OverlayService.OVERLAY_ROOT}/${entry.moduleId}/${sublayer}`;
-                    rows.push({
-                        overlayId,
-                        moduleId: entry.moduleId,
-                        sublayer,
-                        targetDir,
-                        pending: pending.some(p => p.overlayId === overlayId)
-                    });
-                    seen.add(overlayId);
-                }
-                for (const item of pending) {
-                    if (seen.has(item.overlayId)) continue;
-                    rows.push({
-                        overlayId: item.overlayId,
-                        moduleId: item.entry?.moduleId ?? "?",
-                        sublayer: item.sublayer ?? "?",
-                        targetDir: `${OverlayService.OVERLAY_ROOT}/${item.entry?.moduleId}/${item.sublayer}`,
-                        pending: true
-                    });
-                }
-
-                Logger.info("Library", `Known overlays (${rows.length}):`);
-                for (const row of rows) {
-                    Logger.info("Library", `  ${row.pending ? "[pending]" : "[ok]    "} ${row.overlayId.padEnd(36)} -> ${row.targetDir}`);
-                }
-                return rows;
-            }
-        };
+    setWorldSetting(key, value) {
+        return setConnectOwnedSetting(key, value);
     }
 };
+

@@ -20,6 +20,10 @@ import { Logger } from "../services/platform/Logger.js";
 import { CloudRelayService } from "../services/platform/CloudRelayService.js";
 import { PlatformHelper } from "../services/platform/PlatformHelper.js";
 import { ConnectFacade } from "../services/platform/ConnectFacade.js";
+import {
+    getWorldSetting,
+    setWorldSetting
+} from "../services/platform/connectOwnedSettings.js";
 import { JsonPackService } from "../services/packs/JsonPackService.js";
 import { OverlayItemMaterialiser } from "../services/packs/OverlayItemMaterialiser.js";
 import { LegacyAssetSweeper } from "../services/packs/LegacyAssetSweeper.js";
@@ -109,10 +113,12 @@ export function createLibraryContext() {
         importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),
         getZipTargetDir: (moduleId, assetType) => ConnectFacade.getZipTargetDir(moduleId, assetType),
         getInstalledPack: (packId) => {
-            const packs = game.settings.get(MODULE_ID, "installedPacks") ?? {};
+            const packs = getWorldSetting("installedPacks") ?? {};
             return packs[packId] ?? null;
         },
-        getInstalledPacks: () => game.settings.get(MODULE_ID, "installedPacks") ?? {},
+        getInstalledPacks: () => getWorldSetting("installedPacks") ?? {},
+        getWorldSetting,
+        setWorldSetting,
         log: (module, ...args) => Logger.log(module, ...args),
         openValidator: () => new ClassifierValidatorApp().render(true),
         runDiagnostics: () => DiagnosticService.instance.showResults(),
@@ -155,8 +161,7 @@ export function createLibraryContext() {
         compendiumGuard: CompendiumConfigGuard,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
-        cleanup: LegacyAssetSweeper,
-        dev: ConnectFacade.buildDevHelpers({ Logger, PlatformHelper })
+        cleanup: LegacyAssetSweeper
     };
 
     exposeLibraryApi(ctx);

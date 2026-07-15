@@ -2,11 +2,12 @@
  * JsonPackService
  * Library-level JSON content pack importer.
  * Consumer modules call importJsonPack() for structured data packs (events, professions, configs).
- * Mirrors ZipImporterService API. Manifest metadata stored in unified "ionrift-library.installedPacks".
+ * Mirrors ZipImporterService API. Manifest metadata stored via Connect-owned installedPacks.
  */
 
 import { PackManifestSchema } from "../../data/PackManifestSchema.js";
 import { Logger } from "../platform/Logger.js";
+import { getWorldSetting, setWorldSetting } from "../platform/connectOwnedSettings.js";
 
 const MODULE_LABEL = "JsonPackImporter";
 
@@ -112,7 +113,7 @@ export class JsonPackService {
             Logger.log(MODULE_LABEL, "Legacy pack imported (no metadata stored).");
         } else {
             try {
-                const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
+                const installedPacks = getWorldSetting("installedPacks") ?? {};
                 const updated = {
                     ...installedPacks,
                     [manifest.packId]: {
@@ -124,7 +125,7 @@ export class JsonPackService {
                         fileCount: 1
                     }
                 };
-                await game.settings.set("ionrift-library", "installedPacks", updated);
+                await setWorldSetting("installedPacks", updated);
                 Logger.log(MODULE_LABEL, `Stored manifest metadata for packId "${manifest.packId}".`);
             } catch (error) {
                 const msg = `Failed to store installed pack metadata: ${error.message}`;
