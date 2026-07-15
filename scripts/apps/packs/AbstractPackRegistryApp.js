@@ -10,6 +10,8 @@
  *
  * @abstract
  */
+import { getWorldSetting } from "../../services/platform/connectOwnedSettings.js";
+
 export class AbstractPackRegistryApp extends foundry.applications.api.ApplicationV2 {
 
     /** Tracks which tab is active across re-renders. */
@@ -19,7 +21,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
     async _prepareContext() {
         const packData = await this._preparePackData();
         const packs = packData.packs ?? [];
-        const installedPacks = game.settings.get("ionrift-library", "installedPacks") ?? {};
+        const installedPacks = getWorldSetting("installedPacks") ?? {};
 
         // Cloud updates from PackRegistryService
         const rawUpdates = game?.ionrift?.library?._packUpdates ?? [];
