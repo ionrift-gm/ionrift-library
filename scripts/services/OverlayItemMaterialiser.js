@@ -43,11 +43,15 @@
  */
 
 import { Logger } from "./Logger.js";
-import { OverlayService } from "./OverlayService.js";
 
 const LIBRARY_ID = "ionrift-library";
 const STATE_KEY = "materialisedOverlayPacks";
 const FOLDERS_FILE = "_folders.json";
+
+/** Overlay disk IO lives in Connect; soft-degrade when absent. */
+function getOverlay() {
+    return game.ionrift?.connect?.overlay ?? null;
+}
 
 export class OverlayItemMaterialiser {
 
@@ -61,7 +65,8 @@ export class OverlayItemMaterialiser {
         const moduleId = config?.moduleId;
         if (!moduleId) return;
 
-        const sublayers = await OverlayService.listInstalledSublayers(moduleId);
+        const sublayers = await getOverlay()?.listInstalledSublayers(moduleId) ?? [];
+        if (!sublayers.length) return;
         for (const sublayer of sublayers) {
             try {
                 await this.materialiseSublayer(sublayer, config);
@@ -83,10 +88,10 @@ export class OverlayItemMaterialiser {
         const moduleId = config?.moduleId;
         if (!moduleId) return;
 
-        const manifest = await OverlayService.getLocalManifest(moduleId, sublayer);
+        const manifest = await getOverlay()?.getLocalManifest(moduleId, sublayer);
         if (!manifest?.overlayId) return;
 
-        const active = await OverlayService.isOverlayActive(manifest.overlayId, moduleId, sublayer);
+        const active = await getOverlay()?.isOverlayActive(manifest.overlayId, moduleId, sublayer);
         if (!active) {
             Logger.log(this._label(config),
                 `OverlayItemMaterialiser | "${manifest.overlayId}" present but inactive; skipping.`
@@ -201,12 +206,12 @@ export class OverlayItemMaterialiser {
         // enumeration source on Sqyre, where FilePicker.browse does not list
         // freshly uploaded files. Fall back to a browse walk for legacy
         // installs (no index) and self-hosted/Forge, which keep working as before.
-        const fileIndex = await OverlayService.readFileIndex(moduleId, sublayer);
+        const fileIndex = await getOverlay()?.readFileIndex(moduleId, sublayer);
         let packDirs;
         if (fileIndex) {
             packDirs = this._packDirsFromIndex(fileIndex);
         } else {
-            const itemsListing = await OverlayService.listOverlayDir(moduleId, sublayer, "items");
+            const itemsListing = await getOverlay()?.listOverlayDir(moduleId, sublayer, "items");
             packDirs = (itemsListing?.dirs ?? []).filter(d => d && !d.startsWith("."));
         }
         if (!packDirs.length) {
@@ -380,7 +385,7 @@ export class OverlayItemMaterialiser {
     }
 
     static async _readFolders(moduleId, sublayer, itemsPath) {
-        const data = await OverlayService.readOverlayFile(moduleId, sublayer, `${itemsPath}/${FOLDERS_FILE}`);
+        const data = await getOverlay()?.readOverlayFile(moduleId, sublayer, `${itemsPath}/${FOLDERS_FILE}`);
         if (Array.isArray(data)) return data;
         return [];
     }
@@ -421,9 +426,11 @@ export class OverlayItemMaterialiser {
         const collected = [];
         for (let i = 0; i < itemPaths.length; i += CONCURRENCY) {
             const batch = itemPaths.slice(i, i + CONCURRENCY);
-            const results = await Promise.all(batch.map(relPath =>
-                OverlayService.readOverlayFile(moduleId, sublayer, relPath).catch(() => null)
-            ));
+            const results = await Promise.all(batch.map(relPath => {
+                const ov = getOverlay();
+                if (!ov?.readOverlayFile) return Promise.resolve(null);
+                return ov.readOverlayFile(moduleId, sublayer, relPath).catch(() => null);
+            }));
             for (const data of results) {
                 if (data && data.name) collected.push(data);
             }
@@ -441,12 +448,12 @@ export class OverlayItemMaterialiser {
         const collected = [];
 
         const walk = async (path) => {
-            const listing = await OverlayService.listOverlayDir(moduleId, sublayer, path);
+            const listing = await getOverlay()?.listOverlayDir(moduleId, sublayer, path);
             const files = (listing?.files ?? []).filter(f =>
                 f.endsWith(".json") && f !== FOLDERS_FILE
             );
             for (const file of files) {
-                const data = await OverlayService.readOverlayFile(moduleId, sublayer, `${path}/${file}`);
+                const data = await getOverlay()?.readOverlayFile(moduleId, sublayer, `${path}/${file}`);
                 if (data && data.name) collected.push(data);
             }
             const dirs = (listing?.dirs ?? []).filter(d => d && !d.startsWith("."));

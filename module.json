@@ -1,7 +1,7 @@
 {
     "id":  "ionrift-library",
     "title":  "Ionrift Library",
-    "description":  "Core dependency for the Ionrift module suite. Provides the Patreon Library for content distribution, a shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
+    "description":  "Core dependency for the Ionrift module suite. Shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
     "readme":  "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
     "version": "2.5.10",
     "bugs":  "https://discord.gg/vFGXf7Fncj",
@@ -16,10 +16,7 @@
                    "styles/ionrift.css",
                    "styles/ionrift-library.css",
                    "styles/roll-request.css",
-                   "styles/zip-import-progress.css",
-                   "styles/pack-registry.css",
-                   "styles/overlay-manager.css",
-                   "styles/pack-nudge.css"
+                   "styles/pack-registry.css"
                ],
     "relationships":  {
                           "requires":  [
