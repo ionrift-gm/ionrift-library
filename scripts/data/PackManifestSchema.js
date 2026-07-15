@@ -1,4 +1,4 @@
-import { Logger } from "../services/Logger.js";
+import { Logger } from "../services/platform/Logger.js";
 
 /**
  * PackManifestSchema

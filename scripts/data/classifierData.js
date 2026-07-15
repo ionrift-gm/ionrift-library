@@ -1,4 +1,4 @@
-import { Logger } from "../services/Logger.js";
+import { Logger } from "../services/platform/Logger.js";
 import { DND5E_DATA } from "./dnd5eData.js";
 
 const DAGGERHEART_DATA = {

@@ -51,5 +51,7 @@ CURSOR_PLAN_*
 # Internal brand/workspace content - must never be committed to public module repos
 ionrift-brand/
 
+# Module-root tools live in private ionrift-testharness (principles §14)
+/tools/
 
 test_imports.ps1
