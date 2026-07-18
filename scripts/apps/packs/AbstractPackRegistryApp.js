@@ -10,7 +10,7 @@
  *
  * @abstract
  */
-import { getWorldSetting } from "../../services/platform/connectOwnedSettings.js";
+import { getWorldSetting } from "../../services/platform/annexOwnedSettings.js";
 
 export class AbstractPackRegistryApp extends foundry.applications.api.ApplicationV2 {
 

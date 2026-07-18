@@ -1,11 +1,11 @@
 /**
  * Listed-Kernel facade for the Patreon / cloud download broker.
- * Real implementation lives in ionrift-connect (`game.ionrift.connect.cloud`).
- * Without Connect, broker calls soft-degrade (no OAuth, no cloud download).
+ * Real implementation lives in ionrift-annex (`game.ionrift.annex.cloud`).
+ * Without Annex, broker calls soft-degrade (no OAuth, no cloud download).
  */
 
 function broker() {
-    return game.ionrift?.connect?.cloud ?? null;
+    return game.ionrift?.annex?.cloud ?? null;
 }
 
 export class CloudRelayService {
@@ -24,7 +24,7 @@ export class CloudRelayService {
 
     static get EXPIRED_COPY() {
         return broker()?.EXPIRED_COPY
-            ?? "Your Patreon connection has expired. Install or enable Ionrift Connect, then reconnect.";
+            ?? "Your Patreon connection has expired. Install or enable Ionrift Annex, then reconnect.";
     }
 
     static getSigil() {
@@ -60,7 +60,7 @@ export class CloudRelayService {
     static async connect() {
         const b = broker();
         if (!b) {
-            ui.notifications?.warn?.("Ionrift Connect is required to link Patreon.");
+            ui.notifications?.warn?.("Ionrift Annex is required to link Patreon.");
             return;
         }
         return b.connect();
@@ -75,7 +75,7 @@ export class CloudRelayService {
     static async requestDownload(packId, version, options = {}) {
         const b = broker();
         if (!b) {
-            const msg = "Ionrift Connect is required for cloud downloads.";
+            const msg = "Ionrift Annex is required for cloud downloads.";
             if (!options.silent) ui.notifications?.warn?.(msg);
             return { status: 503, error: msg };
         }
@@ -84,19 +84,19 @@ export class CloudRelayService {
 
     static async initSupportReport(payload) {
         const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Connect is required to submit reports." };
+        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
         return b.initSupportReport(payload);
     }
 
     static async uploadSupportReport(reportId, reportJson) {
         const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Connect is required to submit reports." };
+        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
         return b.uploadSupportReport(reportId, reportJson);
     }
 
     static async completeSupportReport(reportId) {
         const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Connect is required to submit reports." };
+        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
         return b.completeSupportReport(reportId);
     }
 

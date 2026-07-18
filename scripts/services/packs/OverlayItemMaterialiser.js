@@ -50,7 +50,7 @@ const FOLDERS_FILE = "_folders.json";
 
 /** Overlay disk IO lives in Connect; soft-degrade when absent. */
 function getOverlay() {
-    return game.ionrift?.connect?.overlay ?? null;
+    return game.ionrift?.annex?.overlay ?? null;
 }
 
 export class OverlayItemMaterialiser {

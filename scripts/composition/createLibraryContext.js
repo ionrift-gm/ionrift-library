@@ -19,11 +19,11 @@ import { WorldSchema } from "../data/WorldSchema.js";
 import { Logger } from "../services/platform/Logger.js";
 import { CloudRelayService } from "../services/platform/CloudRelayService.js";
 import { PlatformHelper } from "../services/platform/PlatformHelper.js";
-import { ConnectFacade } from "../services/platform/ConnectFacade.js";
+import { AnnexBridge } from "../services/platform/AnnexBridge.js";
 import {
     getWorldSetting,
     setWorldSetting
-} from "../services/platform/connectOwnedSettings.js";
+} from "../services/platform/annexOwnedSettings.js";
 import { JsonPackService } from "../services/packs/JsonPackService.js";
 import { OverlayItemMaterialiser } from "../services/packs/OverlayItemMaterialiser.js";
 import { LegacyAssetSweeper } from "../services/packs/LegacyAssetSweeper.js";
@@ -107,11 +107,11 @@ export function createLibraryContext() {
             watchAnimation: watchDcAnimation,
             forceDcPulseTest
         },
-        importZipPack: (opts) => ConnectFacade.importZipPack(opts),
-        importZipFromFile: (file, opts) => ConnectFacade.importZipFromFile(file, opts),
+        importZipPack: (opts) => AnnexBridge.importZipPack(opts),
+        importZipFromFile: (file, opts) => AnnexBridge.importZipFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
         importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),
-        getZipTargetDir: (moduleId, assetType) => ConnectFacade.getZipTargetDir(moduleId, assetType),
+        getZipTargetDir: (moduleId, assetType) => AnnexBridge.getZipTargetDir(moduleId, assetType),
         getInstalledPack: (packId) => {
             const packs = getWorldSetting("installedPacks") ?? {};
             return packs[packId] ?? null;
@@ -132,32 +132,32 @@ export function createLibraryContext() {
         cloud: CloudRelayService,
         bugReport: BugReportService,
         minting: ItemMintingService,
-        installModule: (moduleId, version) => ConnectFacade.installModule(moduleId, version),
+        installModule: (moduleId, version) => AnnexBridge.installModule(moduleId, version),
         _packUpdates: [],
         _pendingOverlays: [],
-        downloadPackUpdate: (packId) => ConnectFacade.downloadPackUpdate(packId),
-        previewEADialog: (moduleId, overrides) => ConnectFacade.previewEADialog(moduleId, overrides),
-        previewPremiumDialog: (moduleId, overrides) => ConnectFacade.previewPremiumDialog(moduleId, overrides),
-        debugApplyRegistry: (registryData) => ConnectFacade.debugApplyRegistry(registryData),
+        downloadPackUpdate: (packId) => AnnexBridge.downloadPackUpdate(packId),
+        previewEADialog: (moduleId, overrides) => AnnexBridge.previewEADialog(moduleId, overrides),
+        previewPremiumDialog: (moduleId, overrides) => AnnexBridge.previewPremiumDialog(moduleId, overrides),
+        debugApplyRegistry: (registryData) => AnnexBridge.debugApplyRegistry(registryData),
         AbstractPackRegistryApp,
         platform: PlatformHelper,
         createLogger: (label) => Logger.createModuleProxy(label),
         party: PartyRoster,
         PartyRosterApp,
-        overlay: ConnectFacade.overlay,
+        overlay: AnnexBridge.overlay,
         materialiser: OverlayItemMaterialiser,
-        installOverlay: (overlayId) => ConnectFacade.installOverlay(overlayId),
-        installAllPending: () => ConnectFacade.installAllPending(),
-        installById: (overlayId, entry) => ConnectFacade.installById(overlayId, entry),
-        isOverlayDistributionActive: () => ConnectFacade.isOverlayDistributionActive(),
-        setOverlayActive: (overlayId, active, meta) => ConnectFacade.setOverlayActive(overlayId, active, meta),
-        uninstallOverlay: (overlayId, moduleId, sublayer) => ConnectFacade.uninstallOverlay(overlayId, moduleId, sublayer),
-        reinstallOverlay: (overlayId) => ConnectFacade.reinstallOverlay(overlayId),
-        getOverlayState: (overlayId, moduleId, sublayer) => ConnectFacade.getOverlayState(overlayId, moduleId, sublayer),
-        collectDestructiveWarnings: (payload) => ConnectFacade.collectDestructiveWarnings(payload),
-        confirmDestructiveAction: (options) => ConnectFacade.confirmDestructiveAction(options),
-        openPatreonLibrary: (options = {}) => ConnectFacade.openPatreonLibrary(options),
-        packNudge: ConnectFacade.packNudge,
+        installOverlay: (overlayId) => AnnexBridge.installOverlay(overlayId),
+        installAllPending: () => AnnexBridge.installAllPending(),
+        installById: (overlayId, entry) => AnnexBridge.installById(overlayId, entry),
+        isOverlayDistributionActive: () => AnnexBridge.isOverlayDistributionActive(),
+        setOverlayActive: (overlayId, active, meta) => AnnexBridge.setOverlayActive(overlayId, active, meta),
+        uninstallOverlay: (overlayId, moduleId, sublayer) => AnnexBridge.uninstallOverlay(overlayId, moduleId, sublayer),
+        reinstallOverlay: (overlayId) => AnnexBridge.reinstallOverlay(overlayId),
+        getOverlayState: (overlayId, moduleId, sublayer) => AnnexBridge.getOverlayState(overlayId, moduleId, sublayer),
+        collectDestructiveWarnings: (payload) => AnnexBridge.collectDestructiveWarnings(payload),
+        confirmDestructiveAction: (options) => AnnexBridge.confirmDestructiveAction(options),
+        openPatreonLibrary: (options = {}) => AnnexBridge.openPatreonLibrary(options),
+        packNudge: AnnexBridge.packNudge,
         compendiumGuard: CompendiumConfigGuard,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
