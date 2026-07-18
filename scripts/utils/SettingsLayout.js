@@ -151,9 +151,9 @@ export class SettingsLayout {
 
             $group.find("button").on("click", async () => {
                 const open = game.ionrift?.library?.openPatreonLibrary
-                    ?? game.ionrift?.connect?.openPatreonLibrary;
+                    ?? game.ionrift?.annex?.openPatreonLibrary;
                 if (!open) {
-                    ui.notifications?.warn?.("Ionrift Connect is required for the content Library.");
+                    ui.notifications?.warn?.("Ionrift Annex is required for the Patreon Library.");
                     return;
                 }
                 await open({ moduleId });
@@ -451,9 +451,9 @@ export class SettingsLayout {
             badge.addEventListener("click", async (e) => {
                 e.stopPropagation();
                 const open = game.ionrift?.library?.openPatreonLibrary
-                    ?? game.ionrift?.connect?.openPatreonLibrary;
+                    ?? game.ionrift?.annex?.openPatreonLibrary;
                 if (!open) {
-                    ui.notifications?.warn?.("Ionrift Connect is required for the content Library.");
+                    ui.notifications?.warn?.("Ionrift Annex is required for the Patreon Library.");
                     return;
                 }
                 await open({ moduleId: moduleId === "ionrift-library" ? undefined : moduleId });
@@ -570,7 +570,7 @@ export class SettingsLayout {
 
         if (!("isConnected" in overrides)) {
             try {
-                const cloud = game.ionrift?.library?.cloud ?? game.ionrift?.connect?.cloud;
+                const cloud = game.ionrift?.library?.cloud ?? game.ionrift?.annex?.cloud;
                 isConnected = cloud?.isConnected?.() ?? false;
                 if (isConnected) {
                     if (tier === null) tier = cloud.getTierClaim?.() ?? null;
@@ -738,14 +738,14 @@ export class SettingsLayout {
 
     /** @returns {Promise<void>} */
     static async #runPackAlertRefresh() {
-        const connect = game.ionrift?.connect;
-        if (!connect?.packRegistry?.checkForUpdates) return;
+        const annex = game.ionrift?.annex;
+        if (!annex?.packRegistry?.checkForUpdates) return;
 
-        await connect.packRegistry.checkForUpdates();
+        await annex.packRegistry.checkForUpdates();
 
-        const cloudConnected = connect.cloud?.isConnected?.() ?? false;
+        const cloudConnected = annex.cloud?.isConnected?.() ?? false;
         if (SettingsLayout.isOverlayPackUiActive() && cloudConnected) {
-            await connect.overlay?.checkAvailable?.();
+            await annex.overlay?.checkAvailable?.();
         }
 
         SettingsLayout._packAlertLastRefresh = Date.now();

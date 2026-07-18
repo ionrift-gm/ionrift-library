@@ -7,7 +7,7 @@
 
 import { PackManifestSchema } from "../../data/PackManifestSchema.js";
 import { Logger } from "../platform/Logger.js";
-import { getWorldSetting, setWorldSetting } from "../platform/connectOwnedSettings.js";
+import { getWorldSetting, setWorldSetting } from "../platform/annexOwnedSettings.js";
 
 const MODULE_LABEL = "JsonPackImporter";
 
