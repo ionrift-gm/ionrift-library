@@ -6,7 +6,7 @@ import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.
 import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
 import { SettingsLayout } from "./utils/SettingsLayout.js";
 import { Logger } from "./services/platform/Logger.js";
-import { CloudRelayService } from "./services/platform/CloudRelayService.js";
+import { reclaimOverlaySettings } from "./services/platform/overlaySettings.js";
 import { ConsoleCapture } from "./services/diagnostics/ConsoleCapture.js";
 import { PartyRoster } from "./services/party/PartyRoster.js";
 import { terrainRegistry } from "./services/terrain/TerrainRegistry.js";
@@ -169,6 +169,21 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "annexWorldSettingsReclaimed", {
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "annexClientSettingsReclaimed", {
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
     game.settings.register(MODULE_ID, "legacyCleanupForceMode", {
         scope: "client",
         config: false,
@@ -228,6 +243,8 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", async () => {
+    await reclaimOverlaySettings();
+
     RollRequestService.init();
 
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
@@ -276,12 +293,6 @@ Hooks.once("ready", async () => {
                     };
                 }
             });
-        }
-
-        if (!game.modules.get("ionrift-cloud")?.active) {
-            game.ionrift.cloud = {
-                downloadPack: (packId, version) => CloudRelayService.requestDownload(packId, version)
-            };
         }
 
         InstallHealthCheck.run().catch(e => Logger.warn("Library", "Install health check failed:", e));

@@ -19,12 +19,12 @@ import { WorldSchema } from "../data/WorldSchema.js";
 import { Logger } from "../services/platform/Logger.js";
 import { CloudRelayService } from "../services/platform/CloudRelayService.js";
 import { PlatformHelper } from "../services/platform/PlatformHelper.js";
-import { AnnexBridge } from "../services/platform/AnnexBridge.js";
 import {
     getWorldSetting,
     setWorldSetting
-} from "../services/platform/annexOwnedSettings.js";
+} from "../services/platform/overlaySettings.js";
 import { JsonPackService } from "../services/packs/JsonPackService.js";
+import { OverlayService } from "../services/packs/OverlayService.js";
 import { OverlayItemMaterialiser } from "../services/packs/OverlayItemMaterialiser.js";
 import { LegacyAssetSweeper } from "../services/packs/LegacyAssetSweeper.js";
 import { CompendiumConfigGuard } from "../services/packs/CompendiumConfigGuard.js";
@@ -107,11 +107,8 @@ export function createLibraryContext() {
             watchAnimation: watchDcAnimation,
             forceDcPulseTest
         },
-        importZipPack: (opts) => AnnexBridge.importZipPack(opts),
-        importZipFromFile: (file, opts) => AnnexBridge.importZipFromFile(file, opts),
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
         importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),
-        getZipTargetDir: (moduleId, assetType) => AnnexBridge.getZipTargetDir(moduleId, assetType),
         getInstalledPack: (packId) => {
             const packs = getWorldSetting("installedPacks") ?? {};
             return packs[packId] ?? null;
@@ -132,32 +129,16 @@ export function createLibraryContext() {
         cloud: CloudRelayService,
         bugReport: BugReportService,
         minting: ItemMintingService,
-        installModule: (moduleId, version) => AnnexBridge.installModule(moduleId, version),
-        _packUpdates: [],
-        _pendingOverlays: [],
-        downloadPackUpdate: (packId) => AnnexBridge.downloadPackUpdate(packId),
-        previewEADialog: (moduleId, overrides) => AnnexBridge.previewEADialog(moduleId, overrides),
-        previewPremiumDialog: (moduleId, overrides) => AnnexBridge.previewPremiumDialog(moduleId, overrides),
-        debugApplyRegistry: (registryData) => AnnexBridge.debugApplyRegistry(registryData),
         AbstractPackRegistryApp,
         platform: PlatformHelper,
         createLogger: (label) => Logger.createModuleProxy(label),
         party: PartyRoster,
         PartyRosterApp,
-        overlay: AnnexBridge.overlay,
+        overlay: OverlayService,
         materialiser: OverlayItemMaterialiser,
-        installOverlay: (overlayId) => AnnexBridge.installOverlay(overlayId),
-        installAllPending: () => AnnexBridge.installAllPending(),
-        installById: (overlayId, entry) => AnnexBridge.installById(overlayId, entry),
-        isOverlayDistributionActive: () => AnnexBridge.isOverlayDistributionActive(),
-        setOverlayActive: (overlayId, active, meta) => AnnexBridge.setOverlayActive(overlayId, active, meta),
-        uninstallOverlay: (overlayId, moduleId, sublayer) => AnnexBridge.uninstallOverlay(overlayId, moduleId, sublayer),
-        reinstallOverlay: (overlayId) => AnnexBridge.reinstallOverlay(overlayId),
-        getOverlayState: (overlayId, moduleId, sublayer) => AnnexBridge.getOverlayState(overlayId, moduleId, sublayer),
-        collectDestructiveWarnings: (payload) => AnnexBridge.collectDestructiveWarnings(payload),
-        confirmDestructiveAction: (options) => AnnexBridge.confirmDestructiveAction(options),
-        openPatreonLibrary: (options = {}) => AnnexBridge.openPatreonLibrary(options),
-        packNudge: AnnexBridge.packNudge,
+        isOverlayDistributionActive: () => OverlayService.isDistributionActive(),
+        setOverlayActive: (overlayId, active, meta) => OverlayService.setOverlayActive(overlayId, active, meta),
+        getOverlayState: (overlayId, moduleId, sublayer) => OverlayService.getOverlayState(overlayId, moduleId, sublayer),
         compendiumGuard: CompendiumConfigGuard,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),

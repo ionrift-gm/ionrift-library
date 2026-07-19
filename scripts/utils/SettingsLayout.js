@@ -37,33 +37,16 @@ export class SettingsLayout {
     /** @type {Promise<void>|null} */
     static _packAlertRefreshPromise = null;
 
-    /**
-     * Pack manager menus to hide when Patreon Library owns delivery.
-     * Covers modules that registered before overlay mode or bypassed registerPackButton.
-     */
+    /** Legacy in-app pack managers hidden under manual delivery. */
     static LEGACY_PACK_MENU_KEYS = [
         ["ionrift-respite", "contentPacks"],
         ["ionrift-resonance", "contentPacks"],
         ["ionrift-quartermaster", "contentPacks"]
     ];
 
-    /**
-     * Patreon Library owns pack install UI when overlay distribution is active.
-     * @returns {boolean}
-     */
+    /** Whether read-only overlay support is active. */
     static isOverlayPackUiActive() {
         return !!game?.ionrift?.library?.isOverlayDistributionActive?.();
-    }
-
-    /** Settings menu key shared by the library row and injected consumer shortcuts. */
-    static PATREON_LIBRARY_KEY = "patreonLibrary";
-
-    /**
-     * @param {string} moduleId
-     * @returns {string}
-     */
-    static patreonLibraryDataKey(moduleId) {
-        return `${moduleId}.${SettingsLayout.PATREON_LIBRARY_KEY}`;
     }
 
     /**
@@ -79,94 +62,13 @@ export class SettingsLayout {
         return requires.some(r => r?.id === "ionrift-library");
     }
 
-    /**
-     * Cached pack/overlay alert count for one module. No network calls.
-     * @param {string} moduleId
-     * @returns {{ count: number, lines: string[] }}
-     */
-    static getModulePackUpdateDetails(moduleId) {
-        const lib = game?.ionrift?.library;
-        if (!lib) return { count: 0, lines: [] };
-
-        if (SettingsLayout.isOverlayPackUiActive()) {
-            const pending = lib._pendingOverlays ?? [];
-            const modulePending = pending.filter(p => p.entry?.moduleId === moduleId);
-            const scope = moduleId === "ionrift-library" ? pending : modulePending;
-            const lines = scope.map(p => {
-                const label = p.overlayId ?? p.entry?.packLabel ?? "pack";
-                const action = p.isNew ? "install" : "update";
-                return `\u2022 ${label} (${action})`;
-            });
-            return { count: scope.length, lines };
-        }
-
-        const updates = lib._packUpdates ?? [];
-        const moduleUpdates = updates.filter(u =>
-            u.moduleId === moduleId || u.packId?.startsWith(moduleId.replace("ionrift-", ""))
-        );
-        const scope = moduleId === "ionrift-library" && moduleUpdates.length === 0
-            ? updates
-            : moduleUpdates;
-        const lines = scope.map(u =>
-            `\u2022 ${u.packId}  (v${u.installed?.version} to v${u.available?.latest})`
-        );
-        return { count: scope.length, lines };
+    /** @returns {{ count: number, lines: string[] }} */
+    static getModulePackUpdateDetails() {
+        return { count: 0, lines: [] };
     }
 
-    /**
-     * Injects an Open Library shortcut at the top of each library-dependent
-     * module settings tab when Patreon Library owns pack delivery.
-     *
-     * @param {jQuery|Element} html
-     */
-    static injectLibraryShortcuts(html) {
-        if (!SettingsLayout.isOverlayPackUiActive()) return;
-        if (!game.user?.isGM) return;
-
-        const $html = html?.jquery ? html : $(html);
-        if (!$html?.length) return;
-
-        for (const moduleId of SettingsLayout._registeredModules) {
-            if (moduleId === "ionrift-library") continue;
-            if (!SettingsLayout.dependsOnLibrary(moduleId)) continue;
-
-            const dataKey = SettingsLayout.patreonLibraryDataKey(moduleId);
-            if ($html.find(`button[data-key="${dataKey}"]`).length) continue;
-
-            const $container = SettingsLayout.#findModuleSettingsContainer($html, moduleId);
-            if (!$container?.length) continue;
-
-            const modTitle = game.modules.get(moduleId)?.title ?? moduleId;
-            const $group = $(`
-                <div class="form-group ionrift-library-shortcut" data-module-id="${moduleId}">
-                    <label>Patreon Library</label>
-                    <div class="form-fields">
-                        <button type="button" data-key="${dataKey}">
-                            <i class="fab fa-patreon" inert></i>
-                            <span>Open Library</span>
-                        </button>
-                    </div>
-                </div>
-            `);
-
-            $group.find("button").on("click", async () => {
-                const open = game.ionrift?.library?.openPatreonLibrary
-                    ?? game.ionrift?.annex?.openPatreonLibrary;
-                if (!open) {
-                    ui.notifications?.warn?.("Ionrift Annex is required for the Patreon Library.");
-                    return;
-                }
-                await open({ moduleId });
-            });
-
-            const $quickSetup = $container.find(`.ionrift-quick-setup[data-module="${moduleId}"]`);
-            if ($quickSetup.length) {
-                $quickSetup.before($group);
-            } else {
-                $container.prepend($group);
-            }
-        }
-    }
+    /** Manual delivery adds no settings shortcut. */
+    static injectLibraryShortcuts() {}
 
     /**
      * Module settings container for shortcut placement (matches ModuleConfigProfiles anchor).
@@ -331,11 +233,10 @@ export class SettingsLayout {
         if (!root?.querySelectorAll) return;
 
         const overlayUi = SettingsLayout.isOverlayPackUiActive();
-        const selector = overlayUi
-            ? `button[data-key$=".${SettingsLayout.PATREON_LIBRARY_KEY}"]`
-            : Array.from(SettingsLayout._packModules.entries())
-                .map(([moduleId, { key }]) => `button[data-key="${moduleId}.${key}"]`)
-                .join(", ");
+        if (overlayUi) return;
+        const selector = Array.from(SettingsLayout._packModules.entries())
+            .map(([moduleId, { key }]) => `button[data-key="${moduleId}.${key}"]`)
+            .join(", ");
 
         if (!selector) return;
 
@@ -350,7 +251,7 @@ export class SettingsLayout {
 
             const packLines = lines.join("\n");
             const tooltip = packLines
-                ? `${count} pack update${count === 1 ? "" : "s"} available:\n${packLines}\n\nOpen Patreon Library to update.`
+                ? `${count} pack update${count === 1 ? "" : "s"} available:\n${packLines}`
                 : `${count} pack update${count === 1 ? "" : "s"} available`;
 
             const badge = document.createElement("span");
@@ -377,89 +278,8 @@ export class SettingsLayout {
         }
     }
 
-    /**
-     * Injects a subtle info badge on the Patreon Connection button when there
-     * are early access modules the GM snoozed ("Later") that are still available.
-     *
-     * Reads game.ionrift.library._pendingEarlyAccess, set by PackRegistryService
-     * after each checkForUpdates() run. No network calls.
-     *
-     * @param {jQuery|Element} [html]
-     */
-    static injectEarlyAccessBadge(html) {
-        const allOffers = game?.ionrift?.library?._pendingEarlyAccess ?? [];
-        if (allOffers.length === 0) return;
-
-        const root = html instanceof Element ? html : (html ? html[0] : document);
-        if (!root?.querySelectorAll) return;
-
-        for (const btn of root.querySelectorAll(
-            `button[data-key$=".${SettingsLayout.PATREON_LIBRARY_KEY}"]`
-        )) {
-            const dataKey = btn.getAttribute("data-key") ?? "";
-            const moduleId = dataKey.split(".")[0];
-            if (!moduleId) continue;
-
-            const offers = moduleId === "ionrift-library"
-                ? allOffers
-                : allOffers.filter(o => o.moduleId === moduleId);
-            if (offers.length === 0) continue;
-
-            btn.querySelector(".ionrift-ea-badge")?.remove();
-
-            const lines = offers.map(o => {
-                const label = o.kind === "premium"
-                    ? `${o.moduleId} v${o.version} (${o.tier}+, premium)`
-                    : `${o.moduleId} v${o.version} (${o.tier}+)`;
-                return `\u2022 ${label}`;
-            }).join("\n");
-            const premiumCount = offers.filter(o => o.kind === "premium").length;
-            const eaCount = offers.length - premiumCount;
-            let tooltipHead = "";
-            if (premiumCount && eaCount) {
-                tooltipHead = `${premiumCount} premium and ${eaCount} early access offer${offers.length === 1 ? "" : "s"} available`;
-            } else if (premiumCount) {
-                tooltipHead = `${premiumCount} premium module offer${premiumCount === 1 ? "" : "s"} available`;
-            } else {
-                tooltipHead = `${offers.length} early access offer${offers.length === 1 ? "" : "s"} available`;
-            }
-            const tooltip = `${tooltipHead}:\n${lines}\n\nOpen Patreon Library to install`;
-
-            const badge = document.createElement("span");
-            badge.className = "ionrift-ea-badge";
-            badge.title = tooltip;
-            badge.style.cssText = [
-                "display: inline-flex",
-                "align-items: center",
-                "gap: 4px",
-                "margin-left: 6px",
-                "padding: 1px 6px",
-                "background: rgba(79, 255, 255, 0.12)",
-                "border: 1px solid rgba(79, 255, 255, 0.4)",
-                "border-radius: 10px",
-                "color: #4ff",
-                "font-size: 0.75em",
-                "font-weight: 600",
-                "line-height: 1.4",
-                "vertical-align: middle",
-                "cursor: pointer"
-            ].join(";");
-            badge.innerHTML = `<i class="fas fa-info-circle" style="font-size:0.85em"></i> ${offers.length} pending`;
-
-            btn.appendChild(badge);
-
-            badge.addEventListener("click", async (e) => {
-                e.stopPropagation();
-                const open = game.ionrift?.library?.openPatreonLibrary
-                    ?? game.ionrift?.annex?.openPatreonLibrary;
-                if (!open) {
-                    ui.notifications?.warn?.("Ionrift Annex is required for the Patreon Library.");
-                    return;
-                }
-                await open({ moduleId: moduleId === "ionrift-library" ? undefined : moduleId });
-            });
-        }
-    }
+    /** In-app early-access offers are retired. */
+    static injectEarlyAccessBadge() {}
 
     /**
      * Reorders footer and pack elements, then injects amber dividers.
@@ -529,138 +349,18 @@ export class SettingsLayout {
             $(`<div class="ionrift-settings-divider"></div>`).insertBefore($firstFooter);
         }
 
-        // Inject pack divider after the Patreon Library row or legacy pack button
+        // Inject the pack divider after a legacy pack button.
         let $packGroup = null;
         const packEntry = SettingsLayout._packModules.get(moduleId);
         if (packEntry) {
             $packGroup = $html.find(`button[data-key="${moduleId}.${packEntry.key}"]`).closest(".form-group");
-        }
-        if (!$packGroup?.length && SettingsLayout.isOverlayPackUiActive()) {
-            $packGroup = $html.find(`button[data-key="${SettingsLayout.patreonLibraryDataKey(moduleId)}"]`)
-                .closest(".form-group");
         }
         if ($packGroup?.length && !$packGroup.next(".ionrift-settings-divider").length) {
             $(`<div class="ionrift-settings-divider"></div>`).insertAfter($packGroup);
         }
     }
 
-    /**
-     * Dynamically updates the Patreon Connection row in settings to reflect
-     * current connection state: icon, button label, and hint text.
-     *
-     * Uses global document selectors by default — safe to call from any context
-     * (renderSettingsConfig hook or post-action refresh).
-     *
-     * @param {Object} [overrides]                Test overrides
-     * @param {Element} [overrides.root]           Root element to search within (default: document)
-     * @param {boolean} [overrides.isConnected]    Override connection state
-     * @param {string}  [overrides.tier]           Override tier label
-     * @param {Object}  [overrides.expiryStatus]   Override decoded expiry status
-     */
-    static injectPatreonStatus(overrides = {}) {
-        const root = overrides.root ?? document;
-        const buttons = root.querySelectorAll?.(
-            `button[data-key$=".${SettingsLayout.PATREON_LIBRARY_KEY}"]`
-        );
-        if (!buttons?.length) return;
-
-        let isConnected = overrides.isConnected ?? false;
-        let tier = overrides.tier ?? null;
-        let expiryStatus = overrides.expiryStatus ?? null;
-
-        if (!("isConnected" in overrides)) {
-            try {
-                const cloud = game.ionrift?.library?.cloud ?? game.ionrift?.annex?.cloud;
-                isConnected = cloud?.isConnected?.() ?? false;
-                if (isConnected) {
-                    if (tier === null) tier = cloud.getTierClaim?.() ?? null;
-                    if (!expiryStatus) expiryStatus = cloud.getExpiryStatus?.() ?? null;
-                }
-            } catch {
-                isConnected = false;
-            }
-        }
-
-        for (const btn of buttons) {
-            const dataKey = btn.getAttribute("data-key") ?? "";
-            const moduleId = dataKey.split(".")[0];
-            const isLibraryHub = moduleId === "ionrift-library";
-            const modTitle = game.modules.get(moduleId)?.title ?? moduleId;
-
-            const group = btn.closest(".form-group");
-            if (!group) continue;
-            const label = group.querySelector("label");
-            const hint = group.querySelector(".notes") || group.querySelector("p.notes");
-
-            label?.querySelector(".ionrift-patreon-status")?.remove();
-
-            const btnIcon = btn.querySelector("i");
-            const btnSpan = btn.querySelector("span");
-
-            if (isConnected) {
-                const tierLabel = tier || "Free";
-                const expired = expiryStatus?.hasExpiry && expiryStatus.expired;
-                const soon = expiryStatus?.hasExpiry && expiryStatus.expiringSoon;
-
-                if (label) {
-                    if (expired) {
-                        label.insertAdjacentHTML("beforeend",
-                            `<i class="fas fa-exclamation-triangle ionrift-patreon-status" style="color: #fca5a5; margin-left: 8px;" title="Connection expired"></i>`);
-                    } else if (soon) {
-                        label.insertAdjacentHTML("beforeend",
-                            `<i class="fas fa-clock ionrift-patreon-status" style="color: #fbbf24; margin-left: 8px;" title="Connection expiring soon"></i>`);
-                    } else {
-                        label.insertAdjacentHTML("beforeend",
-                            `<i class="fas fa-check-circle ionrift-patreon-status" style="color: #4ff; margin-left: 8px;" title="Connected (${tierLabel})"></i>`);
-                    }
-                }
-
-                if (btnIcon) btnIcon.className = "fab fa-patreon";
-                if (btnSpan) btnSpan.textContent = expired ? "Reconnect Patreon" : "Open Library";
-
-                if (hint) {
-                    if (!isLibraryHub) {
-                        hint.textContent = "";
-                        hint.hidden = true;
-                    } else if (expired) {
-                        hint.hidden = false;
-                        hint.innerHTML = `Connection expired. <strong style="color: #fca5a5;">Reconnect</strong> in the Patreon Library to resume pack updates.`;
-                    } else if (soon) {
-                        hint.hidden = false;
-                        const days = Math.max(1, Math.ceil((expiryStatus.secondsRemaining ?? 0) / 86400));
-                        const noun = days === 1 ? "day" : "days";
-                        hint.innerHTML = `Connected as <strong style="color: #fbbf24;">${tierLabel}</strong>. Expires in ${days} ${noun}; reconnect to avoid an interruption.`;
-                    } else {
-                        hint.hidden = false;
-                        hint.innerHTML = `Connected as <strong style="color: #4ff;">${tierLabel}</strong>. Manage early access, content packs, and connection.`;
-                    }
-                }
-            } else {
-                if (label) {
-                    label.insertAdjacentHTML("beforeend",
-                        `<i class="fas fa-link ionrift-patreon-status" style="color: rgba(255,255,255,0.5); margin-left: 8px;" title="Not connected"></i>`);
-                }
-
-                if (btnIcon) btnIcon.className = "fab fa-patreon";
-                if (btnSpan) btnSpan.textContent = "Connect Patreon";
-
-                if (hint) {
-                    if (!isLibraryHub) {
-                        hint.textContent = "";
-                        hint.hidden = true;
-                    } else {
-                        hint.hidden = false;
-                        hint.textContent = "Link your Patreon account to unlock early access modules and bonus content packs.";
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Hides per-module pack manager buttons when Patreon Library owns delivery.
-     * @param {jQuery|Element} html
-     */
+    /** Hides retired in-app pack managers under manual delivery. */
     static suppressLegacyPackButtons(html) {
         if (!SettingsLayout.isOverlayPackUiActive()) return;
 
@@ -687,15 +387,10 @@ export class SettingsLayout {
         }
     }
 
-    /**
-     * Re-apply Patreon status icons and pack/EA badges after alert data refreshes.
-     * @param {jQuery|Element} [html]
-     */
+    /** Re-apply local pack badges after cached state refreshes. */
     static refreshPackAlertUI(html) {
         const root = html instanceof Element ? html : (html ? html[0] : document);
-        SettingsLayout.injectPatreonStatus({ root });
         SettingsLayout.injectPackUpdateBadge(html ?? root);
-        SettingsLayout.injectEarlyAccessBadge(html ?? root);
     }
 
     /**
@@ -738,45 +433,9 @@ export class SettingsLayout {
 
     /** @returns {Promise<void>} */
     static async #runPackAlertRefresh() {
-        const annex = game.ionrift?.annex;
-        if (!annex?.packRegistry?.checkForUpdates) return;
-
-        await annex.packRegistry.checkForUpdates();
-
-        const cloudConnected = annex.cloud?.isConnected?.() ?? false;
-        if (SettingsLayout.isOverlayPackUiActive() && cloudConnected) {
-            await annex.overlay?.checkAvailable?.();
-        }
-
         SettingsLayout._packAlertLastRefresh = Date.now();
     }
 
-    /**
-     * When a module has Patreon Library + Quick Setup, keep order:
-     * library row, divider, profile panel.
-     *
-     * @param {jQuery|Element} html
-     * @param {string} moduleId
-     */
-    static alignLibraryPackDivider(html, moduleId) {
-        const root = html?.jquery ? html[0] : (html instanceof Element ? html : html?.[0]);
-        if (!root?.querySelector) return;
-
-        const library = root.querySelector(`.ionrift-library-shortcut[data-module-id="${moduleId}"]`);
-        const quick = root.querySelector(`.ionrift-quick-setup[data-module="${moduleId}"]`);
-        if (!library || !quick) return;
-
-        let divider = library.nextElementSibling;
-        if (!divider?.classList?.contains("ionrift-settings-divider")) {
-            divider = document.createElement("div");
-            divider.className = "ionrift-settings-divider";
-            library.insertAdjacentElement("afterend", divider);
-        }
-
-        if (divider.nextElementSibling !== quick) {
-            divider.insertAdjacentElement("afterend", quick);
-        }
-    }
 }
 
 Hooks.on("renderSettingsConfig", (app, html, data) => {
@@ -791,9 +450,6 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
 
     queueMicrotask(() => {
         game.ionrift?.library?.ModuleConfigProfiles?.enhanceAll?.(html);
-        for (const moduleId of SettingsLayout._registeredModules) {
-            SettingsLayout.alignLibraryPackDivider(html, moduleId);
-        }
         SettingsLayout.ensurePackAlertsFresh(html).catch(() => {});
     });
 });

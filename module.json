@@ -3,7 +3,7 @@
     "title":  "Ionrift Library",
     "description":  "Core dependency for the Ionrift module suite. Shared terrain registry, system adapters for DnD5e/PF2e/Daggerheart, creature classification, and a monster indexing engine used by Ionrift Resonance, Respite, and other modules.",
     "readme":  "https://raw.githubusercontent.com/ionrift-gm/ionrift-library/main/README.md",
-    "version": "2.5.11",
+    "version": "2.5.12",
     "bugs":  "https://discord.gg/vFGXf7Fncj",
     "compatibility":  {
                           "minimum":  "12",
@@ -31,7 +31,7 @@
                         "url":  "https://patreon.com/ionrift"
                     }
                 ],
-    "download":  "https://github.com/ionrift-gm/ionrift-library/releases/download/v2.5.10/module.zip",
+    "download":  "https://github.com/ionrift-gm/ionrift-library/releases/download/v2.5.12/module.zip",
     "license":  "LICENSE",
     "socket":  true
 }

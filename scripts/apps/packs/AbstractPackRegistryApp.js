@@ -1,16 +1,16 @@
 /**
  * AbstractPackRegistryApp
  *
- * Kernel-level ApplicationV2 base class for pack management UIs.
+ * Kernel-level ApplicationV2 base class for local data pack management UIs.
  * Provides shared infrastructure: tab bar, pack cards, summary stats,
- * import delegation, cloud update banner, and save flow.
+ * import delegation, and save flow.
  *
  * Consumer modules (Respite, Quartermaster) extend this class and override
  * hook methods for domain-specific scanning, rendering, and import behavior.
  *
  * @abstract
  */
-import { getWorldSetting } from "../../services/platform/annexOwnedSettings.js";
+import { getWorldSetting } from "../../services/platform/overlaySettings.js";
 
 export class AbstractPackRegistryApp extends foundry.applications.api.ApplicationV2 {
 
@@ -23,39 +23,15 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
         const packs = packData.packs ?? [];
         const installedPacks = getWorldSetting("installedPacks") ?? {};
 
-        // Cloud updates from PackRegistryService
-        const rawUpdates = game?.ionrift?.library?._packUpdates ?? [];
-        const isConnected = !!game?.ionrift?.library?.cloud?.isConnected?.();
-        const userTier = game?.ionrift?.library?.cloud?.getTierClaim?.() ?? null;
-        const TIER_ORDER = ["Free", "Initiate", "Acolyte", "Weaver", "Artificer"];
-        const userRank = userTier ? TIER_ORDER.indexOf(userTier) : -1;
-
-        const moduleId = this._getModuleId();
-        const pendingUpdates = rawUpdates
-            .filter(u => this._isUpdateRelevant(u))
-            .map(u => {
-                const requiredTier = u.available?.tier ?? "Free";
-                const reqRank = TIER_ORDER.indexOf(requiredTier);
-                const canUpdate = isConnected && userRank >= reqRank;
-                return {
-                    ...u,
-                    requiredTier,
-                    canUpdate,
-                    isConnected,
-                    patreonUrl: u.available?.patreonUrl ?? null
-                };
-            });
-
         const totalEnabled = packs.filter(p => p.enabled).reduce((s, p) => s + p.totalItems, 0);
         const totalAll = packs.reduce((s, p) => s + p.totalItems, 0);
-        const updateCount = pendingUpdates.length;
 
         return {
             packs,
             totalEnabled,
             totalAll,
-            updateCount,
-            pendingUpdates,
+            updateCount: 0,
+            pendingUpdates: [],
             installedPacks,
             ...packData.extra
         };
@@ -107,23 +83,6 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
                 tabBtn.classList.add("active");
                 el.querySelector(`.pack-tab-panel[data-panel="${tabBtn.dataset.tab}"]`)?.classList.add("active");
                 this._activeTab = tabBtn.dataset.tab;
-            });
-        });
-
-        // ── Cloud update buttons ──
-        el.querySelectorAll(".pack-update-now-btn").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                if (btn.disabled) return;
-                const packId = btn.dataset.packId;
-                btn.disabled = true;
-                btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Updating\u2026`;
-                const result = await game.ionrift?.library?.downloadPackUpdate?.(packId);
-                if (result) {
-                    this.render({ force: true });
-                } else {
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fas fa-download"></i> Update Now`;
-                }
             });
         });
 
@@ -203,56 +162,9 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
             </div>`;
     }
 
-    /**
-     * Renders the cloud updates banner.
-     * @param {Array} pendingUpdates
-     * @returns {string} HTML (empty string if no updates)
-     */
-    _renderUpdateBanner(pendingUpdates) {
-        if (!pendingUpdates?.length) return "";
-
-        let html = `<div class="pack-updates-banner">
-            <div class="pack-updates-header">
-                <i class="fas fa-arrow-circle-up"></i> Updates Available
-            </div>`;
-
-        for (const update of pendingUpdates) {
-            const label = update.packId.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()).replace(/ Data$/, "");
-
-            let actionHtml;
-            if (update.canUpdate) {
-                actionHtml = `
-                    <button type="button" class="pack-update-now-btn" data-pack-id="${update.packId}"
-                        title="Download and install v${update.available.latest} now">
-                        <i class="fas fa-download"></i> Update Now
-                    </button>`;
-            } else if (!update.isConnected) {
-                actionHtml = `
-                    <span class="pack-update-tier-label" title="Connect your Patreon account to access cloud updates">
-                        <i class="fas fa-link"></i> Connect Patreon to update
-                    </span>`;
-            } else {
-                const patreonLink = update.patreonUrl
-                    ? `<a href="${update.patreonUrl}" target="_blank" class="pack-update-tier-link" title="View on Patreon">
-                           <i class="fas fa-external-link-alt"></i> Requires ${update.requiredTier}
-                       </a>`
-                    : `<span class="pack-update-tier-label">
-                           <i class="fas fa-lock"></i> Requires ${update.requiredTier}
-                       </span>`;
-                actionHtml = patreonLink;
-            }
-
-            html += `
-                <div class="pack-update-item" data-update-pack="${update.packId}">
-                    <div class="pack-update-info">
-                        <span class="pack-update-name">${label}</span>
-                        <span class="pack-update-version">v${update.installed.version} to v${update.available.latest}</span>
-                    </div>
-                    ${actionHtml}
-                </div>`;
-        }
-        html += `</div>`;
-        return html;
+    /** @returns {string} */
+    _renderUpdateBanner() {
+        return "";
     }
 
     /**
@@ -368,13 +280,4 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
         throw new Error("AbstractPackRegistryApp._renderTabPanel() must be overridden.");
     }
 
-    /**
-     * Determines whether a cloud update entry is relevant to this pack registry.
-     * Override to filter updates by module or pack type.
-     * @param {Object} update
-     * @returns {boolean}
-     */
-    _isUpdateRelevant(_update) {
-        return true;
-    }
 }
