@@ -1,50 +1,41 @@
-/**
- * Listed-Kernel facade for the Patreon / cloud download broker.
- * Real implementation lives in ionrift-annex (`game.ionrift.annex.cloud`).
- * Without Annex, broker calls soft-degrade (no OAuth, no cloud download).
- */
-
-function broker() {
-    return game.ionrift?.annex?.cloud ?? null;
-}
+/** Retired cloud-pack facade kept as a compatibility boundary. */
 
 export class CloudRelayService {
 
     static get API_URL() {
-        return broker()?.API_URL ?? "https://api.ionrift.cloud";
+        return "https://api.ionrift.cloud";
     }
 
     static get CLIENT_ID() {
-        return broker()?.CLIENT_ID ?? "";
+        return "";
     }
 
     static get EXPIRY_WARN_WINDOW_MS() {
-        return broker()?.EXPIRY_WARN_WINDOW_MS ?? (7 * 24 * 60 * 60 * 1000);
+        return 7 * 24 * 60 * 60 * 1000;
     }
 
     static get EXPIRED_COPY() {
-        return broker()?.EXPIRED_COPY
-            ?? "Your Patreon connection has expired. Install or enable Ionrift Annex, then reconnect.";
+        return "In-app Patreon connections are retired.";
     }
 
     static getSigil() {
-        return broker()?.getSigil?.() ?? "";
+        return "";
     }
 
     static isConnected() {
-        return broker()?.isConnected?.() ?? false;
+        return false;
     }
 
     static getSigilClaims() {
-        return broker()?.getSigilClaims?.() ?? {};
+        return {};
     }
 
     static getTierClaim() {
-        return broker()?.getTierClaim?.() ?? null;
+        return null;
     }
 
     static getExpiryStatus() {
-        return broker()?.getExpiryStatus?.() ?? {
+        return {
             hasExpiry: false,
             expiresAt: null,
             secondsRemaining: null,
@@ -54,57 +45,40 @@ export class CloudRelayService {
     }
 
     static isAuthenticated() {
-        return broker()?.isAuthenticated?.() ?? false;
+        return false;
     }
 
     static async connect() {
-        const b = broker();
-        if (!b) {
-            ui.notifications?.warn?.("Ionrift Annex is required to link Patreon.");
-            return;
-        }
-        return b.connect();
+        ui.notifications?.warn?.("In-app Patreon connections are retired. Use the pack links on Patreon.");
     }
 
     static async disconnect() {
-        const b = broker();
-        if (!b) return;
-        return b.disconnect();
+        return;
     }
 
     static async requestDownload(packId, version, options = {}) {
-        const b = broker();
-        if (!b) {
-            const msg = "Ionrift Annex is required for cloud downloads.";
-            if (!options.silent) ui.notifications?.warn?.(msg);
-            return { status: 503, error: msg };
-        }
-        return b.requestDownload(packId, version, options);
+        const message = "In-app pack downloads are retired. Use the pack links on Patreon.";
+        if (!options.silent) ui.notifications?.warn?.(message);
+        return { status: 410, error: message, packId, version };
     }
 
     static async initSupportReport(payload) {
-        const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
-        return b.initSupportReport(payload);
+        return { ok: false, error: "Connected support reports are unavailable.", payload };
     }
 
     static async uploadSupportReport(reportId, reportJson) {
-        const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
-        return b.uploadSupportReport(reportId, reportJson);
+        return { ok: false, error: "Connected support reports are unavailable.", reportId, reportJson };
     }
 
     static async completeSupportReport(reportId) {
-        const b = broker();
-        if (!b) return { ok: false, error: "Ionrift Annex is required to submit reports." };
-        return b.completeSupportReport(reportId);
+        return { ok: false, error: "Connected support reports are unavailable.", reportId };
     }
 
     static warnIfExpiringSoon(opts) {
-        return broker()?.warnIfExpiringSoon?.(opts) ?? { shown: "none", snoozed: false };
+        return { shown: "none", snoozed: false, opts };
     }
 
     static clearExpirySnooze() {
-        return broker()?.clearExpirySnooze?.();
+        return;
     }
 }

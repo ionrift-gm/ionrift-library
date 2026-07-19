@@ -9,6 +9,12 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.12] - 2026-07-19
+
+### Changed
+- Content packs now load from manually unzipped overlay folders. Pack downloads and Patreon connection controls are no longer part of Library.
+- Manually placed overlays are active by default unless a world has explicitly disabled them.
+
 ## [2.5.11] - 2026-07-19
 
 ### Changed

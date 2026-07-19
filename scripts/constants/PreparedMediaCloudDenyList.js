@@ -1,15 +1,12 @@
 /**
- * Cloud-install and Annex-sideload policy for prepared-media packs
- * (Foundry AI policy Option A + 2026-07-18 instructions-only lock).
+ * Historical prepared-media deny list and manual download links.
  *
- * Decision lock: Annex does not one-click Install OR Import .zip prepared AI
- * media. GMs download the zip and unzip into ionrift-data/overlays/...
- * themselves. See
- * FOUNDRY_AI_POLICY_DECISION_2026-07-18_ANNEX_STRICT_MANUAL_PREPARED_MEDIA.md.
+ * All packs now use browser download and manual unzip. The deny list remains
+ * for compatibility with older clients during the transition.
  *
  * Source of truth (preferred):
  *   - registry.json / PACK_CATALOG field `cloudInstall: false`
- *   - middleware `/packs/download` refuses those configs
+ *   - middleware `/packs/download` is retired
  *
  * Fallback deny-list: hard IDs for Library builds that see a stale registry
  * before Pages/CDN catch up. Prefer shrinking this list over growing it.
@@ -52,8 +49,7 @@ export function isPreparedMediaCloudDenied(packId, entry = null) {
 }
 
 /**
- * True when Annex must not extract this pack from a local zip either.
- * Covers deny-list IDs, registry `cloudInstall: false`, and preparedMedia.
+ * True when an older sideload client must refuse this pack.
  *
  * @param {string} packId
  * @param {{ cloudInstall?: boolean, preparedMedia?: boolean }|null} [entryOrManifest]

@@ -184,11 +184,11 @@ export class BugReportApp extends FormApplication {
         if (!BugReportService.canSubmit()) {
             this._setStatus(
                 "error",
-                "Not connected",
-                "Connect Patreon in the Patreon Library row (free tier is fine), or copy the report for Discord."
+                "Direct reports unavailable",
+                "Copy the report and paste it in Discord."
             );
             ui.notifications.warn(
-                "Connect Patreon in Ionrift Library (free tier is fine), or copy the report and paste it in Discord.",
+                "Copy the report and paste it in Discord.",
                 { permanent: true }
             );
             return;

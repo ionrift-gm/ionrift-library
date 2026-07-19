@@ -1,7 +1,7 @@
 /**
  * OverlayItemMaterialiser (shared)
  *
- * Reads raw item JSONs delivered by the Patreon Library overlay system and
+ * Reads raw item JSONs from manually installed content overlays and
  * materialises them into world compendiums at runtime, so a consuming module
  * can find overlay-delivered items by id. This is the shared Kernel engine;
  * each module supplies a small config object for its naming, folder placement,
@@ -48,9 +48,9 @@ const LIBRARY_ID = "ionrift-library";
 const STATE_KEY = "materialisedOverlayPacks";
 const FOLDERS_FILE = "_folders.json";
 
-/** Overlay disk IO lives in Connect; soft-degrade when absent. */
+/** Read-only overlay disk API. */
 function getOverlay() {
-    return game.ionrift?.annex?.overlay ?? null;
+    return game.ionrift?.library?.overlay ?? null;
 }
 
 export class OverlayItemMaterialiser {
