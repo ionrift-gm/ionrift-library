@@ -9,6 +9,12 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.11] - 2026-07-19
+
+### Changed
+- Patreon Library controls move to Ionrift Annex. Library without Annex no longer opens pack download or connection UI.
+- Art and sound packs stay offline: unzip into the overlay folder on the pack page, then reload. Listed Library does not Install them.
+
 ## [2.5.10] - 2026-07-14
 
 ### Changed
