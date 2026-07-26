@@ -108,7 +108,7 @@ export class SettingsLayout {
         game.settings.registerMenu(moduleId, "setupWizard", {
             name:       options.name  || "Attunement Protocol",
             label:      options.label || "Begin Attunement",
-            hint:       options.hint  || "First-time setup.",
+            hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-broadcast-tower",
             type:       setupApp,
             restricted: true
@@ -138,7 +138,7 @@ export class SettingsLayout {
         game.settings.registerMenu(moduleId, key, {
             name:       options.name  || "Content Packs",
             label:      options.label || "Manage Packs",
-            hint:       options.hint  || "Manage content packs for this module.",
+            hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-box-open",
             type:       appClass,
             restricted: true
@@ -173,7 +173,7 @@ export class SettingsLayout {
             game.settings.registerMenu(moduleId, "supportLink", {
                 name: "Get Support",
                 label: "Join Discord",
-                hint: "Bug reports, questions, and feature requests.",
+                hint: "",
                 icon: "fab fa-discord",
                 type: class extends FormApplication {
                     render() { window.open(DISCORD_INVITE, "_blank"); return this; }
@@ -186,7 +186,7 @@ export class SettingsLayout {
         game.settings.registerMenu(moduleId, "bugReportMenu", {
             name: "Bug Report",
             label: "Submit Report",
-            hint: "Copy or send a scrubbed diagnostic bundle. You get a reference number to cite in Discord.",
+            hint: "",
             icon: "fas fa-bug",
             type: BugReportApp.forModule(moduleId),
             restricted: true,
@@ -197,7 +197,7 @@ export class SettingsLayout {
             game.settings.registerMenu(moduleId, "diagnosticMenu", {
                 name: "System Diagnostics",
                 label: "Run Diagnostics",
-                hint: "Check the health of all Ionrift modules.",
+                hint: "",
                 icon: "fas fa-heartbeat",
                 type: diagnostics,
                 restricted: true
@@ -209,7 +209,7 @@ export class SettingsLayout {
             game.settings.registerMenu(moduleId, "wikiLink", {
                 name: "Wiki / Guides",
                 label: "Open Wiki",
-                hint: "Setup guides, sound scoping, and troubleshooting.",
+                hint: "",
                 icon: "fas fa-book",
                 type: class extends FormApplication {
                     render() { window.open(wiki, "_blank"); return this; }

@@ -221,7 +221,7 @@ Hooks.once("init", () => {
     game.settings.registerMenu(MODULE_ID, "validatorMenu", {
         name: "Logic Inspector",
         label: "Inspect Logic",
-        hint: "Debug: Inspect how creatures are classified.",
+        hint: "",
         icon: "fas fa-code-branch",
         type: ClassifierValidatorApp,
         restricted: true
