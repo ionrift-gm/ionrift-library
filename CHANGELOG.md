@@ -9,6 +9,11 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.13] - 2026-07-26
+
+### Changed
+- Cleared redundant settings footer and header hint text shared across modules.
+
 ## [2.5.12] - 2026-07-19
 
 ### Changed
