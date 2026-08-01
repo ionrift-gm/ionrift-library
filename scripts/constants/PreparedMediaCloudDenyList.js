@@ -10,6 +10,8 @@
  *
  * Fallback deny-list: hard IDs for Library builds that see a stale registry
  * before Pages/CDN catch up. Prefer shrinking this list over growing it.
+ * Do not add every new generative companion here; registry cloudInstall:false
+ * and preparedMedia already gate Annex / sideload.
  *
  * Already-local overlays remain readable. Align with
  * FOUNDRY_AI_POLICY_REMEDIATION.md §2a.
@@ -20,8 +22,6 @@ export const PREPARED_MEDIA_CLOUD_DENY_IDS = Object.freeze(new Set([
     "respite-core-overlay",
     "respite-cooking-art-overlay",
     "resonance-core-overlay",
-    "respite-frost-stone-overlay",
-    "respite-bone-dust-overlay",
     "respite-art-core",
     "ionrift-soundpack-core"
 ]));
@@ -32,8 +32,6 @@ export const PREPARED_MEDIA_OFFLINE_URLS = Object.freeze({
     "respite-art-core": "https://www.patreon.com/posts/154985310",
     "resonance-core-overlay": "https://www.patreon.com/posts/155880618",
     "ionrift-soundpack-core": "https://www.patreon.com/posts/155880618",
-    "respite-frost-stone-overlay": "https://www.patreon.com/collection/2079931",
-    "respite-bone-dust-overlay": "https://www.patreon.com/collection/2079931",
     "respite-cooking-art-overlay":
         "https://api.ionrift.cloud/packs/public/respite-cooking-art-overlay/latest"
 });
