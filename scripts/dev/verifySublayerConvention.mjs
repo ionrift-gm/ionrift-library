@@ -37,7 +37,15 @@ const ALLOWED_LEGACY_FREE_LOCK = new Set([
 
 const ALLOWED_PACK_SUBLAYERS = new Set([
     "wanderers",
-    "frost-stone"
+    "frost-stone",
+    "frost-stone-art",
+    "bone-dust",
+    "bone-dust-art",
+    "core-art",
+    "cooking",
+    "cooking-art",
+    "craft-professions",
+    "craft-professions-art"
 ]);
 
 const failures = [];
