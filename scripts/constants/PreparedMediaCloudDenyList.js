@@ -19,7 +19,7 @@
 
 /** @type {ReadonlySet<string>} */
 export const PREPARED_MEDIA_CLOUD_DENY_IDS = Object.freeze(new Set([
-    "respite-core-overlay",
+    "respite-core-art-overlay",
     "respite-cooking-art-overlay",
     "resonance-core-overlay",
     "respite-art-core",
@@ -28,7 +28,7 @@ export const PREPARED_MEDIA_CLOUD_DENY_IDS = Object.freeze(new Set([
 
 /** Public Patreon / download pages for offline packs (browser only). */
 export const PREPARED_MEDIA_OFFLINE_URLS = Object.freeze({
-    "respite-core-overlay": "https://www.patreon.com/posts/154985310",
+    "respite-core-art-overlay": "https://www.patreon.com/posts/154985310",
     "respite-art-core": "https://www.patreon.com/posts/154985310",
     "resonance-core-overlay": "https://www.patreon.com/posts/155880618",
     "ionrift-soundpack-core": "https://www.patreon.com/posts/155880618",
