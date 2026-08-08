@@ -1,4 +1,5 @@
 
+import { localize, format } from "../../utils/I18n.js";
 import { AbstractWelcomeApp } from "../packs/AbstractWelcomeApp.js";
 import { getClassifierData } from "../../data/classifierData.js";
 import { Logger } from "../../services/platform/Logger.js";
@@ -10,7 +11,7 @@ import { classifyCreature } from "../../utils/creatureClassifier.js";
  */
 export class CreatureIndexSetupApp extends AbstractWelcomeApp {
     constructor(options = {}) {
-        super("Attunement Protocol", "indexSetupVersion", game.modules.get("ionrift-library").version);
+        super(localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.SetupTitle"), "indexSetupVersion", game.modules.get("ionrift-library").version);
         this.indexData = {
             dnd5e: {}, // Manual overrides or extra monsters
             packs: [] // List of packs to auto-scan on load
@@ -24,7 +25,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
             width: 600,
             classes: ["ionrift", "ionrift-window", "welcome-window"],
             moduleId: "ionrift-library",
-            title: "Attunement Protocol"
+            title: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.SetupTitle")
         });
     }
 
@@ -32,25 +33,25 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         return [
             {
                 id: "import_core",
-                title: "Ingest Core Data",
+                title: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepCoreTitle"),
                 icon: "fas fa-book-open",
-                description: "Ingest standard creature definitions from the SRD.",
-                actionLabel: "Ingest SRD",
+                description: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepCoreDesc"),
+                actionLabel: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepCoreAction"),
                 condition: () => game.system.id === "dnd5e"
             },
             {
                 id: "scan_packs",
-                title: "Scan Expansion Modules",
+                title: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepPacksTitle"),
                 icon: "fas fa-satellite-dish",
-                description: "Scan installed compendiums for compatible entity definitions. This enables the classifier to analyze this content.",
-                actionLabel: "Index Selected"
+                description: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepPacksDesc"),
+                actionLabel: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepPacksAction")
             },
             {
                 id: "system_check",
-                title: "Integrity Verification",
+                title: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepSystemTitle"),
                 icon: "fas fa-microchip",
-                description: "Verify classifier logic and database integrity.",
-                actionLabel: "Run Diagnostics",
+                description: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepSystemDesc"),
+                actionLabel: localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.StepSystemAction"),
                 isFinal: true
             }
         ];
@@ -111,7 +112,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
     async _importSRD() {
         const pack = game.packs.get("dnd5e.monsters");
         if (!pack) {
-            ui.notifications.warn("Ionrift | D&D 5e Monsters pack not found.");
+            ui.notifications.warn(localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.ErrorNoPack"));
             return;
         }
 
@@ -122,7 +123,7 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
         count = index.size;
 
         Logger.log("Library", `Scanned ${count} SRD monsters.`);
-        ui.notifications.info(`Imported ${count} standard creature definitions.`);
+        ui.notifications.info(format("IONRIFT.LIBRARY.APPS.CREATURESETUP.ImportedDefinitions", { count }));
     }
 
     async _scanPacks() {
@@ -136,21 +137,22 @@ export class CreatureIndexSetupApp extends AbstractWelcomeApp {
             .map(k => k.replace("pack_", ""));
 
         if (selectedPackIds.length === 0) {
-            ui.notifications.warn("Ionrift | No packs selected. Skipping index.");
+            ui.notifications.warn(localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.ErrorNoSelectedPacks"));
             return;
         }
 
         Logger.log("Library", `Indexing packs: ${selectedPackIds.join(", ")}`);
 
         // Simulate Indexing
-        ui.notifications.info(`Indexing ${selectedPackIds.length} packs...`);
+        ui.notifications.info(format("IONRIFT.LIBRARY.APPS.CREATURESETUP.IndexingPacks", { count: selectedPackIds.length }));
         await new Promise(resolve => setTimeout(resolve, 500 * selectedPackIds.length));
         Logger.log("Library", "Pack Indexing Complete.");
     }
 
     async _runSystemCheck() {
         const container = this.element.find("#system-check-results");
-        container.html(`<div class="ionrift-loader"><i class="fas fa-spinner fa-spin"></i> Running diagnostics...</div>`);
+        const diagText = localize("IONRIFT.LIBRARY.APPS.CREATURESETUP.RunningDiagnostics");
+        container.html(`<div class="ionrift-loader"><i class="fas fa-spinner fa-spin"></i> ${diagText}</div>`);
 
         // Small delay for UX
         await new Promise(resolve => setTimeout(resolve, 800));

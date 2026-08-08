@@ -106,8 +106,8 @@ export class SettingsLayout {
      */
     static registerHeader(moduleId, setupApp, options = {}) {
         game.settings.registerMenu(moduleId, "setupWizard", {
-            name:       options.name  || "Attunement Protocol",
-            label:      options.label || "Begin Attunement",
+            name:       options.name  || "IONRIFT.LIBRARY.SETTINGS.AttunementName",
+            label:      options.label || "IONRIFT.LIBRARY.SETTINGS.AttunementLabel",
             hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-broadcast-tower",
             type:       setupApp,
@@ -136,8 +136,8 @@ export class SettingsLayout {
         const key = options.key || "contentPacks";
 
         game.settings.registerMenu(moduleId, key, {
-            name:       options.name  || "Content Packs",
-            label:      options.label || "Manage Packs",
+            name:       options.name  || "IONRIFT.LIBRARY.SETTINGS.ContentPacksName",
+            label:      options.label || "IONRIFT.LIBRARY.SETTINGS.ContentPacksLabel",
             hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-box-open",
             type:       appClass,
@@ -171,8 +171,8 @@ export class SettingsLayout {
         // Discord
         if (discord) {
             game.settings.registerMenu(moduleId, "supportLink", {
-                name: "Get Support",
-                label: "Join Discord",
+                name: "IONRIFT.LIBRARY.SETTINGS.SupportName",
+                label: "IONRIFT.LIBRARY.SETTINGS.SupportLabel",
                 hint: "",
                 icon: "fab fa-discord",
                 type: class extends FormApplication {
@@ -184,8 +184,8 @@ export class SettingsLayout {
 
         // Bug report (all modules; context scoped per moduleId)
         game.settings.registerMenu(moduleId, "bugReportMenu", {
-            name: "Bug Report",
-            label: "Submit Report",
+            name: "IONRIFT.LIBRARY.SETTINGS.BugReportName",
+            label: "IONRIFT.LIBRARY.SETTINGS.BugReportLabel",
             hint: "",
             icon: "fas fa-bug",
             type: BugReportApp.forModule(moduleId),
@@ -195,8 +195,8 @@ export class SettingsLayout {
         // Diagnostics (library only)
         if (diagnostics) {
             game.settings.registerMenu(moduleId, "diagnosticMenu", {
-                name: "System Diagnostics",
-                label: "Run Diagnostics",
+                name: "IONRIFT.LIBRARY.SETTINGS.DiagnosticsName",
+                label: "IONRIFT.LIBRARY.SETTINGS.DiagnosticsLabel",
                 hint: "",
                 icon: "fas fa-heartbeat",
                 type: diagnostics,
@@ -207,8 +207,8 @@ export class SettingsLayout {
         // Wiki / Guides
         if (wiki) {
             game.settings.registerMenu(moduleId, "wikiLink", {
-                name: "Wiki / Guides",
-                label: "Open Wiki",
+                name: "IONRIFT.LIBRARY.SETTINGS.WikiName",
+                label: "IONRIFT.LIBRARY.SETTINGS.WikiLabel",
                 hint: "",
                 icon: "fas fa-book",
                 type: class extends FormApplication {

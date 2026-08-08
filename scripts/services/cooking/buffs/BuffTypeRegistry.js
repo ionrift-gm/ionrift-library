@@ -1,3 +1,5 @@
+import { localize, format } from "../../../utils/I18n.js";
+
 // AE modes resilient when global CONST is missing (tests).
 export const AE_MODE_FALLBACK = { CUSTOM: 0, MULTIPLY: 1, ADD: 2, DOWNGRADE: 3, UPGRADE: 4, OVERRIDE: 5 };
 
@@ -24,12 +26,24 @@ export function activeAdapter() {
 /** @type {Map<string, object>} */
 export const TYPES = new Map();
 
+/** @param {string} type @param {object} meta */
+function resolveBuffMeta(type, meta) {
+    const { labelKey, label: rawLabel, ...rest } = meta;
+    return {
+        type,
+        immediate: false,
+        ...rest,
+        labelKey: labelKey ?? null,
+        label: labelKey ? localize(labelKey) : rawLabel
+    };
+}
+
 export function defineType(type, meta) {
-    TYPES.set(type, { type, immediate: false, ...meta });
+    TYPES.set(type, resolveBuffMeta(type, meta));
 }
 
 defineType("temp_hp", {
-    label: "Temporary HP",
+    labelKey: "IONRIFT.LIBRARY.BUFF.TempHP",
     render(actor, buff) {
         const formula = buff.formula ?? "0";
         return {
@@ -39,8 +53,8 @@ defineType("temp_hp", {
                 value: String(formula),
                 priority: 20
             }],
-            description: `Temporary hit points (${formula}).`,
-            summaryLine: `temp HP (${formula})`,
+            description: format("IONRIFT.LIBRARY.BUFF.TempHPDesc", { formula }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.TempHPSummary", { formula }),
             daeSpecialDuration: [],
             roll: String(formula)
         };
@@ -48,14 +62,14 @@ defineType("temp_hp", {
 });
 
 defineType("heal", {
-    label: "Healing",
+    labelKey: "IONRIFT.LIBRARY.BUFF.Healing",
     immediate: true,
     render(actor, buff) {
         const formula = buff.formula ?? "0";
         return {
             changes: [],
-            description: `Healing (${formula}).`,
-            summaryLine: `healing (${formula})`,
+            description: format("IONRIFT.LIBRARY.BUFF.HealingDesc", { formula }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.HealingSummary", { formula }),
             daeSpecialDuration: [],
             roll: String(formula)
         };
@@ -63,14 +77,14 @@ defineType("heal", {
 });
 
 defineType("exhaustion_save", {
-    label: "Exhaustion save",
+    labelKey: "IONRIFT.LIBRARY.BUFF.ExhaustionSave",
     immediate: true,
     render(actor, buff) {
         const dc = buff.formula ?? "?";
         return {
             changes: [],
-            description: `Constitution save (DC ${dc}) to remove one exhaustion level.`,
-            summaryLine: `exhaustion save (DC ${dc})`,
+            description: format("IONRIFT.LIBRARY.BUFF.ExhaustionSaveDesc", { dc }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.ExhaustionSaveSummary", { dc }),
             daeSpecialDuration: [],
             roll: null
         };
@@ -78,14 +92,14 @@ defineType("exhaustion_save", {
 });
 
 defineType("hit_die", {
-    label: "Hit die",
+    labelKey: "IONRIFT.LIBRARY.BUFF.HitDie",
     immediate: true,
     render(actor, buff) {
         const amount = buff.formula ?? "1";
         return {
             changes: [],
-            description: `Restores ${amount} spent hit die.`,
-            summaryLine: `restore ${amount} hit die`,
+            description: format("IONRIFT.LIBRARY.BUFF.HitDieDesc", { amount }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.HitDieSummary", { amount }),
             daeSpecialDuration: [],
             roll: null
         };
@@ -93,11 +107,12 @@ defineType("hit_die", {
 });
 
 defineType("advantage", {
-    label: "Advantage on saves",
+    labelKey: "IONRIFT.LIBRARY.BUFF.AdvantageOnSaves",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? buff.formula ?? "con").toLowerCase();
-        const duration = buff.duration ?? "nextSave";
-        const daeSpecialDuration = duration === "nextSave" ? [`isSave.${ability}`] : [];
+        const durationRaw = buff.duration ?? "nextSave";
+        const duration = durationRaw === "nextSave" ? localize("IONRIFT.LIBRARY.BUFF.DurationNextSave") : durationRaw;
+        const daeSpecialDuration = durationRaw === "nextSave" ? [`isSave.${ability}`] : [];
         return {
             changes: [{
                 key: `system.abilities.${ability}.save.roll.mode`,
@@ -105,27 +120,29 @@ defineType("advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${ability.toUpperCase()} saving throws (${duration}).`,
-            summaryLine: `advantage on ${ability.toUpperCase()} saves`,
+            description: format("IONRIFT.LIBRARY.BUFF.AdvantageOnSavesDesc", { ability: ability.toUpperCase(), duration }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.AdvantageOnSavesSummary", { ability: ability.toUpperCase() }),
             daeSpecialDuration
         };
     }
 });
 
 defineType("resistance", {
-    label: "Damage resistance",
+    labelKey: "IONRIFT.LIBRARY.BUFF.DamageResistance",
     render(actor, buff) {
         const damageType = String(buff.damageType ?? buff.formula ?? "poison").toLowerCase();
         const uses = buff.uses ?? buff.charges;
         const window = buff.duration === "untilShortRest"
-            ? "until short rest or 4 hours"
-            : "until long rest";
+            ? localize("IONRIFT.LIBRARY.BUFF.WindowUntilShortRestOr4Hours")
+            : localize("IONRIFT.LIBRARY.BUFF.WindowUntilLongRest");
         if (uses) {
             const usesLabel = typeof uses === "string" ? uses : String(uses);
             const charges = Number(buff.chargesRemaining ?? uses);
-            const chargeNote = Number.isFinite(charges) && charges > 0
-                ? ` (${charges} poison hits remaining, ${window})`
-                : ` (next ${usesLabel} poison hits, ${window})`;
+            const isRemaining = Number.isFinite(charges) && charges > 0;
+            const description = isRemaining
+                ? format("IONRIFT.LIBRARY.BUFF.DamageResistanceDescHitsRemaining", { damageType, charges, window })
+                : format("IONRIFT.LIBRARY.BUFF.DamageResistanceDescHitsNext", { damageType, usesLabel, window });
+            
             return {
                 changes: [{
                     key: "system.traits.dr.value",
@@ -133,8 +150,8 @@ defineType("resistance", {
                     value: damageType,
                     priority: 20
                 }],
-                description: `Damage resistance (${damageType})${chargeNote}.`,
-                summaryLine: `resistance (${damageType}, ${usesLabel} hits)`,
+                description,
+                summaryLine: format("IONRIFT.LIBRARY.BUFF.DamageResistanceSummaryHits", { damageType, usesLabel }),
                 daeSpecialDuration: [],
                 chargesRemaining: Number.isFinite(charges) ? charges : null,
                 chargesMax: Number(buff.chargesMax ?? charges) || null
@@ -147,15 +164,15 @@ defineType("resistance", {
                 value: damageType,
                 priority: 20
             }],
-            description: `Damage resistance (${damageType}).`,
-            summaryLine: `resistance (${damageType})`,
+            description: format("IONRIFT.LIBRARY.BUFF.DamageResistanceDesc", { damageType }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.DamageResistanceSummary", { damageType }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("sense_darkvision", {
-    label: "Darkvision",
+    labelKey: "IONRIFT.LIBRARY.BUFF.Darkvision",
     render(actor, buff) {
         const feet = Number(buff.feet ?? buff.formula ?? 60);
         return {
@@ -165,25 +182,29 @@ defineType("sense_darkvision", {
                 value: String(feet),
                 priority: 20
             }],
-            description: `Darkvision ${feet}ft.`,
-            summaryLine: `${feet}ft darkvision`,
+            description: format("IONRIFT.LIBRARY.BUFF.DarkvisionDesc", { feet }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.DarkvisionSummary", { feet }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("check_advantage", {
-    label: "Advantage on ability checks",
+    labelKey: "IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecks",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.save?.ability ?? buff.formula ?? "str").toLowerCase();
         const uses = buff.uses ?? buff.charges;
-        const checkWindow = buff.duration === "untilShortRest" ? "until short rest" : "until long rest";
+        const checkWindow = buff.duration === "untilShortRest" 
+            ? localize("IONRIFT.LIBRARY.BUFF.WindowUntilShortRest") 
+            : localize("IONRIFT.LIBRARY.BUFF.WindowUntilLongRest");
         if (uses) {
             const usesLabel = typeof uses === "string" ? uses : String(uses);
             const charges = Number(buff.chargesRemaining ?? uses);
-            const chargeNote = Number.isFinite(charges) && charges > 0
-                ? ` (${charges} remaining, ${checkWindow})`
-                : ` (next ${usesLabel} checks, ${checkWindow})`;
+            const isRemaining = Number.isFinite(charges) && charges > 0;
+            const description = isRemaining
+                ? format("IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecksDescRemaining", { ability: ability.toUpperCase(), charges, checkWindow })
+                : format("IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecksDescNext", { ability: ability.toUpperCase(), usesLabel, checkWindow });
+            
             return {
                 changes: [{
                     key: `system.abilities.${ability}.check.roll.mode`,
@@ -191,8 +212,8 @@ defineType("check_advantage", {
                     value: "1",
                     priority: 20
                 }],
-                description: `Advantage on ${ability.toUpperCase()} ability checks${chargeNote}.`,
-                summaryLine: `advantage on ${ability.toUpperCase()} checks (${usesLabel} uses)`,
+                description,
+                summaryLine: format("IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecksSummaryUses", { ability: ability.toUpperCase(), usesLabel }),
                 daeSpecialDuration: [`isCheck.${ability}`],
                 chargesRemaining: Number.isFinite(charges) ? charges : null,
                 chargesMax: Number(buff.chargesMax ?? charges) || null
@@ -205,19 +226,19 @@ defineType("check_advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${ability.toUpperCase()} ability checks (until long rest).`,
-            summaryLine: `advantage on ${ability.toUpperCase()} checks`,
+            description: format("IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecksDesc", { ability: ability.toUpperCase() }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.AdvantageOnAbilityChecksSummary", { ability: ability.toUpperCase() }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("skill_advantage", {
-    label: "Advantage on skill checks",
+    labelKey: "IONRIFT.LIBRARY.BUFF.AdvantageOnSkillChecks",
     render(actor, buff) {
         const skill = String(buff.skill ?? buff.formula ?? "prc").toLowerCase();
         const dim = buff.conditions?.dimLight === true;
-        const dimNote = dim ? " in dim light or darkness" : "";
+        
         return {
             changes: [{
                 key: `system.skills.${skill}.roll.mode`,
@@ -225,15 +246,19 @@ defineType("skill_advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${skill.toUpperCase()} checks${dimNote}.`,
-            summaryLine: `advantage on ${skill.toUpperCase()} checks${dim ? " (dim light)" : ""}`,
+            description: dim 
+                ? format("IONRIFT.LIBRARY.BUFF.AdvantageOnSkillChecksDescDim", { skill: skill.toUpperCase() })
+                : format("IONRIFT.LIBRARY.BUFF.AdvantageOnSkillChecksDesc", { skill: skill.toUpperCase() }),
+            summaryLine: dim
+                ? format("IONRIFT.LIBRARY.BUFF.AdvantageOnSkillChecksSummaryDim", { skill: skill.toUpperCase() })
+                : format("IONRIFT.LIBRARY.BUFF.AdvantageOnSkillChecksSummary", { skill: skill.toUpperCase() }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("passive_perception", {
-    label: "Passive Perception bonus",
+    labelKey: "IONRIFT.LIBRARY.BUFF.PassivePerceptionBonus",
     render(actor, buff) {
         const bonus = Number(buff.bonus ?? buff.formula ?? 2);
         return {
@@ -243,15 +268,15 @@ defineType("passive_perception", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} passive Perception.`,
-            summaryLine: `+${bonus} passive Perception`,
+            description: format("IONRIFT.LIBRARY.BUFF.PassivePerceptionBonusDesc", { bonus }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.PassivePerceptionBonusSummary", { bonus }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("ability_bonus", {
-    label: "Ability check bonus",
+    labelKey: "IONRIFT.LIBRARY.BUFF.AbilityCheckBonus",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.formula ?? "wis").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
@@ -262,25 +287,30 @@ defineType("ability_bonus", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} to ${ability.toUpperCase()} ability checks.`,
-            summaryLine: `+${bonus} ${ability.toUpperCase()} checks`,
+            description: format("IONRIFT.LIBRARY.BUFF.AbilityCheckBonusDesc", { ability: ability.toUpperCase(), bonus }),
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.AbilityCheckBonusSummary", { ability: ability.toUpperCase(), bonus }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("save_bonus", {
-    label: "Saving throw bonus (limited uses)",
+    labelKey: "IONRIFT.LIBRARY.BUFF.SavingThrowBonusLimitedUses",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? "con").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
         const uses = buff.uses ?? buff.charges ?? 1;
         const usesLabel = typeof uses === "string" ? uses : String(uses);
         const charges = Number(buff.chargesRemaining ?? uses);
-        const saveWindow = buff.duration === "untilLongRest" ? "until long rest" : "until short rest";
-        const chargeNote = Number.isFinite(charges) && charges > 0
-            ? ` (${charges} remaining, ${saveWindow})`
-            : ` (next ${usesLabel} saves, ${saveWindow})`;
+        const saveWindow = buff.duration === "untilLongRest" 
+            ? localize("IONRIFT.LIBRARY.BUFF.WindowUntilLongRest") 
+            : localize("IONRIFT.LIBRARY.BUFF.WindowUntilShortRest");
+        
+        const isRemaining = Number.isFinite(charges) && charges > 0;
+        const description = isRemaining
+            ? format("IONRIFT.LIBRARY.BUFF.SavingThrowBonusDescRemaining", { ability: ability.toUpperCase(), bonus, charges, saveWindow })
+            : format("IONRIFT.LIBRARY.BUFF.SavingThrowBonusDescNext", { ability: ability.toUpperCase(), bonus, usesLabel, saveWindow });
+            
         return {
             changes: [{
                 key: `system.abilities.${ability}.bonuses.save`,
@@ -288,8 +318,8 @@ defineType("save_bonus", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} to ${ability.toUpperCase()} saves${chargeNote}.`,
-            summaryLine: `+${bonus} ${ability.toUpperCase()} saves (${usesLabel} uses)`,
+            description,
+            summaryLine: format("IONRIFT.LIBRARY.BUFF.SavingThrowBonusSummary", { ability: ability.toUpperCase(), bonus, usesLabel }),
             daeSpecialDuration: [`isSave.${ability}`],
             chargesRemaining: Number.isFinite(charges) ? charges : null,
             chargesMax: Number(buff.chargesMax ?? charges) || null
@@ -304,5 +334,5 @@ export function registerBuffType(type, meta) {
     if (typeof meta?.render !== "function") {
         throw new Error(`registerBuffType: type "${type}" requires a render function.`);
     }
-    TYPES.set(type, { type, immediate: false, ...meta });
+    TYPES.set(type, resolveBuffMeta(type, meta));
 }

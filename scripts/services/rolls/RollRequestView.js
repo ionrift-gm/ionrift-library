@@ -5,6 +5,7 @@
  */
 
 import { SKILL_DISPLAY_NAMES } from "./RollRequestMechanics.js";
+import { localize, format } from "../../utils/I18n.js";
 
 /**
  * @typedef {object} RollRequestParticipant
@@ -127,8 +128,8 @@ export function centerRollRequestRoster(root) {
  * @returns {string}
  */
 export function buildRollTargetLabel(mechanical = {}) {
-    const scope = mechanical.targets === "all" ? "Entire party" : "Watch only";
-    const policy = mechanical.checkPolicy === "individual" ? "Individual checks" : "Group Check (averaged)";
+    const scope = mechanical.targets === "all" ? localize("IONRIFT.LIBRARY.ROLLREQUEST.TargetEntireParty") : localize("IONRIFT.LIBRARY.ROLLREQUEST.TargetWatchOnly");
+    const policy = mechanical.checkPolicy === "individual" ? localize("IONRIFT.LIBRARY.ROLLREQUEST.PolicyIndividual") : localize("IONRIFT.LIBRARY.ROLLREQUEST.PolicyGroup");
     return `${scope} · ${policy}`;
 }
 
@@ -173,7 +174,7 @@ export function buildRollRequestContext(opts = {}) {
     const showRoster = opts.showRoster !== false;
 
     return {
-        title: opts.title ?? "Skill Check",
+        title: opts.title ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackSkillCheck"),
         showTitle,
         showRoster,
         skillKey: opts.skillKey ?? "sur",
@@ -190,7 +191,7 @@ export function buildRollRequestContext(opts = {}) {
         multiTarget: totalCount > 1,
         targetLabel: opts.targetLabel ?? "",
         checkContext: opts.checkContext ?? "",
-        progressLabel: totalCount > 1 ? `${rolledCount} / ${totalCount} rolled` : "",
+        progressLabel: totalCount > 1 ? format("IONRIFT.LIBRARY.ROLLREQUEST.ProgressLabel", { rolled: rolledCount, total: totalCount }) : "",
         rolledCount,
         totalCount,
         allRolled,
@@ -233,7 +234,7 @@ export function buildEventPlayerRollContext(pendingEventRoll, triggeredEvent = n
     });
 
     return buildRollRequestContext({
-        title: pendingEventRoll.eventTitle ?? "Skill Check",
+        title: pendingEventRoll.eventTitle ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackSkillCheck"),
         showTitle: false,
         showRoster: false,
         skillKey: pendingEventRoll.skill ?? "sur",
@@ -272,7 +273,7 @@ export function buildEventGmRollContext(event, eventIndex) {
     const skillKey = event.mechanical?.skill ?? "sur";
 
     return buildRollRequestContext({
-        title: event.title ?? event.name ?? "Skill Check",
+        title: event.title ?? event.name ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackSkillCheck"),
         showTitle: false,
         showRoster: false,
         skillKey,
@@ -327,16 +328,16 @@ export function buildTreePlayerRollContext(pendingTreeRoll) {
     });
 
     return buildRollRequestContext({
-        title: pendingTreeRoll.eventName ?? "Decision Check",
+        title: pendingTreeRoll.eventName ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackDecisionCheck"),
         showTitle: false,
         showRoster: false,
         skillKey: pendingTreeRoll.skills?.[0] ?? "sur",
-        skillName: pendingTreeRoll.skillName ?? "Skill",
+        skillName: pendingTreeRoll.skillName ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackSkill"),
         dc: pendingTreeRoll.dc ?? 12,
         participants,
         flow: "tree",
         meta: { choiceId: pendingTreeRoll.choiceId ?? null },
-        targetLabel: pendingTreeRoll.skills?.length > 1 ? "Best-of skill check" : ""
+        targetLabel: pendingTreeRoll.skills?.length > 1 ? localize("IONRIFT.LIBRARY.ROLLREQUEST.TargetBestOfSkill") : ""
     });
 }
 
@@ -370,7 +371,7 @@ export function buildCampActivityRollContext(activity, rolledCharacters = new Se
     }];
 
     return buildRollRequestContext({
-        title: activity.activityName ?? "Camp Activity",
+        title: activity.activityName ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackCampActivity"),
         skillKey: activity.skill ?? "sur",
         skillName: activity.skillName ?? "Survival",
         dc: activity.dc ?? 10,
@@ -415,7 +416,7 @@ export function buildTravelActivityRollContext(activity, rolledCharacters = new 
     const scoutNoDc = activity.activity === "scout" && !activity.dc;
 
     return buildRollRequestContext({
-        title: `${activity.activityLabel ?? activity.activity ?? "Travel"} · Day ${activity.day ?? 1}`,
+        title: `${activity.activityLabel ?? activity.activity ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackTravel")} · ${format("IONRIFT.LIBRARY.ROLLREQUEST.TravelDay", { day: activity.day ?? 1 })}`,
         skillKey: activity.skill ?? "sur",
         skillName: activity.skillName ?? "Survival",
         dc: activity.dc ?? 0,
@@ -427,7 +428,7 @@ export function buildTravelActivityRollContext(activity, rolledCharacters = new 
             activity: activity.activity ?? null,
             noDc: scoutNoDc
         },
-        targetLabel: scoutNoDc ? "Scouting · no fixed DC" : ""
+        targetLabel: scoutNoDc ? localize("IONRIFT.LIBRARY.ROLLREQUEST.TargetScoutingNoDc") : ""
     });
 }
 
@@ -455,14 +456,14 @@ export function buildCopySpellRollContext(prompt) {
     }];
 
     return buildRollRequestContext({
-        title: "Copy Spell",
+        title: localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackCopySpell"),
         skillKey: "arc",
         skillName: "Arcana",
         dc: prompt.dc ?? 10,
         participants,
         flow: "copySpell",
         meta: { actorId: prompt.actorId },
-        targetLabel: `Level ${prompt.spellLevel} · ${prompt.cost}gp charged · ${prompt.remainingGold}gp left`
+        targetLabel: format("IONRIFT.LIBRARY.ROLLREQUEST.TargetCopySpell", { level: prompt.spellLevel, cost: prompt.cost, left: prompt.remainingGold })
     });
 }
 
@@ -474,16 +475,16 @@ export function buildCopySpellRollContext(prompt) {
 export function buildPromptRollContext(payload = {}) {
     const actor = payload.actor;
     if (!actor) {
-        return buildRollRequestContext({ title: payload.title ?? "Roll Request" });
+        return buildRollRequestContext({ title: payload.title ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackRollRequest") });
     }
 
     const type = payload.type ?? "skill";
     const key = payload.key ?? "wis";
     const keyLabel = payload.skillName ?? SKILL_DISPLAY_NAMES[key] ?? String(key).toUpperCase();
     let skillName = keyLabel;
-    if (type === "save") skillName = `${keyLabel} Saving Throw`;
-    else if (type === "ability") skillName = `${keyLabel} Ability Check`;
-    else if (type === "formula") skillName = payload.formula ?? "Roll";
+    if (type === "save") skillName = format("IONRIFT.LIBRARY.ROLLREQUEST.TypeSavingThrow", { name: keyLabel });
+    else if (type === "ability") skillName = format("IONRIFT.LIBRARY.ROLLREQUEST.TypeAbilityCheck", { name: keyLabel });
+    else if (type === "formula") skillName = payload.formula ?? localize("IONRIFT.LIBRARY.ROLLREQUEST.FallbackRoll");
 
     const rolled = !!payload.rolled;
     const total = payload.total;
@@ -520,15 +521,15 @@ export function buildPromptRollContext(payload = {}) {
 
 /** Preview harness variant ids. */
 export const ROLL_REQUEST_PREVIEW_VARIANTS = [
-    { id: "pending-single", label: "Pending (single)" },
-    { id: "pending-multi", label: "Pending (multi)" },
-    { id: "party-partial", label: "Party partial (2/5)" },
-    { id: "pending-advantage", label: "Pending (advantage)" },
-    { id: "pending-disadvantage", label: "Pending (disadvantage)" },
-    { id: "submitted", label: "Submitted" },
-    { id: "resolved-pass", label: "Resolved (pass)" },
-    { id: "resolved-fail", label: "Resolved (fail)" },
-    { id: "gm-pending", label: "GM pending" }
+    { id: "pending-single", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.PendingSingle" },
+    { id: "pending-multi", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.PendingMulti" },
+    { id: "party-partial", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.PartyPartial" },
+    { id: "pending-advantage", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.PendingAdvantage" },
+    { id: "pending-disadvantage", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.PendingDisadvantage" },
+    { id: "submitted", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.Submitted" },
+    { id: "resolved-pass", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.ResolvedPass" },
+    { id: "resolved-fail", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.ResolvedFail" },
+    { id: "gm-pending", label: "IONRIFT.LIBRARY.ROLLREQUEST.PREVIEW.GmPending" }
 ];
 
 const MOCK_PARTY = [

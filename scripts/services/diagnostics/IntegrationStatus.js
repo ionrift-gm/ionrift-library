@@ -1,4 +1,5 @@
 import { Logger } from "../platform/Logger.js";
+import { localize } from "../../utils/I18n.js";
 
 const MODULE_LABEL = "IntegrationStatus";
 
@@ -63,8 +64,8 @@ export class IntegrationStatus {
         if (!this.state.has(appId)) {
             this.state.set(appId, {
                 status: this.STATUS.UNKNOWN,
-                label: 'Unknown',
-                message: 'Initializing...',
+                label: localize("IONRIFT.LIBRARY.INTEGRATION.Unknown"),
+                message: localize("IONRIFT.LIBRARY.INTEGRATION.Initializing"),
                 timestamp: 0
             });
         }
@@ -74,7 +75,7 @@ export class IntegrationStatus {
      * Gets the last known status for an app.
      */
     getStatus(appId) {
-        return this.state.get(appId) || { status: this.STATUS.UNKNOWN, label: 'Unknown', message: '' };
+        return this.state.get(appId) || { status: this.STATUS.UNKNOWN, label: localize("IONRIFT.LIBRARY.INTEGRATION.Unknown"), message: '' };
     }
 
     // --- Observer / Polling Logic ---
@@ -199,7 +200,7 @@ export class IntegrationStatus {
 
         } catch (e) {
             Logger.warn(MODULE_LABEL, `Status Check Failed for ${appId}`, e);
-            this.state.set(appId, { status: 'error', label: 'Error', message: e.message });
+            this.state.set(appId, { status: 'error', label: localize("IONRIFT.LIBRARY.INTEGRATION.Error"), message: e.message });
             config.backoff = true;
             return true; // Error counts as change/instability
         }
@@ -280,7 +281,7 @@ export class IntegrationStatus {
             <div class="status-left"></div>
             <div class="status-right">
                 <div class="ionrift-integration-pill status-${status.status}" title="${status.message}">
-                    <i class="fas ${iconClass}"></i> ${status.label || 'Unknown'}
+                    <i class="fas ${iconClass}"></i> ${status.label || localize("IONRIFT.LIBRARY.INTEGRATION.Unknown")}
                 </div>
             </div>
         </div>`);
@@ -308,7 +309,7 @@ export class IntegrationStatus {
             pill.addClass(`status-${newState.status}`);
             pill.attr('title', newState.message);
 
-            const labelText = newState.label || (newState.status === this.STATUS.CONNECTED ? 'Connected' : 'Offline');
+            const labelText = newState.label || (newState.status === this.STATUS.CONNECTED ? localize("IONRIFT.LIBRARY.INTEGRATION.Connected") : localize("IONRIFT.LIBRARY.INTEGRATION.Offline"));
 
             const iconClass = this._iconClass(newState.status);
 

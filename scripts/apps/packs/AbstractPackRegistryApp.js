@@ -11,6 +11,7 @@
  * @abstract
  */
 import { getWorldSetting } from "../../services/platform/overlaySettings.js";
+import { localize, format } from "../../utils/I18n.js";
 
 export class AbstractPackRegistryApp extends foundry.applications.api.ApplicationV2 {
 
@@ -52,7 +53,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
             for (const tab of tabs) {
                 const isActive = tab.id === activeTabId;
                 const badge = tab.id === tabs[0]?.id && context.updateCount > 0
-                    ? `<span class="pack-tab-update-count" title="${context.updateCount} update${context.updateCount === 1 ? "" : "s"} available">${context.updateCount}</span>`
+                    ? `<span class="pack-tab-update-count" title="${format("IONRIFT.LIBRARY.APPS.PACKREGISTRY.UpdatesAvailable", { count: context.updateCount })}">${context.updateCount}</span>`
                     : "";
                 tabBarHtml += `
                     <button type="button" class="pack-tab ${isActive ? "active" : ""}" data-tab="${tab.id}">
@@ -125,11 +126,11 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
         const showToggle = opts.showToggle !== false;
         const deletable = opts.deletable === true;
         const enabledClass = pack.enabled ? "enabled" : "disabled";
-        const countLabel = pack.countLabel ?? "items";
+        const countLabel = pack.countLabel ?? (localize("IONRIFT.LIBRARY.APPS.PACKREGISTRY.Items") || "items");
 
         let eventCountHtml = `<span class="pack-event-count" title="${pack.totalItems} ${countLabel}">${pack.totalItems}</span>`;
         if (pack.totalItems === 0 && pack.tiers?.disaster > 0) {
-            eventCountHtml = `<span class="pack-event-count pack-event-count-disaster" title="${pack.tiers.disaster} disasters" style="color: var(--color-level-error); border-color: var(--color-level-error);"><i class="fas fa-skull-crossbones" style="margin-right: 2px;"></i> ${pack.tiers.disaster}</span>`;
+            eventCountHtml = `<span class="pack-event-count pack-event-count-disaster" title="${pack.tiers.disaster} ${localize("IONRIFT.LIBRARY.APPS.PACKREGISTRY.Disasters") || "disasters"}" style="color: var(--color-level-error); border-color: var(--color-level-error);"><i class="fas fa-skull-crossbones" style="margin-right: 2px;"></i> ${pack.tiers.disaster}</span>`;
         }
 
         const toggleHtml = showToggle ? `
@@ -141,7 +142,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
             </label>` : "";
 
         const deleteHtml = deletable ? `
-            <button type="button" class="pack-delete-btn" data-pack-id="${pack.id}" title="Remove this pack">
+            <button type="button" class="pack-delete-btn" data-pack-id="${pack.id}" title="${localize("IONRIFT.LIBRARY.APPS.PACKREGISTRY.RemovePack")}">
                 <i class="fas fa-trash-alt"></i>
             </button>` : "";
 

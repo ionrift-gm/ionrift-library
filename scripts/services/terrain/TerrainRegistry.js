@@ -22,11 +22,13 @@
  * @typedef {object} TerrainDefinition
  * @property {string} id            Canonical id, e.g. "forest".
  * @property {string} label         Display label, e.g. "Forest".
+ * @property {string|null} [labelKey] i18n key when label is localized.
  * @property {TerrainCategory} [category] UI grouping category.
  * @property {object} [flags]       Free-form metadata for consumers.
  */
 
 import { Logger } from "../platform/Logger.js";
+import { localize } from "../../utils/I18n.js";
 
 /** Legacy category values folded into {@link TerrainCategory}. */
 export const TERRAIN_CATEGORY_ALIASES = Object.freeze({
@@ -48,11 +50,11 @@ export function normalizeTerrainCategory(category) {
 
 /** @type {TerrainDefinition[]} The canonical kernel base. */
 const BASE_TERRAINS = [
-    { id: "forest",  label: "Forest",  category: "wilderness" },
-    { id: "swamp",   label: "Swamp",   category: "wilderness" },
-    { id: "desert",  label: "Desert",  category: "wilderness" },
-    { id: "urban",   label: "Urban",   category: "built" },
-    { id: "dungeon", label: "Dungeon", category: "built" }
+    { id: "forest",  labelKey: "IONRIFT.LIBRARY.TERRAIN.Forest",  category: "wilderness" },
+    { id: "swamp",   labelKey: "IONRIFT.LIBRARY.TERRAIN.Swamp",   category: "wilderness" },
+    { id: "desert",  labelKey: "IONRIFT.LIBRARY.TERRAIN.Desert",  category: "wilderness" },
+    { id: "urban",   labelKey: "IONRIFT.LIBRARY.TERRAIN.Urban",   category: "built" },
+    { id: "dungeon", labelKey: "IONRIFT.LIBRARY.TERRAIN.Dungeon", category: "built" }
 ];
 
 export class TerrainRegistry {
@@ -72,7 +74,8 @@ export class TerrainRegistry {
     _seed(def) {
         this._terrains.set(def.id, {
             id: def.id,
-            label: def.label,
+            label: def.labelKey ? localize(def.labelKey) : def.label,
+            labelKey: def.labelKey ?? null,
             category: def.category,
             flags: def.flags ?? {}
         });
@@ -86,13 +89,14 @@ export class TerrainRegistry {
      * @param {TerrainDefinition} def
      */
     register(def) {
-        if (!def?.id || !def?.label) {
-            Logger.warn("TerrainRegistry", "register: def must have id and label.");
+        if (!def?.id || (!def?.label && !def?.labelKey)) {
+            Logger.warn("TerrainRegistry", "register: def must have id and label or labelKey.");
             return;
         }
         this._terrains.set(def.id, {
             id: def.id,
-            label: def.label,
+            label: def.labelKey ? localize(def.labelKey) : def.label,
+            labelKey: def.labelKey ?? null,
             category: def.category,
             flags: def.flags ?? {}
         });
@@ -120,7 +124,13 @@ export class TerrainRegistry {
      * @returns {TerrainDefinition[]}
      */
     getBase() {
-        return BASE_TERRAINS.map(t => ({ ...t, flags: {} }));
+        return BASE_TERRAINS.map(t => ({
+            id: t.id,
+            label: t.labelKey ? localize(t.labelKey) : t.label,
+            labelKey: t.labelKey ?? null,
+            category: t.category,
+            flags: {}
+        }));
     }
 
     /**

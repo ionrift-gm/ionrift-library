@@ -77,6 +77,82 @@ function _resolveActorClassificationOverride(actorOrName) {
 }
 
 /**
+ * Names used for keyword matching. Prefer the Babele/source English name when
+ * the display name is localized, otherwise keyword dictionaries never hit.
+ * @param {Actor|string|object} actorOrName
+ * @returns {string[]}
+ */
+function _collectMatchNames(actorOrName) {
+    const names = [];
+    const add = (value) => {
+        const text = String(value ?? "").trim();
+        if (!text) return;
+        if (names.some(existing => existing.toLowerCase() === text.toLowerCase())) return;
+        names.push(text);
+    };
+
+    if (typeof actorOrName === "string") {
+        add(actorOrName);
+        return names;
+    }
+
+    add(actorOrName?.name);
+    add(actorOrName?.flags?.babele?.originalName);
+    if (typeof actorOrName?.getFlag === "function") {
+        try { add(actorOrName.getFlag("babele", "originalName")); } catch { /* ok */ }
+    }
+    add(actorOrName?.originalName);
+    return names;
+}
+
+/**
+ * Fallback when localized names miss English keyword dictionaries.
+ * dnd5e keeps `system.details.type.value` as an English enum (aberration, fiend, …).
+ * @param {object|null} actor
+ * @param {object} classifierData
+ * @returns {{ type: string, subtype: null, data: object, score: number }|null}
+ */
+function _matchByCreatureType(actor, classifierData) {
+    if (!actor?.system?.details?.type) return null;
+    const typeInfo = actor.system.details.type;
+    let typeKey = String(typeInfo.value ?? "").toLowerCase().trim();
+    if (!typeKey || typeKey === "custom") {
+        const custom = String(typeInfo.custom ?? "").toLowerCase().trim();
+        if (custom && classifierData[custom]) typeKey = custom;
+        else return null;
+    }
+
+    const typeData = classifierData[typeKey];
+    if (!typeData || typeKey === "exceptions") return null;
+
+    const subtypeText = String(typeInfo.subtype ?? "").trim();
+    if (subtypeText && typeData.subtypes?.length) {
+        const hasKeyword = (text, keyword) => {
+            const pattern = new RegExp(`\\b${keyword}(?:e?s)?\\b`, "i");
+            return pattern.test(text);
+        };
+        for (const subtype of typeData.subtypes) {
+            if (subtype.keywords?.some(k => hasKeyword(subtypeText, k))) {
+                return {
+                    type: typeKey,
+                    subtype: subtype.id,
+                    data: subtype,
+                    parentData: typeData,
+                    score: 0.7
+                };
+            }
+        }
+    }
+
+    return {
+        type: typeKey,
+        subtype: null,
+        data: typeData,
+        score: 0.55
+    };
+}
+
+/**
  * List selectable classifier IDs for manual entity overrides.
  * @returns {{ id: string, label: string }[]}
  */
@@ -134,7 +210,7 @@ export async function setActorClassification(actor, classId) {
  * @returns {object} - { id, sound, tags: Set, confidence: number }
  */
 export function classifyCreature(actorOrName) {
-    const name = (typeof actorOrName === 'string') ? actorOrName : (actorOrName?.name || "");
+    const matchNames = _collectMatchNames(actorOrName);
     const isPlayer = (typeof actorOrName === 'object' && actorOrName.type === "character");
     const CLASSIFIER_DATA = getClassifierData();
 
@@ -188,9 +264,7 @@ export function classifyCreature(actorOrName) {
         description += " " + itemNames.toLowerCase() + " " + itemDescs.toLowerCase();
     }
 
-    if (!name) return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), confidence: 0 };
-
-    const nameLower = name.toLowerCase();
+    if (!matchNames.length) return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), confidence: 0 };
 
     // Helper: Check for word match (prevents "Dredge" matching "Red")
     const hasKeyword = (text, keyword) => {
@@ -199,69 +273,76 @@ export function classifyCreature(actorOrName) {
         return pattern.test(text);
     };
 
-    // 1. Exception Check
-    // We check purely based on name for exceptions
+    // 1. Exception Check — display name and Babele original name
     if (CLASSIFIER_DATA.exceptions) {
-        for (const [key, exception] of Object.entries(CLASSIFIER_DATA.exceptions)) {
-            if (nameLower.includes(key)) { // Exceptions use substring (e.g. "ancient red dragon" matches "dragon")
-                return {
-                    id: exception.id,
-                    sound: exception.sound,
-                    tags: new Set(exception.tags),
-                    confidence: exception.confidence,
-                    isException: true
-                };
+        for (const name of matchNames) {
+            const nameLower = name.toLowerCase();
+            for (const [key, exception] of Object.entries(CLASSIFIER_DATA.exceptions)) {
+                if (nameLower.includes(key)) { // Exceptions use substring (e.g. "ancient red dragon" matches "dragon")
+                    return {
+                        id: exception.id,
+                        sound: exception.sound,
+                        tags: new Set(exception.tags),
+                        confidence: exception.confidence,
+                        isException: true
+                    };
+                }
             }
         }
     }
 
-    // 2. Standard Classification
+    // 2. Standard Classification against all known names
     let bestMatch = null;
 
-    // Scan Types
-    for (const [typeKey, typeData] of Object.entries(CLASSIFIER_DATA)) {
-        if (typeKey === 'exceptions') continue;
+    for (const name of matchNames) {
+        for (const [typeKey, typeData] of Object.entries(CLASSIFIER_DATA)) {
+            if (typeKey === 'exceptions') continue;
 
-
-        // Check Type Keywords
-        if (typeData.keywords && typeData.keywords.some(k => hasKeyword(name, k))) {
-            const newScore = 0.6;
-            if (!bestMatch || newScore > bestMatch.score) {
-                bestMatch = {
-                    type: typeKey,
-                    subtype: null, // Matched parent
-                    data: typeData,
-                    score: newScore
-                };
+            // Check Type Keywords
+            if (typeData.keywords && typeData.keywords.some(k => hasKeyword(name, k))) {
+                const newScore = 0.6;
+                if (!bestMatch || newScore > bestMatch.score) {
+                    bestMatch = {
+                        type: typeKey,
+                        subtype: null, // Matched parent
+                        data: typeData,
+                        score: newScore
+                    };
+                }
             }
-        }
 
-        // Check Subtypes
-        if (typeData.subtypes) {
-            for (const subtype of typeData.subtypes) {
-                if (subtype.keywords.some(k => hasKeyword(name, k))) {
-                    const newScore = 0.8;
-                    if (!bestMatch || newScore > bestMatch.score) {
-                        bestMatch = {
-                            type: typeKey,
-                            subtype: subtype.id,
-                            data: subtype,
-                            parentData: typeData,
-                            score: newScore // Higher base score for specific subtype
-                        };
+            // Check Subtypes
+            if (typeData.subtypes) {
+                for (const subtype of typeData.subtypes) {
+                    if (subtype.keywords.some(k => hasKeyword(name, k))) {
+                        const newScore = 0.8;
+                        if (!bestMatch || newScore > bestMatch.score) {
+                            bestMatch = {
+                                type: typeKey,
+                                subtype: subtype.id,
+                                data: subtype,
+                                parentData: typeData,
+                                score: newScore // Higher base score for specific subtype
+                            };
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
-        if (bestMatch && bestMatch.score >= 0.6) break;
+        if (bestMatch && bestMatch.score >= 0.8) break;
+    }
+
+    // 3. Localized names often miss English keyword dictionaries — use creature type enum
+    if (!bestMatch && typeof actorOrName === "object") {
+        bestMatch = _matchByCreatureType(actorOrName, CLASSIFIER_DATA);
     }
 
     if (!bestMatch) {
         return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), confidence: 0 };
     }
 
-    // 3. Assemble Tags & Boost Confidence via Description
+    // 4. Assemble Tags & Boost Confidence via Description
     const finalTags = new Set(bestMatch.parentData?.defaultTags || []); // Inherit parent tags
     if (bestMatch.data.defaultTags) bestMatch.data.defaultTags.forEach(t => finalTags.add(t));
     if (bestMatch.data.tags) bestMatch.data.tags.forEach(t => finalTags.add(t)); // Add specific tags
@@ -291,9 +372,9 @@ export function classifyCreature(actorOrName) {
         }
     });
 
-    // 4. Group/Swarm Detection
+    // 5. Group/Swarm Detection
     const groupKeywords = ["swarm", "pack", "legion", "horde", "squad", "troop", "army", "rabble", "gang", "mob"];
-    if (groupKeywords.some(k => hasKeyword(name, k))) {
+    if (groupKeywords.some(k => matchNames.some(n => hasKeyword(n, k)))) {
         finalTags.add("swarm");
         finalTags.add("group");
         finalTags.add("multitude");

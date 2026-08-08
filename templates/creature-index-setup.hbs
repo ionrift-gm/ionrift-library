@@ -1,7 +1,7 @@
 <form class="ionrift welcome-container">
     <header class="welcome-header glass-header">
-        <h1><i class="fas fa-crosshairs"></i> Ionrift Library: Creature Index</h1>
-        <p>Global Entity Indexing Protocol</p>
+        <h1><i class="fas fa-crosshairs"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.Title"}}</h1>
+        <p>{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.Subtitle"}}</p>
     </header>
 
     <div class="welcome-body glass-body">
@@ -9,17 +9,16 @@
         {{#if alreadyVerified}}
         <div class="already-verified"
             style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 209, 55, 0.1); border: 1px solid #4cd137; border-radius: 4px;">
-            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> Protocol Complete</h3>
-            <p style="margin: 0; opacity: 0.9;">The entity index is up-to-date with current module versions.</p>
+            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.ProtocolComplete"}}</h3>
+            <p style="margin: 0; opacity: 0.9;">{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.UpToDate"}}</p>
             <button class="reset-btn"
                 style="margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #4cd137; color: #fff;">
-                <i class="fas fa-redo"></i> Re-Run Protocol
+                <i class="fas fa-redo"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.ReRunProtocol"}}
             </button>
         </div>
         {{else}}
         <p class="intro-text">
-            This protocol indexes all creatures in your world to support features like <strong>Adaptive Sounds</strong>.
-            The library scans your installed content to build a local classification map.
+            {{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.Intro"}}}
         </p>
         {{/if}}
 
@@ -37,7 +36,7 @@
                 <div class="step-content">
                     <h3>
                         {{#if (eq this.id "system_check")}}
-                        Integrity Verification (Spot Check)
+                        {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.IntegrityVerification"}}
                         {{else}}
                         {{this.title}}
                         {{/if}}
@@ -55,13 +54,12 @@
                                     style="opacity: 0.6; font-size: 0.8em;">({{this.package}})</span></label>
                         </div>
                         {{else}}
-                        <p style="opacity: 0.6; font-style: italic;">No additional compendiums detected.</p>
+                        <p style="opacity: 0.6; font-style: italic;">{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.NoPacks"}}</p>
                         {{/each}}
                     </div>
                     {{else}}
                     {{#if this.isCompleted}}
-                    <p style="font-style: italic; opacity: 0.7; margin-top: 5px;"><i class="fas fa-check"></i> Expansion
-                        Packs Configured</p>
+                    <p style="font-style: italic; opacity: 0.7; margin-top: 5px;"><i class="fas fa-check"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.PacksConfigured"}}</p>
                     {{/if}}
                     {{/if}}
                     {{/if}}
@@ -86,15 +84,14 @@
                         {{#if ../testResult.passed}}
                         <div class="check-success"
                             style="margin-top: 15px; color: #4cd137; text-align: center; padding: 10px;">
-                            <strong><i class="fas fa-check-circle"></i> System Operational</strong><br>
-                            <span style="font-size: 0.9em; opacity: 0.8;">All classifier logic verified.</span>
+                            <strong><i class="fas fa-check-circle"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.SystemOperational"}}</strong><br>
+                            <span style="font-size: 0.9em; opacity: 0.8;">{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.SystemOperationalDesc"}}</span>
                         </div>
                         {{else}}
                         <div class="check-fail"
                             style="margin-top: 15px; color: #e74c3c; text-align: center; padding: 10px;">
-                            <strong><i class="fas fa-exclamation-triangle"></i> Calibration Warning</strong><br>
-                            <span style="font-size: 0.9em; opacity: 0.8;">Some tests failed. Check console for
-                                details.</span>
+                            <strong><i class="fas fa-exclamation-triangle"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.CalibrationWarning"}}</strong><br>
+                            <span style="font-size: 0.9em; opacity: 0.8;">{{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.CalibrationWarningDesc"}}</span>
                         </div>
                         {{/if}}
                         {{/if}}
@@ -104,7 +101,7 @@
 
                 <div class="step-action">
                     {{#if this.isCompleted}}
-                    <span class="status-done"><i class="fas fa-check-circle success"></i> Done</span>
+                    <span class="status-done"><i class="fas fa-check-circle success"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.Done"}}</span>
                     {{else}}
                     <button class="step-action-btn" data-step="{{this.id}}" {{#if this.isPending}}disabled{{/if}}>
                         {{this.actionLabel}}
@@ -118,9 +115,9 @@
 
     <footer class="welcome-footer">
         {{#if isFinished}}
-        <button class="finish-btn"><i class="fas fa-check"></i> Finish Attunement</button>
+        <button class="finish-btn"><i class="fas fa-check"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.FinishAttunement"}}</button>
         {{else}}
-        <button class="skip-btn"><i class="fas fa-forward"></i> Skip Setup</button>
+        <button class="skip-btn"><i class="fas fa-forward"></i> {{localize "IONRIFT.LIBRARY.APPS.CREATURESETUP.SkipSetup"}}</button>
         {{/if}}
     </footer>
 </form>

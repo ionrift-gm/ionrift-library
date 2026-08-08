@@ -7,7 +7,7 @@
                 <span>{{stats.mean}}%</span>
             </div>
             <div class="dashboard-text">
-                <span class="label">Manifest Integrity</span>
+                <span class="label">{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.ManifestIntegrity"}}</span>
                 <span class="value">{{stats.identified}} / {{stats.total}}</span>
                 <span class="label" style="margin-top:2px;">
                     <span class="ionrift-status {{stats.integrityClass}}">{{stats.integrityLabel}}</span>
@@ -18,16 +18,16 @@
         <div class="ionrift-search-container">
             <i class="fas fa-search"></i>
             <input type="text" id="validator-search" class="ionrift-search-input"
-                placeholder="Search entity manifest..." value="{{filters.query}}">
+                placeholder="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.SearchPlaceholder"}}" value="{{filters.query}}">
         </div>
 
         <div style="display:flex; gap: 10px;">
             <select id="confidence-filter" style="width: 150px;">
-                <option value="all">All Entities</option>
-                <option value="low">Needs Review (Low Confidence)</option>
-                <option value="med">Uncertain (Medium Confidence)</option>
+                <option value="all">{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.FilterAll"}}</option>
+                <option value="low">{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.FilterLow"}}</option>
+                <option value="med">{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.FilterMed"}}</option>
             </select>
-            <button id="refresh-validator" title="Re-scan Manifest"><i class="fas fa-sync"></i></button>
+            <button id="refresh-validator" title="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.ReScan"}}"><i class="fas fa-sync"></i></button>
         </div>
     </div>
 
@@ -50,8 +50,8 @@
             <div class="badges">
                 <!-- Class Badge (click to override) -->
                 <button type="button"
-                    class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}{{/if}}"
-                    title="{{#if this.isManual}}Manual classification{{else}}Detected class — click to override{{/if}}"
+                    class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (eq this.rawClassId 'unknown')}}error{{else}}success{{/if}}{{/if}}"
+                    title="{{#if this.isManual}}{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.TooltipManual"}}{{else}}{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.TooltipDetected"}}{{/if}}"
                     data-actor-id="{{this.actorId}}"
                     data-uuid="{{this.uuid}}"
                     data-class-id="{{this.rawClassId}}"
@@ -60,13 +60,13 @@
                 </button>
 
                 <!-- Sound Badge -->
-                <span class="ionrift-badge {{#if (eq this.soundKey 'Generic Monster')}}warning{{else}}success{{/if}}"
-                    title="Assigned Sound">
+                <span class="ionrift-badge {{#if (eq this.rawSoundKey 'MONSTER_GENERIC')}}warning{{else}}success{{/if}}"
+                    title="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.AssignedSound"}}">
                     <i class="fas fa-music"></i> {{this.soundKey}}
                 </span>
 
                 <!-- Score Pill -->
-                <span class="score-pill {{this.scoreClass}}" title="Confidence: {{this.confidencePct}}%">
+                <span class="score-pill {{this.scoreClass}}" title="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.Confidence"}}: {{this.confidencePct}}%">
                     {{this.confidencePct}}%
                 </span>
             </div>
@@ -74,7 +74,7 @@
         {{else}}
         <div class="no-results" style="padding: 40px; text-align: center; color: #888;">
             <i class="fas fa-search" style="font-size: 3em; margin-bottom: 20px; opacity: 0.5;"></i>
-            <p>No entities found matching your criteria.</p>
+            <p>{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.NoResults"}}</p>
         </div>
         {{/each}}
     </div>
@@ -85,19 +85,19 @@
 
         <!-- Left: Source Info (Fixed width to prevent squish) -->
         <div style="font-size: 0.85em; color: #666; flex: 0 0 auto; white-space: nowrap;">
-            <i class="fas fa-info-circle"></i> Source: World & SRD
+            <i class="fas fa-info-circle"></i> {{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.SourceLabel"}}
         </div>
 
         <!-- Center: Pagination (Flex 1 to take varied space) -->
         <div style="display:flex; align-items:center; justify-content: center; gap: 15px; flex: 1;">
-            <button class="page-prev icon-only" title="Previous Page" {{#unless pagination.hasPrev}}disabled{{/unless}}
+            <button class="page-prev icon-only" title="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.PrevPage"}}" {{#unless pagination.hasPrev}}disabled{{/unless}}
                 style="width: 32px;">
                 <i class="fas fa-chevron-left"></i>
             </button>
             <span style="color:#aaa; font-size: 0.9em; min-width: 100px; text-align: center;">
-                {{pagination.startItem}} - {{pagination.endItem}} of {{pagination.totalItems}}
+                {{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.Pagination" start=pagination.startItem end=pagination.endItem total=pagination.totalItems}}}
             </span>
-            <button class="page-next icon-only" title="Next Page" {{#unless pagination.hasNext}}disabled{{/unless}}
+            <button class="page-next icon-only" title="{{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.NextPage"}}" {{#unless pagination.hasNext}}disabled{{/unless}}
                 style="width: 32px;">
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -106,7 +106,7 @@
         <!-- Right: Actions -->
         <div style="flex: 0 0 auto;">
             <button id="export-json" class="export-btn ionrift-save-btn">
-                <i class="fas fa-file-export"></i> Export Report
+                <i class="fas fa-file-export"></i> {{localize "IONRIFT.LIBRARY.APPS.VALIDATOR.ExportReport"}}
             </button>
         </div>
     </div>

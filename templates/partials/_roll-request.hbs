@@ -15,12 +15,12 @@
                 <span class="ionrift-dc-ripple ionrift-dc-ripple--b" aria-hidden="true"></span>
                 {{/if}}
                 <div class="event-dc-badge circular{{#if rollRequest.dcPulseActive}} ionrift-dc-badge--live{{/if}}{{#if rollRequest.ownerOutcome}} event-dc-badge--{{rollRequest.ownerOutcome}}{{/if}}">
-                    <span class="dc-label">DC</span>
+                    <span class="dc-label">{{localize "IONRIFT.LIBRARY.ROLLREQUEST.DC"}}</span>
                     <span class="dc-value">{{#if rollRequest.meta.noDc}}-{{else}}{{rollRequest.dc}}{{/if}}</span>
                 </div>
                 {{#if rollRequest.ownerOutcome}}
                 <span class="ionrift-dc-outcome ionrift-dc-outcome--{{rollRequest.ownerOutcome}}"
-                    data-tooltip="{{#if (eq rollRequest.ownerOutcome 'pass')}}You passed{{else}}You failed{{/if}}{{#if rollRequest.ownerTotal}} · rolled {{rollRequest.ownerTotal}}{{/if}}">
+                    data-tooltip="{{#if (eq rollRequest.ownerOutcome 'pass')}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipPassed"}}{{else}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipFailed"}}{{/if}}{{#if rollRequest.ownerTotal}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipRolled" total=rollRequest.ownerTotal}}{{/if}}">
                     <i class="fas {{#if (eq rollRequest.ownerOutcome 'pass')}}fa-check{{else}}fa-times{{/if}}"></i>
                 </span>
                 {{/if}}
@@ -28,9 +28,9 @@
             {{#if rollRequest.ownerOutcome}}
             <div class="ionrift-roll-request__outcome ionrift-roll-request__outcome--{{rollRequest.ownerOutcome}}">
                 {{#if (eq rollRequest.ownerOutcome 'pass')}}
-                <i class="fas fa-circle-check"></i> You passed{{#if rollRequest.ownerTotal}} with {{rollRequest.ownerTotal}}{{/if}}
+                <i class="fas fa-circle-check"></i> {{#if rollRequest.ownerTotal}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.PassedWith" total=rollRequest.ownerTotal}}{{else}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.Passed"}}{{/if}}
                 {{else}}
-                <i class="fas fa-circle-xmark"></i> You failed{{#if rollRequest.ownerTotal}} with {{rollRequest.ownerTotal}}{{/if}}
+                <i class="fas fa-circle-xmark"></i> {{#if rollRequest.ownerTotal}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.FailedWith" total=rollRequest.ownerTotal}}{{else}}{{localize "IONRIFT.LIBRARY.ROLLREQUEST.Failed"}}{{/if}}
                 {{/if}}
             </div>
             {{/if}}
@@ -47,10 +47,10 @@
             {{#each rollRequest.participants}}
             <div class="ionrift-roll-participant{{#if rolled}} is-done{{else}}{{#if forced}} is-done is-settled{{else}} is-waiting{{/if}}{{/if}}{{#if isOwner}} is-yours{{else}} is-other{{/if}}">
                 {{#if isOwner}}
-                <span class="ionrift-roll-participant__you-pill">You</span>
+                <span class="ionrift-roll-participant__you-pill">{{localize "IONRIFT.LIBRARY.ROLLREQUEST.You"}}</span>
                 {{/if}}
                 <span class="check-avatar check-avatar--static{{#if (eq rollMode "advantage")}} adv{{/if}}{{#if (eq rollMode "disadvantage")}} dis{{/if}}{{#if (eq rollMode "force-pass")}} forced-pass{{/if}}{{#if (eq rollMode "force-fail")}} forced-fail{{/if}}{{#if rolled}} rolled{{/if}}{{#if isOwner}} is-yours{{/if}}"
-                    data-tooltip="{{name}}{{#if (eq rollMode "force-pass")}} · Auto-pass (no roll needed){{else if (eq rollMode "force-fail")}} · Auto-fail (no roll needed){{else if (eq rollMode "advantage")}} · Advantage{{else if (eq rollMode "disadvantage")}} · Disadvantage{{/if}}{{#if isOwner}} · You{{/if}}">
+                    data-tooltip="{{name}}{{#if (eq rollMode "force-pass")}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipAutoPass"}}{{else if (eq rollMode "force-fail")}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipAutoFail"}}{{else if (eq rollMode "advantage")}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipAdvantage"}}{{else if (eq rollMode "disadvantage")}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipDisadvantage"}}{{/if}}{{#if isOwner}} · {{localize "IONRIFT.LIBRARY.ROLLREQUEST.You"}}{{/if}}">
                     {{#if img}}
                     <img src="{{img}}" alt="{{name}}" />
                     {{/if}}
@@ -73,15 +73,15 @@
                 <span class="ionrift-roll-participant__name">{{name}}</span>
                 <span class="ionrift-roll-participant__status">
                     {{#if rolled}}
-                    <i class="fas fa-check"></i> Rolled
+                    <i class="fas fa-check"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.StatusRolled"}}
                     {{else if (eq rollMode "force-pass")}}
-                    <i class="fas fa-check"></i> Auto-pass
+                    <i class="fas fa-check"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.StatusAutoPass"}}
                     {{else if (eq rollMode "force-fail")}}
-                    <i class="fas fa-times"></i> Auto-fail
+                    <i class="fas fa-times"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.StatusAutoFail"}}
                     {{else if isOwner}}
-                    Your turn
+                    {{localize "IONRIFT.LIBRARY.ROLLREQUEST.StatusYourTurn"}}
                     {{else}}
-                    <i class="fas fa-hourglass-half"></i> Waiting
+                    <i class="fas fa-hourglass-half"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.StatusWaiting"}}
                     {{/if}}
                 </span>
             </div>
@@ -106,14 +106,14 @@
         {{#unless rolled}}
         <div class="event-roll-line pending">
             <span class="roll-char-name">{{name}}</span>
-            <span class="roll-status"><i class="fas fa-spinner fa-spin"></i> Waiting...</span>
+            <span class="roll-status"><i class="fas fa-spinner fa-spin"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.WaitingEllipsis"}}</span>
             <button type="button"
                 class="btn-roll-for-player"
                 data-action="{{../rollRequest.gmRollAction}}"
                 data-character-id="{{id}}"
                 data-event-index="{{../rollRequest.meta.eventIndex}}"
-                data-tooltip="Roll on their behalf">
-                <i class="fas fa-dice"></i> Roll for them
+                data-tooltip="{{localize "IONRIFT.LIBRARY.ROLLREQUEST.TooltipRollForPlayer"}}">
+                <i class="fas fa-dice"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.RollForPlayer"}}
             </button>
         </div>
         {{/unless}}
@@ -135,7 +135,7 @@
     {{#if rollRequest.ownerSettled}}
     <div class="event-roll-settled-note">
         <i class="fas fa-check-circle"></i>
-        The GM set your outcome for this check. You do not need to roll. Wait for the rest of the party.
+        {{localize "IONRIFT.LIBRARY.ROLLREQUEST.GmSettledNote"}}
     </div>
     {{else if rollRequest.actionTargets.length}}
     <div class="event-adjudicate-buttons ionrift-roll-request__actions">
@@ -149,21 +149,21 @@
             {{#if ../rollRequest.meta.activityId}}data-activity-id="{{../rollRequest.meta.activityId}}"{{/if}}
             {{#if ../rollRequest.meta.day}}data-day="{{../rollRequest.meta.day}}"{{/if}}>
             <i class="fas fa-dice-d20"></i>
-            Roll {{#if (eq ../rollRequest.meta.rollType "formula")}}{{../rollRequest.skillName}}{{else}}{{../rollRequest.skillName}}{{/if}} · {{name}}
+            {{localize "IONRIFT.LIBRARY.ROLLREQUEST.RollButton" skill=../rollRequest.skillName name=name}}
         </button>
         {{/each}}
     </div>
     {{else if rollRequest.allRolled}}
     <div class="event-roll-submitted">
-        <i class="fas fa-check"></i> All requested rolls are in.
+        <i class="fas fa-check"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.AllRollsIn"}}
     </div>
     {{else if rollRequest.participants.length}}
     <div class="event-check-waiting">
-        <i class="fas fa-hourglass-half"></i> Waiting for other party members to roll...
+        <i class="fas fa-hourglass-half"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.WaitingParty"}}
     </div>
     {{else}}
     <div class="event-check-waiting">
-        <i class="fas fa-hourglass-half"></i> Waiting for watch to roll...
+        <i class="fas fa-hourglass-half"></i> {{localize "IONRIFT.LIBRARY.ROLLREQUEST.WaitingWatch"}}
     </div>
     {{/if}}
 

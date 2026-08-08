@@ -8,6 +8,7 @@ import {
 import { buildPromptRollContext, centerRollRequestRoster } from "../../services/rolls/RollRequestView.js";
 import { ensureDcPulseAnimation } from "../../services/rolls/RollRequestDcPulse.js";
 import { PromptQueue, DISMISSED } from "./PromptQueue.js";
+import { localize } from "../../utils/I18n.js";
 
 const PARTIAL_NAME = "rollRequest";
 const TEMPLATE_PATH = "modules/ionrift-library/templates/partials/_roll-request.hbs";
@@ -146,14 +147,14 @@ export class RollRequestPromptApp {
                     ?? body.querySelector("[data-action=\"ionriftRoll\"]");
                 if (button instanceof HTMLButtonElement) {
                     button.disabled = true;
-                    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Rolling...`;
+                    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.Rolling")}`;
                 }
 
                 const type = payload.type ?? "skill";
-                const typeLabel = type === "save" ? "Saving Throw"
-                    : type === "skill" ? "Skill Check"
-                        : type === "formula" ? "Roll"
-                            : type === "ability" ? "Ability Check" : "Roll";
+                const typeLabel = type === "save" ? localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.SavingThrow")
+                    : type === "skill" ? localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.SkillCheck")
+                        : type === "formula" ? localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.Roll")
+                            : type === "ability" ? localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.AbilityCheck") : localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.Roll");
                 const keyLabel = type === "formula"
                     ? (payload.formula ?? "dice")
                     : (SKILL_DISPLAY_NAMES[payload.key] ?? String(payload.key ?? "").toUpperCase());
@@ -163,8 +164,8 @@ export class RollRequestPromptApp {
                 const flavorText = payload.flavor
                     ? `<strong>${actor.name}</strong> - ${payload.flavor}`
                     : type === "formula"
-                        ? `<strong>${actor.name}</strong> - ${payload.formula ?? "Roll"}`
-                        : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
+                        ? `<strong>${actor.name}</strong> - ${payload.formula ?? localize("IONRIFT.LIBRARY.APPS.ROLLPROMPT.Roll")}`
+                        : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, ${localize("IONRIFT.LIBRARY.ROLLREQUEST.DC")} ${dc}` : ""})`;
 
                 try {
                     let result;

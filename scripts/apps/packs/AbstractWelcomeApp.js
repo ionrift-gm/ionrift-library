@@ -1,4 +1,5 @@
 import { Logger } from "../../services/platform/Logger.js";
+import { localize, format } from "../../utils/I18n.js";
 
 const Parent = globalThis.FormApplication || globalThis.Application;
 export class AbstractWelcomeApp extends Parent {
@@ -41,7 +42,7 @@ export class AbstractWelcomeApp extends Parent {
             height: "auto",
             resizable: false,
             classes: ["ionrift", "welcome-window"], // Ensure branding class
-            title: "Welcome to Ionrift"
+            title: localize("IONRIFT.LIBRARY.APPS.WELCOME.WinTitle") || "Welcome to Ionrift"
         });
     }
 
@@ -94,11 +95,11 @@ export class AbstractWelcomeApp extends Parent {
     }
 
     _getCompleteMessage() {
-        return "The protocol is up-to-date with current module versions.";
+        return localize("IONRIFT.LIBRARY.APPS.WELCOME.CompleteMsg");
     }
 
     _getIntroText() {
-        return "Welcome to the setup protocol.";
+        return localize("IONRIFT.LIBRARY.APPS.WELCOME.IntroMsg");
     }
 
     activateListeners(html) {
@@ -136,11 +137,11 @@ export class AbstractWelcomeApp extends Parent {
             this.completedSteps.add(stepId);
             this.currentStepIndex++;
             this.render();
-            ui.notifications.info(`${this.moduleTitle} | Step Complete: ${stepId}`);
+            ui.notifications.info(`${this.moduleTitle} | ${format("IONRIFT.LIBRARY.APPS.WELCOME.StepComplete", { step: stepId })}`);
 
         } catch (err) {
             Logger.error(this.moduleTitle, `Step Failed: ${stepId}`, err);
-            ui.notifications.error(`${this.moduleTitle} | Error: ${err.message}`);
+            ui.notifications.error(`${this.moduleTitle} | ${format("IONRIFT.LIBRARY.APPS.WELCOME.Error", { message: err.message })}`);
             // Reset button
             btn.prop("disabled", false);
             if (icon.length) icon.attr("class", originalIcon);
@@ -160,7 +161,7 @@ export class AbstractWelcomeApp extends Parent {
         // Save current version as complete
         await game.settings.set(this.options.moduleId, this.settingsKey, this.currentVersion);
         this.close();
-        ui.notifications.info(`${this.moduleTitle} | Setup Complete!`);
+        ui.notifications.info(`${this.moduleTitle} | ${localize("IONRIFT.LIBRARY.APPS.WELCOME.SetupComplete")}`);
     }
 
     async _onSkip(event) {

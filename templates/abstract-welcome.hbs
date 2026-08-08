@@ -8,11 +8,11 @@
         {{#if alreadyVerified}}
         <div class="already-verified"
             style="text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 209, 55, 0.1); border: 1px solid #4cd137; border-radius: 4px;">
-            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> Protocol Complete</h3>
+            <h3 style="color: #4cd137; margin: 0 0 5px 0;"><i class="fas fa-check-circle"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.ProtocolComplete"}}</h3>
             <p style="margin: 0; opacity: 0.9;">{{completeMessage}}</p>
             <button class="reset-btn"
                 style="margin-top: 10px; background: rgba(0,0,0,0.3); border: 1px solid #4cd137; color: #fff;">
-                <i class="fas fa-redo"></i> Re-Run Protocol
+                <i class="fas fa-redo"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.ReRunProtocol"}}
             </button>
         </div>
         {{else}}
@@ -44,7 +44,7 @@
 
                 <div class="step-action">
                     {{#if this.isCompleted}}
-                    <span class="status-done"><i class="fas fa-check-circle success"></i> Done</span>
+                    <span class="status-done"><i class="fas fa-check-circle success"></i> {{localize "IONRIFT.LIBRARY.APPS.WELCOME.Done"}}</span>
                     {{else}}
                     <button class="step-action-btn" data-step="{{this.id}}" {{#if this.isPending}}disabled{{/if}}>
                         {{this.actionLabel}}
@@ -58,9 +58,9 @@
 
     <footer class="welcome-footer">
         {{#if isFinished}}
-        <button class="finish-btn">Finish</button>
+        <button class="finish-btn">{{localize "IONRIFT.LIBRARY.APPS.WELCOME.Finish"}}</button>
         {{else}}
-        <button class="skip-btn">Skip</button>
+        <button class="skip-btn">{{localize "IONRIFT.LIBRARY.APPS.WELCOME.Skip"}}</button>
         {{/if}}
     </footer>
 </form>

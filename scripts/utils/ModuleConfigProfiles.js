@@ -6,6 +6,8 @@
  * is injected, then aligns the pack divider above the profile panel.
  */
 
+import { localize, format } from "./I18n.js";
+
 /** @typedef {{ id: string, label: string, icon: string, desc: string, values: Record<string, *> }} ProfileDefinition */
 
 /** @typedef {{ title: string, icon: string, keys: string[] }} SettingsGroupDefinition */
@@ -16,18 +18,18 @@
  * @property {string} [moduleLabel] - Notification prefix (defaults to moduleId)
  * @property {string} anchorKey - First menu/setting used to locate the section container
  * @property {object} quickSetup
- * @property {string} quickSetup.title
- * @property {string} quickSetup.subtitle
- * @property {ProfileDefinition[]} quickSetup.profiles
+ * @property {string} quickSetup.title - Display title or i18n key (resolved at render)
+ * @property {string} quickSetup.subtitle - Subtitle or i18n key (resolved at render)
+ * @property {ProfileDefinition[]} quickSetup.profiles - label/desc may be i18n keys
  * @property {string[]} quickSetup.profileKeys
- * @property {Record<string, string>} quickSetup.keyLabels
+ * @property {Record<string, string>} quickSetup.keyLabels - Values may be i18n keys
  * @property {(key: string, value: *) => { text: string, cssClass: string }} [quickSetup.formatCell]
- * @property {string} [quickSetup.confirmNote] - Footer note in apply dialog
- * @property {{ beforeKey: string, label: string }[]} [quickSetup.confirmRowGroups]
+ * @property {string} [quickSetup.confirmNote] - Footer note or i18n key
+ * @property {{ beforeKey: string, label: string }[]} [quickSetup.confirmRowGroups] - label may be i18n key
  * @property {() => void} [quickSetup.onGuide]
- * @property {string} [quickSetup.guideTooltip]
+ * @property {string} [quickSetup.guideTooltip] - Tooltip or i18n key
  * @property {(profile: ProfileDefinition) => void|Promise<void>} [quickSetup.onApplied]
- * @property {SettingsGroupDefinition[]} groups
+ * @property {SettingsGroupDefinition[]} groups - title may be i18n key
  */
 
 export class ModuleConfigProfiles {
@@ -132,10 +134,11 @@ export class ModuleConfigProfiles {
         const formatCell = quickSetup.formatCell ?? ModuleConfigProfiles.formatCellDefault;
         const rowGroups = quickSetup.confirmRowGroups ?? [];
 
+        const profileLabel = localize(profile.label);
         const rows = quickSetup.profileKeys.map(k => {
             const group = rowGroups.find(g => g.beforeKey === k);
             const groupLabel = group
-                ? `<tr class="ionrift-profile-confirm-group"><td colspan="2">${group.label}</td></tr>`
+                ? `<tr class="ionrift-profile-confirm-group"><td colspan="2">${localize(group.label)}</td></tr>`
                 : "";
             const next = profile.values[k];
             let current;
@@ -146,27 +149,28 @@ export class ModuleConfigProfiles {
             }
             const cell = formatCell(k, next);
             const cssClass = ModuleConfigProfiles.profileValueChanged(current, next) ? "on" : "value";
-            return `${groupLabel}<tr><td>${quickSetup.keyLabels[k] ?? k}</td><td class="${cssClass}">${cell.text}</td></tr>`;
+            const keyLabel = quickSetup.keyLabels[k] ? localize(quickSetup.keyLabels[k]) : k;
+            return `${groupLabel}<tr><td>${keyLabel}</td><td class="${cssClass}">${cell.text}</td></tr>`;
         }).join("");
 
         const note = quickSetup.confirmNote
-            ? `<p class="ionrift-profile-note">${quickSetup.confirmNote}</p>`
+            ? `<p class="ionrift-profile-note">${localize(quickSetup.confirmNote)}</p>`
             : "";
 
         const content = `
         <div class="ionrift-profile-confirm">
-            <p>Apply the <strong>${profile.label}</strong> setup for the whole world?</p>
+            <p>${format("IONRIFT.LIBRARY.PROFILES.ConfirmBody", { profile: profileLabel })}</p>
             <table>${rows}</table>
             ${note}
         </div>`;
 
         const proceed = await foundry.applications.api.DialogV2.confirm({
-            window: { title: `Apply ${profile.label} setup`, icon: profile.icon },
+            window: { title: format("IONRIFT.LIBRARY.PROFILES.ConfirmTitle", { profile: profileLabel }), icon: profile.icon },
             classes: ["ionrift-window", "dialog"],
             modal: true,
             content,
-            yes: { label: "Apply", default: false },
-            no: { label: "Cancel", default: true }
+            yes: { label: localize("IONRIFT.LIBRARY.PROFILES.Apply"), default: false },
+            no: { label: localize("IONRIFT.LIBRARY.PROFILES.Cancel"), default: true }
         });
         if (!proceed) return;
 
@@ -182,7 +186,10 @@ export class ModuleConfigProfiles {
         }
 
         const label = moduleLabel ?? moduleId;
-        ui.notifications?.info(`${label}: ${profile.label} setup applied.`);
+        ui.notifications?.info(format("IONRIFT.LIBRARY.PROFILES.Applied", {
+            label,
+            profile: profileLabel
+        }));
     }
 
     /**
@@ -192,9 +199,9 @@ export class ModuleConfigProfiles {
     static _renderProfileButton(p) {
         return `
                 <button type="button" class="ionrift-profile-btn respite-profile-btn" data-profile="${p.id}">
-                    <span class="ionrift-profile-name rp-name"><i class="${p.icon}"></i> ${p.label}</span>
-                    <span class="ionrift-profile-desc rp-desc">${p.desc}</span>
-                    <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> Active</span>
+                    <span class="ionrift-profile-name rp-name"><i class="${p.icon}"></i> ${localize(p.label)}</span>
+                    <span class="ionrift-profile-desc rp-desc">${localize(p.desc)}</span>
+                    <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> ${localize("IONRIFT.LIBRARY.PROFILES.Active")}</span>
                 </button>`;
     }
 
@@ -235,17 +242,18 @@ export class ModuleConfigProfiles {
 
             const header = document.createElement("div");
             header.className = "ionrift-settings-group-header respite-settings-group-header";
-            header.innerHTML = `<i class="${group.icon}"></i><span>${group.title}</span>`;
+            header.innerHTML = `<i class="${group.icon}"></i><span>${localize(group.title)}</span>`;
             place(header);
 
             for (const el of present) place(el);
         }
 
+        const guideTooltip = localize(quickSetup.guideTooltip ?? "IONRIFT.LIBRARY.PROFILES.GuideTooltip");
         const guideBtn = quickSetup.onGuide
             ? `<button type="button" class="ionrift-quick-setup-guide-link respite-quick-setup-guide-link" data-action="openGuide"
-                    data-tooltip="${quickSetup.guideTooltip ?? "Open setup guide"}"
-                    aria-label="Open setup guide">
-                    <i class="fas fa-book-open" aria-hidden="true"></i> Open guide
+                    data-tooltip="${guideTooltip}"
+                    aria-label="${guideTooltip}">
+                    <i class="fas fa-book-open" aria-hidden="true"></i> ${localize('IONRIFT.LIBRARY.PROFILES.OpenGuide')}
                 </button>`
             : "";
 
@@ -255,10 +263,10 @@ export class ModuleConfigProfiles {
         quick.innerHTML = `
         <div class="ionrift-quick-setup-head">
             <div class="ionrift-quick-setup-head-top">
-                <span class="ionrift-quick-setup-title"><i class="fas fa-sliders"></i> ${quickSetup.title}</span>
+                <span class="ionrift-quick-setup-title"><i class="fas fa-sliders"></i> ${localize(quickSetup.title)}</span>
                 ${guideBtn}
             </div>
-            <span class="ionrift-quick-setup-sub">${quickSetup.subtitle}</span>
+            <span class="ionrift-quick-setup-sub">${localize(quickSetup.subtitle)}</span>
         </div>
         <div class="ionrift-quick-setup-options">
             <div class="ionrift-quick-setup-row">
@@ -266,9 +274,9 @@ export class ModuleConfigProfiles {
             </div>
             <div class="ionrift-quick-setup-row ionrift-quick-setup-row-secondary">
             <div class="ionrift-profile-btn respite-profile-btn ionrift-profile-custom respite-profile-custom" data-profile="custom">
-                <span class="ionrift-profile-name rp-name"><i class="fas fa-pen-to-square"></i> Custom</span>
-                <span class="ionrift-profile-desc rp-desc">Your own mix of the options below.</span>
-                <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> Active</span>
+                <span class="ionrift-profile-name rp-name"><i class="fas fa-pen-to-square"></i> ${localize("IONRIFT.LIBRARY.PROFILES.Custom")}</span>
+                <span class="ionrift-profile-desc rp-desc">${localize("IONRIFT.LIBRARY.PROFILES.CustomDesc")}</span>
+                <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> ${localize("IONRIFT.LIBRARY.PROFILES.Active")}</span>
             </div>
             </div>
         </div>`;

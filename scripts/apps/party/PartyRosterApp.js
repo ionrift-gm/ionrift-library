@@ -1,4 +1,5 @@
 import { PartyRoster } from "../../services/party/PartyRoster.js";
+import { localize, format } from "../../utils/I18n.js";
 
 /**
  * PartyRosterApp
@@ -13,7 +14,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {
         id: "ionrift-party-roster",
         window: {
-            title: "Party Roster",
+            title: localize("IONRIFT.LIBRARY.APPS.PARTY.Title") || "Party Roster",
             icon: "fas fa-users",
             resizable: true
         },
@@ -52,7 +53,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
             const classes = actor.itemTypes?.class ?? [];
             const classLabel = classes.length > 0
                 ? classes.map(c => `${c.name} ${c.system?.levels ?? ""}`).join(" / ")
-                : "No class";
+                : localize("IONRIFT.LIBRARY.APPS.PARTY.NoClass");
 
             const owners = Object.entries(actor.ownership ?? {})
                 .filter(([id, level]) => level >= 3 && id !== "default")
@@ -64,7 +65,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
                 name: actor.name,
                 img: actor.img ?? "icons/svg/mystery-man.svg",
                 classLabel,
-                ownerLabel: owners.length > 0 ? owners.join(", ") : "No owner",
+                ownerLabel: owners.length > 0 ? owners.join(", ") : localize("IONRIFT.LIBRARY.APPS.PARTY.NoOwner"),
                 checked: isFirstUse || rosterSet.has(actor.id),
                 isNew: !isFirstUse && !rosterSet.has(actor.id)
             };
@@ -87,11 +88,11 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         let html = `
         <div class="roster-summary-bar">
             <span class="roster-summary-count">
-                <strong>${context.selectedCount}</strong> of ${context.totalCount} characters in roster
+                ${format("IONRIFT.LIBRARY.APPS.PARTY.CountLabel", { selected: context.selectedCount, total: context.totalCount })}
             </span>
             <div class="roster-select-actions">
-                <button type="button" class="roster-select-all">Select All</button>
-                <button type="button" class="roster-select-none">Select None</button>
+                <button type="button" class="roster-select-all">${localize("IONRIFT.LIBRARY.APPS.PARTY.SelectAll")}</button>
+                <button type="button" class="roster-select-none">${localize("IONRIFT.LIBRARY.APPS.PARTY.SelectNone")}</button>
             </div>
         </div>`;
 
@@ -99,14 +100,14 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
             html += `
             <div class="roster-first-use-hint">
                 <i class="fas fa-info-circle"></i>
-                First time setup. All player-owned characters are selected. Uncheck any summons, familiars, or companions that should not participate.
+                ${localize("IONRIFT.LIBRARY.APPS.PARTY.FirstUseHint")}
             </div>`;
         }
 
         html += `<div class="roster-actor-list">`;
         for (const actor of context.actors) {
             const newBadge = actor.isNew
-                ? `<span class="roster-new-badge" title="New character, not yet in roster">NEW</span>`
+                ? `<span class="roster-new-badge" title="${localize("IONRIFT.LIBRARY.APPS.PARTY.NewCharacterTitle")}">${localize("IONRIFT.LIBRARY.APPS.PARTY.NewCharacter")}</span>`
                 : "";
             html += `
             <label class="roster-actor-row ${actor.checked ? "checked" : ""}" data-actor-id="${actor.id}">
@@ -125,7 +126,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         html += `
         <div class="roster-actions">
             <button type="button" class="roster-save-btn">
-                <i class="fas fa-save"></i> Save Roster
+                <i class="fas fa-save"></i> ${localize("IONRIFT.LIBRARY.APPS.PARTY.SaveBtn")}
             </button>
         </div>`;
 
@@ -161,12 +162,12 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
             });
 
             if (selected.length === 0) {
-                ui.notifications.warn("Select at least one character for the party roster.");
+                ui.notifications.warn(localize("IONRIFT.LIBRARY.APPS.PARTY.ErrorNoCharacters"));
                 return;
             }
 
             await PartyRoster.setRoster(selected);
-            ui.notifications.info(`Party roster updated (${selected.length} characters).`);
+            ui.notifications.info(format("IONRIFT.LIBRARY.APPS.PARTY.Success", { count: selected.length }));
             this.close();
         });
 
@@ -184,7 +185,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         const total = checkboxes.length;
         const countEl = el.querySelector(".roster-summary-count");
         if (countEl) {
-            countEl.innerHTML = `<strong>${checked}</strong> of ${total} characters in roster`;
+            countEl.innerHTML = format("IONRIFT.LIBRARY.APPS.PARTY.CountLabel", { selected: checked, total });
         }
     }
 }

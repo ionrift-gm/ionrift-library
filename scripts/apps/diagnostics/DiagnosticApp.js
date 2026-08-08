@@ -1,3 +1,4 @@
+import { localize } from "../../utils/I18n.js";
 import { DiagnosticService } from "../../services/diagnostics/DiagnosticService.js";
 
 export class DiagnosticApp extends FormApplication {
@@ -9,7 +10,7 @@ export class DiagnosticApp extends FormApplication {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-diagnostics",
-            title: "System Diagnostics",
+            title: localize("IONRIFT.LIBRARY.APPS.DIAGNOSTICS.Title") || "System Diagnostics",
             template: "modules/ionrift-library/templates/apps/diagnostic-results.hbs",
             width: 600,
             height: 500,

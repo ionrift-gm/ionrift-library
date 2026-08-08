@@ -2,39 +2,36 @@
     <header class="ionrift-bug-report-header">
         <div class="ionrift-bug-report-title">
             <i class="fas fa-bug"></i>
-            <span>Bug Report</span>
+            <span>{{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.Title"}}</span>
         </div>
     </header>
 
     <div class="ionrift-bug-report-body">
         <p class="ionrift-bug-report-lead">
-            Collects a scrubbed snapshot of this world (module versions, recent console errors, optional note).
-            Nothing is sent until you choose Send.
+            {{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.Lead"}}
         </p>
 
         <div class="form-group">
-            <label for="bug-report-note">Optional note</label>
+            <label for="bug-report-note">{{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.NoteLabel"}}</label>
             <textarea id="bug-report-note" name="note" rows="3"
-                placeholder="What were you doing when something went wrong?"></textarea>
+                placeholder="{{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.NotePlaceholder"}}"></textarea>
         </div>
 
         <p class="ionrift-bug-report-footnote" data-footnote>
             {{#if canSubmit}}
-            You get a reference number to cite in
-            <a href="{{discordUrl}}" target="_blank" rel="noopener">Discord</a> when you send.
+            {{{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.FootnoteSubmit" discordUrl=discordUrl}}}
             {{else}}
-            Copy the report and paste it in
-            <a href="{{discordUrl}}" target="_blank" rel="noopener">Discord</a>.
+            {{{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.FootnoteCopy" discordUrl=discordUrl}}}
             {{/if}}
         </p>
 
         <div class="ionrift-bug-report-actions">
             <button type="button" class="ionrift-btn-secondary" data-action="copy">
-                <i class="fas fa-copy"></i> Copy debug report
+                <i class="fas fa-copy"></i> {{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.BtnCopy"}}
             </button>
             {{#if canSubmit}}
             <button type="button" class="ionrift-save-btn" data-action="send">
-                <i class="fas fa-paper-plane"></i> Send report
+                <i class="fas fa-paper-plane"></i> {{localize "IONRIFT.LIBRARY.APPS.BUGREPORT.BtnSend"}}
             </button>
             {{/if}}
         </div>

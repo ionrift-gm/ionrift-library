@@ -1,3 +1,5 @@
+import { localize } from "../../utils/I18n.js";
+
 /**
  * GM-only story moment panel for cursed item beats and similar table guidance.
  * Uses Ionrift Glass modal styling (.ionrift-window / ionrift-armor-modal-overlay).
@@ -34,11 +36,11 @@ export class StoryMomentApp {
 
             const buttons = Array.isArray(actions) && actions.length > 0
                 ? actions
-                : [{ id: "done", label: "Done", icon: "fas fa-check" }];
+                : [{ id: "done", label: localize("IONRIFT.LIBRARY.APPS.STORYMOMENT.Done"), icon: "fas fa-check" }];
 
             const actionHtml = buttons.map((action) => {
                 const icon = action.icon ? `<i class="${action.icon}"></i> ` : "";
-                const label = String(action.label ?? action.id ?? "Done");
+                const label = String(action.label ?? action.id ?? localize("IONRIFT.LIBRARY.APPS.STORYMOMENT.Done"));
                 return `<button type="button" class="btn-armor-confirm story-moment-action" data-action-id="${action.id}">${icon}${label}</button>`;
             }).join("");
 

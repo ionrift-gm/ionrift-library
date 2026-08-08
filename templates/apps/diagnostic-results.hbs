@@ -1,11 +1,11 @@
 <form class="{{cssClass}}" autocomplete="off"
     style="height: 100%; display: flex; flex-direction: column; overflow: hidden;">
     <header class="diagnostic-header" style="flex: 0 0 auto;">
-        <h1><i class="fas fa-heartbeat"></i> System Diagnostics</h1>
+        <h1><i class="fas fa-heartbeat"></i> {{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.Title"}}</h1>
         <p class="summary">
-            Passed: <span class="count pass">{{summary.pass}}</span> |
-            Warnings: <span class="count warn">{{summary.warn}}</span> |
-            Failed: <span class="count fail">{{summary.fail}}</span>
+            {{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.Passed"}}: <span class="count pass">{{summary.pass}}</span> |
+            {{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.Warnings"}}: <span class="count warn">{{summary.warn}}</span> |
+            {{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.Failed"}}: <span class="count fail">{{summary.fail}}</span>
         </p>
     </header>
 
@@ -40,12 +40,11 @@
             </ul>
         </div>
         {{else}}
-        <p class="no-results" style="text-align: center; padding: 20px; color: #777;">No diagnostic results reported.
-            Are the modules active?</p>
+        <p class="no-results" style="text-align: center; padding: 20px; color: #777;">{{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.NoResults"}}</p>
         {{/each}}
     </div>
 
     <footer class="sheet-footer" style="display: flex; gap: 8px;">
-        <button type="button" name="refresh"><i class="fas fa-sync"></i> Re-Run Diagnostics</button>
+        <button type="button" name="refresh"><i class="fas fa-sync"></i> {{localize "IONRIFT.LIBRARY.APPS.DIAGNOSTICS.ReRun"}}</button>
     </footer>
 </form>

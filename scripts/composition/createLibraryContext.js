@@ -58,6 +58,7 @@ import {
     watchDcAnimation,
     forceDcPulseTest
 } from "../services/rolls/RollRequestDcPulse.js";
+import { localize, format } from "../utils/I18n.js";
 
 export function createLibraryContext() {
     const ctx = {
@@ -142,7 +143,9 @@ export function createLibraryContext() {
         compendiumGuard: CompendiumConfigGuard,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
-        cleanup: LegacyAssetSweeper
+        cleanup: LegacyAssetSweeper,
+        localize,
+        format
     };
 
     exposeLibraryApi(ctx);

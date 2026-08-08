@@ -1,5 +1,6 @@
 import { Logger } from "../../services/platform/Logger.js";
 import { BugReportService } from "../../services/diagnostics/BugReportService.js";
+import { localize, format } from "../../utils/I18n.js";
 
 export const LIBRARY_BUG_REPORT_CONTEXT = "library-settings";
 
@@ -31,7 +32,7 @@ export class BugReportApp extends FormApplication {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-bug-report",
-            title: "Bug Report",
+            title: localize("IONRIFT.LIBRARY.APPS.BUGREPORT.Title"),
             template: "modules/ionrift-library/templates/apps/bug-report.hbs",
             width: 440,
             height: "auto",
@@ -158,7 +159,7 @@ export class BugReportApp extends FormApplication {
 
     async _onCopy() {
         this._setFormBusy(true);
-        this._setStatus("copying", "Preparing debug report");
+        this._setStatus("copying", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusPreparing"));
 
         try {
             const note = this._note();
@@ -167,14 +168,14 @@ export class BugReportApp extends FormApplication {
                 note: note || undefined,
             });
             const detail = copied
-                ? "Report copied to clipboard."
-                : "Report downloaded as JSON.";
-            this._setStatus("success", "Ready to paste", detail);
+                ? localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusCopied")
+                : localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusDownloaded");
+            this._setStatus("success", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusReady"), detail);
             ui.notifications.info(detail);
         } catch (err) {
             Logger.error("BugReport", "Copy bug report failed:", err);
-            this._setStatus("error", "Copy failed", "Check the browser console for details.");
-            ui.notifications.error("Could not copy debug report. Check the browser console.");
+            this._setStatus("error", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusCopyFailed"), localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusCheckConsole"));
+            ui.notifications.error(localize("IONRIFT.LIBRARY.APPS.BUGREPORT.ErrorCopyFailed"));
         } finally {
             this._setFormBusy(false);
         }
@@ -184,18 +185,18 @@ export class BugReportApp extends FormApplication {
         if (!BugReportService.canSubmit()) {
             this._setStatus(
                 "error",
-                "Direct reports unavailable",
-                "Copy the report and paste it in Discord."
+                localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusUnavailable"),
+                localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusPasteDiscord")
             );
             ui.notifications.warn(
-                "Copy the report and paste it in Discord.",
+                localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusPasteDiscord"),
                 { permanent: true }
             );
             return;
         }
 
         this._setFormBusy(true);
-        this._setStatus("submitting", "Submitting report", "Collecting diagnostics and uploading.");
+        this._setStatus("submitting", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusSubmitting"), localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusCollecting"));
 
         try {
             const note = this._note();
@@ -206,7 +207,7 @@ export class BugReportApp extends FormApplication {
 
             if (!result?.ok) {
                 const msg = BugReportService.formatSubmitError(result?.error);
-                this._setStatus("error", "Send failed", msg);
+                this._setStatus("error", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusSendFailed"), msg);
                 ui.notifications.error(msg, { permanent: true });
                 return;
             }
@@ -214,18 +215,18 @@ export class BugReportApp extends FormApplication {
             const reference = result.reference ?? "";
             this._setStatus(
                 "success",
-                "Report received",
+                localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusReceived"),
                 reference
-                    ? `Reference ${reference}. Cite this in Discord if you follow up.`
-                    : "Report uploaded successfully."
+                    ? format("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusReference", { reference })
+                    : localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusUploaded")
             );
 
             await BugReportService.showSubmitSuccess(result);
         } catch (err) {
             Logger.error("BugReport", "Send bug report failed:", err);
             const msg = BugReportService.formatSubmitError(err?.message ?? String(err));
-            this._setStatus("error", "Send failed", msg);
-            ui.notifications.error("Could not send bug report. Try copy and Discord instead.");
+            this._setStatus("error", localize("IONRIFT.LIBRARY.APPS.BUGREPORT.StatusSendFailed"), msg);
+            ui.notifications.error(localize("IONRIFT.LIBRARY.APPS.BUGREPORT.ErrorSendFailed"));
         } finally {
             this._setFormBusy(false);
         }

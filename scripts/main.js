@@ -1,4 +1,5 @@
 import { MODULE_ID } from "./data/moduleId.js";
+import { localize } from "./utils/I18n.js";
 import { createLibraryContext } from "./composition/createLibraryContext.js";
 import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
 import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
@@ -35,8 +36,8 @@ Hooks.once("init", () => {
     createLibraryContext();
 
     game.settings.register(MODULE_ID, "debug", {
-        name: "Debug Mode",
-        hint: "Enable verbose logging for library functions.",
+        name: "IONRIFT.LIBRARY.SETTINGS.DebugName",
+        hint: "IONRIFT.LIBRARY.SETTINGS.DebugHint",
         scope: "client",
         config: false,
         type: Boolean,
@@ -201,26 +202,26 @@ Hooks.once("init", () => {
     });
 
     game.settings.registerMenu(MODULE_ID, "setupWizard", {
-        name: "Creature Database",
-        label: "Initialize Database",
-        hint: "Build the local creature index. Required for Resonance and other monster-aware modules.",
+        name: "IONRIFT.LIBRARY.SETTINGS.CreatureDatabaseName",
+        label: "IONRIFT.LIBRARY.SETTINGS.CreatureDatabaseLabel",
+        hint: "IONRIFT.LIBRARY.SETTINGS.CreatureDatabaseHint",
         icon: "fas fa-database",
         type: CreatureIndexSetupApp,
         restricted: true
     });
 
     game.settings.registerMenu(MODULE_ID, "partyRosterMenu", {
-        name: "Party Roster",
-        label: "Edit Roster",
-        hint: "Choose which characters are in the active adventuring party. Used by Respite, Workshop, and other modules.",
+        name: "IONRIFT.LIBRARY.SETTINGS.PartyRosterName",
+        label: "IONRIFT.LIBRARY.SETTINGS.PartyRosterLabel",
+        hint: "IONRIFT.LIBRARY.SETTINGS.PartyRosterHint",
         icon: "fas fa-users",
         type: PartyRosterApp,
         restricted: true
     });
 
     game.settings.registerMenu(MODULE_ID, "validatorMenu", {
-        name: "Logic Inspector",
-        label: "Inspect Logic",
+        name: "IONRIFT.LIBRARY.SETTINGS.LogicInspectorName",
+        label: "IONRIFT.LIBRARY.SETTINGS.LogicInspectorLabel",
         hint: "",
         icon: "fas fa-code-branch",
         type: ClassifierValidatorApp,
@@ -232,12 +233,12 @@ Hooks.once("init", () => {
     });
 
     Hooks.on("ionrift.runDiagnostics", (reportBuilder) => {
-        reportBuilder.addResult("Ionrift Library", "Modules Loaded", "PASS", "Library Active");
+        reportBuilder.addResult("Ionrift Library", localize("IONRIFT.LIBRARY.DIAGNOSTICS.ModulesLoaded"), "PASS", localize("IONRIFT.LIBRARY.DIAGNOSTICS.LibraryActive"));
         try {
             Logger.log("Library", "Diagnostic Write Test");
-            reportBuilder.addResult("Ionrift Library", "Console Access", "PASS", "Can write to console.");
+            reportBuilder.addResult("Ionrift Library", localize("IONRIFT.LIBRARY.DIAGNOSTICS.ConsoleAccess"), "PASS", localize("IONRIFT.LIBRARY.DIAGNOSTICS.CanWriteConsole"));
         } catch (e) {
-            reportBuilder.addResult("Ionrift Library", "Console Access", "WARN", "Console write failed?");
+            reportBuilder.addResult("Ionrift Library", localize("IONRIFT.LIBRARY.DIAGNOSTICS.ConsoleAccess"), "WARN", localize("IONRIFT.LIBRARY.DIAGNOSTICS.ConsoleWriteFailed"));
         }
     });
 });
@@ -276,20 +277,20 @@ Hooks.once("ready", async () => {
                     if (currentStored === INDEXING_PROTOCOL_VERSION) {
                         return {
                             status: game.ionrift.integration.STATUS.CONNECTED,
-                            label: "Indexed",
-                            message: "Creature Index Up-to-Date"
+                            label: localize("IONRIFT.LIBRARY.INTEGRATION.Indexed"),
+                            message: localize("IONRIFT.LIBRARY.INTEGRATION.IndexUpToDate")
                         };
                     } else if (currentStored && currentStored !== "0.0.0") {
                         return {
                             status: game.ionrift.integration.STATUS.WARNING,
-                            label: "Outdated",
-                            message: "Index Version Mismatch. Re-Initialize"
+                            label: localize("IONRIFT.LIBRARY.INTEGRATION.Outdated"),
+                            message: localize("IONRIFT.LIBRARY.INTEGRATION.IndexMismatch")
                         };
                     }
                     return {
                         status: game.ionrift.integration.STATUS.CONNECTED,
-                        label: "Not yet built",
-                        message: "Initialize when ready."
+                        label: localize("IONRIFT.LIBRARY.INTEGRATION.NotYetBuilt"),
+                        message: localize("IONRIFT.LIBRARY.INTEGRATION.InitializeWhenReady")
                     };
                 }
             });
