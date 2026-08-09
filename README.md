@@ -77,7 +77,7 @@ Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://gi
 - **[Advanced Diagnostics](https://github.com/ionrift-gm/ionrift-library/wiki/4-Advanced-Diagnostics)** - Manifest inspection and troubleshooting
 - **[Targeting Sounds Per Creature](https://github.com/ionrift-gm/ionrift-library/wiki/5-Targeting-Sounds-Per-Creature)** - Per-item and per-actor sound scoping
 - **[Setup: Quartermaster](https://github.com/ionrift-gm/ionrift-library/wiki/10-Setup-Quartermaster)** - Loot generation and cache setup
-- **[Setup: Cursewright](https://github.com/ionrift-gm/ionrift-library/wiki/11-Setup-Cursewright)** - Cursed item lifecycle (premium companion)
+- **[Setup: Cursewright](https://github.com/ionrift-gm/ionrift-library/wiki/11-Setup-Cursewright)** - Cursed item lifecycle (Patreon module)
 
 ## Bug Reports
 
