@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "check:sublayer": "node scripts/dev/verifySublayerConvention.mjs",
-        "test": "vitest run --config scripts/tests/vitest.config.js"
+        "test": "vitest run"
     },
     "author": "Ionrift",
     "license": "SEE LICENSE IN LICENSE.md",

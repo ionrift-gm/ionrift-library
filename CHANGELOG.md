@@ -9,6 +9,14 @@
 - Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
 - `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
 
+## [2.5.14] - 2026-09-03
+
+### Added
+- Starfinder 2e system support, using the PF2e engine.
+
+### Fixed
+- Starfinder and Pathfinder item prices now read credits, UPB, and silver pieces properly instead of returning invalid coin objects.
+
 ## [2.5.13] - 2026-07-26
 
 ### Changed

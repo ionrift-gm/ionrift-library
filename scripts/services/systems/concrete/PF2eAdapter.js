@@ -107,9 +107,11 @@ export class PF2eAdapter extends IonriftSystemAdapter {
     }
 
     getPrice(item) {
-        const price = item?.system?.price?.value;
-        if (!price) return 0;
-        return (price.gp ?? 0) + (price.sp ?? 0) / 10 + (price.cp ?? 0) / 100;
+        const raw = item?.system?.price?.value ?? item?.system?.price;
+        if (!raw) return 0;
+        if (typeof raw === "number") return raw;
+        const credits = (raw.credits ?? 0) + (raw.upb ?? 0);
+        return (raw.pp ?? 0) * 10 + (raw.gp ?? 0) + (raw.sp ?? 0) / 10 + credits / 10 + (raw.cp ?? 0) / 100;
     }
 
     getWeight(item) {

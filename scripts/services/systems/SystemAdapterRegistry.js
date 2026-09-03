@@ -1,6 +1,7 @@
 import { IonriftSystemAdapter } from "./IonriftSystemAdapter.js";
 import { DnD5eAdapter } from "./concrete/DnD5eAdapter.js";
 import { PF2eAdapter } from "./concrete/PF2eAdapter.js";
+import { SF2eAdapter } from "./concrete/SF2eAdapter.js";
 import { DaggerheartAdapter } from "./concrete/DaggerheartAdapter.js";
 import { UniversalTabletopAdapter } from "./concrete/UniversalTabletopAdapter.js";
 
@@ -13,6 +14,7 @@ export class SystemAdapterRegistry {
 
         this.register(new DnD5eAdapter());
         this.register(new PF2eAdapter());
+        this.register(new SF2eAdapter());
         this.register(new DaggerheartAdapter());
         this.register(new UniversalTabletopAdapter());
     }
