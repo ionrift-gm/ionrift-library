@@ -42,7 +42,16 @@ export class IonriftSystemAdapter {
      */
     watchNativeParty(callback) {}
     getRarity(item) { return item?.system?.rarity ?? "common"; }
-    getPrice(item) { return item?.system?.price?.value ?? 0; }
+    getPrice(item) {
+        const raw = item?.system?.price?.value ?? item?.system?.price;
+        if (typeof raw === "number") return raw;
+        if (typeof raw === "object" && raw !== null) {
+            const credits = (raw.credits ?? 0) + (raw.upb ?? 0);
+            return (raw.pp ?? 0) * 10 + (raw.gp ?? 0) + (raw.sp ?? 0) / 10 + credits / 10 + (raw.cp ?? 0) / 100;
+        }
+        const num = Number(raw);
+        return Number.isFinite(num) ? num : 0;
+    }
     getWeight(item) { return item?.system?.weight?.value ?? 0; }
     requiresAttunement(item) {
         return item?.system?.attunement === "required" || item?.system?.attunement === "attuned" || false;
