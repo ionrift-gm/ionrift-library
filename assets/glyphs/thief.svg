@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#241416" />
+      <stop offset="60%" stop-color="#12080a" />
+      <stop offset="100%" stop-color="#080304" />
+    </radialGradient>
+    <linearGradient id="shadow-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#7f1d1d" stop-opacity="0.3" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#991b1b" />
+      <stop offset="50%" stop-color="#450a0a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#24191b" />
+      <stop offset="100%" stop-color="#080304" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#080304" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#450a0a" stroke-width="1" />
+
+  <!-- Background Crossed Daggers Watermark -->
+  <g opacity="0.08" stroke="#ef4444" stroke-width="1.2" fill="none">
+    <circle cx="60" cy="60" r="42" />
+    <line x1="28" y1="28" x2="92" y2="92" />
+    <line x1="92" y1="28" x2="28" y2="92" />
+  </g>
+
+  <!-- Thief / Assassin Bust -->
+  <!-- Shoulders & Cloak of Shadows -->
+  <path d="M 22 108 C 24 82 38 70 52 68 L 50 86 L 40 108 Z" fill="url(#shadow-body)" />
+  <path d="M 98 108 C 96 82 82 70 68 68 L 70 86 L 80 108 Z" fill="url(#shadow-body)" />
+  <path d="M 26 108 C 28 80 44 68 60 68 C 76 68 92 80 94 108 Z" fill="url(#shadow-body)" stroke="#080304" stroke-width="2" />
+
+  <!-- High Leather Throat Wrap / Bandana Mask -->
+  <path d="M 48 56 C 48 56 60 66 72 56 L 74 72 C 66 76 54 76 46 72 Z" fill="#2d1317" stroke="url(#shadow-rim)" stroke-width="1" />
+
+  <!-- Dagger Hilt at Left Shoulder Strap -->
+  <g transform="translate(42, 68) rotate(-25)">
+    <rect x="-2" y="-14" width="4" height="12" fill="#334155" stroke="url(#shadow-rim)" stroke-width="0.8" />
+    <rect x="-6" y="-2" width="12" height="3" fill="#64748b" />
+    <circle cx="0" cy="-14" r="2" fill="#ef4444" />
+  </g>
+
+  <!-- Dagger Hilt at Right Shoulder Strap -->
+  <g transform="translate(78, 68) rotate(25)">
+    <rect x="-2" y="-14" width="4" height="12" fill="#334155" stroke="url(#shadow-rim)" stroke-width="0.8" />
+    <rect x="-6" y="-2" width="12" height="3" fill="#64748b" />
+    <circle cx="0" cy="-14" r="2" fill="#ef4444" />
+  </g>
+
+  <!-- Low Shadow Hood / Assassin Cowl -->
+  <path d="M 60 16 C 44 16 38 28 38 46 C 38 60 48 68 60 68 C 72 68 82 60 82 46 C 82 28 76 16 60 16 Z" fill="url(#shadow-body)" />
+  
+  <!-- Hood Peak and Sinister Edge Highlights -->
+  <path d="M 60 14 C 62 14 80 24 81 44 C 81 54 76 64 70 67" fill="none" stroke="url(#shadow-rim)" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M 60 14 C 58 14 42 22 41 38" fill="none" stroke="url(#shadow-rim)" stroke-width="1.2" opacity="0.6" stroke-linecap="round" />
+  <polygon points="60,13 62,18 58,18" fill="url(#shadow-rim)" />
+
+  <!-- Deep Shadow Eye Cavity -->
+  <ellipse cx="60" cy="44" rx="12" ry="12" fill="#080304" />
+
+  <!-- Sharp, Glinting Rogue Eyes in the Shadows -->
+  <path d="M 50 43 Q 54 41 57 44 Q 54 44 50 43 Z" fill="#ef4444" />
+  <path d="M 70 43 Q 66 41 63 44 Q 66 44 70 43 Z" fill="#ef4444" />
+  <circle cx="54" cy="42.5" r="0.8" fill="#ffffff" />
+  <circle cx="66" cy="42.5" r="0.8" fill="#ffffff" />
+</svg>

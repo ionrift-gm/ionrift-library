@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#1e1b18" />
+      <stop offset="60%" stop-color="#100e0d" />
+      <stop offset="100%" stop-color="#060505" />
+    </radialGradient>
+    <linearGradient id="stone-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f5f4" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#a8a29e" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#57534e" stop-opacity="0.25" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78716c" />
+      <stop offset="50%" stop-color="#44403c" />
+      <stop offset="100%" stop-color="#1c1917" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#231f1c" />
+      <stop offset="100%" stop-color="#080706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#060505" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#292524" stroke-width="1" />
+
+  <!-- Background Broken Chain & Cobblestone Heraldry Watermark -->
+  <g opacity="0.08" stroke="#d6d3d1" stroke-width="1.2" fill="none">
+    <circle cx="60" cy="60" r="42" />
+    <!-- Broken Chain Links -->
+    <ellipse cx="48" cy="36" rx="8" ry="4" transform="rotate(-30 48 36)" />
+    <ellipse cx="68" cy="34" rx="8" ry="4" transform="rotate(25 68 34)" />
+    <line x1="54" y1="36" x2="60" y2="34" stroke-dasharray="2,2" />
+  </g>
+
+  <!-- Knobby Wooden Walking Staff resting on left -->
+  <g stroke="#080706" stroke-width="1.2">
+    <!-- Knotted Stick -->
+    <path d="M 24 108 L 26 50 C 26 40 28 32 30 22 C 32 20 31 16 29 14" fill="none" stroke="#57534e" stroke-width="3" stroke-linecap="round" />
+    <!-- Twine wrap on staff -->
+    <line x1="26" y1="38" x2="28" y2="36" stroke="url(#stone-rim)" stroke-width="1.5" />
+    <line x1="26" y1="42" x2="28" y2="40" stroke="url(#stone-rim)" stroke-width="1.5" />
+  </g>
+
+  <!-- Beggar Bust: Stooped, Ragged Cowl & Patchwork Shawl -->
+  <!-- Hunched Asymmetrical Shoulders -->
+  <path d="M 22 108 C 24 86 36 76 48 74 L 46 88 L 36 108 Z" fill="url(#shadow-body)" />
+  <path d="M 98 108 C 96 82 82 68 68 68 L 70 88 L 84 108 Z" fill="url(#shadow-body)" />
+  <path d="M 26 108 C 28 84 42 70 58 70 C 74 68 92 78 94 108 Z" fill="url(#shadow-body)" stroke="#080706" stroke-width="2" />
+
+  <!-- Tattered Fabric Patches on Cloak -->
+  <polygon points="38,82 48,80 46,90 36,92" fill="#292524" stroke="#44403c" stroke-width="0.8" />
+  <polygon points="76,80 86,84 84,94 74,90" fill="#292524" stroke="#44403c" stroke-width="0.8" />
+  <!-- Stitches -->
+  <line x1="39" y1="84" x2="45" y2="84" stroke="url(#stone-rim)" stroke-width="0.8" opacity="0.6" stroke-dasharray="1.5,1.5" />
+  <line x1="77" y1="86" x2="83" y2="86" stroke="url(#stone-rim)" stroke-width="0.8" opacity="0.6" stroke-dasharray="1.5,1.5" />
+
+  <!-- Ragged Wrapped Scarf / Neck Wrap -->
+  <path d="M 44 72 C 50 82 68 82 74 74 C 70 78 64 82 58 82 C 52 82 46 78 44 72 Z" fill="#3b3734" stroke="#080706" stroke-width="1" />
+
+  <!-- Deep Frayed Hood Cast in Shadow -->
+  <!-- Hood Dome & Asymmetrical Droop -->
+  <path d="M 58 24 C 44 24 38 36 38 50 C 38 62 46 68 58 68 C 70 68 76 60 76 48 C 76 34 72 24 58 24 Z" fill="url(#shadow-body)" />
+
+  <!-- Ragged Hood Hem with Frayed Tears -->
+  <path d="M 38 46 C 40 44 42 46 44 43 C 46 46 48 44 50 46" stroke="#080706" stroke-width="1.5" fill="none" />
+  <!-- Hood Peak & Rim Light -->
+  <path d="M 58 24 C 68 24 74 32 75 48 C 75 58 72 64 66 68" fill="none" stroke="url(#stone-rim)" stroke-width="1.8" stroke-linecap="round" />
+  <path d="M 58 24 C 52 24 42 32 40 44" fill="none" stroke="url(#stone-rim)" stroke-width="1.2" opacity="0.6" stroke-linecap="round" />
+
+  <!-- Darkness within Hood & Glint of Weary Eyes -->
+  <ellipse cx="58" cy="48" rx="12" ry="14" fill="#080706" />
+  <circle cx="54" cy="46" r="0.9" fill="#a8a29e" opacity="0.8" />
+  <circle cx="62" cy="46" r="0.9" fill="#a8a29e" opacity="0.8" />
+
+  <!-- Weathered Hands Holding Chipped Wooden Alms Bowl -->
+  <g transform="translate(46, 84)">
+    <!-- Wooden Bowl -->
+    <path d="M 4 14 C 4 24 24 24 24 14 L 22 10 L 6 10 Z" fill="#292524" stroke="#080706" stroke-width="1.2" />
+    <ellipse cx="14" cy="11" rx="9" ry="3" fill="#1c1917" stroke="#44403c" stroke-width="0.8" />
+    <!-- Single Copper/Tarnished Coin in Bowl -->
+    <circle cx="13" cy="11" r="2.2" fill="#d97706" stroke="#92400e" stroke-width="0.5" />
+    <!-- Cupped Fingers gripping edges -->
+    <path d="M 2 12 C 4 10 6 12 5 16" fill="none" stroke="url(#stone-rim)" stroke-width="1.5" stroke-linecap="round" />
+    <path d="M 26 12 C 24 10 22 12 23 16" fill="none" stroke="url(#stone-rim)" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+
+  <!-- Frayed Threads Hanging off Shoulder -->
+  <path d="M 88 88 L 90 98" stroke="url(#stone-rim)" stroke-width="0.8" opacity="0.7" />
+  <path d="M 84 90 L 85 102" stroke="url(#stone-rim)" stroke-width="0.8" opacity="0.7" />
+
+  <!-- Inner Inset Frame Ring -->
+  <circle cx="60" cy="60" r="54.5" fill="none" stroke="#000000" stroke-width="1.5" opacity="0.6" />
+</svg>

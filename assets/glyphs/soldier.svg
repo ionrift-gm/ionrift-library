@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#241b1f" />
+      <stop offset="60%" stop-color="#140f13" />
+      <stop offset="100%" stop-color="#080608" />
+    </radialGradient>
+    <linearGradient id="crest-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#991b1b" stop-opacity="0.3" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64748b" />
+      <stop offset="50%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#242129" />
+      <stop offset="100%" stop-color="#09080c" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#080608" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#2b1f24" stroke-width="1" />
+
+  <!-- Background Crossed Swords Heraldry -->
+  <g opacity="0.08" stroke="#ef4444" stroke-width="1.5" fill="none">
+    <line x1="26" y1="26" x2="94" y2="94" />
+    <line x1="94" y1="26" x2="26" y2="94" />
+    <circle cx="60" cy="60" r="42" />
+  </g>
+
+  <!-- Upright Broadsword Silhouette beside soldier -->
+  <g stroke="#09080c" stroke-width="1.5">
+    <polygon points="90,16 93,24 93,88 90,92 87,88 87,24" fill="#475569" />
+    <line x1="90" y1="16" x2="90" y2="88" stroke="#cbd5e1" stroke-width="1.2" />
+    <!-- Crossguard -->
+    <rect x="78" y="88" width="24" height="4" rx="1" fill="#64748b" />
+    <!-- Grip & Pommel -->
+    <rect x="88" y="92" width="4" height="14" fill="#334155" />
+    <circle cx="90" cy="108" r="3.5" fill="#64748b" />
+  </g>
+
+  <!-- Armored Soldier Bust -->
+  <!-- Layered Plate Pauldrons -->
+  <path d="M 22 108 C 22 78 40 70 54 68 L 50 82 L 40 108 Z" fill="url(#shadow-body)" />
+  <path d="M 98 108 C 98 78 80 70 66 68 L 70 82 L 80 108 Z" fill="url(#shadow-body)" />
+  <path d="M 26 108 C 28 80 44 68 60 68 C 76 68 92 80 94 108 Z" fill="url(#shadow-body)" stroke="#09080c" stroke-width="2" />
+
+  <!-- Right Heavy Flanged Pauldron -->
+  <path d="M 24 74 C 18 84 20 98 28 106 C 34 104 36 90 32 78 Z" fill="#2d2936" stroke="url(#crest-rim)" stroke-width="1" />
+  <path d="M 28 82 C 22 90 26 98 32 102" fill="none" stroke="#475569" stroke-width="1" />
+
+  <!-- Greathelm / Sallet with Visor -->
+  <!-- Helmet Dome -->
+  <path d="M 42 38 C 42 22 50 16 60 16 C 70 16 78 22 78 38 L 78 54 C 78 66 68 70 60 70 C 52 70 42 66 42 54 Z" fill="url(#shadow-body)" stroke="#09080c" stroke-width="2" />
+  
+  <!-- Crest / Ridge on Greathelm -->
+  <path d="M 59 14 C 59 26 59 38 59 52" stroke="url(#crest-rim)" stroke-width="2.5" stroke-linecap="round" />
+  <!-- Feather / Plume Tuft on Helm -->
+  <path d="M 60 14 C 56 8 46 6 42 8 C 44 12 52 14 58 15 Z" fill="#b91c1c" stroke="url(#crest-rim)" stroke-width="0.8" />
+
+  <!-- Visor Bevel & Breathing Slits -->
+  <path d="M 44 44 L 60 48 L 76 44" fill="none" stroke="url(#crest-rim)" stroke-width="1.8" />
+  <!-- T-Shaped / Horizontal Visor Slit -->
+  <polygon points="46,45 60,49 74,45 74,48 60,52 46,48" fill="#000000" stroke="#000000" stroke-width="1" />
+  <line x1="48" y1="46.5" x2="72" y2="46.5" stroke="#fca5a5" stroke-width="1.2" opacity="0.9" />
+
+  <!-- Breathing Vent Holes -->
+  <circle cx="54" cy="58" r="1" fill="#475569" />
+  <circle cx="58" cy="58" r="1" fill="#475569" />
+  <circle cx="62" cy="58" r="1" fill="#475569" />
+  <circle cx="66" cy="58" r="1" fill="#475569" />
+  <circle cx="56" cy="62" r="1" fill="#475569" />
+  <circle cx="60" cy="62" r="1" fill="#475569" />
+  <circle cx="64" cy="62" r="1" fill="#475569" />
+
+  <!-- Chiseled Gorget Edge -->
+  <path d="M 48 69 L 60 76 L 72 69" fill="none" stroke="url(#crest-rim)" stroke-width="1.5" />
+</svg>

@@ -1,0 +1,306 @@
+<div class="ionrift-app-container avatar-manifest-container" style="display:flex; flex-direction:column; height:100%; min-height:0;">
+
+    <!-- Top Navigation Bar & Global KPI -->
+    <div class="dashboard-header" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid rgba(140,110,240,0.2); background:rgba(12,10,24,0.6); flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:16px;">
+            <div class="dashboard-stat" style="display:flex; align-items:center; gap:10px;">
+                <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; width:44px; height:44px; font-size:0.85em;">
+                    <span>{{coverage.overallCoveragePct}}%</span>
+                </div>
+                <div class="dashboard-text" style="display:flex; flex-direction:column;">
+                    <span class="label" style="font-size:0.7em; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7);">Coverage Health</span>
+                    <span class="value" style="font-size:1em; font-weight:700; color:#fff;">{{coverage.totalTokens}} Tokens</span>
+                </div>
+            </div>
+
+            <!-- Tab Switcher -->
+            <nav class="sheet-tabs tabs" style="display:flex; gap:6px; margin-left:12px;">
+                <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabCoverage}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabCoverage}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+                    <i class="fas fa-chart-pie"></i> Coverage Intelligence
+                </a>
+                <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabCuration}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabCuration}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+                    <i class="fas fa-tags"></i> Token Curation
+                </a>
+                <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabFolders}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabFolders}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+                    <i class="fas fa-folder-tree"></i> Watch Folders ({{watchFolders.length}})
+                </a>
+            </nav>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button type="button" id="rescan-assets-btn" class="ionrift-btn" style="padding:4px 10px; font-size:0.82em; display:flex; align-items:center; gap:6px; background:rgba(120,90,200,0.25); border:1px solid rgba(140,110,240,0.4); border-radius:4px; color:#fff; cursor:pointer;" title="Re-scan all watch folders for new images">
+                <i class="fas fa-sync-alt"></i> Re-scan Folders
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN BODY CONTENT -->
+    <div style="flex:1 1 0; min-height:0; overflow:hidden; display:flex; flex-direction:column;">
+
+        <!-- TAB 1: COVERAGE & GAPS DASHBOARD -->
+        {{#if isTabCoverage}}
+        <div style="flex:1 1 0; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px;">
+            
+            <!-- Legend / Guidance Banner -->
+            <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(20,16,36,0.7); border:1px solid rgba(140,110,240,0.25); border-radius:8px; padding:10px 16px;">
+                <div style="font-size:0.85em; color:rgba(210,200,240,0.9);">
+                    <i class="fas fa-info-circle" style="color:#a78bfa; margin-right:6px;"></i>
+                    Click any cell in the matrix to jump directly to curation for that Species and Archetype.
+                </div>
+                <div style="display:flex; gap:14px; font-size:0.78em; text-transform:uppercase; font-weight:700;">
+                    <span style="display:flex; align-items:center; gap:4px; color:#4ade80;">
+                        <span style="width:10px; height:10px; border-radius:2px; background:#22c55e;"></span> Healthy (3+)
+                    </span>
+                    <span style="display:flex; align-items:center; gap:4px; color:#facc15;">
+                        <span style="width:10px; height:10px; border-radius:2px; background:#eab308;"></span> Thin Variety (1-2)
+                    </span>
+                    <span style="display:flex; align-items:center; gap:4px; color:#c084fc;">
+                        <span style="width:10px; height:10px; border-radius:2px; background:#9333ea;"></span> Generic Species Fallback
+                    </span>
+                    <span style="display:flex; align-items:center; gap:4px; color:#94a3b8;">
+                        <span style="width:10px; height:10px; border-radius:2px; background:#475569;"></span> Vector Glyph (0)
+                    </span>
+                </div>
+            </div>
+
+            <!-- Heatmap Matrix Table -->
+            <div style="overflow-x:auto; background:rgba(15,12,28,0.8); border:1px solid rgba(140,110,240,0.2); border-radius:8px; padding:8px;">
+                <table style="width:100%; border-collapse:collapse; text-align:center; font-size:0.82em;">
+                    <thead>
+                        <tr style="border-bottom:1px solid rgba(140,110,240,0.3); color:rgba(200,190,240,0.7); text-transform:uppercase; font-size:0.75em; letter-spacing:0.5px;">
+                            <th style="text-align:left; padding:8px 12px; width:130px;">Species / Culture</th>
+                            <th style="padding:8px 6px; width:65px;">Coverage</th>
+                            {{#each coverage.archetypes as |arch|}}
+                            <th style="padding:8px 4px;">{{arch}}</th>
+                            {{/each}}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each coverage.speciesList as |species|}}
+                        {{#with (lookup ../coverage.speciesStats species) as |stats|}}
+                        <tr style="border-bottom:1px solid rgba(140,110,240,0.1); transition:background 0.15s ease;">
+                            <td style="text-align:left; padding:8px 12px; font-weight:700; color:#fff; text-transform:capitalize;">
+                                {{species}}
+                                <span style="font-size:0.8em; font-weight:400; color:rgba(160,140,210,0.6); display:block;">
+                                    {{stats.totalTokens}} tokens
+                                </span>
+                            </td>
+                            <td style="padding:8px 6px; font-weight:700; color:{{#if (gte stats.percentage 75)}}#4ade80{{else if (gte stats.percentage 30)}}#facc15{{else}}#f87171{{/if}};">
+                                {{stats.percentage}}%
+                            </td>
+                            {{#each ../../coverage.archetypes as |arch|}}
+                            {{#with (lookup (lookup ../../../coverage.matrix species) arch) as |cell|}}
+                            <td style="padding:4px;">
+                                <div class="matrix-cell" data-species="{{species}}" data-archetype="{{arch}}"
+                                    style="padding:6px 4px; border-radius:4px; font-weight:700; cursor:pointer; transition:all 0.15s ease;
+                                    {{#if (eq cell.status 'optimal')}}background:rgba(34,197,94,0.2); color:#4ade80; border:1px solid rgba(34,197,94,0.4);
+                                    {{else if (eq cell.status 'thin')}}background:rgba(234,179,8,0.2); color:#facc15; border:1px solid rgba(234,179,8,0.4);
+                                    {{else if (eq cell.status 'generic_fallback')}}background:rgba(147,51,234,0.2); color:#c084fc; border:1px solid rgba(147,51,234,0.4);
+                                    {{else}}background:rgba(71,85,105,0.2); color:#94a3b8; border:1px solid rgba(71,85,105,0.3);{{/if}}"
+                                    title="{{species}} {{arch}}: {{cell.count}} token(s) ({{cell.status}})">
+                                    {{cell.count}}
+                                </div>
+                            </td>
+                            {{/with}}
+                            {{/each}}
+                        </tr>
+                        {{/with}}
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+        {{/if}}
+
+        <!-- TAB 2: TOKEN CURATION & BATCH TAGGING -->
+        {{#if isTabCuration}}
+        <div style="flex:1 1 0; min-height:0; display:flex; flex-direction:row;">
+
+            <!-- Left Folder Stratification Sidebar -->
+            <div style="width:230px; flex-shrink:0; background:rgba(10,8,20,0.8); border-right:1px solid rgba(140,110,240,0.2); display:flex; flex-direction:column; padding:10px;">
+                <div style="font-size:0.75em; text-transform:uppercase; font-weight:700; color:rgba(180,165,220,0.6); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>Folder Filter</span>
+                    {{#if selectedFolder}}
+                    <a class="folder-filter-item" data-folder="" style="cursor:pointer; color:#f87171;" title="Clear folder filter">Clear</a>
+                    {{/if}}
+                </div>
+
+                <div style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
+                    {{#each foldersList as |f|}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 6px; border-radius:4px; font-size:0.8em; background:{{#if (eq ../selectedFolder f.folder)}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.03){{/if}};">
+                        <a class="folder-filter-item" data-folder="{{f.folder}}" style="cursor:pointer; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:{{#if (eq ../selectedFolder f.folder)}}#fff{{else}}rgba(200,190,230,0.75){{/if}};" title="{{f.folder}}">
+                            <i class="fas fa-folder" style="color:#fbbf24; margin-right:4px;"></i> {{f.folder}}
+                        </a>
+                        <span style="font-size:0.85em; opacity:0.6; margin-right:4px;">{{f.count}}</span>
+                        <a class="batch-tag-folder-btn" data-folder="{{f.folder}}" style="color:#a78bfa; cursor:pointer;" title="Batch tag all tokens in this folder">
+                            <i class="fas fa-tags"></i>
+                        </a>
+                    </div>
+                    {{else}}
+                    <div style="font-size:0.8em; color:#666; font-style:italic; padding:8px 4px;">No folders scanned yet.</div>
+                    {{/each}}
+                </div>
+            </div>
+
+            <!-- Right Curation Workspace -->
+            <div style="flex:1 1 0; min-height:0; display:flex; flex-direction:column; padding:12px; gap:10px;">
+                
+                <!-- Filter Bar -->
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:rgba(18,14,32,0.6); padding:8px 12px; border-radius:6px; border:1px solid rgba(140,110,240,0.15);">
+                    <div style="display:flex; align-items:center; gap:6px; flex:1; min-width:180px;">
+                        <i class="fas fa-search" style="color:rgba(180,165,220,0.5);"></i>
+                        <input type="text" id="manifest-search" placeholder="Search tokens or tags..." value="{{filters.query}}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; padding:4px 8px; font-size:0.85em; width:100%;">
+                    </div>
+
+                    <select id="species-filter" style="width:120px; font-size:0.82em;">
+                        <option value="all">All Species</option>
+                        {{#each speciesOptions as |sp|}}
+                        <option value="{{sp}}" {{#if (eq ../filters.species sp)}}selected{{/if}}>{{sp}}</option>
+                        {{/each}}
+                    </select>
+
+                    <select id="archetype-filter" style="width:130px; font-size:0.82em;">
+                        <option value="all">All Archetypes</option>
+                        {{#each archetypeOptions as |arch|}}
+                        <option value="{{arch}}" {{#if (eq ../filters.archetype arch)}}selected{{/if}}>{{arch}}</option>
+                        {{/each}}
+                    </select>
+
+                    <select id="status-filter" style="width:130px; font-size:0.82em;">
+                        <option value="all">All Statuses</option>
+                        <option value="auto" {{#if (eq filters.status 'auto')}}selected{{/if}}>Auto-detected</option>
+                        <option value="manual" {{#if (eq filters.status 'manual')}}selected{{/if}}>Curated (Locked)</option>
+                        <option value="blacklisted" {{#if (eq filters.status 'blacklisted')}}selected{{/if}}>Blacklisted</option>
+                    </select>
+                </div>
+
+                <!-- Multi-select Batch Actions Bar -->
+                <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.82em; padding:4px 6px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" id="select-all-visible" />
+                            <span>Select Visible</span>
+                        </label>
+                        <span style="color:rgba(180,165,220,0.6);">Selected: <strong class="selected-count-badge" style="color:#a78bfa;">{{selectedCount}}</strong></span>
+                    </div>
+
+                    <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="padding:3px 10px; font-size:0.82em; background:rgba(140,110,240,0.3); border:1px solid rgba(140,110,240,0.5); border-radius:4px; color:#fff; cursor:pointer;">
+                        <i class="fas fa-check-double"></i> Batch Tag Selected
+                    </button>
+                </div>
+
+                <!-- Tokens List -->
+                <div style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                    {{#each tokens as |t|}}
+                    <div style="display:flex; align-items:center; gap:10px; padding:6px 10px; border-radius:6px; background:{{#if t.isBlacklisted}}rgba(40,15,20,0.7){{else if t.isManual}}rgba(24,18,48,0.7){{else}}rgba(16,12,30,0.5){{/if}}; border:1px solid {{#if t.isBlacklisted}}rgba(239,68,68,0.4){{else if t.isManual}}rgba(168,85,247,0.4){{else}}rgba(140,110,240,0.15){{/if}}; opacity:{{#if t.isBlacklisted}}0.55{{else}}1{{/if}};">
+                        
+                        <input type="checkbox" class="token-select-chk" data-path="{{t.path}}" {{#if t.isSelected}}checked{{/if}} />
+
+                        <img src="{{t.path}}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid rgba(140,110,240,0.3); background:#06050a;" onerror="this.src='icons/svg/mystery-man.svg'" />
+
+                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-size:0.85em; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                    {{t.filename}}
+                                </span>
+                                {{#if t.isManual}}
+                                <i class="fas fa-lock" style="font-size:0.7em; color:#a78bfa;" title="Manually Curated"></i>
+                                {{else}}
+                                <i class="fas fa-wand-magic-sparkles" style="font-size:0.7em; color:rgba(200,190,230,0.4);" title="Auto-detected"></i>
+                                {{/if}}
+                            </div>
+                            <span style="font-size:0.72em; color:rgba(180,165,220,0.5); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                {{t.path}}
+                            </span>
+                        </div>
+
+                        <!-- Clickable Badges -->
+                        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+                            <button type="button" class="token-edit-badge-btn" data-path="{{t.path}}" style="padding:2px 8px; border-radius:4px; font-size:0.75em; font-weight:700; background:rgba(120,90,200,0.25); border:1px solid rgba(140,110,240,0.4); color:#c4b5fd; cursor:pointer;" title="Click to edit curation">
+                                {{t.species}} &bull; {{t.archetype}}
+                            </button>
+
+                            <button type="button" class="toggle-blacklist-btn" data-path="{{t.path}}" style="padding:3px 6px; border-radius:4px; font-size:0.8em; background:transparent; border:none; color:{{#if t.isBlacklisted}}#ef4444{{else}}rgba(180,165,220,0.4){{/if}}; cursor:pointer;" title="{{#if t.isBlacklisted}}Un-blacklist (allow use){{else}}Blacklist (exclude from generation){{/if}}">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {{else}}
+                    <div style="text-align:center; padding:32px 16px; color:#888;">
+                        <i class="fas fa-images" style="font-size:2em; margin-bottom:10px; opacity:0.4;"></i>
+                        <p>No tokens found matching criteria.</p>
+                    </div>
+                    {{/each}}
+                </div>
+
+                <!-- Pagination Footer -->
+                <div style="display:flex; align-items:center; justify-content:space-between; padding-top:6px; border-top:1px solid rgba(140,110,240,0.15); font-size:0.82em; color:#aaa;">
+                    <div>Showing {{pagination.startItem}} - {{pagination.endItem}} of {{pagination.totalItems}}</div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button type="button" class="page-prev" {{#unless pagination.hasPrev}}disabled{{/unless}} style="padding:2px 8px;"><i class="fas fa-chevron-left"></i></button>
+                        <span>Page {{pagination.current}} of {{pagination.total}}</span>
+                        <button type="button" class="page-next" {{#unless pagination.hasNext}}disabled{{/unless}} style="padding:2px 8px;"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- TAB 3: WATCH FOLDERS -->
+        {{#if isTabFolders}}
+        <div style="flex:1 1 0; min-height:0; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:20px;">
+            
+            <div style="background:rgba(20,16,36,0.7); border:1px solid rgba(140,110,240,0.25); border-radius:8px; padding:16px;">
+                <h3 style="margin-top:0; font-size:1.05em; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <i class="fas fa-folder-open" style="color:#a78bfa;"></i> Watched Asset Folders
+                </h3>
+                <p style="font-size:0.85em; color:rgba(210,200,240,0.75); margin-bottom:16px;">
+                    Declare directories in your Foundry User Data folder where token assets live. The scanner recursively catalogues images within these locations.
+                </p>
+
+                <!-- Add Folder Row -->
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px;">
+                    <input type="text" id="new-watch-folder-input" placeholder="e.g. tokens/mobs or assets/characters" style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; padding:6px 10px; font-size:0.9em;">
+                    <button type="button" id="browse-watch-folder-btn" class="ionrift-btn" style="padding:6px 12px; font-size:0.85em; background:rgba(120,90,200,0.2); border:1px solid rgba(140,110,240,0.4); border-radius:4px; color:#fff; cursor:pointer;" title="Browse Server Folders">
+                        <i class="fas fa-folder-tree"></i> Browse...
+                    </button>
+                    <button type="button" id="add-watch-folder-btn" class="ionrift-btn" style="padding:6px 14px; font-size:0.85em; background:rgba(140,110,240,0.4); border:1px solid rgba(140,110,240,0.6); border-radius:4px; color:#fff; cursor:pointer;">
+                        <i class="fas fa-plus"></i> Add Folder
+                    </button>
+                </div>
+
+                <!-- Folders List -->
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    {{#each watchFolders as |folder|}}
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-radius:6px; background:rgba(12,10,24,0.6); border:1px solid rgba(140,110,240,0.2);">
+                        <span style="font-family:monospace; font-size:0.9em; color:#ded4f7;">
+                            <i class="fas fa-folder" style="color:#fbbf24; margin-right:8px;"></i> {{folder}}
+                        </span>
+                        <button type="button" class="remove-watch-folder-btn" data-folder="{{folder}}" style="padding:3px 8px; font-size:0.8em; background:transparent; border:none; color:#f87171; cursor:pointer;" title="Remove this watch folder">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+
+            <!-- Starter Scaffolding Section -->
+            <div style="background:rgba(20,16,36,0.5); border:1px solid rgba(140,110,240,0.18); border-radius:8px; padding:16px; display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <h4 style="margin:0 0 4px 0; color:#fff; font-size:0.95em;">Scaffold Starter Art Tokens</h4>
+                    <p style="margin:0; font-size:0.82em; color:rgba(200,190,230,0.65);">
+                        Seeds the clean dark-fantasy vector archetype tokens into <code>tokens/ionrift/</code> so your world is immediately populated.
+                    </p>
+                </div>
+                <button type="button" id="scaffold-seed-btn" class="ionrift-btn" style="padding:6px 14px; font-size:0.85em; background:rgba(34,197,94,0.25); border:1px solid rgba(34,197,94,0.5); border-radius:4px; color:#4ade80; cursor:pointer;">
+                    <i class="fas fa-seedling"></i> Seed Starter Art
+                </button>
+            </div>
+
+        </div>
+        {{/if}}
+
+    </div>
+</div>
