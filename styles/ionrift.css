@@ -2593,4 +2593,191 @@ button.ionrift-badge.classifier-override-btn:hover {
     font-size: 0.75rem;
 }
 
+/* ── Terrain Manager ─────────────────────────────────────────────── */
 
+.ionrift-terrain-manager {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ionrift-terrain-manager .terrain-empty-state {
+    text-align: center;
+    padding: 1.25rem 1rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ionrift-terrain-manager .terrain-empty-state i {
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.15);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.ionrift-terrain-manager .terrain-empty-state p {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+}
+
+.ionrift-terrain-manager .terrain-empty-hint {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.35);
+    line-height: 1.45;
+}
+
+.ionrift-terrain-manager .terrain-summary {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.5);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ionrift-terrain-manager .terrain-summary strong {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.ionrift-terrain-manager .terrain-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.ionrift-terrain-manager .terrain-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.ionrift-terrain-manager .terrain-row:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.ionrift-terrain-manager .terrain-row-info {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.ionrift-terrain-manager .terrain-row-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ionrift-terrain-manager .terrain-category-badge {
+    display: inline-block;
+    padding: 0.05rem 0.35rem;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.ionrift-terrain-manager .terrain-category-built {
+    background: rgba(139, 92, 246, 0.1);
+    color: rgba(167, 139, 250, 0.8);
+    border-color: rgba(139, 92, 246, 0.2);
+}
+
+.ionrift-terrain-manager .terrain-category-wilderness {
+    background: rgba(34, 197, 94, 0.1);
+    color: rgba(74, 222, 128, 0.8);
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.ionrift-terrain-manager .terrain-category-safe-haven {
+    background: rgba(250, 204, 21, 0.1);
+    color: rgba(253, 224, 71, 0.8);
+    border-color: rgba(250, 204, 21, 0.2);
+}
+
+.ionrift-terrain-manager .terrain-badge {
+    display: inline-block;
+    padding: 0.05rem 0.3rem;
+    font-size: 0.5rem;
+    font-weight: 700;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.ionrift-terrain-manager .terrain-badge-qm {
+    background: rgba(251, 146, 60, 0.12);
+    color: rgba(251, 146, 60, 0.8);
+    border: 1px solid rgba(251, 146, 60, 0.2);
+}
+
+.ionrift-terrain-manager .terrain-badge-respite {
+    background: rgba(96, 165, 250, 0.12);
+    color: rgba(96, 165, 250, 0.8);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.ionrift-terrain-manager .terrain-remove-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ionrift-terrain-manager .terrain-remove-btn:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #f87171;
+}
+
+.ionrift-terrain-manager .terrain-actions {
+    display: flex;
+    justify-content: flex-start;
+    padding-top: 0.4rem;
+}
+
+.ionrift-terrain-manager .terrain-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(155, 89, 182, 0.15);
+    border: 1px solid rgba(155, 89, 182, 0.25);
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ionrift-terrain-manager .terrain-import-btn:hover {
+    background: rgba(155, 89, 182, 0.25);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.ionrift-terrain-manager .terrain-import-btn i {
+    font-size: 0.7rem;
+}

@@ -12,6 +12,11 @@
  * an extension should be visible to every consumer at once. Most consumers
  * should prefer their own registry seeded from `getBase()`.
  *
+ * GMs can import custom terrains via JSON. Imported terrains are stored in a
+ * world setting and re-loaded on each boot. Each imported terrain carries a
+ * `modules` bag with per-module content sections that are delivered to
+ * listeners via the `ionrift.terrainImported` hook.
+ *
  * @typedef {"wilderness" | "built" | "safe-haven"} TerrainCategory
  *
  * `built` covers non-wilderness environments where travel resolution (forage, hunt,
@@ -62,6 +67,8 @@ export class TerrainRegistry {
         this._terrains = new Map();
         /** @type {Set<string>} Ids that belong to the kernel base. */
         this._baseIds = new Set();
+        /** @type {Set<string>} Ids that were user-imported (not base, not module-registered). */
+        this._importedIds = new Set();
 
         for (const t of BASE_TERRAINS) {
             this._seed(t);
@@ -167,6 +174,123 @@ export class TerrainRegistry {
         const t = this._terrains.get(id);
         if (!t) return "wilderness";
         return normalizeTerrainCategory(t.category) ?? "wilderness";
+    }
+
+    // ── Imported terrain management ─────────────────────────────────
+
+    /**
+     * Import a custom terrain from a parsed JSON object. Validates the spine,
+     * registers it, persists to the world setting, and fires the
+     * `ionrift.terrainImported` hook so listening modules can store their
+     * content sections.
+     *
+     * @param {object} data - Parsed terrain JSON with at least `id` and `label`.
+     * @returns {{ isNew: boolean } | { error: string }}
+     */
+    importTerrain(data) {
+        if (!data?.id || !data?.label) {
+            Logger.warn("TerrainRegistry", "importTerrain: id and label are required.");
+            return { error: "invalid" };
+        }
+        if (this._baseIds.has(data.id)) {
+            Logger.warn("TerrainRegistry", `importTerrain: cannot override base terrain "${data.id}".`);
+            return { error: "base-terrain" };
+        }
+
+        const isNew = !this._importedIds.has(data.id);
+        const category = normalizeTerrainCategory(data.category) ?? "wilderness";
+
+        // Separate the per-module content bag from the spine
+        const modules = data.modules ?? {};
+        if (!data.modules) {
+            // Accept top-level module keys (quartermaster, respite) for convenience
+            if (data.quartermaster) modules.quartermaster = data.quartermaster;
+            if (data.respite) modules.respite = data.respite;
+        }
+
+        const spine = { id: data.id, label: data.label, category };
+        this.register(spine);
+        this._importedIds.add(data.id);
+
+        const hookPayload = { ...spine, modules };
+        Hooks.callAll("ionrift.terrainImported", hookPayload);
+
+        return { isNew };
+    }
+
+    /**
+     * Remove a user-imported terrain. Refuses base ids. Fires the
+     * `ionrift.terrainRemoved` hook.
+     *
+     * @param {string} id
+     * @returns {boolean} True if an imported terrain was removed.
+     */
+    removeImportedTerrain(id) {
+        if (this._baseIds.has(id)) {
+            Logger.warn("TerrainRegistry", `removeImportedTerrain: cannot remove base terrain "${id}".`);
+            return false;
+        }
+        if (!this._importedIds.has(id)) {
+            return false;
+        }
+
+        this._importedIds.delete(id);
+        this._terrains.delete(id);
+
+        Hooks.callAll("ionrift.terrainRemoved", id);
+        return true;
+    }
+
+    /**
+     * All user-imported terrain definitions.
+     * @returns {TerrainDefinition[]}
+     */
+    getImported() {
+        const out = [];
+        for (const id of this._importedIds) {
+            const t = this._terrains.get(id);
+            if (t) out.push(t);
+        }
+        return out;
+    }
+
+    /**
+     * Whether a terrain id was user-imported (not base, not overlay-registered).
+     * @param {string} id
+     * @returns {boolean}
+     */
+    isImported(id) {
+        return this._importedIds.has(id);
+    }
+
+    /**
+     * Load imported terrains from the world setting. Called during the `ready`
+     * hook after settings are available. Fires `ionrift.terrainImported` for
+     * each stored entry so listening modules can hydrate their own registries.
+     */
+    loadImported() {
+        let stored;
+        try {
+            stored = game.settings.get("ionrift-library", "importedTerrains");
+        } catch {
+            return;
+        }
+        if (!stored || typeof stored !== "object") return;
+
+        for (const [id, entry] of Object.entries(stored)) {
+            if (this._baseIds.has(id)) {
+                Logger.warn("TerrainRegistry", `loadImported: skipping base terrain id "${id}".`);
+                continue;
+            }
+            if (!entry?.id || !entry?.label) continue;
+
+            const category = normalizeTerrainCategory(entry.category) ?? "wilderness";
+            this.register({ id: entry.id, label: entry.label, category });
+            this._importedIds.add(id);
+
+            const modules = entry.modules ?? {};
+            Hooks.callAll("ionrift.terrainImported", { id: entry.id, label: entry.label, category, modules });
+        }
     }
 }
 
