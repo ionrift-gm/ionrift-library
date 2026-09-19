@@ -596,8 +596,14 @@ export class AvatarManifestApp extends FormApplication {
 
         // 3. Search & Filter controls
         const onFilterChange = () => {
+            const selectedSp = html.find("#species-filter").val();
+            if (selectedSp === "__add_new__") {
+                html.find("#species-filter").val(this.filterSpecies);
+                this._openAddSpeciesDialog();
+                return;
+            }
             this.filterQuery = html.find("#manifest-search").val();
-            this.filterSpecies = html.find("#species-filter").val();
+            this.filterSpecies = selectedSp;
             this.filterArchetype = html.find("#archetype-filter").val();
             this.filterStatus = html.find("#status-filter").val();
             this.currentPage = 1;
@@ -1165,6 +1171,12 @@ export class AvatarManifestApp extends FormApplication {
             this.render();
         });
 
+        // 12b. Add Species Button
+        html.find("#add-species-btn").click(ev => {
+            ev.preventDefault();
+            this._openAddSpeciesDialog();
+        });
+
         // 13. Re-scan All Button
         html.find("#rescan-assets-btn, #refresh-validator").click(async ev => {
             ev.preventDefault();
@@ -1243,6 +1255,198 @@ export class AvatarManifestApp extends FormApplication {
     // Dialogs
     // -------------------------------------------------------------------
 
+    async _openAddSpeciesDialog(initialName = "") {
+        if (this._activeDialog) {
+            try { this._activeDialog.close(); } catch {}
+            this._activeDialog = null;
+        }
+        if (this._loupeTimer) {
+            clearTimeout(this._loupeTimer);
+            this._loupeTimer = null;
+        }
+        $("#ionrift-token-hover-loupe").removeClass("is-visible");
+        this._showBackdrop();
+
+        const catalog = AvatarRegistryService.getCatalog();
+        const catalogList = Object.values(catalog);
+        const selectedCount = this.selectedPaths ? this.selectedPaths.size : 0;
+
+        const findCandidateTokens = (query) => {
+            if (!query || query.length < 2) return [];
+            const clean = query.toLowerCase().trim();
+            return catalogList.filter(t => {
+                const fn = (t.filename || "").toLowerCase();
+                const p = (t.path || "").toLowerCase();
+                const tags = Array.isArray(t.tags) ? t.tags.map(x => String(x).toLowerCase()) : [];
+                return fn.includes(clean) || p.includes(clean) || tags.includes(clean);
+            });
+        };
+
+        const initialCandidates = findCandidateTokens(initialName);
+
+        const content = `
+            <form class="ionrift-form glass-ui" style="display:flex; flex-direction:column; gap:12px; padding:6px 0;">
+                <p class="notes" style="font-size:0.82rem; color:rgba(200,190,240,0.8); margin:0; line-height:1.4;">
+                    Register a new playable or civilian species for Token Curation, Coverage Tracking, and Citizen Generation.
+                </p>
+
+                <div class="form-group-stacked">
+                    <label style="color:#fff; font-weight:600;">Species Label <span style="color:#f87171;">*</span></label>
+                    <input type="text" name="speciesLabel" id="new-species-label-input" value="${initialName}" placeholder="e.g. Aarakocra, Kobold, Goliath" autofocus style="background:rgba(0,0,0,0.35); border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:4px; padding:6px 10px;" />
+                </div>
+
+                <div class="form-group-stacked">
+                    <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Identifier / Slug</label>
+                    <input type="text" name="speciesId" id="new-species-id-input" placeholder="e.g. aarakocra" style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.85rem;" />
+                    <small style="color:rgba(180,165,220,0.6); font-size:0.75rem;">Used internally and in tag classifications (lowercase, hyphens).</small>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <div class="form-group-stacked" style="flex:1;">
+                        <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Token Folder</label>
+                        <input type="text" name="tokenFolder" id="new-species-folder-input" placeholder="defaults to slug" style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; border-radius:4px; padding:4px 8px; font-size:0.85rem;" />
+                    </div>
+                    <div class="form-group-stacked" style="flex:1;">
+                        <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Fallback Species</label>
+                        <select name="tokenFallback" class="manifest-glass-select" style="height:32px; font-size:0.85rem;">
+                            <option value="generic" selected>Generic Reservoir</option>
+                            ${CORE_SPECIES.filter(s => s !== "generic").map(s => `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join("")}
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:10px;">
+                    ${selectedCount > 0 ? `
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:#d8b4fe; margin:0;">
+                        <input type="checkbox" name="assignSelected" checked style="accent-color:#a855f7;" />
+                        <span>Assign & tag <strong>${selectedCount}</strong> currently selected token${selectedCount > 1 ? 's' : ''} as this species</span>
+                    </label>
+                    ` : ''}
+
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:rgba(220,210,250,0.9); margin:0;">
+                        <input type="checkbox" name="autoScanCandidates" checked id="auto-scan-candidates-check" style="accent-color:#a855f7;" />
+                        <span>Scan catalog and auto-tag matching tokens</span>
+                    </label>
+                    <div id="candidate-count-preview" style="font-size:0.78rem; color:#c084fc; padding-left:24px;">
+                        ${initialCandidates.length > 0 ? `<i class="fas fa-check-circle"></i> Found <strong>${initialCandidates.length}</strong> candidate token${initialCandidates.length > 1 ? 's' : ''} matching in catalog.` : `Type a name above to discover matching tokens.`}
+                    </div>
+                </div>
+            </form>
+        `;
+
+        const dlg = new Dialog({
+            title: "Register New Species",
+            content,
+            buttons: {
+                create: {
+                    icon: '<i class="fas fa-plus"></i>',
+                    label: "Create Species",
+                    callback: async html => {
+                        const rawLabel = html.find('[name="speciesLabel"]').val()?.trim();
+                        if (!rawLabel) {
+                            if (typeof ui !== "undefined" && ui.notifications) {
+                                ui.notifications.warn("Ionrift | Please provide a species label.");
+                            }
+                            return;
+                        }
+                        const rawId = html.find('[name="speciesId"]').val()?.trim();
+                        const key = SpeciesRegistry.normalizeKey(rawId || rawLabel);
+                        if (!key) return;
+
+                        const folder = html.find('[name="tokenFolder"]').val()?.trim() || key;
+                        const fallback = html.find('[name="tokenFallback"]').val() || "generic";
+                        const assignSelected = html.find('[name="assignSelected"]').is(":checked");
+                        const autoScan = html.find('[name="autoScanCandidates"]').is(":checked");
+
+                        await SpeciesRegistry.register({
+                            id: key,
+                            label: rawLabel,
+                            tokenFolder: folder,
+                            tokenFallbacks: [fallback],
+                            isCivilianSpecies: true
+                        });
+
+                        const tokensToTag = new Set();
+                        if (assignSelected && this.selectedPaths) {
+                            for (const p of this.selectedPaths) tokensToTag.add(p);
+                        }
+
+                        if (autoScan) {
+                            const matches = findCandidateTokens(key);
+                            for (const m of matches) tokensToTag.add(m.path);
+                        }
+
+                        let taggedCount = 0;
+                        if (tokensToTag.size > 0) {
+                            taggedCount = await AvatarRegistryService.batchTagSelected(Array.from(tokensToTag), {
+                                species: key,
+                                addTags: [key],
+                                curationMode: "manual"
+                            });
+                            this.selectedPaths.clear();
+                        }
+
+                        if (typeof ui !== "undefined" && ui.notifications) {
+                            ui.notifications.info(`Ionrift | Registered species '${rawLabel}'${taggedCount > 0 ? ` and classified ${taggedCount} tokens.` : '.'}`);
+                        }
+
+                        this.filterSpecies = key;
+                        this.currentPage = 1;
+
+                        if (this._activeDialog === dlg) {
+                            this._activeDialog = null;
+                            this._hideBackdrop();
+                        }
+                        this.render();
+                    }
+                },
+                cancel: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Cancel"
+                }
+            },
+            render: html => {
+                const labelInput = html.find("#new-species-label-input");
+                const idInput = html.find("#new-species-id-input");
+                const previewEl = html.find("#candidate-count-preview");
+
+                const updateAuto = () => {
+                    const val = labelInput.val()?.trim() || "";
+                    if (!idInput.data("user-edited")) {
+                        idInput.val(SpeciesRegistry.normalizeKey(val));
+                    }
+                    const searchKey = idInput.val() || SpeciesRegistry.normalizeKey(val);
+                    const candidates = findCandidateTokens(searchKey);
+                    if (candidates.length > 0) {
+                        previewEl.html(`<i class="fas fa-check-circle"></i> Found <strong>${candidates.length}</strong> candidate token${candidates.length > 1 ? 's' : ''} matching <code>${searchKey}</code> in catalog.`);
+                    } else if (searchKey.length >= 2) {
+                        previewEl.html(`<i class="fas fa-info-circle"></i> No tokens matching <code>${searchKey}</code> found in current catalog.`);
+                    } else {
+                        previewEl.html(`Type a name above to discover matching tokens.`);
+                    }
+                };
+
+                idInput.on("input", () => {
+                    idInput.data("user-edited", true);
+                    updateAuto();
+                });
+
+                labelInput.on("input", updateAuto);
+                if (initialName) updateAuto();
+            },
+            close: () => {
+                if (this._activeDialog === dlg) {
+                    this._activeDialog = null;
+                    this._hideBackdrop();
+                }
+            },
+            default: "create"
+        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal"], width: 480 });
+
+        this._activeDialog = dlg;
+        dlg.render(true);
+    }
+
     async _openTokenEditDialog(path) {
         if (!path) return;
         let token = AvatarRegistryService.getToken(path);
@@ -1292,7 +1496,8 @@ export class AvatarManifestApp extends FormApplication {
             customSpeciesOpt +
             allSpecies.map(s =>
                 `<option value="${s}" ${s === token.species ? "selected" : ""}>${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " (Custom)" : ""}</option>`
-            ).join("");
+            ).join("") +
+            `<option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>`;
 
         const isCanonicalArch = CANONICAL_ARCHETYPES.includes(token.archetype);
         const creatureArchOpt = `<option value="creature" ${token.archetype === "creature" || !isCanonicalArch ? "selected" : ""}>Creature (Non-Civilian)</option>`;
@@ -1345,6 +1550,10 @@ export class AvatarManifestApp extends FormApplication {
                         <label>Species / Culture</label>
                         <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                     </div>
+                    <div class="form-group-stacked" id="single-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
+                        <label style="color:#d8b4fe; font-size:0.82rem;"><i class="fas fa-plus-circle"></i> New Species Name</label>
+                        <input type="text" name="newSpeciesName" placeholder="e.g. Aarakocra" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
+                    </div>
                     <div class="form-group-stacked">
                         <label>Canonical Archetype</label>
                         <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
@@ -1373,7 +1582,23 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-save"></i>',
                     label: "Save Changes",
                     callback: async html => {
-                        const species = html.find('[name="species"]').val();
+                        let species = html.find('[name="species"]').val();
+                        if (species === "__add_new__") {
+                            const newName = html.find('[name="newSpeciesName"]').val()?.trim();
+                            if (newName) {
+                                const slug = SpeciesRegistry.normalizeKey(newName);
+                                await SpeciesRegistry.register({
+                                    id: slug,
+                                    label: newName.charAt(0).toUpperCase() + newName.slice(1),
+                                    tokenFolder: slug,
+                                    tokenFallbacks: ["generic"],
+                                    isCivilianSpecies: true
+                                });
+                                species = slug;
+                            } else {
+                                species = "generic";
+                            }
+                        }
                         const archetype = html.find('[name="archetype"]').val();
                         const role = html.find('[name="role"]').val() || archetype;
                         const isManual = html.find('[name="isManual"]').val() === "true";
@@ -1382,6 +1607,9 @@ export class AvatarManifestApp extends FormApplication {
                         let tags = html.find('#token-tags-hidden').val().split(",").map(t => t.trim().toLowerCase().replace(/^#+/, "")).filter(Boolean);
                         if (pendingInput && !tags.includes(pendingInput)) {
                             tags.push(pendingInput);
+                        }
+                        if (species && species !== "generic" && !tags.includes(species)) {
+                            tags.push(species);
                         }
 
                         await AvatarRegistryService.setTokenClassification(path, {
@@ -1407,6 +1635,14 @@ export class AvatarManifestApp extends FormApplication {
                 const $box = html.find("#token-tag-box");
                 const $input = $box.find(".tag-box-inline-input");
                 const $hidden = html.find("#token-tags-hidden");
+
+                html.find('[name="species"]').on("change", ev => {
+                    const isNew = $(ev.currentTarget).val() === "__add_new__";
+                    html.find("#single-new-species-row").toggle(isNew);
+                    if (isNew) {
+                        html.find('[name="newSpeciesName"]').focus();
+                    }
+                });
 
                 html.find("#dialog-reset-auto-btn").click(ev => {
                     ev.preventDefault();
@@ -1557,7 +1793,7 @@ export class AvatarManifestApp extends FormApplication {
         const allSpecies = AvatarRegistryService.getActiveSpeciesList ? AvatarRegistryService.getActiveSpeciesList() : CORE_SPECIES;
         const speciesOpts = `<option value="">-- Leave Unchanged --</option><option value="generic">Unassigned Reservoir</option>` + allSpecies.map(s =>
             `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " (Custom)" : ""}</option>`
-        ).join("");
+        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>`;
 
         const archetypeOpts = `<option value="">-- Leave Unchanged --</option>` + CANONICAL_ARCHETYPES.map(a =>
             `<option value="${a}">${a.charAt(0).toUpperCase() + a.slice(1)}</option>`
@@ -1598,6 +1834,10 @@ export class AvatarManifestApp extends FormApplication {
                     <label>Species / Culture</label>
                     <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                 </div>
+                <div class="form-group-stacked" id="batch-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
+                    <label style="color:#d8b4fe; font-size:0.82rem;"><i class="fas fa-plus-circle"></i> New Species Name</label>
+                    <input type="text" name="newSpeciesName" placeholder="e.g. Aarakocra" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
+                </div>
                 <div class="form-group-stacked">
                     <label>Canonical Archetype</label>
                     <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
@@ -1634,13 +1874,32 @@ export class AvatarManifestApp extends FormApplication {
                     label: "Apply to Selected",
                     callback: async html => {
                         const curationMode = html.find('[name="curationMode"]').val() || "preserve";
-                        const species = html.find('[name="species"]').val() || undefined;
+                        let species = html.find('[name="species"]').val() || undefined;
                         const archetype = html.find('[name="archetype"]').val() || undefined;
                         const role = html.find('[name="role"]').val() || undefined;
                         const rawAddTags = html.find('[name="addTags"]').val();
-                        const addTags = rawAddTags ? rawAddTags.split(",").map(t => t.trim()).filter(Boolean) : undefined;
+                        let addTags = rawAddTags ? rawAddTags.split(",").map(t => t.trim()).filter(Boolean) : undefined;
                         const rawRemoveTags = html.find('[name="removeTags"]').val();
                         const removeTags = rawRemoveTags ? rawRemoveTags.split(",").map(t => t.trim()).filter(Boolean) : undefined;
+
+                        if (species === "__add_new__") {
+                            const newName = html.find('[name="newSpeciesName"]').val()?.trim();
+                            if (newName) {
+                                const slug = SpeciesRegistry.normalizeKey(newName);
+                                await SpeciesRegistry.register({
+                                    id: slug,
+                                    label: newName.charAt(0).toUpperCase() + newName.slice(1),
+                                    tokenFolder: slug,
+                                    tokenFallbacks: ["generic"],
+                                    isCivilianSpecies: true
+                                });
+                                species = slug;
+                                if (!addTags) addTags = [];
+                                if (!addTags.includes(slug)) addTags.push(slug);
+                            } else {
+                                species = undefined;
+                            }
+                        }
 
                         const count = await AvatarRegistryService.batchTagSelected(paths, {
                             species,
@@ -1668,6 +1927,14 @@ export class AvatarManifestApp extends FormApplication {
             },
             default: "save",
             render: html => {
+                html.find('[name="species"]').on("change", ev => {
+                    const isNew = $(ev.currentTarget).val() === "__add_new__";
+                    html.find("#batch-new-species-row").toggle(isNew);
+                    if (isNew) {
+                        html.find('[name="newSpeciesName"]').focus();
+                    }
+                });
+
                 html.find(".remove-chip-btn").click(ev => {
                     ev.preventDefault();
                     const tag = $(ev.currentTarget).data("tag");
@@ -1706,7 +1973,7 @@ export class AvatarManifestApp extends FormApplication {
         const allSpecies = AvatarRegistryService.getActiveSpeciesList ? AvatarRegistryService.getActiveSpeciesList() : CORE_SPECIES;
         const speciesOpts = `<option value="">-- Leave Unchanged --</option><option value="generic">Unassigned Reservoir</option>` + allSpecies.map(s =>
             `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " (Custom)" : ""}</option>`
-        ).join("");
+        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>`;
 
         const archetypeOpts = `<option value="">-- Leave Unchanged --</option>` + CANONICAL_ARCHETYPES.map(a =>
             `<option value="${a}">${a.charAt(0).toUpperCase() + a.slice(1)}</option>`
@@ -1723,6 +1990,10 @@ export class AvatarManifestApp extends FormApplication {
                     <div class="form-group-stacked">
                         <label>Species / Culture</label>
                         <select name="species" class="manifest-glass-select">${speciesOpts}</select>
+                    </div>
+                    <div class="form-group-stacked" id="folder-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
+                        <label style="color:#d8b4fe; font-size:0.82rem;"><i class="fas fa-plus-circle"></i> New Species Name</label>
+                        <input type="text" name="newSpeciesName" placeholder="e.g. Aarakocra" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
                     </div>
                     <div class="form-group-stacked">
                         <label>Canonical Archetype</label>
@@ -1741,6 +2012,7 @@ export class AvatarManifestApp extends FormApplication {
                             <span class="label-hint">Comma separated</span>
                         </label>
                         <input type="text" name="addTags" placeholder="town, faction">
+                    </div>
                     <div class="form-group-stacked">
                         <label>
                             <span>Remove Tags</span>
@@ -1760,14 +2032,33 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-tags"></i>',
                     label: "Apply to Folder",
                     callback: async html => {
-                        const species = html.find('[name="species"]').val() || undefined;
+                        let species = html.find('[name="species"]').val() || undefined;
                         const archetype = html.find('[name="archetype"]').val() || undefined;
                         const role = html.find('[name="role"]').val() || undefined;
                         const rawAddTags = html.find('[name="addTags"]').val();
-                        const addTags = rawAddTags ? AvatarScanner.cleanTags(rawAddTags.split(",").map(t => t.trim()).filter(Boolean)) : undefined;
+                        let addTags = rawAddTags ? AvatarScanner.cleanTags(rawAddTags.split(",").map(t => t.trim()).filter(Boolean)) : undefined;
                         const rawRemoveTags = html.find('[name="removeTags"]').val();
                         const removeTags = rawRemoveTags ? rawRemoveTags.split(",").map(t => t.trim()).filter(Boolean) : undefined;
                         const shouldBlacklist = html.find('[name="isBlacklisted"]').is(":checked");
+
+                        if (species === "__add_new__") {
+                            const newName = html.find('[name="newSpeciesName"]').val()?.trim();
+                            if (newName) {
+                                const slug = SpeciesRegistry.normalizeKey(newName);
+                                await SpeciesRegistry.register({
+                                    id: slug,
+                                    label: newName.charAt(0).toUpperCase() + newName.slice(1),
+                                    tokenFolder: slug,
+                                    tokenFallbacks: ["generic"],
+                                    isCivilianSpecies: true
+                                });
+                                species = slug;
+                                if (!addTags) addTags = [];
+                                if (!addTags.includes(slug)) addTags.push(slug);
+                            } else {
+                                species = undefined;
+                            }
+                        }
 
                         if (shouldBlacklist) {
                             await AvatarRegistryService.banFolder(folderPath);
@@ -1796,6 +2087,15 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-times"></i>',
                     label: "Cancel"
                 }
+            },
+            render: html => {
+                html.find('[name="species"]').on("change", ev => {
+                    const isNew = $(ev.currentTarget).val() === "__add_new__";
+                    html.find("#folder-new-species-row").toggle(isNew);
+                    if (isNew) {
+                        html.find('[name="newSpeciesName"]').focus();
+                    }
+                });
             },
             close: () => {
                 if (this._activeDialog === dlg) {

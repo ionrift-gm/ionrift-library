@@ -129,6 +129,7 @@ const ROLE_KEYWORD_MAP = {
     militia: "guard",
     warden: "guard",
     constable: "guard",
+    ranger: "guard",
 
     soldier: "soldier",
     veteran: "soldier",
@@ -138,6 +139,9 @@ const ROLE_KEYWORD_MAP = {
     gladiator: "soldier",
     champion: "soldier",
     berserker: "soldier",
+    barbarian: "soldier",
+    fighter: "soldier",
+    paladin: "soldier",
 
     noble: "noble",
     lord: "noble",
@@ -173,6 +177,9 @@ const ROLE_KEYWORD_MAP = {
     scholar: "scholar",
     wizard: "scholar",
     mage: "scholar",
+    caster: "scholar",
+    sorcerer: "scholar",
+    warlock: "scholar",
     alchemist: "scholar",
     clerk: "scholar",
     scribe: "scholar",
@@ -181,6 +188,7 @@ const ROLE_KEYWORD_MAP = {
 
     priest: "priest",
     cleric: "priest",
+    druid: "priest",
     monk: "priest",
     acolyte: "priest",
     cultist: "priest",
