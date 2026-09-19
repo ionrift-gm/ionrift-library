@@ -4704,3 +4704,19 @@ button.ionrift-badge.classifier-override-btn:hover {
     border-color: #ef4444 !important;
     box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
 }
+
+/* Manifest Header Actions */
+.avatar-manifest-app .dashboard-header button#add-species-btn,
+.avatar-manifest-app .dashboard-header button#rescan-assets-btn {
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    line-height: 26px !important;
+    padding: 0 12px !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+}
