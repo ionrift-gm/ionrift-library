@@ -25,6 +25,7 @@ export class AvatarManifestApp extends FormApplication {
         this.itemsPerPage = 40;
         this.expandedFolders = new Set();
         this.isFolderSidebarCollapsed = false;
+        this.isOtherSpeciesExpanded = options.isOtherSpeciesExpanded ?? false;
         this._sidebarScrollTop = 0;
         this._activeDialog = null;
         this._loupeTimer = null;
@@ -352,8 +353,9 @@ export class AvatarManifestApp extends FormApplication {
         // Predicate to check if a token matches the active search & dropdown filters
         const matchesActiveFilter = (t) => {
             if (hasSpecies) {
-                if (this.filterSpecies === "generic") {
-                    if (t.species && t.species !== "generic" && CORE_SPECIES.includes(t.species)) return false;
+                if (this.filterSpecies === "generic" || this.filterSpecies === "other") {
+                    const primaryList = coverage.primarySpecies || CORE_SPECIES;
+                    if (t.species && primaryList.includes(t.species)) return false;
                 } else if (t.species !== this.filterSpecies) {
                     return false;
                 }
@@ -399,8 +401,9 @@ export class AvatarManifestApp extends FormApplication {
             tokens = tokens.filter(t => t.path.startsWith(this.selectedFolder));
         }
 
-        if (this.filterSpecies === "generic") {
-            tokens = tokens.filter(t => !t.species || t.species === "generic" || !CORE_SPECIES.includes(t.species));
+        if (this.filterSpecies === "generic" || this.filterSpecies === "other") {
+            const primaryList = coverage.primarySpecies || CORE_SPECIES;
+            tokens = tokens.filter(t => !t.species || t.species === "generic" || !primaryList.includes(t.species));
         } else if (this.filterSpecies !== "all") {
             tokens = tokens.filter(t => t.species === this.filterSpecies);
         }
@@ -530,6 +533,7 @@ export class AvatarManifestApp extends FormApplication {
             breadcrumbs,
             sidebarWidth: this.sidebarWidth || 280,
             isFolderSidebarCollapsed: this.isFolderSidebarCollapsed,
+            isOtherSpeciesExpanded: this.isOtherSpeciesExpanded,
             speciesOptions: coverage.speciesList || CORE_SPECIES,
             archetypeOptions: CANONICAL_ARCHETYPES,
             tokens: paginatedTokens,
@@ -575,6 +579,39 @@ export class AvatarManifestApp extends FormApplication {
         html.find(".nav-tab").click(ev => {
             ev.preventDefault();
             this.activeTab = $(ev.currentTarget).data("tab");
+            this.render();
+        });
+
+        // 1b. Other / Exotic Species Drawer Toggle
+        html.find(".other-species-toggle-btn, .other-species-row").click(ev => {
+            if ($(ev.target).closest("button.promote-species-btn, button.demote-species-btn, .matrix-cell, a").length > 0) return;
+            this.isOtherSpeciesExpanded = !this.isOtherSpeciesExpanded;
+            this.render();
+        });
+
+        // 1c. Promote Exotic Species to Primary Culture
+        html.find(".promote-species-btn").click(async ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const speciesId = $(ev.currentTarget).data("species");
+            if (!speciesId) return;
+            await SpeciesRegistry.promoteSpecies(speciesId);
+            if (typeof ui !== "undefined" && ui.notifications) {
+                ui.notifications.info(`Ionrift | Promoted '${speciesId}' to Primary Culture.`);
+            }
+            this.render();
+        });
+
+        // 1d. Demote Primary Culture to Exotic / Minor Species
+        html.find(".demote-species-btn").click(async ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const speciesId = $(ev.currentTarget).data("species");
+            if (!speciesId) return;
+            await SpeciesRegistry.demoteSpecies(speciesId);
+            if (typeof ui !== "undefined" && ui.notifications) {
+                ui.notifications.info(`Ionrift | Demoted '${speciesId}' to Exotic / Minor Species.`);
+            }
             this.render();
         });
 
@@ -1335,6 +1372,17 @@ export class AvatarManifestApp extends FormApplication {
 
                 <div class="form-group-stacked" style="margin-top:2px;">
                     <label>
+                        <span style="color:rgba(215,205,245,0.9); font-weight:600; font-size:0.82rem;">Species Tier & Coverage Model</span>
+                        <span class="label-hint">Default: Exotic / Minor</span>
+                    </label>
+                    <select name="speciesTier" class="manifest-glass-select" style="width:100%; height:32px; font-size:0.85rem; background:rgba(0,0,0,0.35); border:1px solid rgba(140,110,240,0.35); border-radius:4px; color:#e2e8f0; padding:4px 8px;">
+                        <option value="exotic" selected>Exotic / Minor Species (Target: 10 general tokens)</option>
+                        <option value="major">Primary Culture (Target: 110 tokens across 11 roles)</option>
+                    </select>
+                </div>
+
+                <div class="form-group-stacked" style="margin-top:2px;">
+                    <label>
                         <span style="color:rgba(215,205,245,0.9); font-weight:600; font-size:0.82rem;">Fallback Art Pool</span>
                         <span class="label-hint">When role art is missing</span>
                     </label>
@@ -1401,6 +1449,7 @@ export class AvatarManifestApp extends FormApplication {
                             tokenFallbacks = [fallbackVal, "generic"];
                         }
 
+                        const tier = html.find('[name="speciesTier"]').val() || "exotic";
                         const assignSelected = html.find('[name="assignSelected"]').is(":checked");
                         const autoScan = html.find('[name="autoScanCandidates"]').is(":checked");
 
@@ -1409,7 +1458,8 @@ export class AvatarManifestApp extends FormApplication {
                             label: rawLabel,
                             tokenFolder: folder,
                             tokenFallbacks,
-                            isCivilianSpecies: true
+                            isCivilianSpecies: true,
+                            tier
                         });
 
                         const tokensToTag = new Set();
