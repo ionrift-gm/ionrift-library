@@ -61,11 +61,13 @@ import {
     forceDcPulseTest
 } from "../services/rolls/RollRequestDcPulse.js";
 import { TokenArtResolver } from "../services/TokenArtResolver.js";
+import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
 
 export function createLibraryContext() {
     const ctx = {
         MODULE_ID,
         MODULE_LABEL,
+        speciesRegistry: SpeciesRegistry,
         tokenArt: TokenArtResolver,
         getTokenPath: (species, role, options) => TokenArtResolver.getTokenPath(species, role, options),
         warmArtCache: (options) => TokenArtResolver.warmCache(options),
@@ -126,8 +128,11 @@ export function createLibraryContext() {
         setWorldSetting,
         log: (module, ...args) => Logger.log(module, ...args),
         openValidator: () => new ClassifierValidatorApp().render(true),
+        openTokenManifest: (opts) => new AvatarManifestApp(opts).render(true),
         openAvatarManifest: (opts) => new AvatarManifestApp(opts).render(true),
+        tokenRegistry: AvatarRegistryService,
         avatarRegistry: AvatarRegistryService,
+        TokenManifestApp: AvatarManifestApp,
         AvatarManifestApp,
         runDiagnostics: () => DiagnosticService.instance.showResults(),
         system: adapterRegistry,

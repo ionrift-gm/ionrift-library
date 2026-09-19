@@ -82,7 +82,7 @@ Hooks.once("init", () => {
         default: { timestamp: 0, data: null }
     });
 
-    game.settings.register(MODULE_ID, "registrySnoozed", {
+    game.settings.register(MODULE_ID, "customSpeciesRegistry", {
         scope: "world",
         config: false,
         type: Object,
@@ -246,7 +246,7 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "avatarRegistry", {
-        name: "Avatar Registry",
+        name: "Token Registry",
         hint: "Catalog of discovered and curated token assets and watch folders.",
         scope: "world",
         config: false,
@@ -255,10 +255,10 @@ Hooks.once("init", () => {
     });
 
     game.settings.registerMenu(MODULE_ID, "avatarManifest", {
-        name: "Avatar Manifest",
-        label: "Manage Avatars",
-        hint: "Inspect token art coverage, curate populations, and configure watch folders.",
-        icon: "fas fa-id-badge",
+        name: "Token Manifest",
+        label: "Manage Tokens",
+        hint: "Inspect token art coverage, curate population assets, and configure watch folders.",
+        icon: "fas fa-circle-user",
         type: AvatarManifestApp,
         restricted: true
     });
