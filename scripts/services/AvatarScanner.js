@@ -288,10 +288,21 @@ export class AvatarScanner {
                     if (!normalized) continue;
 
                     const isFolderBanned = AvatarRegistryService.isFolderBanned?.(normalized) || false;
-                    const existing = catalog[normalized];
+                    const existingKey = AvatarRegistryService._findCatalogKey ? AvatarRegistryService._findCatalogKey(filePath, catalog) : null;
+                    const existing = existingKey ? catalog[existingKey] : catalog[normalized];
+                    if (existingKey && existingKey !== normalized) {
+                        delete catalog[existingKey];
+                    }
+
                     if (existing && existing.isManual) {
-                        // Preserve GM curation, but sanitize tags
-                        existing.tags = this.cleanTags(existing.tags);
+                        // Preserve GM curation, but sanitize tags and ensure canonical normalized path
+                        catalog[normalized] = {
+                            ...existing,
+                            path: normalized,
+                            filename: normalized.split("/").pop(),
+                            folder: normalized.substring(0, normalized.lastIndexOf("/")),
+                            tags: this.cleanTags(existing.tags)
+                        };
                         continue;
                     }
 

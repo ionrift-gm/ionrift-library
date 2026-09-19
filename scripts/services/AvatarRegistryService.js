@@ -204,20 +204,72 @@ export class AvatarRegistryService {
         return this.getState().catalog || {};
     }
 
-    static getToken(path) {
+    /**
+     * Finds the matching catalog key for any path variant (exact, normalized, decoded, encoded, or token.path match).
+     * @param {string} path
+     * @param {object} [catalog]
+     * @returns {string|null}
+     */
+    static _findCatalogKey(path, catalog = null) {
+        if (!path || typeof path !== "string") return null;
+        const cat = catalog || this.getCatalog();
+        if (cat[path]) return path;
+
         const normalized = this._normalizePath(path);
-        return this.getCatalog()[normalized] || null;
+        if (cat[normalized]) return normalized;
+
+        let decoded = path;
+        try { decoded = decodeURIComponent(path); } catch {}
+        if (cat[decoded]) return decoded;
+
+        let encoded = path;
+        try { encoded = encodeURI(path); } catch {}
+        if (cat[encoded]) return encoded;
+
+        if (normalized !== path) {
+            let normEncoded = encodeURI(normalized);
+            if (cat[normEncoded]) return normEncoded;
+        }
+
+        const pathNorm = (normalized || "").toLowerCase();
+        const pathRaw = path.toLowerCase();
+        const pathDecoded = (decoded || "").toLowerCase();
+
+        for (const [key, token] of Object.entries(cat)) {
+            if (!token) continue;
+            if (token.path === path || token.path === normalized || token.path === decoded) return key;
+            if (token.path) {
+                const tokPathLower = token.path.toLowerCase();
+                if (tokPathLower === pathRaw || tokPathLower === pathNorm || tokPathLower === pathDecoded) return key;
+                if (this._normalizePath(token.path).toLowerCase() === pathNorm) return key;
+            }
+            if (token.filename) {
+                const tokFileLower = token.filename.toLowerCase();
+                if (tokFileLower === pathRaw || tokFileLower === pathNorm || tokFileLower === pathDecoded) return key;
+                if (this._normalizePath(token.filename).toLowerCase() === pathNorm) return key;
+            }
+        }
+        return null;
+    }
+
+    static getToken(path) {
+        if (!path) return null;
+        const cat = this.getCatalog();
+        const key = this._findCatalogKey(path, cat);
+        return key ? cat[key] : null;
     }
 
     /**
      * Sets or updates classification metadata for an individual token.
      */
     static async setTokenClassification(path, updates = {}) {
+        if (!path) return null;
         const normalized = this._normalizePath(path);
         if (!normalized) return null;
 
         const state = this.getState();
-        const existing = state.catalog[normalized] || {
+        const existingKey = this._findCatalogKey(path, state.catalog) || normalized;
+        const existing = state.catalog[existingKey] || {
             path: normalized,
             filename: normalized.split("/").pop(),
             folder: normalized.substring(0, normalized.lastIndexOf("/")),
@@ -229,7 +281,7 @@ export class AvatarRegistryService {
         const updated = {
             ...existing,
             ...updates,
-            path: normalized,
+            path: existing.path || normalized,
             isManual: updates.isManual !== undefined ? updates.isManual : true
         };
 
@@ -237,7 +289,7 @@ export class AvatarRegistryService {
             updated.tags = Array.from(new Set(updates.tags.map(t => String(t).toLowerCase().trim()).filter(Boolean)));
         }
 
-        state.catalog[normalized] = updated;
+        state.catalog[existingKey] = updated;
         await this.saveState(state);
         return updated;
     }
@@ -251,7 +303,8 @@ export class AvatarRegistryService {
         let modifiedCount = 0;
 
         for (const [path, token] of Object.entries(state.catalog)) {
-            if (path.startsWith(normalizedPrefix)) {
+            const tokenPathNorm = this._normalizePath(token.path || path);
+            if (tokenPathNorm.startsWith(normalizedPrefix)) {
                 let newTags = [...(token.tags || [])];
                 if (updates.removeTags && Array.isArray(updates.removeTags) && updates.removeTags.length) {
                     const removeSet = new Set(updates.removeTags.map(t => t.toLowerCase()));
@@ -261,6 +314,15 @@ export class AvatarRegistryService {
                     newTags = Array.from(new Set([...newTags, ...updates.addTags.map(t => t.toLowerCase())]));
                 }
 
+                let newIsManual = token.isManual;
+                if (updates.curationMode === "manual" || updates.isManual === true) {
+                    newIsManual = true;
+                } else if (updates.curationMode === "auto" || updates.isManual === false) {
+                    newIsManual = false;
+                } else if (updates.species || updates.archetype) {
+                    newIsManual = true;
+                }
+
                 state.catalog[path] = {
                     ...token,
                     ...(updates.species ? { species: updates.species.toLowerCase() } : {}),
@@ -268,7 +330,7 @@ export class AvatarRegistryService {
                     ...(updates.role ? { role: updates.role.toLowerCase() } : {}),
                     ...(updates.isBlacklisted !== undefined ? { isBlacklisted: !!updates.isBlacklisted } : {}),
                     tags: newTags,
-                    isManual: true
+                    isManual: newIsManual
                 };
                 modifiedCount++;
             }
@@ -282,6 +344,8 @@ export class AvatarRegistryService {
 
     /**
      * Batch tags an explicit list of token paths.
+     * Respects curation provenance: does NOT mark tokens as curated unless explicitly requested
+     * or species/archetype are updated.
      */
     static async batchTagSelected(paths, updates = {}) {
         if (!Array.isArray(paths) || paths.length === 0) return 0;
@@ -289,9 +353,9 @@ export class AvatarRegistryService {
         let modifiedCount = 0;
 
         for (const rawPath of paths) {
-            const normalized = this._normalizePath(rawPath);
-            if (state.catalog[normalized]) {
-                const token = state.catalog[normalized];
+            const key = this._findCatalogKey(rawPath, state.catalog);
+            if (key && state.catalog[key]) {
+                const token = state.catalog[key];
                 let newTags = [...(token.tags || [])];
                 if (updates.removeTags && Array.isArray(updates.removeTags) && updates.removeTags.length) {
                     const removeSet = new Set(updates.removeTags.map(t => t.toLowerCase()));
@@ -301,13 +365,33 @@ export class AvatarRegistryService {
                     newTags = Array.from(new Set([...newTags, ...updates.addTags.map(t => t.toLowerCase())]));
                 }
 
-                state.catalog[normalized] = {
+                let newIsManual = token.isManual;
+                if (updates.curationMode === "manual" || updates.isManual === true) {
+                    newIsManual = true;
+                } else if (updates.curationMode === "auto" || updates.isManual === false) {
+                    newIsManual = false;
+                } else if (updates.curationMode === "preserve") {
+                    newIsManual = token.isManual;
+                } else if (updates.species || updates.archetype) {
+                    newIsManual = true;
+                }
+
+                let parsedAuto = {};
+                if (updates.curationMode === "auto") {
+                    try {
+                        const mod = await import("./AvatarScanner.js");
+                        parsedAuto = mod.AvatarScanner.parsePathMetadata(token.path || key);
+                    } catch {}
+                }
+
+                state.catalog[key] = {
                     ...token,
+                    ...parsedAuto,
                     ...(updates.species ? { species: updates.species.toLowerCase() } : {}),
                     ...(updates.archetype ? { archetype: updates.archetype.toLowerCase() } : {}),
                     ...(updates.role ? { role: updates.role.toLowerCase() } : {}),
                     tags: newTags,
-                    isManual: true
+                    isManual: newIsManual
                 };
                 modifiedCount++;
             }
@@ -320,15 +404,58 @@ export class AvatarRegistryService {
     }
 
     /**
+     * Resets a list of tokens back to auto-detected provenance (isManual: false)
+     * and re-evaluates their species, archetype, role, and tags from path metadata.
+     * @param {string[]} paths
+     * @returns {Promise<number>} Number of tokens reset
+     */
+    static async resetTokensToAuto(paths) {
+        if (!Array.isArray(paths) || paths.length === 0) return 0;
+        const state = this.getState();
+        let resetCount = 0;
+
+        let scanner = null;
+        try {
+            const mod = await import("./AvatarScanner.js");
+            scanner = mod.AvatarScanner;
+        } catch {}
+
+        for (const rawPath of paths) {
+            const key = this._findCatalogKey(rawPath, state.catalog);
+            if (key && state.catalog[key]) {
+                const token = state.catalog[key];
+                const tokenPath = token.path || key;
+                let parsed = {};
+                if (scanner && scanner.parsePathMetadata) {
+                    parsed = scanner.parsePathMetadata(tokenPath);
+                }
+
+                state.catalog[key] = {
+                    ...token,
+                    ...parsed,
+                    path: tokenPath,
+                    isManual: false
+                };
+                resetCount++;
+            }
+        }
+
+        if (resetCount > 0) {
+            await this.saveState(state);
+        }
+        return resetCount;
+    }
+
+    /**
      * Toggles blacklist status for a token. Blacklisted tokens are never picked for residents.
      */
     static async toggleBlacklist(path) {
-        const normalized = this._normalizePath(path);
         const state = this.getState();
-        if (state.catalog[normalized]) {
-            state.catalog[normalized].isBlacklisted = !state.catalog[normalized].isBlacklisted;
+        const key = this._findCatalogKey(path, state.catalog);
+        if (key && state.catalog[key]) {
+            state.catalog[key].isBlacklisted = !state.catalog[key].isBlacklisted;
             await this.saveState(state);
-            return state.catalog[normalized].isBlacklisted;
+            return state.catalog[key].isBlacklisted;
         }
         return false;
     }

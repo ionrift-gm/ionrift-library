@@ -388,9 +388,14 @@
                         {{/if}}
                     </div>
 
-                    <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 12px; font-size:0.82em; min-height:28px; background:rgba(140,110,240,0.3); border:1px solid rgba(140,110,240,0.5); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap;">
-                        <i class="fas fa-check-double"></i> Tag Selected ({{selectedCount}})
-                    </button>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 10px; font-size:0.82em; min-height:28px; background:rgba(59,130,246,0.25); border:1px solid rgba(59,130,246,0.45); border-radius:4px; color:#93c5fd; cursor:pointer; white-space:nowrap;" title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
+                            <i class="fas fa-wand-magic-sparkles"></i> Reset to Auto ({{selectedCount}})
+                        </button>
+                        <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 12px; font-size:0.82em; min-height:28px; background:rgba(140,110,240,0.3); border:1px solid rgba(140,110,240,0.5); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap;">
+                            <i class="fas fa-check-double"></i> Tag Selected ({{selectedCount}})
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tokens List (Scrollable) -->
