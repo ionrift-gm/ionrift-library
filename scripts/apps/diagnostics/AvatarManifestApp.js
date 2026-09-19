@@ -1285,46 +1285,58 @@ export class AvatarManifestApp extends FormApplication {
         const initialCandidates = findCandidateTokens(initialName);
 
         const content = `
-            <form class="ionrift-form glass-ui" style="display:flex; flex-direction:column; gap:12px; padding:6px 0;">
-                <p class="notes" style="font-size:0.82rem; color:rgba(200,190,240,0.8); margin:0; line-height:1.4;">
+            <form class="ionrift-form glass-ui" style="display:flex; flex-direction:column; gap:10px; padding:4px 0;">
+                <p class="notes" style="font-size:0.82rem; color:rgba(200,190,240,0.8); margin:0 0 2px 0; line-height:1.4;">
                     Register a new playable or civilian species for Token Curation, Coverage Tracking, and Citizen Generation.
                 </p>
 
                 <div class="form-group-stacked">
-                    <label style="color:#fff; font-weight:600;">Species Label <span style="color:#f87171;">*</span></label>
-                    <input type="text" name="speciesLabel" id="new-species-label-input" value="${initialName}" placeholder="e.g. Aarakocra, Kobold, Goliath" autofocus style="background:rgba(0,0,0,0.35); border:1px solid rgba(168,85,247,0.4); color:#fff; border-radius:4px; padding:6px 10px;" />
+                    <label style="color:#fff; font-weight:600;">
+                        <span>Species Name <span style="color:#f87171;">*</span></span>
+                        <span class="label-hint" style="font-size:0.75rem; color:rgba(180,165,220,0.6);">e.g. Aarakocra, Kobold, Goliath</span>
+                    </label>
+                    <input type="text" name="speciesLabel" id="new-species-label-input" value="${initialName}" placeholder="Species name..." autofocus style="background:rgba(0,0,0,0.35); border:1px solid rgba(168,85,247,0.45); color:#fff; border-radius:4px; padding:6px 10px; font-size:0.95em;" />
                 </div>
 
                 <div class="form-group-stacked">
-                    <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Identifier / Slug</label>
+                    <label>
+                        <span style="color:rgba(200,190,240,0.85); font-size:0.82rem;">Identifier / Slug</span>
+                        <span class="label-hint">internal key & tag</span>
+                    </label>
                     <input type="text" name="speciesId" id="new-species-id-input" placeholder="e.g. aarakocra" style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.85rem;" />
-                    <small style="color:rgba(180,165,220,0.6); font-size:0.75rem;">Used internally and in tag classifications (lowercase, hyphens).</small>
                 </div>
 
-                <div style="display:flex; gap:12px;">
-                    <div class="form-group-stacked" style="flex:1;">
-                        <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Token Folder</label>
-                        <input type="text" name="tokenFolder" id="new-species-folder-input" placeholder="defaults to slug" style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; border-radius:4px; padding:4px 8px; font-size:0.85rem;" />
-                    </div>
-                    <div class="form-group-stacked" style="flex:1;">
-                        <label style="color:rgba(200,190,240,0.85); font-size:0.85rem;">Fallback Species</label>
-                        <select name="tokenFallback" class="manifest-glass-select" style="height:32px; font-size:0.85rem;">
-                            <option value="generic" selected>Generic Reservoir</option>
-                            ${CORE_SPECIES.filter(s => s !== "generic").map(s => `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join("")}
-                        </select>
-                    </div>
+                <div class="form-group-stacked" style="margin-top:2px;">
+                    <label>
+                        <span style="color:rgba(215,205,245,0.9); font-weight:600; font-size:0.82rem;">Fallback Art Pool</span>
+                        <span class="label-hint">When role art is missing</span>
+                    </label>
+                    <select name="tokenFallback" class="manifest-glass-select" style="width:100%; height:32px; font-size:0.85rem; background:rgba(0,0,0,0.35); border:1px solid rgba(140,110,240,0.35); border-radius:4px; color:#e2e8f0; padding:4px 8px;">
+                        <option value="generic" selected>Generic Reservoir (Core / Unassigned Art)</option>
+                        <option value="none">None (Strict — show placeholder glyph for missing roles)</option>
+                        ${CORE_SPECIES.filter(s => s !== "generic").map(s => `<option value="${s}">Borrow from ${s.charAt(0).toUpperCase() + s.slice(1)}</option>`).join("")}
+                    </select>
                 </div>
 
-                <div style="display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.2); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:rgba(170,155,215,0.7); margin: -2px 0 2px 0; padding:0 2px;">
+                    <span>Folder: <code id="folder-slug-preview" style="color:#c084fc; background:rgba(0,0,0,0.3); padding:1px 6px; border-radius:3px; font-family:monospace;">tokens/species/</code></span>
+                    <a id="toggle-custom-folder" style="color:#a78bfa; text-decoration:underline; cursor:pointer;" title="Change watch subfolder path"><i class="fas fa-folder-pen"></i> Change folder</a>
+                </div>
+                <div class="form-group-stacked" id="custom-folder-row" style="display:none; margin-top:2px;">
+                    <label style="font-size:0.8rem; color:rgba(200,190,240,0.85);">Custom Token Subfolder</label>
+                    <input type="text" name="tokenFolder" id="new-species-folder-input" placeholder="defaults to slug" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.82rem;" />
+                </div>
+
+                <div style="display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.22); border:1px solid rgba(140,110,240,0.25); border-radius:6px; padding:10px; margin-top:4px;">
                     ${selectedCount > 0 ? `
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:#d8b4fe; margin:0;">
-                        <input type="checkbox" name="assignSelected" checked style="accent-color:#a855f7;" />
+                        <input type="checkbox" name="assignSelected" checked style="accent-color:#a855f7; width:16px; height:16px;" />
                         <span>Assign & tag <strong>${selectedCount}</strong> currently selected token${selectedCount > 1 ? 's' : ''} as this species</span>
                     </label>
                     ` : ''}
 
                     <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem; color:rgba(220,210,250,0.9); margin:0;">
-                        <input type="checkbox" name="autoScanCandidates" checked id="auto-scan-candidates-check" style="accent-color:#a855f7;" />
+                        <input type="checkbox" name="autoScanCandidates" checked id="auto-scan-candidates-check" style="accent-color:#a855f7; width:16px; height:16px;" />
                         <span>Scan catalog and auto-tag matching tokens</span>
                     </label>
                     <div id="candidate-count-preview" style="font-size:0.78rem; color:#c084fc; padding-left:24px;">
@@ -1354,7 +1366,14 @@ export class AvatarManifestApp extends FormApplication {
                         if (!key) return;
 
                         const folder = html.find('[name="tokenFolder"]').val()?.trim() || key;
-                        const fallback = html.find('[name="tokenFallback"]').val() || "generic";
+                        const fallbackVal = html.find('[name="tokenFallback"]').val() || "generic";
+                        let tokenFallbacks = ["generic"];
+                        if (fallbackVal === "none") {
+                            tokenFallbacks = [];
+                        } else if (fallbackVal !== "generic") {
+                            tokenFallbacks = [fallbackVal, "generic"];
+                        }
+
                         const assignSelected = html.find('[name="assignSelected"]').is(":checked");
                         const autoScan = html.find('[name="autoScanCandidates"]').is(":checked");
 
@@ -1362,7 +1381,7 @@ export class AvatarManifestApp extends FormApplication {
                             id: key,
                             label: rawLabel,
                             tokenFolder: folder,
-                            tokenFallbacks: [fallback],
+                            tokenFallbacks,
                             isCivilianSpecies: true
                         });
 
@@ -1408,7 +1427,16 @@ export class AvatarManifestApp extends FormApplication {
             render: html => {
                 const labelInput = html.find("#new-species-label-input");
                 const idInput = html.find("#new-species-id-input");
+                const folderInput = html.find("#new-species-folder-input");
+                const folderPreview = html.find("#folder-slug-preview");
                 const previewEl = html.find("#candidate-count-preview");
+
+                html.find("#toggle-custom-folder").click(ev => {
+                    ev.preventDefault();
+                    const row = html.find("#custom-folder-row");
+                    row.toggle();
+                    if (row.is(":visible")) folderInput.focus();
+                });
 
                 const updateAuto = () => {
                     const val = labelInput.val()?.trim() || "";
@@ -1416,6 +1444,7 @@ export class AvatarManifestApp extends FormApplication {
                         idInput.val(SpeciesRegistry.normalizeKey(val));
                     }
                     const searchKey = idInput.val() || SpeciesRegistry.normalizeKey(val);
+                    folderPreview.text(`tokens/${searchKey || "species"}/`);
                     const candidates = findCandidateTokens(searchKey);
                     if (candidates.length > 0) {
                         previewEl.html(`<i class="fas fa-check-circle"></i> Found <strong>${candidates.length}</strong> candidate token${candidates.length > 1 ? 's' : ''} matching <code>${searchKey}</code> in catalog.`);
