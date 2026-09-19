@@ -1300,8 +1300,8 @@ export class AvatarManifestApp extends FormApplication {
 
                 <div class="form-group-stacked">
                     <label>
-                        <span style="color:rgba(200,190,240,0.85); font-size:0.82rem;">Identifier / Slug</span>
-                        <span class="label-hint">internal key & tag</span>
+                        <span style="color:rgba(200,190,240,0.85); font-size:0.82rem;">System Identifier</span>
+                        <span class="label-hint">lowercase key for tags & lookups</span>
                     </label>
                     <input type="text" name="speciesId" id="new-species-id-input" placeholder="e.g. aarakocra" style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.85rem;" />
                 </div>
@@ -1319,12 +1319,12 @@ export class AvatarManifestApp extends FormApplication {
                 </div>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:rgba(170,155,215,0.7); margin: -2px 0 2px 0; padding:0 2px;">
-                    <span>Folder: <code id="folder-slug-preview" style="color:#c084fc; background:rgba(0,0,0,0.3); padding:1px 6px; border-radius:3px; font-family:monospace;">tokens/species/</code></span>
+                    <span>Folder: <code id="folder-path-preview" style="color:#c084fc; background:rgba(0,0,0,0.3); padding:1px 6px; border-radius:3px; font-family:monospace;">tokens/species/</code></span>
                     <a id="toggle-custom-folder" style="color:#a78bfa; text-decoration:underline; cursor:pointer;" title="Change watch subfolder path"><i class="fas fa-folder-pen"></i> Change folder</a>
                 </div>
                 <div class="form-group-stacked" id="custom-folder-row" style="display:none; margin-top:2px;">
                     <label style="font-size:0.8rem; color:rgba(200,190,240,0.85);">Custom Token Subfolder</label>
-                    <input type="text" name="tokenFolder" id="new-species-folder-input" placeholder="defaults to slug" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.82rem;" />
+                    <input type="text" name="tokenFolder" id="new-species-folder-input" placeholder="defaults to identifier" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); color:#d8b4fe; font-family:monospace; border-radius:4px; padding:4px 8px; font-size:0.82rem;" />
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:8px; background:rgba(0,0,0,0.22); border:1px solid rgba(140,110,240,0.25); border-radius:6px; padding:10px; margin-top:4px;">
@@ -1428,7 +1428,7 @@ export class AvatarManifestApp extends FormApplication {
                 const labelInput = html.find("#new-species-label-input");
                 const idInput = html.find("#new-species-id-input");
                 const folderInput = html.find("#new-species-folder-input");
-                const folderPreview = html.find("#folder-slug-preview");
+                const folderPreview = html.find("#folder-path-preview");
                 const previewEl = html.find("#candidate-count-preview");
 
                 html.find("#toggle-custom-folder").click(ev => {
