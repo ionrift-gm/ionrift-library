@@ -611,6 +611,34 @@ export class AvatarRegistryService {
     }
 
     /**
+     * Returns list of primary species (core + custom species marked major).
+     * @returns {string[]}
+     */
+    static getPrimarySpeciesList() {
+        try {
+            const primary = SpeciesRegistry.getPrimarySpecies();
+            if (Array.isArray(primary) && primary.length > 0) {
+                return primary.map(s => s.id).filter(s => s !== RESERVOIR_SPECIES_KEY);
+            }
+        } catch {}
+        return [...CORE_SPECIES];
+    }
+
+    /**
+     * Returns list of exotic / minor species (custom species marked exotic).
+     * @returns {string[]}
+     */
+    static getExoticSpeciesList() {
+        try {
+            const exotic = SpeciesRegistry.getExoticSpecies();
+            if (Array.isArray(exotic)) {
+                return exotic.map(s => s.id).filter(s => s !== RESERVOIR_SPECIES_KEY);
+            }
+        } catch {}
+        return [];
+    }
+
+    /**
      * Returns curated or best-matching active tokens for a given species and archetype/role.
      * Excludes blacklisted tokens.
      * @param {string} species
@@ -625,6 +653,27 @@ export class AvatarRegistryService {
 
         const candidates = Object.values(catalog).filter(token => !token.isBlacklisted);
         if (candidates.length === 0) return [];
+
+        // 0.5 If species is "other", prioritize registered exotic species tokens before unassigned reservoir
+        if (s === "other") {
+            const exoticList = this.getExoticSpeciesList();
+            if (exoticList.length > 0) {
+                const exoticExact = candidates.filter(t =>
+                    exoticList.includes(t.species) && (t.role === r || t.archetype === r)
+                );
+                if (exoticExact.length > 0) {
+                    const manual = exoticExact.filter(t => t.isManual);
+                    return (manual.length > 0 ? manual : exoticExact).map(t => t.path);
+                }
+                const exoticLoose = candidates.filter(t => exoticList.includes(t.species));
+                if (exoticLoose.length > 0) {
+                    const commoners = exoticLoose.filter(t =>
+                        t.archetype === "commoner" || t.role === "commoner" || !t.archetype
+                    );
+                    return (commoners.length > 0 ? commoners : exoticLoose).map(t => t.path);
+                }
+            }
+        }
 
         // 1. Exact match on species AND (role or archetype)
         const exactMatches = candidates.filter(t =>
@@ -724,6 +773,8 @@ export class AvatarRegistryService {
         const catalog = this.getCatalog();
         const activeTokens = Object.values(catalog).filter(t => !t.isBlacklisted);
         const speciesList = this.getActiveSpeciesList();
+        const primarySpeciesList = this.getPrimarySpeciesList();
+        const exoticSpeciesList = this.getExoticSpeciesList();
 
         const matrix = {};
         const speciesStats = {};
@@ -732,7 +783,8 @@ export class AvatarRegistryService {
         let totalCreditedPoints = 0;
         let totalPossiblePoints = 0;
 
-        for (const species of speciesList) {
+        // 1. Primary Species / Cultures (Core + Promoted Major Species)
+        for (const species of primarySpeciesList) {
             matrix[species] = {};
             let speciesFilledArchetypes = 0;
             let speciesOptimalArchetypes = 0;
@@ -797,7 +849,8 @@ export class AvatarRegistryService {
                 percentage: coveragePct,
                 totalTokens: speciesTotalTokens.length,
                 hasGenericFallback: hasSpeciesGeneric,
-                isCustom: !CORE_SPECIES.includes(species)
+                isCustom: !CORE_SPECIES.includes(species),
+                tier: "major"
             };
 
             // Custom Caste Evaluation (if species has castes defined)
@@ -907,6 +960,134 @@ export class AvatarRegistryService {
             }
         }
 
+        // 2. Evaluate Exotic / Minor Species (General Token Pool Target: 10 tokens = 100%)
+        for (const species of exoticSpeciesList) {
+            matrix[species] = {};
+            const speciesTotalTokens = activeTokens.filter(t => t.species === species);
+            const count = speciesTotalTokens.length;
+            const credited = Math.min(count, targetPerArchetype);
+            const maxPoints = targetPerArchetype;
+            const coveragePct = maxPoints > 0 ? Math.round((credited / maxPoints) * 100) : 0;
+
+            let status = "unprovided";
+            if (count >= targetPerArchetype) {
+                status = "optimal";
+            } else if (count >= Math.ceil(targetPerArchetype * 0.5)) {
+                status = "good";
+            } else if (count >= 1) {
+                status = "thin";
+            } else {
+                status = "unprovided";
+            }
+
+            for (const archetype of CANONICAL_ARCHETYPES) {
+                const matching = activeTokens.filter(t =>
+                    t.species === species && (t.archetype === archetype || t.role === archetype)
+                );
+                matrix[species][archetype] = {
+                    count: matching.length,
+                    credited: Math.min(matching.length, targetPerArchetype),
+                    target: targetPerArchetype,
+                    status: matching.length >= targetPerArchetype ? "optimal" : (matching.length >= 1 ? "thin" : (count > 0 ? "generic_fallback" : "unprovided")),
+                    tokens: matching.map(t => t.path)
+                };
+            }
+
+            speciesStats[species] = {
+                filled: count >= 1 ? 1 : 0,
+                optimal: count >= targetPerArchetype ? 1 : 0,
+                total: 1,
+                credited,
+                maxPoints,
+                targetPerArchetype,
+                percentage: coveragePct,
+                totalTokens: count,
+                hasGenericFallback: count > 0,
+                isCustom: true,
+                tier: "exotic",
+                status
+            };
+
+            totalCreditedPoints += credited;
+            totalPossiblePoints += maxPoints;
+        }
+
+        // 3. Construct Unified Other / Reservoir Row across 11 canonical archetypes
+        const otherMatrix = {};
+        let otherFilled = 0;
+        let otherOptimal = 0;
+        let otherCreditedTokens = 0;
+        const otherTokens = activeTokens.filter(t => !t.species || !primarySpeciesList.includes(t.species));
+
+        for (const archetype of CANONICAL_ARCHETYPES) {
+            const matching = otherTokens.filter(t => t.archetype === archetype || t.role === archetype);
+            const count = matching.length;
+            const credited = Math.min(count, targetPerArchetype);
+            otherCreditedTokens += credited;
+
+            let status = "unprovided";
+            if (count >= targetPerArchetype) {
+                status = "optimal";
+                otherFilled++;
+                otherOptimal++;
+            } else if (count >= Math.ceil(targetPerArchetype * 0.5)) {
+                status = "good";
+                otherFilled++;
+            } else if (count >= 1) {
+                status = "thin";
+                otherFilled++;
+            } else if (otherTokens.length > 0) {
+                status = "generic_fallback";
+            } else {
+                status = "unprovided";
+            }
+
+            otherMatrix[archetype] = {
+                count,
+                credited,
+                target: targetPerArchetype,
+                status,
+                tokens: matching.map(t => t.path)
+            };
+        }
+
+        const otherMaxPoints = CANONICAL_ARCHETYPES.length * targetPerArchetype;
+        const otherCoveragePct = otherMaxPoints > 0 ? Math.round((otherCreditedTokens / otherMaxPoints) * 100) : 0;
+
+        const exoticSpeciesDetails = exoticSpeciesList.map(id => {
+            const def = SpeciesRegistry.get(id) || {};
+            const stats = speciesStats[id] || { totalTokens: 0, percentage: 0, status: "unprovided" };
+            return {
+                id,
+                label: def.label || id.charAt(0).toUpperCase() + id.slice(1),
+                tokens: stats.totalTokens,
+                target: targetPerArchetype,
+                percentage: stats.percentage,
+                status: stats.status,
+                isCustom: true,
+                canPromote: true
+            };
+        });
+
+        const otherRow = {
+            matrix: otherMatrix,
+            stats: {
+                filled: otherFilled,
+                optimal: otherOptimal,
+                total: CANONICAL_ARCHETYPES.length,
+                credited: otherCreditedTokens,
+                maxPoints: otherMaxPoints,
+                targetPerArchetype,
+                percentage: otherCoveragePct,
+                totalTokens: otherTokens.length,
+                exoticCount: exoticSpeciesList.length
+            },
+            exoticSpecies: exoticSpeciesDetails
+        };
+
+        matrix["other"] = otherMatrix;
+        speciesStats["other"] = otherRow.stats;
+
         const overallCoveragePct = totalPossiblePoints > 0
             ? Math.round((totalCreditedPoints / totalPossiblePoints) * 100)
             : 0;
@@ -925,10 +1106,13 @@ export class AvatarRegistryService {
             targetPerArchetype,
             archetypes: CANONICAL_ARCHETYPES,
             speciesList,
+            primarySpecies: primarySpeciesList,
+            exoticSpecies: exoticSpeciesList,
             coreSpecies: [...CORE_SPECIES],
             customSpecies: speciesList.filter(s => !CORE_SPECIES.includes(s)),
             matrix,
             speciesStats,
+            otherRow,
             casteMatrix,
             casteStats
         };

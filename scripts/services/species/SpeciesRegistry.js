@@ -124,7 +124,8 @@ export class SpeciesRegistry {
                 tokenFallbacks: ["generic"],
                 castes: [],
                 isCivilianSpecies: key !== "generic",
-                isCustom: false
+                isCustom: false,
+                tier: "major"
             });
         }
 
@@ -140,7 +141,8 @@ export class SpeciesRegistry {
                     : ["generic"],
                 castes: Array.isArray(def.castes) ? def.castes : [],
                 isCivilianSpecies: def.isCivilianSpecies !== false,
-                isCustom: true
+                isCustom: true,
+                tier: def.tier === "major" ? "major" : "exotic"
             });
         }
 
@@ -174,7 +176,8 @@ export class SpeciesRegistry {
                 tokenFallbacks: ["generic"],
                 castes: [],
                 isCivilianSpecies: key !== "generic",
-                isCustom: false
+                isCustom: false,
+                tier: "major"
             };
         }
 
@@ -190,11 +193,70 @@ export class SpeciesRegistry {
                     : ["generic"],
                 castes: Array.isArray(custom[key].castes) ? custom[key].castes : [],
                 isCivilianSpecies: custom[key].isCivilianSpecies !== false,
-                isCustom: true
+                isCustom: true,
+                tier: custom[key].tier === "major" ? "major" : "exotic"
             };
         }
 
         return null;
+    }
+
+    /**
+     * Promotes a custom species to a Primary Culture (major tier).
+     * @param {string} id
+     * @returns {Promise<object|null>}
+     */
+    static async promoteSpecies(id) {
+        const key = this.normalizeKey(id);
+        if (!key || this.isCore(key)) return null;
+        const custom = this.getCustomSpecies();
+        if (custom[key]) {
+            custom[key].tier = "major";
+            this._inMemoryCustom.set(key, custom[key]);
+            this._cache = new Map(Object.entries(custom));
+            if (typeof game !== "undefined" && game.settings?.set) {
+                try { await game.settings.set(this.MODULE_ID, this.SETTING_KEY, custom); } catch {}
+            }
+            return this.get(key);
+        }
+        return null;
+    }
+
+    /**
+     * Demotes a custom species to an Exotic / Minor Species (exotic tier).
+     * @param {string} id
+     * @returns {Promise<object|null>}
+     */
+    static async demoteSpecies(id) {
+        const key = this.normalizeKey(id);
+        if (!key || this.isCore(key)) return null;
+        const custom = this.getCustomSpecies();
+        if (custom[key]) {
+            custom[key].tier = "exotic";
+            this._inMemoryCustom.set(key, custom[key]);
+            this._cache = new Map(Object.entries(custom));
+            if (typeof game !== "undefined" && game.settings?.set) {
+                try { await game.settings.set(this.MODULE_ID, this.SETTING_KEY, custom); } catch {}
+            }
+            return this.get(key);
+        }
+        return null;
+    }
+
+    /**
+     * Returns all species marked as Primary (major tier).
+     * @returns {object[]}
+     */
+    static getPrimarySpecies() {
+        return this.getAll().filter(s => s.id !== "generic" && (s.tier === "major" || !s.isCustom));
+    }
+
+    /**
+     * Returns all species marked as Exotic / Minor (exotic tier).
+     * @returns {object[]}
+     */
+    static getExoticSpecies() {
+        return this.getAll().filter(s => s.id !== "generic" && s.isCustom && s.tier === "exotic");
     }
 
     /**
@@ -231,7 +293,8 @@ export class SpeciesRegistry {
             naming: definition.naming || null,
             traits: definition.traits || null,
             roles: definition.roles || null,
-            isCustom: true
+            isCustom: true,
+            tier: definition.tier === "major" ? "major" : "exotic"
         };
 
         custom[key] = record;

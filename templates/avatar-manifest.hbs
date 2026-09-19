@@ -92,17 +92,24 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {{#each coverage.speciesList as |species|}}
+                        {{#each coverage.primarySpecies as |species|}}
                         {{#with (lookup ../coverage.speciesStats species) as |stats|}}
                         <tr style="border-bottom:1px solid rgba(140,110,240,0.1); transition:background 0.15s ease;">
                             <td style="text-align:left; padding:8px 12px; font-weight:700; color:#fff; text-transform:capitalize;">
-                                {{species}}
-                                {{#if stats.isCustom}}
-                                <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 5px; margin-left:4px; vertical-align:middle;">Homebrew</span>
-                                {{/if}}
-                                {{#if stats.hasCastes}}
-                                <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); border-radius:3px; padding:1px 5px; margin-left:4px; vertical-align:middle;">Castes</span>
-                                {{/if}}
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                                    <span>{{species}}</span>
+                                    <div style="display:flex; align-items:center; gap:4px;">
+                                        {{#if stats.isCustom}}
+                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">Homebrew</span>
+                                        <button type="button" class="ionrift-btn demote-species-btn" data-species="{{species}}" title="Demote to Exotic / Minor species bucket" style="height:20px; line-height:18px; padding:0 6px; font-size:0.7em; background:rgba(234,179,8,0.2); border:1px solid rgba(234,179,8,0.4); color:#fde047; border-radius:3px; cursor:pointer;">
+                                            <i class="fas fa-arrow-down"></i> Demote
+                                        </button>
+                                        {{/if}}
+                                        {{#if stats.hasCastes}}
+                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">Castes</span>
+                                        {{/if}}
+                                    </div>
+                                </div>
                                 <span style="font-size:0.8em; font-weight:400; color:rgba(160,140,210,0.6); display:block;">
                                     {{stats.totalTokens}} tokens
                                 </span>
@@ -140,6 +147,108 @@
                         </tr>
                         {{/with}}
                         {{/each}}
+
+                        <!-- Unified Other & Exotic Species Collective Row -->
+                        <tr class="other-species-row {{#if isOtherSpeciesExpanded}}is-expanded{{/if}}" style="background:rgba(88,28,135,0.18); border-top:2px solid rgba(168,85,247,0.35); border-bottom:1px solid rgba(168,85,247,0.25); cursor:pointer; transition:background 0.15s ease;">
+                            <td style="text-align:left; padding:8px 12px; font-weight:700; color:#fff;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <button type="button" class="other-species-toggle-btn" style="background:none; border:none; color:#c084fc; cursor:pointer; padding:0; font-size:0.9em; display:flex; align-items:center;" title="Expand / collapse exotic species and reservoir drawer">
+                                            <i class="fas {{#if isOtherSpeciesExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
+                                        </button>
+                                        <span style="color:#e9d5ff;">Other / Exotic Species</span>
+                                    </div>
+                                    <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(192,132,252,0.25); color:#d8b4fe; border:1px solid rgba(192,132,252,0.45); border-radius:3px; padding:1px 5px;">Pool</span>
+                                </div>
+                                <span style="font-size:0.78em; font-weight:400; color:rgba(216,180,254,0.7); display:block; padding-left:18px;">
+                                    {{coverage.otherRow.stats.totalTokens}} tokens{{#if coverage.exoticSpecies.length}} ({{coverage.exoticSpecies.length}} exotic species){{/if}}
+                                </span>
+                            </td>
+                            <td style="padding:6px 6px; text-align:center;">
+                                <div style="font-weight:700; font-size:1.05em; color:{{#if (gte coverage.otherRow.stats.percentage 70)}}#4ade80{{else if (gte coverage.otherRow.stats.percentage 35)}}#facc15{{else}}#f87171{{/if}};"
+                                    title="Other & Reservoir Coverage: {{coverage.otherRow.stats.percentage}}% across roles">
+                                    {{coverage.otherRow.stats.percentage}}%
+                                </div>
+                                <div style="font-size:0.73em; color:rgba(216,180,254,0.7);"
+                                    title="{{coverage.otherRow.stats.filled}}/{{coverage.otherRow.stats.total}} roles filled with at least 1 token">
+                                    {{coverage.otherRow.stats.filled}}/{{coverage.otherRow.stats.total}} roles
+                                </div>
+                            </td>
+                            {{#each coverage.archetypes as |arch|}}
+                            {{#with (lookup ../coverage.otherRow.matrix arch) as |cell|}}
+                            <td style="padding:4px;">
+                                <div class="matrix-cell status-{{cell.status}}" data-species="other" data-archetype="{{arch}}"
+                                    title="Other / Reservoir {{arch}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited towards 10-token target)">
+                                    {{cell.count}}
+                                </div>
+                            </td>
+                            {{/with}}
+                            {{/each}}
+                        </tr>
+
+                        <!-- Expandable Exotic Species & Reservoir Drawer -->
+                        {{#if isOtherSpeciesExpanded}}
+                        <tr class="exotic-species-drawer-row">
+                            <td colspan="13" style="padding:0; background:rgba(12,9,24,0.92); border-bottom:1px solid rgba(168,85,247,0.3);">
+                                <div class="exotic-species-drawer" style="padding:14px 16px; display:flex; flex-direction:column; gap:12px;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(140,110,240,0.18); padding-bottom:8px;">
+                                        <div>
+                                            <div style="font-size:0.88em; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
+                                                <i class="fas fa-layer-group" style="color:#c084fc;"></i>
+                                                <span>Exotic & Minor Species Roster</span>
+                                                <span style="font-size:0.75em; font-weight:600; color:rgba(180,165,220,0.7);">(Target: 10 tokens per species for 100% General Variety)</span>
+                                            </div>
+                                            <div style="font-size:0.78em; color:rgba(200,190,240,0.75); margin-top:2px;">
+                                                Minor cultures blur into the demographic pool. Promote any species to grant it a dedicated 11-role campaign matrix.
+                                            </div>
+                                        </div>
+                                        <div style="font-size:0.8em; color:rgba(192,132,252,0.9); background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); border-radius:4px; padding:4px 10px;">
+                                            <i class="fas fa-boxes-stacked"></i> <strong>{{coverage.reservoirTokens}}</strong> Unassigned Reservoir Tokens
+                                        </div>
+                                    </div>
+
+                                    {{#if coverage.otherRow.exoticSpecies.length}}
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:10px;">
+                                        {{#each coverage.otherRow.exoticSpecies as |exo|}}
+                                        <div class="exotic-species-card" style="background:rgba(24,18,44,0.85); border:1px solid rgba(140,110,240,0.25); border-radius:6px; padding:10px 12px; display:flex; flex-direction:column; gap:8px;">
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <div style="display:flex; align-items:center; gap:6px;">
+                                                    <span style="font-weight:700; color:#fff; font-size:0.92em;">{{exo.label}}</span>
+                                                    <span class="manifest-legend-badge status-badge-{{exo.status}}" style="font-size:0.68em; padding:1px 5px; border-radius:3px; text-transform:uppercase; font-weight:700;">
+                                                        {{exo.status}}
+                                                    </span>
+                                                </div>
+                                                <div style="font-size:0.82em; font-weight:700; color:{{#if (gte exo.percentage 70)}}#4ade80{{else if (gte exo.percentage 35)}}#facc15{{else}}#f87171{{/if}};">
+                                                    {{exo.percentage}}%
+                                                </div>
+                                            </div>
+
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <div style="flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
+                                                    <div style="height:100%; width:{{exo.percentage}}%; background:{{#if (gte exo.percentage 70)}}#4ade80{{else if (gte exo.percentage 35)}}#facc15{{else}}#f87171{{/if}}; border-radius:3px;"></div>
+                                                </div>
+                                                <span style="font-size:0.75em; color:rgba(200,190,240,0.8); white-space:nowrap;">{{exo.tokens}} / {{exo.target}} tokens</span>
+                                            </div>
+
+                                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px; padding-top:6px; border-top:1px solid rgba(140,110,240,0.15);">
+                                                <span style="font-size:0.73em; color:rgba(180,165,220,0.6);">Exotic Variety</span>
+                                                <button type="button" class="ionrift-btn promote-species-btn" data-species="{{exo.id}}" title="Promote to Primary Culture (adds full 11-role row to main matrix)" style="height:22px; line-height:20px; padding:0 8px; font-size:0.74em; display:inline-flex; align-items:center; gap:4px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:3px; color:#d8b4fe; cursor:pointer;">
+                                                    <i class="fas fa-arrow-up"></i> Promote to Primary
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {{/each}}
+                                    </div>
+                                    {{else}}
+                                    <div style="text-align:center; padding:16px 12px; color:rgba(180,165,220,0.65); font-size:0.84em; background:rgba(0,0,0,0.2); border-radius:6px; border:1px dashed rgba(140,110,240,0.2);">
+                                        <i class="fas fa-feather" style="margin-right:6px; color:#a78bfa;"></i>
+                                        No exotic species registered yet. Use <strong>[+ Add Species]</strong> above to catalog minor species (e.g. Aarakocra, Goliath, Kobold), or classify tokens in Curation.
+                                    </div>
+                                    {{/if}}
+                                </div>
+                            </td>
+                        </tr>
+                        {{/if}}
                     </tbody>
                 </table>
             </div>
