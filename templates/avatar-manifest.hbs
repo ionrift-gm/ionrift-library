@@ -197,7 +197,7 @@
                         
                         <input type="checkbox" class="token-select-chk" data-path="{{t.path}}" {{#if t.isSelected}}checked{{/if}} />
 
-                        <img src="{{t.path}}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid rgba(140,110,240,0.3); background:#06050a;" onerror="this.src='icons/svg/mystery-man.svg'" />
+                        <img src="{{#if t.imgUrl}}{{t.imgUrl}}{{else}}{{t.path}}{{/if}}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid rgba(140,110,240,0.3); background:#06050a;" onerror="this.src='icons/svg/mystery-man.svg'" />
 
                         <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">
                             <div style="display:flex; align-items:center; gap:6px;">
