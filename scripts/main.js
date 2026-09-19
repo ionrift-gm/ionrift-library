@@ -4,6 +4,7 @@ import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
 import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
 import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.js";
 import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
+import { TerrainManagerApp } from "./apps/terrain/TerrainManagerApp.js";
 import { SettingsLayout } from "./utils/SettingsLayout.js";
 import { Logger } from "./services/platform/Logger.js";
 import { reclaimOverlaySettings } from "./services/platform/overlaySettings.js";
@@ -184,6 +185,14 @@ Hooks.once("init", () => {
         default: false
     });
 
+    game.settings.register(MODULE_ID, "importedTerrains", {
+        scope: "world",
+        config: false,
+        type: Object,
+        default: {},
+        restricted: true
+    });
+
     game.settings.register(MODULE_ID, "legacyCleanupForceMode", {
         scope: "client",
         config: false,
@@ -227,6 +236,15 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.registerMenu(MODULE_ID, "terrainManager", {
+        name: "Custom Terrains",
+        label: "Manage Terrains",
+        hint: "Import or remove custom terrain types. Available to all Ionrift modules.",
+        icon: "fas fa-mountain-sun",
+        type: TerrainManagerApp,
+        restricted: true
+    });
+
     SettingsLayout.registerFooter(MODULE_ID, {
         diagnostics: DiagnosticApp
     });
@@ -247,6 +265,7 @@ Hooks.once("ready", async () => {
 
     RollRequestService.init();
 
+    terrainRegistry.loadImported();
     Hooks.callAll("ionrift.terrainsReady", terrainRegistry);
 
     PartyRoster.migrateFromRespite().catch(e =>

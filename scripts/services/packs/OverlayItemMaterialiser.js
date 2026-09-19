@@ -14,7 +14,7 @@
  *     {item}.json         One file per item, Foundry pack-source shape
  *
  * Materialisation rules:
- *   - One overlay sublayer -> exactly one world compendium named
+ *   - One overlay sublayer becomes exactly one world compendium named
  *     `world.{prefix}-{sublayer}`. Strict pack ownership: a pack only ever
  *     writes into its own compendium.
  *   - Each packDir becomes a top-level wrapper folder when the config maps it
@@ -43,6 +43,11 @@
  */
 
 import { Logger } from "../platform/Logger.js";
+import {
+    OVERLAY_ITEM_COERCE_REV,
+    coerceOverlayItemForSystem,
+    prepareOverlayItemsForSystem as prepareOverlayItems
+} from "./overlayItemCoerce.js";
 
 const LIBRARY_ID = "ionrift-library";
 const STATE_KEY = "materialisedOverlayPacks";
@@ -54,6 +59,26 @@ function getOverlay() {
 }
 
 export class OverlayItemMaterialiser {
+
+    static OVERLAY_ITEM_COERCE_REV = OVERLAY_ITEM_COERCE_REV;
+
+    /**
+     * Remap overlay item types and strip dnd5e `system` fields the active
+     * game system cannot ingest. Public so Quartermaster can share the path.
+     * @param {object} item
+     * @returns {object|null}
+     */
+    static _coerceItemForSystem(item) {
+        return coerceOverlayItemForSystem(item);
+    }
+
+    /**
+     * @param {object[]} items
+     * @returns {{ prepared: object[], skipped: number }}
+     */
+    static prepareOverlayItemsForSystem(items) {
+        return prepareOverlayItems(items);
+    }
 
     /**
      * Materialise all installed overlay sublayers for a module.
@@ -120,7 +145,7 @@ export class OverlayItemMaterialiser {
 
         if (result.changed && config.notify !== false) {
             ui.notifications.info(
-                `${config.notifyLabel ?? moduleId}: ${manifest.overlayId} materialised - ${result.itemCount} items in ${result.collection}.`
+                `${config.notifyLabel ?? moduleId}: ${manifest.overlayId} materialised: ${result.itemCount} items in ${result.collection}.`
             );
         }
     }
@@ -249,7 +274,7 @@ export class OverlayItemMaterialiser {
             return null;
         }
 
-        const hashKey = `${overlayId}:${sublayer}:${overlayVersion}:${totalFileCount}`;
+        const hashKey = `${overlayId}:${sublayer}:${overlayVersion}:${totalFileCount}:coerce=${OVERLAY_ITEM_COERCE_REV}`;
         const state = this._getState(moduleId);
         const existingHash = state[overlayId]?.packHashes?.[sublayer];
 
@@ -317,11 +342,33 @@ export class OverlayItemMaterialiser {
             minting.guardAll(preparedItems, { moduleId, mode: "pack" });
         }
 
+        const { prepared, skipped } = this.prepareOverlayItemsForSystem(preparedItems);
+        if (skipped) {
+            Logger.warn(this._label(config),
+                `OverlayItemMaterialiser | Skipped ${skipped} item(s) whose types are not valid on ${game.system?.id}.`
+            );
+        }
+
         const ItemClass = CONFIG.Item.documentClass;
         const chunkSize = 50;
-        for (let i = 0; i < preparedItems.length; i += chunkSize) {
-            const chunk = preparedItems.slice(i, i + chunkSize);
-            await ItemClass.createDocuments(chunk, { pack: fresh.collection });
+        for (let i = 0; i < prepared.length; i += chunkSize) {
+            const chunk = prepared.slice(i, i + chunkSize);
+            try {
+                await ItemClass.createDocuments(chunk, { pack: fresh.collection });
+            } catch (chunkErr) {
+                Logger.warn(this._label(config),
+                    `OverlayItemMaterialiser | Chunk create failed (${chunkErr.message}); retrying per item.`
+                );
+                for (const item of chunk) {
+                    try {
+                        await ItemClass.createDocuments([item], { pack: fresh.collection });
+                    } catch (itemErr) {
+                        Logger.warn(this._label(config),
+                            `OverlayItemMaterialiser | Skipped "${item.name}" (${item.type}): ${itemErr.message}`
+                        );
+                    }
+                }
+            }
         }
 
         await this._assignSidebarFolder(fresh, config);
@@ -335,10 +382,10 @@ export class OverlayItemMaterialiser {
         await this._setState(moduleId, newState);
 
         Logger.info(this._label(config),
-            `OverlayItemMaterialiser | Built "${collection}" - ${preparedItems.length} items across ${sectionPlans.length} section(s).`
+            `OverlayItemMaterialiser | Built "${collection}": ${prepared.length} items across ${sectionPlans.length} section(s).`
         );
 
-        return { collection, itemCount: preparedItems.length, changed: true };
+        return { collection, itemCount: prepared.length, changed: true };
     }
 
     /**
