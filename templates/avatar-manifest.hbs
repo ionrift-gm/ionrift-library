@@ -166,24 +166,40 @@
                             </td>
                             <td style="padding:6px 6px; text-align:center;">
                                 <div style="font-weight:700; font-size:1.05em; color:{{#if (gte coverage.otherRow.stats.percentage 70)}}#4ade80{{else if (gte coverage.otherRow.stats.percentage 35)}}#facc15{{else}}#f87171{{/if}};"
-                                    title="Other & Reservoir Coverage: {{coverage.otherRow.stats.percentage}}% across roles">
+                                    title="General Variety Pool Health: {{coverage.otherRow.stats.percentage}}%">
                                     {{coverage.otherRow.stats.percentage}}%
                                 </div>
                                 <div style="font-size:0.73em; color:rgba(216,180,254,0.7);"
-                                    title="{{coverage.otherRow.stats.filled}}/{{coverage.otherRow.stats.total}} roles filled with at least 1 token">
-                                    {{coverage.otherRow.stats.filled}}/{{coverage.otherRow.stats.total}} roles
+                                    title="Exotic species evaluated against 10-token general target">
+                                    {{#if (gte coverage.otherRow.stats.percentage 70)}}Optimal Pool{{else if (gte coverage.otherRow.stats.percentage 35)}}Good Pool{{else}}Thin Pool{{/if}}
                                 </div>
                             </td>
-                            {{#each coverage.archetypes as |arch|}}
-                            {{#with (lookup ../coverage.otherRow.matrix arch) as |cell|}}
-                            <td style="padding:4px;">
-                                <div class="matrix-cell status-{{cell.status}}" data-species="other" data-archetype="{{arch}}"
-                                    title="Other / Reservoir {{arch}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited towards 10-token target)">
-                                    {{cell.count}}
+                            <td colspan="{{coverage.archetypes.length}}" style="padding:8px 14px; text-align:left; vertical-align:middle;">
+                                <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <span style="display:inline-flex; align-items:center; gap:6px; color:#d8b4fe; font-weight:700; font-size:0.88em; letter-spacing:0.3px;">
+                                            <i class="fas fa-layer-group" style="color:#c084fc;"></i>
+                                            General Variety Pool
+                                        </span>
+                                        <span style="font-size:0.78em; color:rgba(200,190,240,0.7);">
+                                            Exotic & minor cultures resolve directly to species tokens without feudal trade divisions.
+                                        </span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
+                                        <span class="manifest-legend-badge" style="color:#34d399; font-size:0.8em; font-weight:600;" title="{{coverage.exoticSpecies.length}} exotic species registered with {{coverage.otherRow.stats.exoticTokenCount}} total tokens">
+                                            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 6px rgba(52,211,153,0.5);"></span>
+                                            {{coverage.exoticSpecies.length}} Exotic Species ({{coverage.otherRow.stats.exoticTokenCount}} tokens)
+                                        </span>
+                                        <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned tokens available as global fallback">
+                                            <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
+                                        </span>
+                                        <span style="color:#c084fc; font-size:0.78em; font-weight:600; margin-left:4px; display:inline-flex; align-items:center; gap:4px;">
+                                            <i class="fas {{#if isOtherSpeciesExpanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i>
+                                            {{#if isOtherSpeciesExpanded}}Collapse{{else}}View Roster{{/if}}
+                                        </span>
+                                    </div>
                                 </div>
                             </td>
-                            {{/with}}
-                            {{/each}}
                         </tr>
 
                         <!-- Expandable Exotic Species & Reservoir Drawer -->

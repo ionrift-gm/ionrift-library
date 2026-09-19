@@ -1051,8 +1051,28 @@ export class AvatarRegistryService {
             };
         }
 
-        const otherMaxPoints = CANONICAL_ARCHETYPES.length * targetPerArchetype;
-        const otherCoveragePct = otherMaxPoints > 0 ? Math.round((otherCreditedTokens / otherMaxPoints) * 100) : 0;
+        // Count unassigned reservoir tokens (generic or not recognized in activeSpeciesList)
+        const reservoirTokens = activeTokens.filter(t =>
+            !t.species || t.species === RESERVOIR_SPECIES_KEY || !speciesList.includes(t.species)
+        ).length;
+
+        // Coverage for the Other / Exotic Pool is based on exotic species meeting their general 10-token target & reservoir availability
+        let otherCoveragePct = 100;
+        let otherPoolCredited = 0;
+        let otherPoolMax = 0;
+        const exoticTokenCount = exoticSpeciesList.reduce((sum, sp) => sum + (speciesStats[sp]?.totalTokens || 0), 0);
+
+        if (exoticSpeciesList.length > 0) {
+            otherPoolCredited = exoticSpeciesList.reduce((sum, sp) => sum + (speciesStats[sp]?.credited || 0), 0);
+            otherPoolMax = exoticSpeciesList.length * targetPerArchetype;
+            otherCoveragePct = otherPoolMax > 0 ? Math.round((otherPoolCredited / otherPoolMax) * 100) : 100;
+        } else if (reservoirTokens >= targetPerArchetype) {
+            otherCoveragePct = 100;
+        } else {
+            otherCoveragePct = Math.round((reservoirTokens / targetPerArchetype) * 100);
+        }
+
+        const otherStatus = otherCoveragePct >= 70 ? "optimal" : (otherCoveragePct >= 35 ? "good" : (otherCoveragePct >= 1 ? "thin" : "unprovided"));
 
         const exoticSpeciesDetails = exoticSpeciesList.map(id => {
             const def = SpeciesRegistry.get(id) || {};
@@ -1075,12 +1095,15 @@ export class AvatarRegistryService {
                 filled: otherFilled,
                 optimal: otherOptimal,
                 total: CANONICAL_ARCHETYPES.length,
-                credited: otherCreditedTokens,
-                maxPoints: otherMaxPoints,
+                credited: otherPoolCredited,
+                maxPoints: otherPoolMax,
                 targetPerArchetype,
                 percentage: otherCoveragePct,
+                status: otherStatus,
                 totalTokens: otherTokens.length,
-                exoticCount: exoticSpeciesList.length
+                exoticCount: exoticSpeciesList.length,
+                exoticTokenCount,
+                reservoirCount: reservoirTokens
             },
             exoticSpecies: exoticSpeciesDetails
         };
@@ -1091,11 +1114,6 @@ export class AvatarRegistryService {
         const overallCoveragePct = totalPossiblePoints > 0
             ? Math.round((totalCreditedPoints / totalPossiblePoints) * 100)
             : 0;
-
-        // Count unassigned reservoir tokens (generic or not recognized in activeSpeciesList)
-        const reservoirTokens = activeTokens.filter(t =>
-            !t.species || t.species === RESERVOIR_SPECIES_KEY || !speciesList.includes(t.species)
-        ).length;
 
         return {
             totalTokens: activeTokens.length,
