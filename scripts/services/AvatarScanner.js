@@ -236,6 +236,13 @@ export class AvatarScanner {
         if (lower.length <= 1) return true;
         if (PATH_STOPWORDS.has(lower)) return true;
 
+        try {
+            if (typeof AvatarRegistryService !== "undefined" && AvatarRegistryService.getIgnoredTags) {
+                const ignored = AvatarRegistryService.getIgnoredTags();
+                if (Array.isArray(ignored) && ignored.includes(lower)) return true;
+            }
+        } catch {}
+
         // Long numeric strings / timestamps (e.g. 20230927195911, 20240101)
         if (/^\d{5,}$/.test(lower)) return true;
 
@@ -315,7 +322,7 @@ export class AvatarScanner {
                     }
 
                     // Auto-parse metadata from path & filename
-                    const parsed = this.parsePathMetadata(normalized);
+                    const parsed = this.parsePathMetadata(normalized, { watchFolder: folder, watchFolders });
                     catalog[normalized] = {
                         ...(existing || {}),
                         ...parsed,
@@ -341,16 +348,53 @@ export class AvatarScanner {
      * Extracts tags, species, role, and canonical archetype from a file path.
      * Intelligently classifies monsters, beasts, and non-civilian creatures.
      * @param {string} filePath
+     * @param {object} [options]
+     * @param {string} [options.watchFolder]
+     * @param {string[]} [options.watchFolders]
      * @returns {object} { species, role, archetype, tags }
      */
-    static parsePathMetadata(filePath) {
+    static parsePathMetadata(filePath, { watchFolder = null, watchFolders = null } = {}) {
         const normalized = this._normalizePath(filePath);
         const parts = normalized.toLowerCase().split("/").filter(Boolean);
         const filename = parts[parts.length - 1] || "";
         const nameWithoutExt = filename.replace(/\.[^/.]+$/, "");
 
-        // Path segments with extension stripped from the filename
-        const cleanedParts = [...parts.slice(0, -1), nameWithoutExt];
+        // Determine active watch folder prefix to strip root container folders from tag generation
+        let activeWatch = watchFolder ? this._normalizePath(watchFolder).toLowerCase() : null;
+        if (!activeWatch && Array.isArray(watchFolders)) {
+            for (const wf of watchFolders) {
+                const normWf = this._normalizePath(wf).toLowerCase();
+                if (normWf && (normalized.toLowerCase() === normWf || normalized.toLowerCase().startsWith(normWf + "/"))) {
+                    activeWatch = normWf;
+                    break;
+                }
+            }
+        }
+        if (!activeWatch && typeof AvatarRegistryService !== "undefined" && AvatarRegistryService.getWatchFolders) {
+            try {
+                const known = AvatarRegistryService.getWatchFolders() || [];
+                for (const wf of known) {
+                    const normWf = this._normalizePath(wf).toLowerCase();
+                    if (normWf && (normalized.toLowerCase() === normWf || normalized.toLowerCase().startsWith(normWf + "/"))) {
+                        activeWatch = normWf;
+                        break;
+                    }
+                }
+            } catch {}
+        }
+
+        // Relative path parts under the watch root
+        let relativeFolderParts = parts.slice(0, -1);
+        if (activeWatch && normalized.toLowerCase().startsWith(activeWatch + "/")) {
+            const relSub = normalized.slice(activeWatch.length).replace(/^\/+/, "");
+            const relParts = relSub.toLowerCase().split("/").filter(Boolean);
+            relativeFolderParts = relParts.slice(0, -1);
+        } else if (activeWatch && normalized.toLowerCase().startsWith(activeWatch)) {
+            relativeFolderParts = [];
+        }
+
+        // Path segments with extension stripped from the filename (excluding watch root container)
+        const cleanedParts = [...relativeFolderParts, nameWithoutExt];
 
         // Split words by non-alphanumeric (underscores, dashes, dots, spaces)
         const rawTokens = [];
@@ -362,6 +406,7 @@ export class AvatarScanner {
                 rawTokens.push(lower);
             }
         }
+
 
         const tags = this.cleanTags(rawTokens);
 
