@@ -4,7 +4,7 @@
     <div class="dashboard-header" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid rgba(140,110,240,0.2); background:rgba(12,10,24,0.6); flex-shrink:0;">
         <div style="display:flex; align-items:center; gap:16px;">
             <div class="dashboard-stat" style="display:flex; align-items:center; gap:10px;">
-                <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; width:44px; height:44px; font-size:0.85em;">
+                <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; --gauge-color: {{#if (gte coverage.overallCoveragePct 75)}}#4ade80{{else if (gte coverage.overallCoveragePct 40)}}#facc15{{else}}#f87171{{/if}};">
                     <span>{{coverage.overallCoveragePct}}%</span>
                 </div>
                 <div class="dashboard-text" style="display:flex; flex-direction:column;">
@@ -118,7 +118,7 @@
         <div style="flex:1 1 0; min-height:0; display:flex; flex-direction:row;">
 
             <!-- Left Folder Stratification Sidebar -->
-            <div style="width:230px; flex-shrink:0; background:rgba(10,8,20,0.8); border-right:1px solid rgba(140,110,240,0.2); display:flex; flex-direction:column; padding:10px;">
+            <div style="width:270px; flex-shrink:0; background:rgba(10,8,20,0.85); border-right:1px solid rgba(140,110,240,0.2); display:flex; flex-direction:column; padding:10px;">
                 <div style="font-size:0.75em; text-transform:uppercase; font-weight:700; color:rgba(180,165,220,0.6); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
                     <span>Folder Filter</span>
                     {{#if selectedFolder}}
@@ -129,8 +129,9 @@
                 <div style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:4px;">
                     {{#each foldersList as |f|}}
                     <div style="display:flex; align-items:center; justify-content:space-between; padding:4px 6px; border-radius:4px; font-size:0.8em; background:{{#if (eq ../selectedFolder f.folder)}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.03){{/if}};">
-                        <a class="folder-filter-item" data-folder="{{f.folder}}" style="cursor:pointer; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:{{#if (eq ../selectedFolder f.folder)}}#fff{{else}}rgba(200,190,230,0.75){{/if}};" title="{{f.folder}}">
-                            <i class="fas fa-folder" style="color:#fbbf24; margin-right:4px;"></i> {{f.folder}}
+                        <a class="folder-filter-item" data-folder="{{f.folder}}" style="cursor:pointer; flex:1; min-width:0; display:flex; align-items:center; gap:6px; margin-right:8px; color:{{#if (eq ../selectedFolder f.folder)}}#fff{{else}}rgba(200,190,230,0.75){{/if}};" title="{{f.folder}}">
+                            <i class="fas fa-folder" style="color:#fbbf24; flex-shrink:0;"></i>
+                            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; flex:1;">&lrm;{{f.folder}}</span>
                         </a>
                         <span style="font-size:0.85em; opacity:0.6; margin-right:4px;">{{f.count}}</span>
                         <a class="batch-tag-folder-btn" data-folder="{{f.folder}}" style="color:#a78bfa; cursor:pointer;" title="Batch tag all tokens in this folder">
@@ -153,21 +154,21 @@
                         <input type="text" id="manifest-search" placeholder="Search tokens or tags..." value="{{filters.query}}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; padding:4px 8px; font-size:0.85em; width:100%;">
                     </div>
 
-                    <select id="species-filter" style="width:120px; font-size:0.82em;">
+                    <select id="species-filter" class="manifest-glass-select" style="min-width:125px;">
                         <option value="all">All Species</option>
                         {{#each speciesOptions as |sp|}}
                         <option value="{{sp}}" {{#if (eq ../filters.species sp)}}selected{{/if}}>{{sp}}</option>
                         {{/each}}
                     </select>
 
-                    <select id="archetype-filter" style="width:130px; font-size:0.82em;">
+                    <select id="archetype-filter" class="manifest-glass-select" style="min-width:135px;">
                         <option value="all">All Archetypes</option>
                         {{#each archetypeOptions as |arch|}}
                         <option value="{{arch}}" {{#if (eq ../filters.archetype arch)}}selected{{/if}}>{{arch}}</option>
                         {{/each}}
                     </select>
 
-                    <select id="status-filter" style="width:130px; font-size:0.82em;">
+                    <select id="status-filter" class="manifest-glass-select" style="min-width:130px;">
                         <option value="all">All Statuses</option>
                         <option value="auto" {{#if (eq filters.status 'auto')}}selected{{/if}}>Auto-detected</option>
                         <option value="manual" {{#if (eq filters.status 'manual')}}selected{{/if}}>Curated (Locked)</option>
@@ -197,7 +198,7 @@
                         
                         <input type="checkbox" class="token-select-chk" data-path="{{t.path}}" {{#if t.isSelected}}checked{{/if}} />
 
-                        <img src="{{#if t.imgUrl}}{{t.imgUrl}}{{else}}{{t.path}}{{/if}}" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid rgba(140,110,240,0.3); background:#06050a;" onerror="this.src='icons/svg/mystery-man.svg'" />
+                        <img src="{{#if t.imgUrl}}{{t.imgUrl}}{{else}}{{t.path}}{{/if}}" class="curation-token-thumb" onerror="this.src='icons/svg/mystery-man.svg'" />
 
                         <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;">
                             <div style="display:flex; align-items:center; gap:6px;">
