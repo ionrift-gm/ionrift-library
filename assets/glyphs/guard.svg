@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#182333" />
+      <stop offset="60%" stop-color="#0e1724" />
+      <stop offset="100%" stop-color="#060910" />
+    </radialGradient>
+    <linearGradient id="steel-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bae6fd" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.3" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#64748b" />
+      <stop offset="50%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#1a2536" />
+      <stop offset="100%" stop-color="#090d14" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#060910" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#1e293b" stroke-width="1" />
+
+  <!-- Background Halberds Heraldry Watermark -->
+  <g opacity="0.08" stroke="#38bdf8" stroke-width="1.2" fill="none">
+    <line x1="28" y1="28" x2="92" y2="92" />
+    <line x1="92" y1="28" x2="28" y2="92" />
+    <path d="M 86 24 L 94 24 L 94 32 Z" />
+    <path d="M 34 24 L 26 24 L 26 32 Z" />
+    <circle cx="60" cy="60" r="40" />
+  </g>
+
+  <!-- Raised Spear / Halberd Blade on left flank -->
+  <g stroke="#090d14" stroke-width="1.5">
+    <line x1="28" y1="110" x2="28" y2="24" stroke="#334155" stroke-width="3" />
+    <!-- Spearhead -->
+    <polygon points="28,12 33,26 28,32 23,26" fill="#475569" />
+    <line x1="28" y1="12" x2="28" y2="30" stroke="url(#steel-rim)" stroke-width="1.2" />
+    <!-- Crossbar -->
+    <line x1="22" y1="32" x2="34" y2="32" stroke="#475569" stroke-width="2.5" />
+  </g>
+
+  <!-- Armored Guard Bust: Pauldrons & Chainmail -->
+  <!-- Shoulders & Chestplate -->
+  <path d="M 24 108 C 24 82 40 72 52 70 L 52 82 L 44 108 Z" fill="url(#shadow-body)" />
+  <path d="M 96 108 C 96 82 80 72 68 70 L 68 82 L 76 108 Z" fill="url(#shadow-body)" />
+  <path d="M 32 108 C 34 82 46 72 60 72 C 74 72 86 82 88 108 Z" fill="url(#shadow-body)" stroke="#090d14" stroke-width="2" />
+
+  <!-- Heavy Gorget / Armor Collar -->
+  <path d="M 44 72 C 50 80 70 80 76 72 L 72 86 C 64 90 56 90 48 86 Z" fill="#243348" stroke="#090d14" stroke-width="1.5" />
+  <circle cx="60" cy="80" r="2" fill="#64748b" />
+
+  <!-- Left Pauldron (Layered Steel Shoulder) -->
+  <path d="M 80 72 C 90 74 98 84 96 94 C 90 94 82 86 78 80 Z" fill="#243348" stroke="url(#steel-rim)" stroke-width="1" />
+
+  <!-- Kettle Helm / Nasal Helmet -->
+  <!-- Brim of Kettle Helm -->
+  <ellipse cx="60" cy="46" rx="26" ry="7" fill="#1c2738" stroke="#090d14" stroke-width="1.5" />
+  <!-- Helmet Dome -->
+  <path d="M 38 46 C 38 24 50 18 60 18 C 70 18 82 24 82 46 Z" fill="url(#shadow-body)" stroke="#090d14" stroke-width="1.5" />
+  <!-- Helm Ridge Reinforcement -->
+  <path d="M 60 18 L 60 46" stroke="url(#steel-rim)" stroke-width="2" />
+  <path d="M 52 24 C 60 22 68 22 76 28" fill="none" stroke="url(#steel-rim)" stroke-width="1.5" opacity="0.8" />
+  <!-- Helm Rim Highlight -->
+  <path d="M 35 46 C 45 52 75 52 85 46" fill="none" stroke="url(#steel-rim)" stroke-width="1.5" />
+
+  <!-- Nasal Guard & Shaded Face -->
+  <path d="M 44 48 C 44 58 48 64 54 66 L 66 66 C 72 64 76 58 76 48 Z" fill="#090d14" />
+  <!-- Steel Nasal Bar -->
+  <polygon points="58,46 62,46 61,62 59,62" fill="#475569" stroke="url(#steel-rim)" stroke-width="0.8" />
+  <!-- Slit eyes in shadow of helm -->
+  <line x1="49" y1="52" x2="55" y2="52" stroke="#38bdf8" stroke-width="1.5" opacity="0.85" />
+  <line x1="65" y1="52" x2="71" y2="52" stroke="#38bdf8" stroke-width="1.5" opacity="0.85" />
+
+  <!-- Shield Edge on Right Flank -->
+  <path d="M 94 62 C 98 72 98 88 94 106 C 90 98 88 86 90 74 Z" fill="#1e293b" stroke="#090d14" stroke-width="1.5" />
+  <circle cx="94" cy="74" r="1.5" fill="#64748b" />
+  <circle cx="95" cy="86" r="1.5" fill="#64748b" />
+  <circle cx="94" cy="98" r="1.5" fill="#64748b" />
+</svg>

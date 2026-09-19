@@ -2,6 +2,8 @@ import { MODULE_ID } from "./data/moduleId.js";
 import { createLibraryContext } from "./composition/createLibraryContext.js";
 import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
 import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
+import { AvatarManifestApp } from "./apps/diagnostics/AvatarManifestApp.js";
+import { AvatarRegistryService } from "./services/AvatarRegistryService.js";
 import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.js";
 import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
 import { TerrainManagerApp } from "./apps/terrain/TerrainManagerApp.js";
@@ -16,6 +18,7 @@ import { CompendiumConfigGuard } from "./services/packs/CompendiumConfigGuard.js
 import { InstallHealthCheck } from "./services/packs/InstallHealthCheck.js";
 import { ItemEnrichmentEngine } from "./services/items/ItemEnrichmentEngine.js";
 import { RollRequestService } from "./services/rolls/RollRequestService.js";
+import { TokenArtResolver } from "./services/TokenArtResolver.js";
 
 const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
 Hooks.on("renderItemSheet", _onEnrichSheet);
@@ -209,6 +212,21 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "tokenArtRoot", {
+        name: "Token Art Directory",
+        hint: "Root directory path for Ionrift-managed resident and actor token art.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "tokens/ionrift",
+        restricted: true,
+        onChange: () => {
+            TokenArtResolver.refreshCache().catch(e =>
+                Logger.warn("Library", "Failed to refresh token art cache on root change:", e)
+            );
+        }
+    });
+
     game.settings.registerMenu(MODULE_ID, "setupWizard", {
         name: "Creature Database",
         label: "Initialize Database",
@@ -224,6 +242,24 @@ Hooks.once("init", () => {
         hint: "Choose which characters are in the active adventuring party. Used by Respite, Workshop, and other modules.",
         icon: "fas fa-users",
         type: PartyRosterApp,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "avatarRegistry", {
+        name: "Avatar Registry",
+        hint: "Catalog of discovered and curated token assets and watch folders.",
+        scope: "world",
+        config: false,
+        type: Object,
+        default: AvatarRegistryService.getDefaultState()
+    });
+
+    game.settings.registerMenu(MODULE_ID, "avatarManifest", {
+        name: "Avatar Manifest",
+        label: "Manage Avatars",
+        hint: "Inspect token art coverage, curate populations, and configure watch folders.",
+        icon: "fas fa-id-badge",
+        type: AvatarManifestApp,
         restricted: true
     });
 
@@ -274,7 +310,16 @@ Hooks.once("ready", async () => {
 
     PartyRoster.installNativePartyBridge();
 
+    // Asynchronous background token art cache warming
+    TokenArtResolver.warmCache().catch(e =>
+        Logger.warn("Library", "Token art cache warming failed:", e)
+    );
+
     if (game.user.isGM) {
+        TokenArtResolver.scaffoldFolders().catch(e =>
+            Logger.warn("Library", "Token art folder scaffolding failed:", e)
+        );
+
         CompendiumConfigGuard.repairWorld().catch(e =>
             Logger.warn("Library", "Compendium config self-heal failed:", e)
         );

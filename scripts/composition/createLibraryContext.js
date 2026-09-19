@@ -9,6 +9,8 @@ import { DialogHelper } from "../utils/DialogHelper.js";
 import { AbstractWelcomeApp } from "../apps/packs/AbstractWelcomeApp.js";
 import { AbstractPackRegistryApp } from "../apps/packs/AbstractPackRegistryApp.js";
 import { ClassifierValidatorApp } from "../apps/diagnostics/ClassifierValidatorApp.js";
+import { AvatarManifestApp } from "../apps/diagnostics/AvatarManifestApp.js";
+import { AvatarRegistryService } from "../services/AvatarRegistryService.js";
 import { PartyRosterApp } from "../apps/party/PartyRosterApp.js";
 import { StoryMomentApp } from "../apps/rolls/StoryMomentApp.js";
 import { DiagnosticService } from "../services/diagnostics/DiagnosticService.js";
@@ -58,11 +60,17 @@ import {
     watchDcAnimation,
     forceDcPulseTest
 } from "../services/rolls/RollRequestDcPulse.js";
+import { TokenArtResolver } from "../services/TokenArtResolver.js";
 
 export function createLibraryContext() {
     const ctx = {
         MODULE_ID,
         MODULE_LABEL,
+        tokenArt: TokenArtResolver,
+        getTokenPath: (species, role, options) => TokenArtResolver.getTokenPath(species, role, options),
+        warmArtCache: (options) => TokenArtResolver.warmCache(options),
+        refreshArtCache: () => TokenArtResolver.refreshCache(),
+        scaffoldTokenArtFolders: () => TokenArtResolver.scaffoldFolders(),
         SidebarHelper,
         classifyCreature,
         listClassifierOptions,
@@ -118,6 +126,9 @@ export function createLibraryContext() {
         setWorldSetting,
         log: (module, ...args) => Logger.log(module, ...args),
         openValidator: () => new ClassifierValidatorApp().render(true),
+        openAvatarManifest: (opts) => new AvatarManifestApp(opts).render(true),
+        avatarRegistry: AvatarRegistryService,
+        AvatarManifestApp,
         runDiagnostics: () => DiagnosticService.instance.showResults(),
         system: adapterRegistry,
         adapterRegistry,

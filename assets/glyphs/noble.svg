@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#241933" />
+      <stop offset="60%" stop-color="#130d1c" />
+      <stop offset="100%" stop-color="#08050d" />
+    </radialGradient>
+    <linearGradient id="regal-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#eab308" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#854d0e" stop-opacity="0.4" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7e22ce" />
+      <stop offset="50%" stop-color="#3b0764" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#221c2e" />
+      <stop offset="100%" stop-color="#09060d" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#08050d" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#3b0764" stroke-width="1" />
+
+  <!-- Background Crown / Fleur-de-lis Heraldry -->
+  <g opacity="0.08" stroke="#eab308" stroke-width="1.2" fill="none">
+    <circle cx="60" cy="60" r="42" />
+    <polygon points="60,20 66,32 78,32 68,40 72,52 60,44 48,52 52,40 42,32 54,32" />
+  </g>
+
+  <!-- Noble Bust: High Standing Collar & Velvet Robes -->
+  <!-- Shoulders & Heavy Cloak -->
+  <path d="M 22 108 C 22 82 38 72 52 70 L 52 86 L 40 108 Z" fill="url(#shadow-body)" />
+  <path d="M 98 108 C 98 82 82 72 68 70 L 68 86 L 80 108 Z" fill="url(#shadow-body)" />
+  <path d="M 26 108 C 28 80 44 68 60 68 C 76 68 92 80 94 108 Z" fill="url(#shadow-body)" stroke="#09060d" stroke-width="2" />
+
+  <!-- High Imperial Fan / Standing Collar -->
+  <path d="M 38 68 C 34 52 38 42 46 40 C 48 52 52 66 56 70 Z" fill="#2d1c42" stroke="url(#regal-gold)" stroke-width="1" />
+  <path d="M 82 68 C 86 52 82 42 74 40 C 72 52 68 66 64 70 Z" fill="#2d1c42" stroke="url(#regal-gold)" stroke-width="1" />
+
+  <!-- Heavy Gold Brooch / Clasp at Neck -->
+  <polygon points="60,68 65,74 60,80 55,74" fill="#eab308" stroke="#854d0e" stroke-width="1" />
+  <circle cx="60" cy="74" r="2" fill="#ef4444" />
+
+  <!-- Head Profile -->
+  <circle cx="60" cy="42" r="14" fill="url(#shadow-body)" />
+
+  <!-- Crown / Coronet of Nobility -->
+  <g>
+    <!-- Circlet Base Band -->
+    <path d="M 44 32 C 54 30 66 30 76 32 L 76 36 C 66 34 54 34 44 36 Z" fill="#ca8a04" stroke="url(#regal-gold)" stroke-width="0.8" />
+    <!-- Crown Spires -->
+    <polygon points="44,32 46,24 50,31" fill="url(#regal-gold)" />
+    <polygon points="56,30 60,18 64,30" fill="url(#regal-gold)" />
+    <polygon points="70,31 74,24 76,32" fill="url(#regal-gold)" />
+    <!-- Center Gemstone -->
+    <circle cx="60" cy="24" r="2.2" fill="#a855f7" stroke="#ca8a04" stroke-width="0.6" />
+    <circle cx="47" cy="27" r="1.4" fill="#3b82f6" />
+    <circle cx="73" cy="27" r="1.4" fill="#3b82f6" />
+  </g>
+
+  <!-- Noble Jawline & Silhouette -->
+  <path d="M 50 42 C 50 54 54 60 60 62 C 66 60 70 54 70 42" fill="none" stroke="url(#regal-gold)" stroke-width="1.2" opacity="0.85" />
+</svg>

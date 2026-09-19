@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <radialGradient id="token-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#261e14" />
+      <stop offset="60%" stop-color="#140f09" />
+      <stop offset="100%" stop-color="#080603" />
+    </radialGradient>
+    <linearGradient id="gold-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#f59e0b" stop-opacity="0.7" />
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0.3" />
+    </linearGradient>
+    <linearGradient id="iron-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#92400e" />
+      <stop offset="50%" stop-color="#451a03" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="shadow-body" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#241d18" />
+      <stop offset="100%" stop-color="#0a0805" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Token Bevel -->
+  <circle cx="60" cy="60" r="58" fill="#080603" />
+  <circle cx="60" cy="60" r="56" fill="none" stroke="url(#iron-border)" stroke-width="2.5" />
+  <circle cx="60" cy="60" r="53" fill="url(#token-bg)" stroke="#451a03" stroke-width="1" />
+
+  <!-- Background Coins / Guild Scale Heraldry -->
+  <g opacity="0.08" stroke="#f59e0b" stroke-width="1.2" fill="none">
+    <circle cx="60" cy="60" r="42" />
+    <line x1="36" y1="36" x2="84" y2="36" />
+    <line x1="60" y1="28" x2="60" y2="92" />
+    <polygon points="60,28 36,36 84,36" />
+  </g>
+
+  <!-- Merchant Bust: Velvet Cap & Fur Mantle -->
+  <!-- Heavy Mantle Shoulders -->
+  <path d="M 22 108 C 24 80 40 70 54 68 L 52 86 L 40 108 Z" fill="url(#shadow-body)" />
+  <path d="M 98 108 C 96 80 80 70 66 68 L 68 86 L 80 108 Z" fill="url(#shadow-body)" />
+  <path d="M 26 108 C 28 82 44 68 60 68 C 76 68 92 82 94 108 Z" fill="url(#shadow-body)" stroke="#0a0805" stroke-width="2" />
+
+  <!-- Heavy Fur Collar Trim -->
+  <path d="M 40 72 C 46 64 54 64 60 64 C 66 64 74 64 80 72 C 86 80 84 94 80 98 C 72 90 68 84 60 84 C 52 84 48 90 40 98 C 36 94 34 80 40 72 Z" fill="#38291a" stroke="url(#gold-rim)" stroke-width="1" />
+
+  <!-- Golden Chain of Office / Guild Medallion -->
+  <path d="M 46 78 C 52 90 68 90 74 78" fill="none" stroke="url(#gold-rim)" stroke-width="1.8" stroke-dasharray="3,2" />
+  <circle cx="60" cy="90" r="3.5" fill="#f59e0b" stroke="#78350f" stroke-width="1" />
+
+  <!-- Head & Face Profile -->
+  <circle cx="60" cy="46" r="16" fill="url(#shadow-body)" />
+
+  <!-- Renaissance / Medieval Merchant Chaperon / Feathered Cap -->
+  <path d="M 38 42 C 36 28 48 24 64 22 C 78 20 86 28 84 38 C 80 40 72 40 60 40 C 48 40 40 42 38 42 Z" fill="#3b2010" stroke="#0a0805" stroke-width="1.5" />
+  <!-- Cap Roll / Brim -->
+  <path d="M 36 42 C 48 38 72 38 84 42 C 84 46 72 46 60 46 C 48 46 36 46 36 42 Z" fill="#29160a" stroke="url(#gold-rim)" stroke-width="1" />
+
+  <!-- Long Feather Quill tucked in cap -->
+  <path d="M 72 32 C 82 20 92 14 96 10 C 94 18 90 26 84 32 Z" fill="#b45309" stroke="url(#gold-rim)" stroke-width="0.8" />
+
+  <!-- Bearded / Well-kept profile in shadow -->
+  <path d="M 52 46 C 52 58 56 64 60 64 C 64 64 68 58 68 46 Z" fill="#0a0805" />
+  <!-- Beard outline -->
+  <path d="M 54 54 C 58 62 62 62 66 54" fill="none" stroke="url(#gold-rim)" stroke-width="1" opacity="0.6" />
+
+  <!-- Small Coin Purse / Scales in Hand on Flank -->
+  <g transform="translate(24, 76)">
+    <path d="M 8 10 C 4 10 2 16 2 24 C 2 30 18 30 18 24 C 18 16 16 10 12 10 Z" fill="#451a03" stroke="url(#gold-rim)" stroke-width="1" />
+    <ellipse cx="10" cy="10" rx="4" ry="2" fill="#78350f" />
+    <circle cx="10" cy="8" r="1.5" fill="#f59e0b" />
+  </g>
+</svg>
