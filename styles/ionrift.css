@@ -2568,26 +2568,37 @@ button.ionrift-badge.classifier-override-btn:hover {
     color: #fef08a !important;
 }
 
-.manifest-clear-filters-btn {
-    flex: 0 0 auto !important;
+.manifest-clear-filters-btn,
+.avatar-manifest-app .curation-filter-bar button.manifest-clear-filters-btn {
+    width: auto !important;
+    max-width: max-content !important;
+    min-width: auto !important;
     height: 28px !important;
-    padding: 2px 10px !important;
-    font-size: 0.78rem !important;
-    background: rgba(239, 68, 68, 0.2) !important;
-    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    flex: 0 0 auto !important;
+    padding: 0 8px !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    line-height: 26px !important;
+    background: rgba(239, 68, 68, 0.22) !important;
+    border: 1px solid rgba(239, 68, 68, 0.55) !important;
     color: #fca5a5 !important;
     border-radius: 4px !important;
-    cursor: pointer;
+    cursor: pointer !important;
     white-space: nowrap !important;
     display: inline-flex !important;
-    align-items: center;
-    gap: 5px;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
     transition: all 0.15s ease;
 }
-.manifest-clear-filters-btn:hover {
-    background: rgba(239, 68, 68, 0.38) !important;
+.manifest-clear-filters-btn:hover,
+.avatar-manifest-app .curation-filter-bar button.manifest-clear-filters-btn:hover {
+    background: rgba(239, 68, 68, 0.45) !important;
     border-color: #ef4444 !important;
-    color: #fff !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
 }
 
 .active-filter-subset-tag {

@@ -364,8 +364,8 @@
                     </select>
 
                     {{#if filters.hasActiveFilters}}
-                    <button type="button" class="reset-curation-filters-btn ionrift-btn manifest-clear-filters-btn" title="Reset all active search and dropdown filters">
-                        <i class="fas fa-filter-circle-xmark"></i> Clear Filters ({{filters.activeFilterCount}})
+                    <button type="button" class="reset-curation-filters-btn manifest-clear-filters-btn" title="Reset all active search and dropdown filters ({{filters.activeFilterCount}} active)" style="width:auto !important; max-width:max-content !important; min-width:auto !important; flex:0 0 auto !important; height:28px !important; padding:0 8px !important; margin:0 !important;">
+                        <i class="fas fa-rotate-left"></i> Reset
                     </button>
                     {{/if}}
                 </div>
