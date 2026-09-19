@@ -1010,21 +1010,23 @@ export class AvatarManifestApp extends FormApplication {
             $loupe.removeClass("is-visible");
         });
 
-        // 7. Token Clickable Badges (Edit single token)
-        html.find(".token-edit-badge-btn").click(async ev => {
+        // 7. Token Clickable Badges (Edit single token - delegated to ensure reliable clicks)
+        html.on("click", ".token-edit-badge-btn", async ev => {
             ev.preventDefault();
-            const btn = $(ev.currentTarget);
-            const path = btn.attr("data-path") || btn.data("path") || (ev.currentTarget.dataset ? ev.currentTarget.dataset.path : "");
+            ev.stopPropagation();
+            const btn = $(ev.currentTarget).closest(".token-edit-badge-btn");
+            const path = btn.attr("data-path") || btn.data("path") || (btn[0]?.dataset ? btn[0].dataset.path : "");
             if (path) {
                 await this._openTokenEditDialog(path);
             }
         });
 
-        // 8. Blacklist Toggle
-        html.find(".toggle-blacklist-btn").click(async ev => {
+        // 8. Blacklist Toggle (delegated)
+        html.on("click", ".toggle-blacklist-btn", async ev => {
             ev.preventDefault();
-            const btn = $(ev.currentTarget);
-            const path = btn.attr("data-path") || btn.data("path") || (ev.currentTarget.dataset ? ev.currentTarget.dataset.path : "");
+            ev.stopPropagation();
+            const btn = $(ev.currentTarget).closest(".toggle-blacklist-btn");
+            const path = btn.attr("data-path") || btn.data("path") || (btn[0]?.dataset ? btn[0].dataset.path : "");
             if (!path) return;
             const isNowBlacklisted = await AvatarRegistryService.toggleBlacklist(path);
             const filename = path.split("/").pop();
@@ -1040,6 +1042,26 @@ export class AvatarManifestApp extends FormApplication {
             ev.preventDefault();
             if (this.selectedPaths.size === 0) return;
             await this._openBatchEditDialog(Array.from(this.selectedPaths));
+        });
+
+        // 9b. Batch Reset Selected to Auto
+        html.find("#batch-reset-auto-btn").click(async ev => {
+            ev.preventDefault();
+            const selectedList = Array.from(this.selectedPaths);
+            if (selectedList.length === 0) return;
+            const confirmed = await Dialog.confirm({
+                title: "Reset Curation to Auto",
+                content: `<p>Reset <strong>${selectedList.length}</strong> selected tokens back to <strong>Auto-detected</strong> status?</p><p style="font-size:0.85em; opacity:0.8;">This clears the "Curated by GM" lock and re-evaluates taxonomy from file paths and folders.</p>`,
+                defaultYes: true
+            });
+            if (confirmed) {
+                const count = await AvatarRegistryService.resetTokensToAuto(selectedList);
+                this.selectedPaths.clear();
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Reset ${count} tokens to Auto-detected status.`);
+                }
+                this.render();
+            }
         });
 
         // 10. Batch Tag Folder
@@ -1223,9 +1245,21 @@ export class AvatarManifestApp extends FormApplication {
 
     async _openTokenEditDialog(path) {
         if (!path) return;
-        const token = AvatarRegistryService.getToken(path);
+        let token = AvatarRegistryService.getToken(path);
+        if (!token) {
+            // Fallback: search across all tokens in catalog
+            const catalog = AvatarRegistryService.getCatalog();
+            token = Object.values(catalog).find(t =>
+                t.path === path ||
+                decodeURIComponent(t.path || "") === decodeURIComponent(path) ||
+                (t.filename && (t.filename === path || decodeURIComponent(t.filename) === decodeURIComponent(path)))
+            );
+        }
         if (!token) {
             Logger.warn("AvatarManifestApp", `_openTokenEditDialog: Token not found for path: ${path}`);
+            if (typeof ui !== "undefined" && ui.notifications) {
+                ui.notifications.warn(`Ionrift | Token not found in catalog: ${path}`);
+            }
             return;
         }
 
@@ -1296,6 +1330,18 @@ export class AvatarManifestApp extends FormApplication {
                         </div>
                     </div>
                     <div class="form-group-stacked">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <label style="margin:0;">Curation Provenance</label>
+                            <button type="button" id="dialog-reset-auto-btn" class="ionrift-btn" style="font-size:0.75rem; padding:2px 8px; width:auto; height:auto; min-height:22px; background:rgba(59,130,246,0.25); border:1px solid rgba(59,130,246,0.5); color:#93c5fd; cursor:pointer;" title="Re-evaluate metadata from filename and path">
+                                <i class="fas fa-wand-magic-sparkles"></i> Re-parse from Path
+                            </button>
+                        </div>
+                        <select name="isManual" class="manifest-glass-select">
+                            <option value="false" ${!token.isManual ? "selected" : ""}>✨ Auto-Detected (Permits auto-updates on scan)</option>
+                            <option value="true" ${token.isManual ? "selected" : ""}>🔒 Curated by GM (Locked from auto-overwrites)</option>
+                        </select>
+                    </div>
+                    <div class="form-group-stacked">
                         <label>Species / Culture</label>
                         <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                     </div>
@@ -1325,11 +1371,12 @@ export class AvatarManifestApp extends FormApplication {
             buttons: {
                 save: {
                     icon: '<i class="fas fa-save"></i>',
-                    label: "Save Curation",
+                    label: "Save Changes",
                     callback: async html => {
                         const species = html.find('[name="species"]').val();
                         const archetype = html.find('[name="archetype"]').val();
                         const role = html.find('[name="role"]').val() || archetype;
+                        const isManual = html.find('[name="isManual"]').val() === "true";
                         
                         const pendingInput = html.find('.tag-box-inline-input').val()?.trim()?.toLowerCase()?.replace(/^#+/, '');
                         let tags = html.find('#token-tags-hidden').val().split(",").map(t => t.trim().toLowerCase().replace(/^#+/, "")).filter(Boolean);
@@ -1342,7 +1389,7 @@ export class AvatarManifestApp extends FormApplication {
                             archetype,
                             role,
                             tags,
-                            isManual: true
+                            isManual
                         });
                         if (this._activeDialog === dlg) {
                             this._activeDialog = null;
@@ -1360,6 +1407,34 @@ export class AvatarManifestApp extends FormApplication {
                 const $box = html.find("#token-tag-box");
                 const $input = $box.find(".tag-box-inline-input");
                 const $hidden = html.find("#token-tags-hidden");
+
+                html.find("#dialog-reset-auto-btn").click(ev => {
+                    ev.preventDefault();
+                    const parsed = AvatarScanner.parsePathMetadata(token.path || path);
+                    if (parsed.species && allSpecies.includes(parsed.species)) {
+                        html.find('[name="species"]').val(parsed.species);
+                    } else if (parsed.species) {
+                        html.find('[name="species"]').val("generic");
+                    }
+                    if (parsed.archetype) {
+                        html.find('[name="archetype"]').val(parsed.archetype);
+                    }
+                    html.find('[name="role"]').val(parsed.role || "");
+                    html.find('[name="isManual"]').val("false");
+                    
+                    $box.find(".editor-tag-chip").remove();
+                    const clean = AvatarScanner.cleanTags(parsed.tags || []);
+                    for (const t of clean) {
+                        const $chip = $(`
+                            <span class="editor-tag-chip" data-tag="${t}">
+                                #${t}
+                                <span class="delete-chip-btn" title="Remove tag">&times;</span>
+                            </span>
+                        `);
+                        $chip.insertBefore($input);
+                    }
+                    updateHidden();
+                });
 
                 const updateHidden = () => {
                     const tags = [];
@@ -1511,6 +1586,15 @@ export class AvatarManifestApp extends FormApplication {
                 </div>
 
                 <div class="form-group-stacked">
+                    <label>Curation Provenance</label>
+                    <select name="curationMode" class="manifest-glass-select">
+                        <option value="preserve" selected>Keep Current Provenance (Auto stays Auto, Curated stays Curated)</option>
+                        <option value="manual">Mark as Curated by GM (🔒 Curated)</option>
+                        <option value="auto">Reset to Auto-Detected (✨ Auto — Re-evaluates taxonomy)</option>
+                    </select>
+                </div>
+
+                <div class="form-group-stacked">
                     <label>Species / Culture</label>
                     <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                 </div>
@@ -1549,6 +1633,7 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-check-double"></i>',
                     label: "Apply to Selected",
                     callback: async html => {
+                        const curationMode = html.find('[name="curationMode"]').val() || "preserve";
                         const species = html.find('[name="species"]').val() || undefined;
                         const archetype = html.find('[name="archetype"]').val() || undefined;
                         const role = html.find('[name="role"]').val() || undefined;
@@ -1562,7 +1647,8 @@ export class AvatarManifestApp extends FormApplication {
                             archetype,
                             role,
                             addTags,
-                            removeTags
+                            removeTags,
+                            curationMode
                         });
                         this.selectedPaths.clear();
                         if (this._activeDialog === dlg) {
