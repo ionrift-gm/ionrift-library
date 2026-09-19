@@ -2770,8 +2770,8 @@ button.ionrift-badge.classifier-override-btn:hover {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(8, 6, 16, 0.68);
-    backdrop-filter: blur(4px);
+    background: rgba(8, 6, 16, 0.22);
+    backdrop-filter: blur(0.5px);
     z-index: 299;
     opacity: 0;
     pointer-events: none;
@@ -2870,20 +2870,25 @@ button.ionrift-badge.classifier-override-btn:hover {
 
 /* Stacked Form Group */
 .form-group-stacked {
-    display: flex;
-    flex-direction: column;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
     gap: 4px;
     margin-bottom: 8px;
-    width: 100%;
+    width: 100% !important;
+    box-sizing: border-box;
 }
 
 .form-group-stacked label {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
     font-size: 0.8rem;
     font-weight: 600;
     color: rgba(226, 232, 240, 0.9);
-    display: flex;
     align-items: center;
     justify-content: space-between;
+    margin-bottom: 2px;
 }
 
 .form-group-stacked label .label-hint {
@@ -2894,7 +2899,8 @@ button.ionrift-badge.classifier-override-btn:hover {
 
 .form-group-stacked input[type="text"],
 .form-group-stacked select {
-    width: 100%;
+    display: block !important;
+    width: 100% !important;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(140, 110, 240, 0.3);
     border-radius: 4px;
@@ -4656,8 +4662,8 @@ button.ionrift-badge.classifier-override-btn:hover {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(8, 6, 16, 0.72);
-    backdrop-filter: blur(4px);
+    background: rgba(8, 6, 16, 0.22);
+    backdrop-filter: blur(0.5px);
     z-index: 299;
     opacity: 0;
     pointer-events: none;
