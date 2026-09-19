@@ -4720,3 +4720,47 @@ button.ionrift-badge.classifier-override-btn:hover {
     gap: 6px !important;
     box-sizing: border-box !important;
 }
+
+/* Token Tag Pills Interactive Styling */
+.token-tag-pill.clickable {
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.token-tag-pill.clickable:hover {
+    background: rgba(168, 85, 247, 0.35) !important;
+    border-color: rgba(168, 85, 247, 0.7) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+/* Tag Manager Modal Styling */
+.ionrift-window.dialog.tag-manager-modal {
+    z-index: 300 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(139, 92, 246, 0.4) !important;
+}
+
+.tag-manager-modal .tag-row:hover {
+    background: rgba(140, 110, 240, 0.08) !important;
+}
+
+.tag-manager-modal .tag-row.is-redundant-row {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.tag-manager-modal .tag-row.is-redundant-row:hover {
+    background: rgba(245, 158, 11, 0.12) !important;
+}
+
+.tag-manager-modal .tag-action-btn {
+    transition: all 0.15s ease;
+}
+
+.tag-manager-modal .tag-action-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+.tag-manager-modal .ignored-tag-chip .remove-ignored-chip-btn:hover {
+    color: #ef4444 !important;
+}

@@ -393,6 +393,9 @@
                     </div>
 
                     <div style="display:flex; align-items:center; gap:6px;">
+                        <button type="button" id="manage-tags-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 10px; font-size:0.82em; min-height:28px; height:28px; line-height:26px; background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.4); border-radius:4px; color:#d8b4fe; cursor:pointer; white-space:nowrap;" title="Inspect all tags, purge redundant folder tags, and manage ignored tags">
+                            <i class="fas fa-tags"></i> Manage Tags
+                        </button>
                         <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 10px; font-size:0.82em; min-height:28px; background:rgba(59,130,246,0.25); border:1px solid rgba(59,130,246,0.45); border-radius:4px; color:#93c5fd; cursor:pointer; white-space:nowrap;" title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
                             <i class="fas fa-wand-magic-sparkles"></i> Reset to Auto ({{selectedCount}})
                         </button>
@@ -444,7 +447,7 @@
 
                                     <!-- Freeform Descriptors -->
                                     {{#each t.displayTags as |tag|}}
-                                    <span class="token-tag-pill" title="Applied Tag">#{{tag}}</span>
+                                    <span class="token-tag-pill clickable" data-tag="{{tag}}" title="Tag: #{{tag}} (Click to filter, right-click to manage)">#{{tag}}</span>
                                     {{/each}}
                                 </div>
                             </div>

@@ -46,6 +46,7 @@ export class AvatarRegistryService {
         return {
             watchFolders: ["tokens/ionrift"],
             bannedFolders: [],    // Array of folder path prefixes that are banned
+            ignoredTags: [],      // Array of global tags to ignore/strip
             catalog: {},          // path -> TokenRecord
             manualOverrides: {},  // "species/archetype" -> [paths]
             lastScanned: null
@@ -197,8 +198,135 @@ export class AvatarRegistryService {
     }
 
     // -------------------------------------------------------------------
+    // Ignored Tags & Redundancy Management
+    // -------------------------------------------------------------------
+
+    static getIgnoredTags() {
+        return this.getState().ignoredTags || [];
+    }
+
+    /**
+     * Adds a tag to the ignored list and optionally purges it from all tokens in the catalog.
+     * @param {string} tag
+     * @param {boolean} [purgeFromCatalog=true]
+     * @returns {Promise<{ tag: string, purgedCount: number }>}
+     */
+    static async addIgnoredTag(tag, purgeFromCatalog = true) {
+        if (!tag || typeof tag !== "string") return { tag: "", purgedCount: 0 };
+        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
+        if (!cleanTag) return { tag: "", purgedCount: 0 };
+
+        const state = this.getState();
+        state.ignoredTags = state.ignoredTags || [];
+        if (!state.ignoredTags.includes(cleanTag)) {
+            state.ignoredTags.push(cleanTag);
+        }
+
+        let purgedCount = 0;
+        if (purgeFromCatalog && state.catalog) {
+            for (const token of Object.values(state.catalog)) {
+                if (Array.isArray(token.tags) && token.tags.includes(cleanTag)) {
+                    token.tags = token.tags.filter(t => t.toLowerCase() !== cleanTag);
+                    purgedCount++;
+                }
+            }
+        }
+
+        await this.saveState(state);
+        return { tag: cleanTag, purgedCount };
+    }
+
+    /**
+     * Removes a tag from the ignored list.
+     * @param {string} tag
+     * @returns {Promise<boolean>}
+     */
+    static async removeIgnoredTag(tag) {
+        if (!tag || typeof tag !== "string") return false;
+        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
+        const state = this.getState();
+        const initialLen = (state.ignoredTags || []).length;
+        state.ignoredTags = (state.ignoredTags || []).filter(t => t.toLowerCase() !== cleanTag);
+        if (state.ignoredTags.length !== initialLen) {
+            await this.saveState(state);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Strips a tag from all tokens across the entire catalog without adding to ignored list.
+     * @param {string} tag
+     * @returns {Promise<number>} Number of tokens modified
+     */
+    static async removeTagGlobally(tag) {
+        if (!tag || typeof tag !== "string") return 0;
+        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
+        if (!cleanTag) return 0;
+
+        const state = this.getState();
+        let count = 0;
+        if (state.catalog) {
+            for (const token of Object.values(state.catalog)) {
+                if (Array.isArray(token.tags) && token.tags.includes(cleanTag)) {
+                    token.tags = token.tags.filter(t => t.toLowerCase() !== cleanTag);
+                    count++;
+                }
+            }
+        }
+
+        if (count > 0) {
+            await this.saveState(state);
+        }
+        return count;
+    }
+
+    /**
+     * Computes catalog-wide tag metrics, frequency counts, and flags potentially redundant tags.
+     * @returns {{ metrics: Array<{ tag: string, count: number, pct: number, isRedundant: boolean }>, totalTokens: number, totalUniqueTags: number, redundantTags: Array<string>, ignoredTags: Array<string> }}
+     */
+    static getTagMetrics() {
+        const state = this.getState();
+        const catalog = state.catalog || {};
+        const totalTokens = Object.keys(catalog).length;
+        const tagCounts = new Map();
+
+        for (const token of Object.values(catalog)) {
+            const tags = Array.isArray(token.tags) ? token.tags : [];
+            for (const t of tags) {
+                const lower = String(t).toLowerCase().trim().replace(/^#+/, "");
+                if (!lower) continue;
+                tagCounts.set(lower, (tagCounts.get(lower) || 0) + 1);
+            }
+        }
+
+        const metrics = [];
+        const redundantTags = [];
+
+        for (const [tag, count] of tagCounts.entries()) {
+            const pct = totalTokens > 0 ? Math.round((count / totalTokens) * 100) : 0;
+            // Redundant if present on >= 75% of library with >= 5 tokens total
+            const isRedundant = totalTokens >= 5 && pct >= 75;
+            if (isRedundant) redundantTags.push(tag);
+            metrics.push({ tag, count, pct, isRedundant });
+        }
+
+        // Sort by count descending, then alphabetical
+        metrics.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+
+        return {
+            metrics,
+            totalTokens,
+            totalUniqueTags: metrics.length,
+            redundantTags,
+            ignoredTags: state.ignoredTags || []
+        };
+    }
+
+    // -------------------------------------------------------------------
     // Token Catalog & Curation CRUD
     // -------------------------------------------------------------------
+
 
     static getCatalog() {
         return this.getState().catalog || {};

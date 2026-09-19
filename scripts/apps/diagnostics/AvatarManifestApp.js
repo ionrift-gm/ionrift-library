@@ -1070,6 +1070,33 @@ export class AvatarManifestApp extends FormApplication {
             }
         });
 
+        // 9c. Manage Tags & Redundancy Purge
+        html.find("#manage-tags-btn").click(async ev => {
+            ev.preventDefault();
+            await this._openTagManagerDialog();
+        });
+
+        // 9d. Clickable Tag Pills on Token Cards (Filter on click, manage on right-click)
+        html.on("click", ".token-tag-pill.clickable", ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const tag = $(ev.currentTarget).data("tag");
+            if (tag) {
+                this.filterQuery = tag;
+                this.currentPage = 1;
+                this.render();
+            }
+        });
+
+        html.on("contextmenu", ".token-tag-pill.clickable", async ev => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const tag = $(ev.currentTarget).data("tag");
+            if (tag) {
+                await this._openTagManagerDialog({ searchTag: tag });
+            }
+        });
+
         // 10. Batch Tag Folder
         html.find(".batch-tag-folder-btn").click(async ev => {
             ev.preventDefault();
@@ -2134,6 +2161,316 @@ export class AvatarManifestApp extends FormApplication {
             },
             default: "save"
         }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal"], width: 540 });
+        this._activeDialog = dlg;
+        dlg.render(true);
+    }
+
+    /**
+     * Spawns the central Tag Manager and Redundancy Purge modal.
+     * Allows GMs to view catalog-wide tag usage, purge root-folder noise, and configure ignored tags.
+     * @param {object} [options]
+     * @param {string} [options.searchTag=""]
+     */
+    async _openTagManagerDialog({ searchTag = "" } = {}) {
+        if (this._activeDialog) {
+            try { this._activeDialog.close(); } catch {}
+            this._activeDialog = null;
+        }
+        if (this._loupeTimer) {
+            clearTimeout(this._loupeTimer);
+            this._loupeTimer = null;
+        }
+        $("#ionrift-token-hover-loupe").removeClass("is-visible");
+        this._showBackdrop();
+
+        let currentSearch = (searchTag || "").trim().toLowerCase();
+
+        const buildContent = () => {
+            const metricsData = AvatarRegistryService.getTagMetrics();
+            const { metrics, totalTokens, totalUniqueTags, redundantTags, ignoredTags } = metricsData;
+
+            const filteredMetrics = currentSearch
+                ? metrics.filter(m => m.tag.includes(currentSearch))
+                : metrics;
+
+            const redundantBanner = redundantTags.length > 0 ? `
+                <div class="tag-redundancy-alert-card" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); border-radius:6px; padding:10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:4px;">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700; color:#fbbf24; font-size:0.88rem; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            <span>${redundantTags.length} Redundant Tag(s) Flagged</span>
+                        </div>
+                        <p style="margin:4px 0 0 0; font-size:0.8rem; color:rgba(254,243,199,0.9); line-height:1.4;">
+                            These tags appear on 75%+ of your tokens (e.g. ${redundantTags.map(t => `<code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px; color:#fde68a;">#${t}</code>`).join(", ")}) and typically originate from root folder scans.
+                        </p>
+                    </div>
+                    <button type="button" class="ionrift-btn purge-all-redundant-btn" style="flex:0 0 auto; height:28px; line-height:26px; padding:0 10px; font-size:0.78rem; background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.5); color:#fca5a5; cursor:pointer; white-space:nowrap;" title="Purge all redundant tags and add them to Ignored Tags">
+                        <i class="fas fa-trash-can"></i> Purge All Redundant
+                    </button>
+                </div>
+            ` : '';
+
+            const ignoredChipsHtml = ignoredTags.length > 0
+                ? ignoredTags.map(t => `
+                    <span class="ignored-tag-chip" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:4px; padding:2px 8px; font-size:0.75rem; color:#fca5a5;">
+                        <i class="fas fa-ban" style="font-size:0.7em;"></i> #${t}
+                        <a class="remove-ignored-chip-btn" data-tag="${t}" style="cursor:pointer; color:#fee2e2; font-weight:700; text-decoration:none;" title="Remove from ignored list">&times;</a>
+                    </span>
+                `).join("")
+                : `<span style="font-size:0.78rem; color:rgba(180,165,220,0.5); font-style:italic;">No tags currently ignored</span>`;
+
+            const rowsHtml = filteredMetrics.length > 0
+                ? filteredMetrics.map(m => `
+                    <tr style="border-bottom:1px solid rgba(140,110,240,0.12); transition:background 0.15s ease;" class="tag-row ${m.isRedundant ? 'is-redundant-row' : ''}">
+                        <td style="padding:6px 8px; font-weight:600; font-size:0.85rem; color:${m.isRedundant ? '#fbbf24' : '#fff'};">
+                            #${m.tag}
+                            ${m.isRedundant ? '<span style="margin-left:6px; font-size:0.7rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> Redundant</span>' : ''}
+                        </td>
+                        <td style="padding:6px 8px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center;">
+                            <strong>${m.count}</strong> <span style="font-size:0.75em; opacity:0.7;">(${m.pct}%)</span>
+                        </td>
+                        <td style="padding:6px 8px; text-align:right;">
+                            <div style="display:inline-flex; align-items:center; gap:5px; justify-content:flex-end;">
+                                <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(140,110,240,0.2); border:1px solid rgba(140,110,240,0.4); border-radius:3px; color:#d8b4fe; cursor:pointer;" title="Filter workspace to #${m.tag}">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <button type="button" class="tag-action-btn tag-purge-btn" data-tag="${m.tag}" data-count="${m.count}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:3px; color:#fca5a5; cursor:pointer;" title="Purge #${m.tag} from all ${m.count} tokens">
+                                    <i class="fas fa-trash-can"></i> Purge
+                                </button>
+                                <button type="button" class="tag-action-btn tag-ignore-btn" data-tag="${m.tag}" data-count="${m.count}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(220,38,38,0.25); border:1px solid rgba(220,38,38,0.55); border-radius:3px; color:#fecaca; cursor:pointer;" title="Purge #${m.tag} and permanently ignore in future scans">
+                                    <i class="fas fa-ban"></i> Purge & Ignore
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join("")
+                : `<tr><td colspan="3" style="text-align:center; padding:16px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
+
+            return `
+                <div class="tag-manager-modal-inner" style="display:flex; flex-direction:column; gap:10px; padding:4px 0; max-height:76vh; overflow:hidden;">
+                    <!-- Overview Bar -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:8px 12px; flex-shrink:0;">
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.8);">Total Tokens: <strong style="color:#fff;">${totalTokens}</strong></span>
+                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.8);">Unique Tags: <strong style="color:#d8b4fe;">${totalUniqueTags}</strong></span>
+                        </div>
+                        <span style="font-size:0.82rem; color:${redundantTags.length > 0 ? '#fbbf24' : '#4ade80'}; font-weight:600;">
+                            ${redundantTags.length > 0 ? `<i class="fas fa-triangle-exclamation"></i> ${redundantTags.length} Redundant` : '<i class="fas fa-check-circle"></i> Clean Taxonomy'}
+                        </span>
+                    </div>
+
+                    ${redundantBanner}
+
+                    <!-- Ignored Tags Card -->
+                    <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:8px 12px; flex-shrink:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(200,190,240,0.7); margin:0;">
+                                <i class="fas fa-ban" style="color:#f87171;"></i> Ignored Tags & Stopwords (Skipped during scans)
+                            </label>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <input type="text" id="new-ignored-tag-input" placeholder="e.g. tokesn, artpack" style="height:24px; padding:2px 8px; font-size:0.78rem; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:3px; color:#fff; width:140px;" />
+                                <button type="button" id="add-ignored-tag-btn" class="ionrift-btn" style="height:24px; line-height:22px; padding:0 8px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Add word to ignored tags">
+                                    <i class="fas fa-plus"></i> Ignore
+                                </button>
+                            </div>
+                        </div>
+                        <div class="ignored-chips-container" style="display:flex; flex-wrap:wrap; gap:5px; max-height:56px; overflow-y:auto;">
+                            ${ignoredChipsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Search Filter -->
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                        <div style="position:relative; flex:1;">
+                            <i class="fas fa-search" style="position:absolute; left:8px; top:8px; font-size:0.8rem; color:rgba(180,165,220,0.5);"></i>
+                            <input type="text" id="tag-manager-search-input" value="${currentSearch}" placeholder="Filter active tags list..." style="width:100%; height:28px; padding-left:26px; font-size:0.82rem; background:rgba(0,0,0,0.35); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff;" />
+                        </div>
+                        <span style="font-size:0.78rem; color:rgba(180,165,220,0.6); flex-shrink:0;">Showing ${filteredMetrics.length} of ${totalUniqueTags}</span>
+                    </div>
+
+                    <!-- Scrollable Table -->
+                    <div class="tag-manager-table-scroll" style="flex:1 1 0; min-height:180px; max-height:360px; overflow-y:auto; background:rgba(0,0,0,0.2); border:1px solid rgba(140,110,240,0.2); border-radius:4px;">
+                        <table style="width:100%; border-collapse:collapse; text-align:left;">
+                            <thead>
+                                <tr style="background:rgba(18,14,32,0.85); border-bottom:1px solid rgba(140,110,240,0.25); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7); position:sticky; top:0; z-index:2;">
+                                    <th style="padding:6px 8px;">Tag Name</th>
+                                    <th style="padding:6px 8px; text-align:center; width:120px;">Tokens Applied</th>
+                                    <th style="padding:6px 8px; text-align:right; width:220px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tag-manager-tbody">
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        };
+
+        let dlg;
+
+        const attachDialogListeners = ($html) => {
+            const refreshModal = () => {
+                $html.find(".tag-manager-modal-inner").replaceWith(buildContent());
+                attachDialogListeners($html);
+            };
+
+            // Search filter
+            $html.find("#tag-manager-search-input").on("input", ev => {
+                currentSearch = $(ev.currentTarget).val().trim().toLowerCase();
+                refreshModal();
+                $html.find("#tag-manager-search-input").focus().val("").val(currentSearch);
+            });
+
+            // Add Ignored Tag
+            const commitAddIgnored = async () => {
+                const input = $html.find("#new-ignored-tag-input");
+                const val = input.val()?.trim()?.toLowerCase()?.replace(/^#+/, "");
+                if (!val) return;
+                const result = await AvatarRegistryService.addIgnoredTag(val, true);
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Added '#${val}' to ignored tags (purged from ${result.purgedCount} tokens).`);
+                }
+                refreshModal();
+            };
+
+            $html.find("#add-ignored-tag-btn").off("click").on("click", commitAddIgnored);
+            $html.find("#new-ignored-tag-input").off("keydown").on("keydown", ev => {
+                if (ev.key === "Enter") {
+                    ev.preventDefault();
+                    commitAddIgnored();
+                }
+            });
+
+            // Remove Ignored Tag
+            $html.find(".remove-ignored-chip-btn").off("click").on("click", async ev => {
+                ev.preventDefault();
+                const tag = $(ev.currentTarget).data("tag");
+                if (tag) {
+                    await AvatarRegistryService.removeIgnoredTag(tag);
+                    if (typeof ui !== "undefined" && ui.notifications) {
+                        ui.notifications.info(`Ionrift | Removed '#${tag}' from ignored tags.`);
+                    }
+                    refreshModal();
+                }
+            });
+
+            // Filter Workspace to Tag
+            $html.find(".tag-filter-btn").off("click").on("click", ev => {
+                ev.preventDefault();
+                const tag = $(ev.currentTarget).data("tag");
+                if (tag) {
+                    this.filterQuery = tag;
+                    this.currentPage = 1;
+                    if (dlg) dlg.close();
+                    this.render();
+                }
+            });
+
+            // Purge Tag Globally
+            $html.find(".tag-purge-btn").off("click").on("click", async ev => {
+                ev.preventDefault();
+                const tag = $(ev.currentTarget).data("tag");
+                const count = $(ev.currentTarget).data("count");
+                const confirmed = await this._confirmDialog({
+                    title: `Purge Tag: #${tag}`,
+                    content: `
+                        <p>Are you sure you want to remove the tag <code>#${tag}</code> from all <strong>${count}</strong> tokens in your catalog?</p>
+                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">This strips the tag immediately across all tokens. It does not add the tag to the Ignored list.</p>
+                    `,
+                    yesLabel: "Purge Tag",
+                    yesIcon: "fa-trash-can",
+                    isDestructive: true
+                });
+                if (!confirmed) return;
+
+                const purged = await AvatarRegistryService.removeTagGlobally(tag);
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Purged '#${tag}' from ${purged} tokens.`);
+                }
+                refreshModal();
+            });
+
+            // Purge & Ignore Tag
+            $html.find(".tag-ignore-btn").off("click").on("click", async ev => {
+                ev.preventDefault();
+                const tag = $(ev.currentTarget).data("tag");
+                const count = $(ev.currentTarget).data("count");
+                const confirmed = await this._confirmDialog({
+                    title: `Purge & Ignore: #${tag}`,
+                    content: `
+                        <p>Are you sure you want to remove <code>#${tag}</code> from all <strong>${count}</strong> tokens AND permanently ignore it?</p>
+                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> Future folder re-scans will completely skip this tag.</p>
+                    `,
+                    yesLabel: "Purge & Ignore",
+                    yesIcon: "fa-ban",
+                    isDestructive: true
+                });
+                if (!confirmed) return;
+
+                const result = await AvatarRegistryService.addIgnoredTag(tag, true);
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Purged '#${tag}' from ${result.purgedCount} tokens and added to Ignored Tags.`);
+                }
+                refreshModal();
+            });
+
+            // Purge All Redundant Tags
+            $html.find(".purge-all-redundant-btn").off("click").on("click", async ev => {
+                ev.preventDefault();
+                const metricsData = AvatarRegistryService.getTagMetrics();
+                const redundant = metricsData.redundantTags;
+                if (!redundant || redundant.length === 0) return;
+
+                const confirmed = await this._confirmDialog({
+                    title: `Purge & Ignore All Redundant Tags`,
+                    content: `
+                        <p>Purge <strong>${redundant.length}</strong> redundant tag(s) (<code>${redundant.map(t => '#' + t).join(', ')}</code>) and permanently add them to Ignored Tags?</p>
+                        <p style="font-size:0.85em; color:#86efac; margin-top:4px;"><i class="fas fa-wand-magic-sparkles"></i> This will immediately clean root folder pollution from your token catalog.</p>
+                    `,
+                    yesLabel: "Purge & Ignore All",
+                    yesIcon: "fa-trash-can",
+                    isDestructive: true
+                });
+                if (!confirmed) return;
+
+                let totalPurged = 0;
+                for (const t of redundant) {
+                    const res = await AvatarRegistryService.addIgnoredTag(t, true);
+                    totalPurged += res.purgedCount;
+                }
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Cleaned ${redundant.length} redundant tags from ${totalPurged} token instances.`);
+                }
+                refreshModal();
+            });
+        };
+
+        dlg = new Dialog({
+            title: "Tag Manager & Redundancy Purge",
+            content: buildContent(),
+            buttons: {
+                close: {
+                    icon: '<i class="fas fa-check"></i>',
+                    label: "Done",
+                    callback: () => {
+                        this.render();
+                    }
+                }
+            },
+            render: html => {
+                attachDialogListeners(html);
+            },
+            close: () => {
+                if (this._activeDialog === dlg) {
+                    this._activeDialog = null;
+                    this._hideBackdrop();
+                }
+                this.render();
+            },
+            default: "close"
+        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal", "tag-manager-modal"], width: 620 });
+
         this._activeDialog = dlg;
         dlg.render(true);
     }
