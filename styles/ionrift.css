@@ -172,6 +172,15 @@
 }
 
 /* Tab Navigation - Clean & High Contrast */
+.ionrift-window nav.tabs,
+.ionrift-window nav.sheet-tabs,
+.ionrift-window .sheet-tabs.tabs {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    line-height: normal;
+}
+
 .ionrift-window nav.tabs .item {
     background: rgba(60, 60, 60, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1518,15 +1527,1441 @@ button.ionrift-badge.classifier-override-btn:hover {
     border: 1px solid rgba(140, 110, 240, 0.35);
     background: #06050a;
     flex-shrink: 0;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    cursor: zoom-in;
 }
 
 .curation-token-thumb:hover {
-    transform: scale(1.4);
-    z-index: 10;
-    border-color: rgba(168, 85, 247, 0.8);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), 0 0 10px rgba(168, 85, 247, 0.5);
+    transform: scale(1.06);
+    border-color: #c084fc;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), 0 0 10px rgba(168, 85, 247, 0.6);
 }
+
+/* Token Hover Loupe (Instant High-Res Art Inspection) */
+.ionrift-token-loupe {
+    position: fixed;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    background: rgba(12, 9, 24, 0.96);
+    border: 2px solid rgba(168, 85, 247, 0.65);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 0 24px rgba(168, 85, 247, 0.45);
+    border-radius: 10px;
+    padding: 8px;
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.ionrift-token-loupe.is-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.ionrift-token-loupe .loupe-image {
+    width: 224px;
+    height: 224px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #06050a;
+    border: 1px solid rgba(140, 110, 240, 0.3);
+}
+
+.ionrift-token-loupe .loupe-caption {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+/* Avatar Manifest: Tab Navigation Reset (Suppress Foundry parchment borders) */
+.avatar-manifest-app nav.sheet-tabs,
+.avatar-manifest-app nav.tabs,
+.avatar-manifest-app .manifest-nav-tabs {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    line-height: normal !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.avatar-manifest-app .manifest-nav-tabs .nav-tab {
+    line-height: normal;
+    text-shadow: none;
+}
+
+/* Avatar Manifest: Legend Badges */
+.manifest-legend-badge {
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0 !important;
+}
+
+/* Avatar Manifest: Matrix Table & Row Reset (Override dnd5e / core zebra striping) */
+.avatar-manifest-app table.manifest-matrix-table,
+.avatar-manifest-app table.manifest-matrix-table tbody tr,
+.avatar-manifest-app table.manifest-matrix-table tbody tr:nth-child(even),
+.avatar-manifest-app table.manifest-matrix-table tbody tr:nth-child(odd) {
+    background: transparent !important;
+    background-color: transparent !important;
+}
+
+.avatar-manifest-app table.manifest-matrix-table tbody tr {
+    border-bottom: 1px solid rgba(140, 110, 240, 0.1) !important;
+    transition: background 0.15s ease;
+}
+
+.avatar-manifest-app table.manifest-matrix-table tbody tr:hover {
+    background: rgba(140, 110, 240, 0.08) !important;
+}
+
+/* Avatar Manifest: Matrix Cells */
+.matrix-cell {
+    padding: 6px 4px;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+/* TARGET MET (10+ tokens): Radiant Crown Emerald */
+.matrix-cell.status-optimal {
+    background: rgba(16, 185, 129, 0.22) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(52, 211, 153, 0.65) !important;
+    box-shadow: inset 0 0 6px rgba(52, 211, 153, 0.2);
+}
+.matrix-cell.status-optimal:hover {
+    background: rgba(16, 185, 129, 0.38) !important;
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.55);
+    transform: translateY(-1px);
+}
+
+/* HEALTHY VARIETY (5-9 tokens): Fresh Mint Emerald */
+.matrix-cell.status-good {
+    background: rgba(34, 197, 94, 0.15) !important;
+    color: #86efac !important;
+    border: 1px solid rgba(34, 197, 94, 0.45) !important;
+}
+.matrix-cell.status-good:hover {
+    background: rgba(34, 197, 94, 0.3) !important;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+    transform: translateY(-1px);
+}
+
+/* THIN VARIETY (1-4 tokens): High-Alert Amber */
+.matrix-cell.status-thin {
+    background: rgba(234, 179, 8, 0.18) !important;
+    color: #facc15 !important;
+    border: 1px solid rgba(234, 179, 8, 0.5) !important;
+}
+.matrix-cell.status-thin:hover {
+    background: rgba(234, 179, 8, 0.35) !important;
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+    transform: translateY(-1px);
+}
+
+/* FALLBACK GAP (0 tokens, species has fallback): Soft Rose/Red Dashed */
+.matrix-cell.status-generic-fallback,
+.matrix-cell.status-generic_fallback {
+    background: rgba(244, 63, 94, 0.08) !important;
+    color: #fda4af !important;
+    border: 1px dashed rgba(244, 63, 94, 0.48) !important;
+}
+.matrix-cell.status-generic-fallback:hover,
+.matrix-cell.status-generic_fallback:hover {
+    background: rgba(244, 63, 94, 0.22) !important;
+    color: #fff !important;
+    border-style: solid !important;
+    border-color: rgba(244, 63, 94, 0.75) !important;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
+    transform: translateY(-1px);
+}
+
+/* CRITICAL GAP (0 tokens, no fallback): Solid Crimson Red */
+.matrix-cell.status-unprovided {
+    background: rgba(239, 68, 68, 0.12) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.45) !important;
+}
+.matrix-cell.status-unprovided:hover {
+    background: rgba(239, 68, 68, 0.28) !important;
+    color: #fff !important;
+    border-color: rgba(239, 68, 68, 0.75) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Caste Status Badges */
+.status-badge-optimal {
+    background: rgba(16, 185, 129, 0.25) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(52, 211, 153, 0.5) !important;
+}
+.status-badge-good {
+    background: rgba(34, 197, 94, 0.2) !important;
+    color: #86efac !important;
+    border: 1px solid rgba(34, 197, 94, 0.4) !important;
+}
+.status-badge-thin {
+    background: rgba(234, 179, 8, 0.2) !important;
+    color: #facc15 !important;
+    border: 1px solid rgba(234, 179, 8, 0.45) !important;
+}
+.status-badge-generic_fallback,
+.status-badge-generic-fallback {
+    background: rgba(244, 63, 94, 0.15) !important;
+    color: #fda4af !important;
+    border: 1px dashed rgba(244, 63, 94, 0.5) !important;
+}
+.status-badge-unprovided {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Custom Ionrift Obsidian Glass Checkbox */
+.ionrift-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    border-radius: 4px;
+    border: 1px solid rgba(140, 110, 240, 0.45);
+    background: rgba(14, 10, 26, 0.9);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.15s ease;
+    margin: 0;
+    flex-shrink: 0;
+}
+.ionrift-checkbox:hover {
+    border-color: rgba(168, 85, 247, 0.8);
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+}
+.ionrift-checkbox:checked {
+    background: linear-gradient(135deg, #7c3aed, #9333ea);
+    border-color: #c084fc;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+.ionrift-checkbox:checked::after {
+    content: "";
+    width: 5px;
+    height: 10px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-bottom: 2px;
+}
+
+/* Curation List Structured Grid */
+.curation-workspace-inner {
+    max-width: 1100px;
+    width: 100%;
+}
+
+.curation-token-item {
+    display: grid;
+    grid-template-columns: 28px 56px minmax(200px, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: rgba(16, 12, 30, 0.55);
+    border: 1px solid rgba(140, 110, 240, 0.18);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.curation-token-item:hover {
+    background: rgba(24, 18, 48, 0.75);
+    border-color: rgba(140, 110, 240, 0.35);
+}
+.curation-token-item.is-selected {
+    background: rgba(120, 80, 220, 0.18);
+    border-color: rgba(168, 85, 247, 0.5);
+}
+.curation-token-item.is-manual {
+    background: rgba(24, 18, 48, 0.75);
+    border-color: rgba(168, 85, 247, 0.4);
+}
+.curation-token-item.is-blacklisted {
+    background: rgba(40, 15, 20, 0.65);
+    border-color: rgba(239, 68, 68, 0.45);
+    opacity: 0.7;
+}
+
+/* Ergonomic Action Touch Targets (>= 28px) */
+.token-edit-badge-btn {
+    min-height: 28px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 700;
+    background: rgba(120, 90, 200, 0.25);
+    border: 1px solid rgba(140, 110, 240, 0.45);
+    color: #c4b5fd;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.token-edit-badge-btn:hover {
+    background: rgba(147, 51, 234, 0.4);
+    color: #fff;
+    border-color: #c084fc;
+}
+
+.toggle-blacklist-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(140, 110, 240, 0.2);
+    color: rgba(180, 165, 220, 0.5);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.toggle-blacklist-btn:hover {
+    background: rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+.toggle-blacklist-btn.is-active {
+    background: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+    border-color: #ef4444;
+}
+
+.batch-tag-folder-btn {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: #a78bfa;
+    background: rgba(140, 110, 240, 0.12);
+    border: 1px solid rgba(140, 110, 240, 0.3);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.batch-tag-folder-btn:hover {
+    background: rgba(140, 110, 240, 0.35);
+    color: #fff;
+    border-color: #a78bfa;
+}
+
+.manifest-page-btn {
+    min-width: 28px;
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Avatar Manifest: Hierarchical Folder Tree & Curation Layout */
+.curation-layout-container {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.curation-folder-sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: rgba(10, 8, 20, 0.9);
+    border-right: 1px solid rgba(140, 110, 240, 0.2);
+    display: flex;
+    flex-direction: column;
+    padding: 10px 8px;
+    transition: width 0.2s ease, padding 0.2s ease;
+    overflow: hidden;
+    position: relative;
+}
+
+.curation-folder-sidebar.is-collapsed {
+    width: 38px !important;
+    min-width: 38px !important;
+    padding: 8px 4px !important;
+}
+
+.curation-sidebar-toggle-btn {
+    background: transparent;
+    border: none;
+    color: rgba(180, 165, 220, 0.7);
+    cursor: pointer;
+    font-size: 0.85em;
+    padding: 3px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+.curation-sidebar-toggle-btn:hover {
+    color: #fff;
+    background: rgba(140, 110, 240, 0.25);
+}
+
+.folder-tree-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.80rem;
+    color: rgba(226, 232, 240, 0.82);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, color 0.15s ease;
+    min-height: 26px;
+}
+
+.folder-tree-node:hover {
+    background: rgba(140, 110, 240, 0.15);
+    color: #ffffff;
+}
+
+.folder-tree-node.is-active {
+    background: rgba(140, 110, 240, 0.32) !important;
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.folder-tree-caret {
+    width: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(180, 165, 220, 0.6);
+    font-size: 0.7em;
+    cursor: pointer;
+    transition: transform 0.15s ease, color 0.15s ease;
+    flex-shrink: 0;
+}
+.folder-tree-caret:hover {
+    color: #c084fc;
+}
+
+.folder-tree-node .folder-icon {
+    color: #fbbf24;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.folder-tree-node .folder-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.folder-tree-node .folder-badge {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: rgba(200, 190, 240, 0.6);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 5px;
+    border-radius: 8px;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+/* Active Scope Banner */
+.active-scope-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(140, 110, 240, 0.12);
+    border: 1px solid rgba(140, 110, 240, 0.3);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.82em;
+    gap: 8px;
+}
+
+.clear-folder-filter-btn {
+    background: transparent;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    color: #f87171;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.clear-folder-filter-btn:hover {
+    background: rgba(248, 113, 113, 0.2);
+    color: #fff;
+    border-color: #f87171;
+}
+
+.clear-status-filter-btn {
+    background: transparent;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    color: #f87171;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.clear-status-filter-btn:hover {
+    background: rgba(248, 113, 113, 0.2);
+    color: #fff;
+    border-color: #f87171;
+}
+
+.active-scope-banner.is-blacklisted-scope {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.folder-tree-node.is-blacklisted-node:hover {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #fff !important;
+}
+.folder-tree-node.is-blacklisted-node.is-active {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #fca5a5 !important;
+}
+
+.batch-actions-btn {
+    width: auto !important;
+    max-width: max-content !important;
+    flex: 0 0 auto !important;
+    padding: 4px 12px;
+    font-size: 0.82em;
+    min-height: 28px;
+    background: rgba(140, 110, 240, 0.25);
+    border: 1px solid rgba(140, 110, 240, 0.45);
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+.batch-actions-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: rgba(140, 110, 240, 0.2);
+    background: rgba(140, 110, 240, 0.1);
+}
+.batch-actions-btn:not(:disabled):hover {
+    background: rgba(140, 110, 240, 0.45);
+    border-color: #a78bfa;
+}
+
+/* Token Curation Anti-Squash Pagination Footer */
+.curation-pagination-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 6px 10px;
+    border-top: 1px solid rgba(140, 110, 240, 0.18);
+    font-size: 0.82em;
+    color: rgba(200, 190, 230, 0.7);
+    white-space: nowrap !important;
+    gap: 8px;
+}
+
+.curation-pagination-footer .pagination-summary {
+    flex-shrink: 0;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.curation-pagination-footer .pagination-controls-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    white-space: nowrap !important;
+}
+
+.curation-pagination-footer .pagination-page-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap !important;
+    flex-shrink: 0;
+    color: #e2e8f0;
+    margin: 0 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.curation-pagination-footer .pagination-page-input {
+    width: 46px;
+    height: 26px;
+    padding: 1px 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-align: center;
+    background: rgba(20, 16, 38, 0.8);
+    border: 1px solid rgba(140, 110, 240, 0.35);
+    border-radius: 4px;
+    color: #fff;
+    -moz-appearance: textfield;
+}
+
+.curation-pagination-footer .pagination-page-input::-webkit-outer-spin-button,
+.curation-pagination-footer .pagination-page-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.curation-pagination-footer .pagination-page-input:focus {
+    border-color: #a78bfa;
+    outline: none;
+    background: rgba(30, 24, 56, 0.95);
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+/* Token Item Metadata & Badges */
+.provenance-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.provenance-pill.is-auto {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fcd34d;
+}
+
+.provenance-pill.is-curated {
+    background: rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    color: #d8b4fe;
+}
+
+.provenance-pill.is-blacklisted {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+}
+
+/* Taxonomy Pills (Inline Structural Metadata) */
+.taxonomy-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.taxonomy-pill.is-species {
+    background: rgba(147, 51, 234, 0.18);
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #d8b4fe;
+}
+
+.taxonomy-pill.is-archetype {
+    background: rgba(59, 130, 246, 0.18);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    color: #93c5fd;
+}
+
+.taxonomy-pill.is-role {
+    background: rgba(6, 182, 212, 0.18);
+    border: 1px solid rgba(103, 232, 249, 0.4);
+    color: #67e8f9;
+}
+
+.role-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    color: #67e8f9;
+    flex-shrink: 0;
+}
+
+.token-metadata-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+
+.token-breadcrumb {
+    font-size: 0.72rem;
+    color: rgba(200, 190, 230, 0.6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+
+.token-breadcrumb i {
+    color: rgba(251, 191, 36, 0.6);
+    margin-right: 3px;
+}
+
+.token-tags-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.token-tag-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(140, 110, 240, 0.2);
+    color: rgba(216, 180, 254, 0.85);
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+/* Batch Modal Staging UI */
+.batch-applied-summary {
+    background: rgba(16, 12, 30, 0.6);
+    border: 1px solid rgba(140, 110, 240, 0.25);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+
+.batch-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(140, 110, 240, 0.2);
+    border: 1px solid rgba(140, 110, 240, 0.4);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    color: #e2e8f0;
+    margin: 2px 3px;
+}
+
+.batch-tag-chip .remove-chip-btn {
+    color: #f87171;
+    cursor: pointer;
+    margin-left: 2px;
+}
+
+.batch-tag-chip .remove-chip-btn:hover {
+    color: #ef4444;
+}
+
+/* Compact Icon Action Buttons for Token Rows */
+.token-action-icon-btn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+    max-width: 28px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    flex: 0 0 28px !important;
+    border: 1px solid rgba(140, 110, 240, 0.4);
+    background: rgba(140, 110, 240, 0.2);
+    color: #e2e8f0;
+    transition: all 0.15s ease;
+}
+.token-action-icon-btn:hover {
+    background: rgba(140, 110, 240, 0.45);
+    border-color: #a78bfa;
+    color: #fff;
+}
+.token-action-icon-btn.toggle-blacklist-btn {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+}
+.token-action-icon-btn.toggle-blacklist-btn:hover {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.35);
+    color: #fff;
+}
+.token-action-icon-btn.toggle-blacklist-btn.is-active {
+    background: #ef4444;
+    border-color: #f87171;
+    color: #fff;
+}
+
+/* Folder Tree Quick Action Buttons & Wrapper */
+.folder-tree-node .folder-actions-wrapper {
+    display: none;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.folder-tree-node:hover .folder-actions-wrapper,
+.folder-tree-node.is-active .folder-actions-wrapper,
+.folder-tree-node.is-banned-folder .folder-actions-wrapper {
+    display: inline-flex;
+}
+.folder-tree-node .folder-badge {
+    margin-left: auto;
+}
+.folder-tree-node:hover .folder-badge,
+.folder-tree-node.is-active .folder-badge,
+.folder-tree-node.is-banned-folder .folder-badge {
+    margin-left: 0;
+}
+
+.folder-tree-node .folder-action-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.folder-tree-node .folder-scope-btn {
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.2);
+    color: #7dd3fc;
+}
+.folder-tree-node .folder-scope-btn:hover {
+    background: rgba(56, 189, 248, 0.45);
+    color: #fff;
+    border-color: #38bdf8;
+}
+.folder-tree-node .folder-tag-btn {
+    border: 1px solid rgba(140, 110, 240, 0.4);
+    background: rgba(140, 110, 240, 0.25);
+    color: #d8b4fe;
+}
+.folder-tree-node .folder-ban-btn {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.18);
+    color: #fca5a5;
+}
+.folder-tree-node .folder-tag-btn:hover {
+    background: rgba(167, 139, 250, 0.45);
+    color: #fff;
+    border-color: #a78bfa;
+}
+.folder-tree-node .folder-ban-btn:hover,
+.folder-tree-node .folder-ban-btn.is-active {
+    background: rgba(239, 68, 68, 0.45);
+    color: #fff;
+    border-color: #ef4444;
+}
+
+/* Sidebar Resizer (Splitter) */
+.curation-sidebar-resizer {
+    width: 6px;
+    cursor: col-resize;
+    position: relative;
+    z-index: 15;
+    flex-shrink: 0;
+    user-select: none;
+}
+.curation-sidebar-resizer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 2px;
+    width: 2px;
+    background: rgba(140, 110, 240, 0.2);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.curation-sidebar-resizer:hover::after,
+.curation-sidebar-resizer.is-dragging::after {
+    background: #a78bfa;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.8);
+}
+
+/* Tree Scope Bar & Breadcrumbs */
+.tree-scope-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(140, 110, 240, 0.15);
+    border: 1px solid rgba(140, 110, 240, 0.3);
+    border-radius: 4px;
+    padding: 3px 6px;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+.tree-scope-bar .tree-scope-crumbs {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.tree-scope-bar .tree-scope-crumbs::-webkit-scrollbar {
+    height: 3px;
+}
+.tree-scope-bar .tree-scope-crumbs::-webkit-scrollbar-thumb {
+    background: rgba(167, 139, 250, 0.4);
+    border-radius: 2px;
+}
+.tree-scope-bar .tree-crumb-item {
+    color: #c084fc;
+    cursor: pointer;
+    font-weight: 600;
+}
+.tree-scope-bar .tree-crumb-item:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+.tree-scope-bar .tree-crumb-sep {
+    color: rgba(180, 165, 220, 0.4);
+    font-size: 0.7rem;
+}
+.tree-scope-bar .tree-crumb-current {
+    color: #fff;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.tree-scope-bar .tree-scope-up-btn,
+.tree-scope-bar .tree-scope-clear-btn {
+    background: transparent;
+    border: none;
+    color: rgba(180, 165, 220, 0.7);
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 0.72rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.tree-scope-bar .tree-scope-up-btn:hover,
+.tree-scope-bar .tree-scope-clear-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar for folder tree */
+.curation-folder-tree-scroll {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+}
+.curation-folder-tree-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+.curation-folder-tree-scroll::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.15);
+}
+.curation-folder-tree-scroll::-webkit-scrollbar-thumb {
+    background: rgba(140, 110, 240, 0.35);
+    border-radius: 3px;
+}
+.curation-folder-tree-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(167, 139, 250, 0.6);
+}
+
+.token-action-icon-btn i {
+    pointer-events: none;
+}
+
+/* Banned Folder Visual Cue */
+.folder-tree-node.is-banned-folder .folder-name {
+    text-decoration: line-through;
+    opacity: 0.7;
+    color: #fca5a5;
+}
+.folder-tree-node.is-banned-folder .folder-icon {
+    color: #ef4444 !important;
+}
+.folder-tree-node.is-banned-folder .folder-badge {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    color: #fca5a5 !important;
+}
+
+/* Active Filter Highlights & Quick Reset */
+.curation-filter-bar input.is-filtering,
+.curation-filter-bar select.is-filtering {
+    border-color: rgba(245, 158, 11, 0.65) !important;
+    background: rgba(45, 25, 60, 0.6) !important;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.25) !important;
+    color: #fef08a !important;
+}
+
+.manifest-clear-filters-btn {
+    flex: 0 0 auto !important;
+    height: 28px !important;
+    padding: 2px 10px !important;
+    font-size: 0.78rem !important;
+    background: rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+    color: #fca5a5 !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+.manifest-clear-filters-btn:hover {
+    background: rgba(239, 68, 68, 0.38) !important;
+    border-color: #ef4444 !important;
+    color: #fff !important;
+}
+
+.active-filter-subset-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    color: #fde047;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    padding: 1px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+/* Folder Tree Filter Awareness */
+.folder-tree-node.is-filtered-out {
+    opacity: 0.45;
+    transition: opacity 0.15s ease;
+}
+.folder-tree-node.is-filtered-out:hover {
+    opacity: 0.85;
+}
+
+.folder-badge.is-filtered-empty {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: rgba(252, 165, 165, 0.8) !important;
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    font-weight: 700;
+}
+
+.folder-badge.is-filtered-match {
+    background: rgba(140, 110, 240, 0.32) !important;
+    color: #d8b4fe !important;
+    border-color: rgba(168, 85, 247, 0.5) !important;
+    font-weight: 700;
+}
+
+/* Filter Empty State Alert Card (Ionrift Glass) */
+.curation-filter-alert-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 24px 28px;
+    margin: 16px auto;
+    max-width: 680px;
+    width: 90%;
+    background: linear-gradient(135deg, rgba(32, 22, 54, 0.85) 0%, rgba(18, 14, 32, 0.92) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 14px rgba(245, 158, 11, 0.15);
+    backdrop-filter: blur(8px);
+}
+
+.curation-filter-alert-icon {
+    font-size: 2.4rem;
+    color: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 2px;
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.4));
+}
+
+.curation-filter-alert-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.curation-filter-alert-title {
+    margin: 0;
+    font-size: 1.12rem;
+    font-weight: 700;
+    color: #fef08a;
+    letter-spacing: 0.02em;
+}
+
+.curation-filter-alert-desc {
+    margin: 0;
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: rgba(226, 232, 240, 0.88);
+}
+
+.curation-filter-alert-desc .folder-path-highlight {
+    font-family: monospace;
+    font-size: 0.92em;
+    padding: 1px 6px;
+    background: rgba(140, 110, 240, 0.2);
+    border: 1px solid rgba(140, 110, 240, 0.4);
+    border-radius: 3px;
+    color: #e9d5ff;
+}
+
+.curation-filter-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0;
+}
+
+.active-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 4px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: #fef08a;
+    white-space: nowrap;
+}
+
+.active-filter-badge a.clear-single-filter-btn {
+    font-size: 1rem;
+    line-height: 1;
+    color: #fca5a5;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 2px;
+    opacity: 0.75;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+.active-filter-badge a.clear-single-filter-btn:hover {
+    opacity: 1;
+    color: #ef4444;
+}
+
+.curation-filter-alert-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.curation-filter-alert-actions .ionrift-btn {
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.15s ease;
+}
+
+.curation-filter-alert-actions .ionrift-btn.is-primary {
+    background: rgba(147, 51, 234, 0.35);
+    border: 1px solid rgba(168, 85, 247, 0.65);
+    color: #f3e8ff;
+}
+.curation-filter-alert-actions .ionrift-btn.is-primary:hover {
+    background: rgba(147, 51, 234, 0.6);
+    border-color: #c084fc;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+}
+
+/* Ionrift Modal Backdrop */
+.ionrift-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(8, 6, 16, 0.68);
+    backdrop-filter: blur(4px);
+    z-index: 299;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.ionrift-modal-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Ionrift Confirmation Modal Dialog */
+.ionrift-window.dialog.ionrift-confirm-modal {
+    min-width: 380px !important;
+    max-width: 480px !important;
+    z-index: 300 !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 0 24px rgba(139, 92, 246, 0.4) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .window-header {
+    background: rgba(18, 14, 32, 0.95) !important;
+    border-bottom: 1px solid rgba(140, 110, 240, 0.3) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .window-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-content {
+    padding: 8px 4px 12px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: rgba(226, 217, 245, 0.9);
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons {
+    padding-top: 10px;
+    gap: 10px;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons button.yes {
+    background: rgba(140, 110, 240, 0.3) !important;
+    border: 1px solid rgba(168, 85, 247, 0.6) !important;
+    color: #fff !important;
+}
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons button.yes:hover {
+    background: rgba(168, 85, 247, 0.5) !important;
+    border-color: #c084fc !important;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.5) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal.is-destructive .dialog-buttons button.yes {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border: 1px solid rgba(239, 68, 68, 0.6) !important;
+    color: #fca5a5 !important;
+}
+.ionrift-window.dialog.ionrift-confirm-modal.is-destructive .dialog-buttons button.yes:hover {
+    background: rgba(239, 68, 68, 0.45) !important;
+    border-color: #ef4444 !important;
+    color: #fff !important;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons button.no {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: rgba(210, 200, 240, 0.8) !important;
+}
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons button.no:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+/* Curation Modal Dialog Overhaul */
+.ionrift-window.dialog.curation-modal {
+    min-width: 500px !important;
+    max-width: 580px !important;
+    width: 540px !important;
+}
+
+.ionrift-window.dialog.curation-modal .window-header {
+    position: relative;
+    padding-right: 36px;
+}
+
+.ionrift-window.dialog.curation-modal .window-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Stacked Form Group */
+.form-group-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.form-group-stacked label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.form-group-stacked label .label-hint {
+    font-size: 0.70rem;
+    font-weight: 400;
+    color: rgba(180, 165, 220, 0.55);
+}
+
+.form-group-stacked input[type="text"],
+.form-group-stacked select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(140, 110, 240, 0.3);
+    border-radius: 4px;
+    color: #fff;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    box-sizing: border-box;
+}
+
+/* Interactive Tag Box for editing tags */
+.interactive-tag-box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    min-height: 42px;
+    max-height: 120px;
+    overflow-y: auto;
+    background: rgba(10, 8, 20, 0.75);
+    border: 1px solid rgba(140, 110, 240, 0.35);
+    border-radius: 5px;
+    cursor: text;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.interactive-tag-box:focus-within {
+    border-color: #a78bfa;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+.editor-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(140, 110, 240, 0.22);
+    border: 1px solid rgba(140, 110, 240, 0.45);
+    color: #e2e8f0;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.editor-tag-chip .delete-chip-btn {
+    cursor: pointer;
+    color: rgba(248, 113, 113, 0.75);
+    font-weight: 700;
+    font-size: 0.85rem;
+    line-height: 1;
+    margin-left: 2px;
+    transition: color 0.12s ease;
+}
+
+.editor-tag-chip .delete-chip-btn:hover {
+    color: #ef4444;
+}
+
+.tag-box-inline-input {
+    flex: 1 1 100px;
+    min-width: 100px;
+    height: 24px;
+    padding: 0 4px !important;
+    background: transparent !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-size: 0.82rem !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.tag-box-inline-input::placeholder {
+    color: rgba(180, 165, 220, 0.4);
+}
+
+
 
 .dashboard-text {
     display: flex;
@@ -2920,4 +4355,335 @@ button.ionrift-badge.classifier-override-btn:hover {
     outline: 2px solid rgba(168, 85, 247, 0.85) !important;
     outline-offset: 2px !important;
     box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKEN MANIFEST & COVERAGE: WATCH FOLDERS COCKPIT
+   Overrides Foundry core .app button { width: 100% } and establishes glass UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.avatar-manifest-app button {
+    box-sizing: border-box;
+}
+
+/* Tab Container Elasticity & Dead Void Cure */
+.avatar-manifest-app .watch-folders-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto !important; /* Centered on wide/ultrawide viewports */
+    box-sizing: border-box;
+}
+
+/* Card Shell */
+.avatar-manifest-app .watch-folders-card {
+    background: rgba(18, 14, 32, 0.75);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.avatar-manifest-app .watch-folders-card h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+    padding-bottom: 10px;
+}
+
+.avatar-manifest-app .watch-folders-card .section-description {
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: rgba(220, 210, 255, 0.7);
+    margin: 0 0 16px 0;
+}
+
+/* Input Row Group */
+.avatar-manifest-app .watch-folder-input-group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+    width: 100% !important;
+}
+
+.avatar-manifest-app .watch-folder-input-group input#new-watch-folder-input {
+    flex: 1 1 auto !important;
+    min-width: 220px !important;
+    width: auto !important;
+    height: 36px !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    border-radius: 4px !important;
+    color: #ffffff !important;
+    padding: 0 12px !important;
+    font-size: 0.88rem !important;
+    font-family: 'Consolas', monospace !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.avatar-manifest-app .watch-folder-input-group input#new-watch-folder-input:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5) !important;
+    outline: none !important;
+}
+
+.avatar-manifest-app .watch-folder-input-group input#new-watch-folder-input.input-error {
+    border-color: #f87171 !important;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.5) !important;
+    animation: ionrift-shake 0.3s ease-in-out;
+}
+
+/* Fixed Action Buttons (Overrides Foundry width: 100%) */
+.avatar-manifest-app .watch-folder-input-group button.ionrift-btn,
+.avatar-manifest-app .watch-folder-input-group button#browse-watch-folder-btn,
+.avatar-manifest-app .watch-folder-input-group button#add-watch-folder-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    height: 36px !important;
+    padding: 0 14px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+}
+
+.avatar-manifest-app .watch-folder-input-group button#browse-watch-folder-btn {
+    background: linear-gradient(135deg, rgba(140, 110, 240, 0.45) 0%, rgba(91, 33, 182, 0.55) 100%) !important;
+    border: 1px solid rgba(168, 85, 247, 0.7) !important;
+    color: #ffffff !important;
+}
+
+.avatar-manifest-app .watch-folder-input-group button#browse-watch-folder-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.65) 0%, rgba(126, 34, 206, 0.75) 100%) !important;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.5) !important;
+}
+
+/* Watched Folders List & Rows */
+.avatar-manifest-app .watch-folder-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+
+.avatar-manifest-app .watch-folder-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 8px 14px !important;
+    border-radius: 6px !important;
+    background: rgba(12, 10, 24, 0.6) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2) !important;
+    min-height: 40px !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.avatar-manifest-app .watch-folder-item:hover {
+    border-color: rgba(139, 92, 246, 0.4) !important;
+    background: rgba(18, 14, 32, 0.8) !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important; /* Enables ellipsis truncation */
+    overflow: hidden !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-info i.folder-icon {
+    color: #fbbf24 !important;
+    font-size: 0.95rem !important;
+    flex: 0 0 auto !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-info .folder-path {
+    font-family: 'Consolas', monospace !important;
+    font-size: 0.85rem !important;
+    color: #e2d9f8 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    min-width: 0 !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex: 0 0 auto !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-token-count {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    padding: 2px 8px !important;
+    border-radius: 10px !important;
+    background: rgba(139, 92, 246, 0.2) !important;
+    border: 1px solid rgba(139, 92, 246, 0.4) !important;
+    color: #c084fc !important;
+    white-space: nowrap !important;
+}
+
+/* Remove Button Fix: Kill 756px tripwire and groove border */
+.avatar-manifest-app .watch-folder-item button.remove-watch-folder-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important; /* Kills Foundry groove line */
+    color: #f87171 !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    transition: all 0.2s ease !important;
+}
+
+.avatar-manifest-app .watch-folder-item button.remove-watch-folder-btn:hover {
+    background: rgba(248, 113, 113, 0.15) !important;
+    border-color: rgba(248, 113, 113, 0.4) !important;
+    color: #fca5a5 !important;
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.3) !important;
+}
+
+/* Scaffold Starter Art Section */
+.avatar-manifest-app .watch-scaffold-card {
+    background: rgba(18, 14, 32, 0.6);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.avatar-manifest-app .watch-scaffold-card h4 {
+    margin: 0 0 4px 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.avatar-manifest-app .watch-scaffold-card p {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: rgba(220, 210, 255, 0.65);
+}
+
+.avatar-manifest-app .watch-scaffold-card button#scaffold-seed-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 36px !important;
+    padding: 0 16px !important;
+    margin: 0 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    background: rgba(34, 197, 94, 0.25) !important;
+    border: 1px solid rgba(34, 197, 94, 0.5) !important;
+    border-radius: 4px !important;
+    color: #4ade80 !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.avatar-manifest-app .watch-scaffold-card button#scaffold-seed-btn:hover {
+    background: rgba(34, 197, 94, 0.4) !important;
+    border-color: #22c55e !important;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4) !important;
+    color: #ffffff !important;
+}
+
+@keyframes ionrift-shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+/* Modal Backdrop for Dialogs & Modals within Ionrift Apps */
+.ionrift-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(8, 6, 16, 0.72);
+    backdrop-filter: blur(4px);
+    z-index: 299;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.ionrift-modal-backdrop.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Ionrift Branded Confirmation Modal */
+.ionrift-window.dialog.ionrift-confirm-modal {
+    z-index: 300 !important;
+    min-width: 380px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.ionrift-window.dialog.curation-modal {
+    z-index: 300 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal .dialog-buttons button.default {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.6) 0%, rgba(99, 102, 241, 0.6) 100%) !important;
+    border-color: rgba(168, 85, 247, 0.8) !important;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.4) !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal.is-destructive .dialog-buttons button.yes {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.5) 0%, rgba(185, 28, 28, 0.6) 100%) !important;
+    border-color: rgba(248, 113, 113, 0.7) !important;
+    color: #fee2e2 !important;
+}
+
+.ionrift-window.dialog.ionrift-confirm-modal.is-destructive .dialog-buttons button.yes:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.75) 0%, rgba(185, 28, 28, 0.85) 100%) !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
 }
