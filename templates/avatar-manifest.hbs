@@ -32,11 +32,14 @@
             </nav>
         </div>
 
-        <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-            <button type="button" id="add-species-btn" class="ionrift-btn" style="height:28px; line-height:26px; padding:0 12px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:4px; color:#d8b4fe; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Add a custom or homebrew species to the manifest and coverage matrix">
+        <div class="dashboard-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="manifest-sync-chip" style="font-size:0.73em; padding:3px 8px; border-radius:4px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:#86efac; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; flex:0 0 auto;" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
+                <i class="fas fa-globe-americas" style="color:#4ade80;"></i> Cross-World
+            </span>
+            <button type="button" id="add-species-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content; height:28px; line-height:26px; padding:0 10px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:4px; color:#d8b4fe; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Add a custom or homebrew species to the manifest and coverage matrix">
                 <i class="fas fa-plus"></i> Add Species
             </button>
-            <button type="button" id="rescan-assets-btn" class="ionrift-btn" style="height:28px; line-height:26px; padding:0 12px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(120,90,200,0.25); border:1px solid rgba(140,110,240,0.4); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Re-scan all watch folders for new images">
+            <button type="button" id="rescan-assets-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content; height:28px; line-height:26px; padding:0 10px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(120,90,200,0.25); border:1px solid rgba(140,110,240,0.4); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Re-scan all watch folders for new images">
                 <i class="fas fa-sync-alt"></i> Re-scan Folders
             </button>
         </div>
@@ -531,13 +534,13 @@
                 </div>
 
                 <!-- Tokens List (Scrollable) -->
-                <div class="curation-token-list-scroll" style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px;">
+                <div class="curation-token-list-scroll" style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:6px; contain:layout paint;">
                     {{#each tokens as |t|}}
                     <div class="curation-token-item {{#if t.isBlacklisted}}is-blacklisted{{else if t.isManual}}is-manual{{/if}} {{#if t.isSelected}}is-selected{{/if}}">
                         
                         <input type="checkbox" class="ionrift-checkbox token-select-chk" data-path="{{t.path}}" {{#if t.isSelected}}checked{{/if}} />
 
-                        <img src="{{#if t.imgUrl}}{{t.imgUrl}}{{else}}{{t.path}}{{/if}}" class="curation-token-thumb" onerror="this.src='icons/svg/mystery-man.svg'" />
+                        <img src="{{#if t.imgUrl}}{{t.imgUrl}}{{else}}{{t.path}}{{/if}}" class="curation-token-thumb" loading="lazy" decoding="async" onerror="this.src='icons/svg/mystery-man.svg'" />
 
                         <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;">
                             <!-- Row 1: Token Clean Name + Provenance Pill -->
@@ -696,6 +699,12 @@
                 <h3>
                     <i class="fas fa-folder-open" style="color:#a78bfa;"></i> Watched Asset Folders
                 </h3>
+                <div class="watch-folder-scope-callout" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(140,110,240,0.12); border:1px solid rgba(140,110,240,0.3); border-radius:6px; margin:10px 0 14px 0; font-size:0.85em; color:rgba(225,215,250,0.9);">
+                    <i class="fas fa-globe" style="color:#a78bfa; font-size:1.1em; flex-shrink:0;"></i>
+                    <div>
+                        <strong>World-Specific Watch Folders:</strong> Watched directories are configured separately for this world so different campaigns can monitor distinct token collections. Token tags, custom species, and manual assignments are automatically shared across all your worlds.
+                    </div>
+                </div>
                 <p class="section-description">
                     Declare directories in your Foundry User Data folder where token assets live. The scanner recursively catalogues images within these locations.
                 </p>

@@ -151,6 +151,44 @@ export class PlatformHelper {
         }
     }
 
+    /**
+     * Writes JSON data to a relative Data path using FilePicker.upload().
+     * Idempotently creates parent directories and suppresses upload notifications.
+     * @param {string} path - Relative path (e.g. "ionrift-data/library/token-curation.json")
+     * @param {object|string} data - JSON object or string to serialize
+     * @returns {Promise<boolean>} True if written successfully
+     */
+    static async writeDataJson(path, data) {
+        if (!path || typeof path !== "string") return false;
+        const normalized = path.replace(/\\/g, "/").replace(/^\/+/, "");
+        const slash = normalized.lastIndexOf("/");
+        if (slash < 0) return false;
+
+        const dir = normalized.substring(0, slash);
+        const fileName = normalized.substring(slash + 1);
+        const FP = this.FP;
+        if (!FP || typeof FP.upload !== "function") return false;
+
+        try {
+            await this.ensureDirectory(dir, this.fileSource);
+            const jsonStr = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+            let file;
+            if (typeof File !== "undefined" && typeof Blob !== "undefined") {
+                const blob = new Blob([jsonStr], { type: "application/json" });
+                file = new File([blob], fileName, { type: "application/json" });
+            } else {
+                file = { name: fileName, size: jsonStr.length, type: "application/json" };
+            }
+
+            return await this.withSuppressedToasts(async () => {
+                await FP.upload(this.fileSource, dir, file, {});
+                return true;
+            });
+        } catch {
+            return false;
+        }
+    }
+
     static async loadJSZip() {
         if (typeof window !== "undefined" && window.JSZip) {
             return window.JSZip;

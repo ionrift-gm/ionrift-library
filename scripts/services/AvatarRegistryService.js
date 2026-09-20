@@ -5,6 +5,7 @@
  */
 import { Logger } from "./platform/Logger.js";
 import { SpeciesRegistry } from "./species/SpeciesRegistry.js";
+import { AvatarPersistenceService } from "./avatar/AvatarPersistenceService.js";
 
 export const CANONICAL_ARCHETYPES = [
     "guard",
@@ -55,22 +56,29 @@ export class AvatarRegistryService {
 
     /**
      * Retrieves the current registry state from world settings.
+     * @param {object} [options]
+     * @param {boolean} [options.clone=true] - Set to false for internal read-only access
      * @returns {object}
      */
-    static getState() {
+    static getState(options = {}) {
+        const shouldClone = options?.clone !== false;
         try {
             if (typeof game !== "undefined" && game.settings) {
                 const raw = game.settings.get("ionrift-library", this.SETTING_KEY);
-                return raw ? foundry.utils.deepClone(raw) : this.getDefaultState();
+                if (raw) return shouldClone ? foundry.utils.deepClone(raw) : raw;
+            } else if (this._inMemoryState) {
+                return shouldClone ? foundry.utils.deepClone(this._inMemoryState) : this._inMemoryState;
             }
         } catch (e) {
-            // Setting might not be registered in mock/isolated test environment
+            if (this._inMemoryState) return shouldClone ? foundry.utils.deepClone(this._inMemoryState) : this._inMemoryState;
         }
-        return this._inMemoryState || this.getDefaultState();
+        return this._inMemoryState
+            ? (shouldClone ? foundry.utils.deepClone(this._inMemoryState) : this._inMemoryState)
+            : this.getDefaultState();
     }
 
     /**
-     * Persists updated registry state to world settings.
+     * Persists updated registry state to world settings and debounces cross-world curation flush.
      * @param {object} state
      */
     static async saveState(state) {
@@ -82,15 +90,46 @@ export class AvatarRegistryService {
                 Logger.warn("AvatarRegistryService", "Failed to persist to world settings", err);
             }
         }
+
+        // Debounced flush of curation entries and noise tags to ionrift-data/library/token-curation.json
+        if (typeof AvatarPersistenceService !== "undefined" && AvatarPersistenceService.persistCurationDebounced) {
+            AvatarPersistenceService.persistCurationDebounced(state.catalog, state.ignoredTags);
+        }
+
         return state;
+    }
+
+    /**
+     * Initializes global curation persistence and hydrates active world state.
+     */
+    static async initPersistence() {
+        if (typeof AvatarPersistenceService === "undefined" || !AvatarPersistenceService.loadGlobalCuration) return;
+        const state = this.getState();
+        const globalCuration = await AvatarPersistenceService.loadGlobalCuration(
+            state.catalog,
+            state.ignoredTags
+        );
+
+        if (globalCuration?.curatedTokens) {
+            state.catalog = AvatarPersistenceService.mergeCurationWithCatalog(state.catalog || {}, globalCuration);
+            if (globalCuration.ignoredTags?.length) {
+                state.ignoredTags = Array.from(new Set([...(state.ignoredTags || []), ...globalCuration.ignoredTags]));
+            }
+            this._inMemoryState = foundry.utils.deepClone(state);
+            if (typeof game !== "undefined" && game.settings?.set) {
+                try {
+                    await game.settings.set("ionrift-library", this.SETTING_KEY, state);
+                } catch {}
+            }
+        }
     }
 
     // -------------------------------------------------------------------
     // Watch Folders Management
     // -------------------------------------------------------------------
 
-    static getWatchFolders() {
-        return this.getState().watchFolders || ["tokens/ionrift"];
+    static getWatchFolders(options = { clone: false }) {
+        return this.getState(options).watchFolders || ["tokens/ionrift"];
     }
 
     static async addWatchFolder(folderPath) {
@@ -124,14 +163,21 @@ export class AvatarRegistryService {
     // Banned Folders Management
     // -------------------------------------------------------------------
 
-    static getBannedFolders() {
-        return this.getState().bannedFolders || [];
+    static getBannedFolders(options = { clone: false }) {
+        return this.getState(options).bannedFolders || [];
     }
 
-    static isFolderBanned(folderPath) {
+    static isFolderBanned(folderPath, bannedList = null) {
         if (!folderPath || typeof folderPath !== "string") return false;
         const normalized = this._normalizePath(folderPath);
-        const banned = this.getBannedFolders();
+        const banned = bannedList || this.getBannedFolders({ clone: false });
+        if (banned instanceof Set) {
+            if (banned.has(normalized)) return true;
+            for (const b of banned) {
+                if (normalized.startsWith(b + "/")) return true;
+            }
+            return false;
+        }
         return banned.some(b => normalized === b || normalized.startsWith(b + "/"));
     }
 
@@ -201,8 +247,8 @@ export class AvatarRegistryService {
     // Ignored Tags & Redundancy Management
     // -------------------------------------------------------------------
 
-    static getIgnoredTags() {
-        return this.getState().ignoredTags || [];
+    static getIgnoredTags(options = { clone: false }) {
+        return this.getState(options).ignoredTags || [];
     }
 
     /**
@@ -285,8 +331,8 @@ export class AvatarRegistryService {
      * Computes catalog-wide tag metrics, frequency counts, and flags potentially redundant tags.
      * @returns {{ metrics: Array<{ tag: string, count: number, pct: number, isRedundant: boolean }>, totalTokens: number, totalUniqueTags: number, redundantTags: Array<string>, ignoredTags: Array<string> }}
      */
-    static getTagMetrics() {
-        const state = this.getState();
+    static getTagMetrics(options = { clone: false }) {
+        const state = this.getState(options);
         const catalog = state.catalog || {};
         const totalTokens = Object.keys(catalog).length;
         const tagCounts = new Map();
@@ -328,8 +374,8 @@ export class AvatarRegistryService {
     // -------------------------------------------------------------------
 
 
-    static getCatalog() {
-        return this.getState().catalog || {};
+    static getCatalog(options = {}) {
+        return this.getState(options).catalog || {};
     }
 
     /**
@@ -340,7 +386,7 @@ export class AvatarRegistryService {
      */
     static _findCatalogKey(path, catalog = null) {
         if (!path || typeof path !== "string") return null;
-        const cat = catalog || this.getCatalog();
+        const cat = catalog || this.getCatalog({ clone: false });
         if (cat[path]) return path;
 
         const normalized = this._normalizePath(path);
@@ -380,9 +426,9 @@ export class AvatarRegistryService {
         return null;
     }
 
-    static getToken(path) {
+    static getToken(path, options = { clone: false }) {
         if (!path) return null;
-        const cat = this.getCatalog();
+        const cat = this.getCatalog(options);
         const key = this._findCatalogKey(path, cat);
         return key ? cat[key] : null;
     }
@@ -770,11 +816,85 @@ export class AvatarRegistryService {
      * @returns {object}
      */
     static getCoverageReport(targetPerArchetype = TARGET_PER_ARCHETYPE) {
-        const catalog = this.getCatalog();
+        const catalog = (this._inMemoryState?.catalog) || this.getCatalog({ clone: false });
         const activeTokens = Object.values(catalog).filter(t => !t.isBlacklisted);
         const speciesList = this.getActiveSpeciesList();
         const primarySpeciesList = this.getPrimarySpeciesList();
         const exoticSpeciesList = this.getExoticSpeciesList();
+
+        const primarySet = new Set(primarySpeciesList);
+        const activeSpeciesSet = new Set(speciesList);
+
+        // O(N) single-pass indexing
+        const speciesTokensMap = new Map();
+        const speciesArchetypeMap = new Map();
+        const speciesGenericMap = new Map();
+        const otherArchetypeMap = new Map();
+        const otherTokens = [];
+        let reservoirTokens = 0;
+
+        for (let i = 0; i < activeTokens.length; i++) {
+            const t = activeTokens[i];
+            const sp = t.species;
+            const arch = t.archetype;
+            const role = t.role;
+
+            if (sp) {
+                let sList = speciesTokensMap.get(sp);
+                if (!sList) {
+                    sList = [];
+                    speciesTokensMap.set(sp, sList);
+                }
+                sList.push(t);
+
+                if (arch === "commoner" || arch === "generic" || role === "commoner" || role === "generic" || !arch) {
+                    speciesGenericMap.set(sp, true);
+                }
+
+                if (arch) {
+                    const key = `${sp}:${arch}`;
+                    let aList = speciesArchetypeMap.get(key);
+                    if (!aList) {
+                        aList = [];
+                        speciesArchetypeMap.set(key, aList);
+                    }
+                    aList.push(t);
+                }
+                if (role && role !== arch) {
+                    const key = `${sp}:${role}`;
+                    let rList = speciesArchetypeMap.get(key);
+                    if (!rList) {
+                        rList = [];
+                        speciesArchetypeMap.set(key, rList);
+                    }
+                    rList.push(t);
+                }
+            }
+
+            if (!sp || !primarySet.has(sp)) {
+                otherTokens.push(t);
+                if (arch) {
+                    let oList = otherArchetypeMap.get(arch);
+                    if (!oList) {
+                        oList = [];
+                        otherArchetypeMap.set(arch, oList);
+                    }
+                    oList.push(t);
+                }
+                if (role && role !== arch) {
+                    let oList = otherArchetypeMap.get(role);
+                    if (!oList) {
+                        oList = [];
+                        otherArchetypeMap.set(role, oList);
+                    }
+                    oList.push(t);
+                }
+            }
+
+            if (!sp || sp === RESERVOIR_SPECIES_KEY || !activeSpeciesSet.has(sp)) {
+                reservoirTokens++;
+            }
+        }
 
         const matrix = {};
         const speciesStats = {};
@@ -790,20 +910,11 @@ export class AvatarRegistryService {
             let speciesOptimalArchetypes = 0;
             let speciesCreditedTokens = 0;
 
-            // Check if species has any loose/generic/commoner tokens that act as fallback
-            const speciesTotalTokens = activeTokens.filter(t => t.species === species);
-            const hasSpeciesGeneric = activeTokens.some(t =>
-                t.species === species && (
-                    t.archetype === "commoner" || t.archetype === "generic" ||
-                    t.role === "commoner" || t.role === "generic" ||
-                    !t.archetype
-                )
-            );
+            const speciesTotalTokens = speciesTokensMap.get(species) || [];
+            const hasSpeciesGeneric = speciesGenericMap.get(species) || false;
 
             for (const archetype of CANONICAL_ARCHETYPES) {
-                const matching = activeTokens.filter(t =>
-                    t.species === species && (t.archetype === archetype || t.role === archetype)
-                );
+                const matching = speciesArchetypeMap.get(`${species}:${archetype}`) || [];
                 const count = matching.length;
                 const credited = Math.min(count, targetPerArchetype);
                 speciesCreditedTokens += credited;
@@ -963,7 +1074,7 @@ export class AvatarRegistryService {
         // 2. Evaluate Exotic / Minor Species (General Token Pool Target: 10 tokens = 100%)
         for (const species of exoticSpeciesList) {
             matrix[species] = {};
-            const speciesTotalTokens = activeTokens.filter(t => t.species === species);
+            const speciesTotalTokens = speciesTokensMap.get(species) || [];
             const count = speciesTotalTokens.length;
             const credited = Math.min(count, targetPerArchetype);
             const maxPoints = targetPerArchetype;
@@ -981,9 +1092,7 @@ export class AvatarRegistryService {
             }
 
             for (const archetype of CANONICAL_ARCHETYPES) {
-                const matching = activeTokens.filter(t =>
-                    t.species === species && (t.archetype === archetype || t.role === archetype)
-                );
+                const matching = speciesArchetypeMap.get(`${species}:${archetype}`) || [];
                 matrix[species][archetype] = {
                     count: matching.length,
                     credited: Math.min(matching.length, targetPerArchetype),
@@ -1020,16 +1129,14 @@ export class AvatarRegistryService {
                     const casteId = (caste.id || "").toLowerCase();
                     const casteLabel = (caste.label || "").toLowerCase();
 
-                    const directMatching = activeTokens.filter(t =>
-                        t.species === species && (
-                            (t.caste && t.caste.toLowerCase() === casteId) ||
-                            (t.role && t.role.toLowerCase() === casteId) ||
-                            (t.archetype && t.archetype.toLowerCase() === casteId) ||
-                            (casteLabel && (
-                                (t.caste && t.caste.toLowerCase() === casteLabel) ||
-                                (t.role && t.role.toLowerCase() === casteLabel)
-                            ))
-                        )
+                    const directMatching = speciesTotalTokens.filter(t =>
+                        (t.caste && t.caste.toLowerCase() === casteId) ||
+                        (t.role && t.role.toLowerCase() === casteId) ||
+                        (t.archetype && t.archetype.toLowerCase() === casteId) ||
+                        (casteLabel && (
+                            (t.caste && t.caste.toLowerCase() === casteLabel) ||
+                            (t.role && t.role.toLowerCase() === casteLabel)
+                        ))
                     );
 
                     let matching = directMatching;
@@ -1037,11 +1144,9 @@ export class AvatarRegistryService {
                     const bridgeTo = caste.artBridge ? caste.artBridge.toLowerCase() : null;
 
                     if (directMatching.length === 0 && bridgeTo) {
-                        const bridgeMatches = activeTokens.filter(t =>
-                            t.species === species && (
-                                (t.role && t.role.toLowerCase() === bridgeTo) ||
-                                (t.archetype && t.archetype.toLowerCase() === bridgeTo)
-                            )
+                        const bridgeMatches = speciesTotalTokens.filter(t =>
+                            (t.role && t.role.toLowerCase() === bridgeTo) ||
+                            (t.archetype && t.archetype.toLowerCase() === bridgeTo)
                         );
                         if (bridgeMatches.length > 0) {
                             matching = bridgeMatches;
@@ -1117,10 +1222,9 @@ export class AvatarRegistryService {
         let otherFilled = 0;
         let otherOptimal = 0;
         let otherCreditedTokens = 0;
-        const otherTokens = activeTokens.filter(t => !t.species || !primarySpeciesList.includes(t.species));
 
         for (const archetype of CANONICAL_ARCHETYPES) {
-            const matching = otherTokens.filter(t => t.archetype === archetype || t.role === archetype);
+            const matching = otherArchetypeMap.get(archetype) || [];
             const count = matching.length;
             const credited = Math.min(count, targetPerArchetype);
             otherCreditedTokens += credited;
@@ -1150,11 +1254,6 @@ export class AvatarRegistryService {
                 tokens: matching.map(t => t.path)
             };
         }
-
-        // Count unassigned reservoir tokens (generic or not recognized in activeSpeciesList)
-        const reservoirTokens = activeTokens.filter(t =>
-            !t.species || t.species === RESERVOIR_SPECIES_KEY || !speciesList.includes(t.species)
-        ).length;
 
         // Coverage for the Other / Exotic Pool is based on exotic species meeting their general 10-token target & reservoir availability
         let otherCoveragePct = 100;

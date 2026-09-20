@@ -1527,6 +1527,7 @@ button.ionrift-badge.classifier-override-btn:hover {
 .curation-token-thumb {
     width: 52px;
     height: 52px;
+    aspect-ratio: 1 / 1;
     border-radius: 6px;
     object-fit: cover;
     border: 1px solid rgba(140, 110, 240, 0.35);
@@ -1844,6 +1845,8 @@ button.ionrift-badge.classifier-override-btn:hover {
     background: rgba(16, 12, 30, 0.55);
     border: 1px solid rgba(140, 110, 240, 0.18);
     transition: background 0.15s ease, border-color 0.15s ease;
+    contain: content;
+    content-visibility: auto;
 }
 .curation-token-item:hover {
     background: rgba(24, 18, 48, 0.75);
@@ -4760,6 +4763,8 @@ button.ionrift-badge.classifier-override-btn:hover {
 /* Manifest Header Actions */
 .avatar-manifest-app .dashboard-header button#add-species-btn,
 .avatar-manifest-app .dashboard-header button#rescan-assets-btn {
+    width: auto !important;
+    max-width: max-content !important;
     height: 28px !important;
     min-height: 28px !important;
     max-height: 28px !important;
