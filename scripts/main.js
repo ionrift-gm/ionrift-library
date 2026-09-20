@@ -212,15 +212,34 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "enableTokenManifest", {
+        name: "Enable Token Manifest (Preview)",
+        hint: "Feature flag for Token Manifest and token curation diagnostics.",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: false,
+        restricted: true
+    });
+
+    const isTokenManifestEnabled = () => {
+        try {
+            return Boolean(game.settings.get(MODULE_ID, "enableTokenManifest"));
+        } catch {
+            return false;
+        }
+    };
+
     game.settings.register(MODULE_ID, "tokenArtRoot", {
         name: "Token Art Directory",
         hint: "Root directory path for Ionrift-managed resident and actor token art.",
         scope: "world",
-        config: true,
+        config: isTokenManifestEnabled(),
         type: String,
         default: "tokens/ionrift",
         restricted: true,
         onChange: () => {
+            if (!isTokenManifestEnabled()) return;
             TokenArtResolver.refreshCache().catch(e =>
                 Logger.warn("Library", "Failed to refresh token art cache on root change:", e)
             );
@@ -254,14 +273,16 @@ Hooks.once("init", () => {
         default: AvatarRegistryService.getDefaultState()
     });
 
-    game.settings.registerMenu(MODULE_ID, "avatarManifest", {
-        name: "Token Manifest",
-        label: "Manage Tokens",
-        hint: "Inspect token art coverage, curate population assets, and configure watch folders.",
-        icon: "fas fa-circle-user",
-        type: AvatarManifestApp,
-        restricted: true
-    });
+    if (isTokenManifestEnabled()) {
+        game.settings.registerMenu(MODULE_ID, "avatarManifest", {
+            name: "Token Manifest",
+            label: "Manage Tokens",
+            hint: "Inspect token art coverage, curate population assets, and configure watch folders.",
+            icon: "fas fa-circle-user",
+            type: AvatarManifestApp,
+            restricted: true
+        });
+    }
 
     game.settings.registerMenu(MODULE_ID, "validatorMenu", {
         name: "Logic Inspector",
@@ -310,16 +331,24 @@ Hooks.once("ready", async () => {
 
     PartyRoster.installNativePartyBridge();
 
-    // Asynchronous background token art cache warming
-    TokenArtResolver.warmCache().catch(e =>
-        Logger.warn("Library", "Token art cache warming failed:", e)
+    const tokenManifestActive = Boolean(
+        game.settings.get(MODULE_ID, "enableTokenManifest")
     );
 
-    if (game.user.isGM) {
-        TokenArtResolver.scaffoldFolders().catch(e =>
-            Logger.warn("Library", "Token art folder scaffolding failed:", e)
+    if (tokenManifestActive) {
+        // Asynchronous background token art cache warming
+        TokenArtResolver.warmCache().catch(e =>
+            Logger.warn("Library", "Token art cache warming failed:", e)
         );
 
+        if (game.user.isGM) {
+            TokenArtResolver.scaffoldFolders().catch(e =>
+                Logger.warn("Library", "Token art folder scaffolding failed:", e)
+            );
+        }
+    }
+
+    if (game.user.isGM) {
         CompendiumConfigGuard.repairWorld().catch(e =>
             Logger.warn("Library", "Compendium config self-heal failed:", e)
         );
