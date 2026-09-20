@@ -1008,6 +1008,106 @@ export class AvatarRegistryService {
                 status
             };
 
+            // Custom Caste Evaluation (if exotic species has castes defined)
+            const castes = typeof SpeciesRegistry.getCastes === "function" ? SpeciesRegistry.getCastes(species) : [];
+            if (castes && castes.length > 0) {
+                casteMatrix[species] = {};
+                let casteFilled = 0;
+                let casteOptimal = 0;
+                let casteCreditedTokens = 0;
+
+                for (const caste of castes) {
+                    const casteId = (caste.id || "").toLowerCase();
+                    const casteLabel = (caste.label || "").toLowerCase();
+
+                    const directMatching = activeTokens.filter(t =>
+                        t.species === species && (
+                            (t.caste && t.caste.toLowerCase() === casteId) ||
+                            (t.role && t.role.toLowerCase() === casteId) ||
+                            (t.archetype && t.archetype.toLowerCase() === casteId) ||
+                            (casteLabel && (
+                                (t.caste && t.caste.toLowerCase() === casteLabel) ||
+                                (t.role && t.role.toLowerCase() === casteLabel)
+                            ))
+                        )
+                    );
+
+                    let matching = directMatching;
+                    let isBridged = false;
+                    const bridgeTo = caste.artBridge ? caste.artBridge.toLowerCase() : null;
+
+                    if (directMatching.length === 0 && bridgeTo) {
+                        const bridgeMatches = activeTokens.filter(t =>
+                            t.species === species && (
+                                (t.role && t.role.toLowerCase() === bridgeTo) ||
+                                (t.archetype && t.archetype.toLowerCase() === bridgeTo)
+                            )
+                        );
+                        if (bridgeMatches.length > 0) {
+                            matching = bridgeMatches;
+                            isBridged = true;
+                        }
+                    }
+
+                    const mCount = matching.length;
+                    const cCredited = Math.min(mCount, targetPerArchetype);
+                    casteCreditedTokens += cCredited;
+
+                    let cStatus = "unprovided";
+                    if (mCount >= targetPerArchetype) {
+                        cStatus = "optimal";
+                        casteFilled++;
+                        casteOptimal++;
+                    } else if (mCount >= Math.ceil(targetPerArchetype * 0.5)) {
+                        cStatus = "good";
+                        casteFilled++;
+                    } else if (mCount >= 1) {
+                        cStatus = "thin";
+                        casteFilled++;
+                    } else if (speciesTotalTokens.length > 0) {
+                        cStatus = "generic_fallback";
+                    } else {
+                        cStatus = "unprovided";
+                    }
+
+                    casteMatrix[species][casteId || caste.id] = {
+                        id: caste.id,
+                        label: caste.label || caste.id,
+                        pillar: caste.pillar || "civic",
+                        tier: caste.tier || 1,
+                        count: mCount,
+                        credited: cCredited,
+                        target: targetPerArchetype,
+                        status: cStatus,
+                        isBridged,
+                        bridgeTo: caste.artBridge || null,
+                        tokens: matching.map(t => t.path)
+                    };
+                }
+
+                const casteMaxPoints = castes.length * targetPerArchetype;
+                const casteCoveragePct = casteMaxPoints > 0
+                    ? Math.round((casteCreditedTokens / casteMaxPoints) * 100)
+                    : 0;
+
+                casteStats[species] = {
+                    filled: casteFilled,
+                    optimal: casteOptimal,
+                    total: castes.length,
+                    credited: casteCreditedTokens,
+                    maxPoints: casteMaxPoints,
+                    targetPerArchetype,
+                    percentage: casteCoveragePct,
+                    totalTokens: speciesTotalTokens.length,
+                    hasGenericFallback: speciesTotalTokens.length > 0,
+                    isCustom: !CORE_SPECIES.includes(species),
+                    castes: castes.map(c => c.id)
+                };
+
+                speciesStats[species].hasCastes = true;
+                speciesStats[species].castePercentage = casteCoveragePct;
+            }
+
             totalCreditedPoints += credited;
             totalPossiblePoints += maxPoints;
         }
