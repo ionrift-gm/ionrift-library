@@ -8,6 +8,7 @@ import { AvatarRegistryService, CANONICAL_ARCHETYPES, CORE_SPECIES } from "../..
 import { SpeciesRegistry } from "../../services/species/SpeciesRegistry.js";
 import { AvatarScanner } from "../../services/AvatarScanner.js";
 import { TokenArtResolver } from "../../services/TokenArtResolver.js";
+import { AvatarPersistenceService } from "../../services/avatar/AvatarPersistenceService.js";
 
 export class AvatarManifestApp extends FormApplication {
     constructor(options = {}) {
@@ -29,6 +30,18 @@ export class AvatarManifestApp extends FormApplication {
         this._sidebarScrollTop = 0;
         this._activeDialog = null;
         this._loupeTimer = null;
+        this._cachedCoverage = null;
+        this._sortedCatalogTokens = null;
+        this._cachedFolderTreeStructure = null;
+    }
+
+    /**
+     * Invalidates the memoized coverage report, token sort index, and folder tree structure.
+     */
+    invalidateCache() {
+        this._cachedCoverage = null;
+        this._sortedCatalogTokens = null;
+        this._cachedFolderTreeStructure = null;
     }
 
     static get defaultOptions() {
@@ -36,7 +49,7 @@ export class AvatarManifestApp extends FormApplication {
             id: "ionrift-avatar-manifest",
             title: "Token Manifest & Coverage",
             template: "modules/ionrift-library/templates/avatar-manifest.hbs",
-            width: 960,
+            width: 980,
             height: 700,
             resizable: true,
             scrollPositions: [".curation-folder-tree-scroll", ".curation-token-list-scroll"],
@@ -59,6 +72,12 @@ export class AvatarManifestApp extends FormApplication {
         if (this._activeDialog) {
             try { this._activeDialog.close(); } catch {}
             this._activeDialog = null;
+        }
+        try {
+            await AvatarPersistenceService.flushImmediate();
+            await AvatarPersistenceService.flushSpeciesImmediate();
+        } catch (err) {
+            Logger.warn("AvatarManifestApp", "Error flushing global token curation on close:", err);
         }
         return super.close(options);
     }
@@ -185,20 +204,41 @@ export class AvatarManifestApp extends FormApplication {
     }
 
     /**
-     * Builds a hierarchical tree of folder nodes for the curation sidebar.
-     * Roots correspond to configured watch folders or top-level directories.
+     * Returns catalog tokens pre-sorted alphabetically by filename.
+     * Memoized to eliminate O(N log N) sorting overhead across renders.
      */
-    _buildFolderTree(catalog, watchFolders = [], filterPredicate = null) {
+    _getSortedCatalogTokens(catalog) {
+        if (this._sortedCatalogTokens) {
+            return this._sortedCatalogTokens;
+        }
+        const values = Object.values(catalog);
+        values.sort((a, b) => {
+            const fa = a.filename || "";
+            const fb = b.filename || "";
+            return fa < fb ? -1 : fa > fb ? 1 : 0;
+        });
+        this._sortedCatalogTokens = values;
+        return this._sortedCatalogTokens;
+    }
+
+    /**
+     * Retrieves or constructs the memoized hierarchical folder tree structure.
+     * Only re-evaluates across the entire catalog when files mutate or cache is invalidated.
+     */
+    _getBaseFolderTree(catalog, watchFolders = []) {
+        if (this._cachedFolderTreeStructure) {
+            return this._cachedFolderTreeStructure;
+        }
+
         const normalizedWatch = watchFolders.map(w => w.replace(/\\/g, "/").replace(/^\/+|\/+$/g, ""));
         const rootNodes = new Map();
-        const hasFilterContext = Boolean(filterPredicate);
 
         for (const token of Object.values(catalog)) {
             const folder = (token.folder || "root").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
             const parts = folder.split("/").filter(Boolean);
             if (parts.length === 0) continue;
 
-            const isMatch = hasFilterContext ? filterPredicate(token) : true;
+            const isTokenBlacklisted = Boolean(token.isBlacklisted);
 
             // Check if folder starts with any watch folder
             const matchedWatch = normalizedWatch.find(w => folder === w || folder.startsWith(w + "/"));
@@ -209,7 +249,7 @@ export class AvatarManifestApp extends FormApplication {
                     path: rootPath,
                     name: rootPath,
                     count: 0,
-                    matchCount: 0,
+                    blacklistedCount: 0,
                     children: new Map(),
                     depth: 0
                 });
@@ -217,7 +257,7 @@ export class AvatarManifestApp extends FormApplication {
 
             const rootObj = rootNodes.get(rootPath);
             rootObj.count++;
-            if (isMatch) rootObj.matchCount++;
+            if (isTokenBlacklisted) rootObj.blacklistedCount++;
 
             // Process nested subfolders under rootPath
             if (folder !== rootPath) {
@@ -234,14 +274,14 @@ export class AvatarManifestApp extends FormApplication {
                             path: currentAccum,
                             name: subName,
                             count: 0,
-                            matchCount: 0,
+                            blacklistedCount: 0,
                             children: new Map(),
                             depth: current.depth + 1
                         });
                     }
                     current = current.children.get(subName);
                     current.count++;
-                    if (isMatch) current.matchCount++;
+                    if (isTokenBlacklisted) current.blacklistedCount++;
                 }
             }
         }
@@ -253,18 +293,27 @@ export class AvatarManifestApp extends FormApplication {
             }
         }
 
+        this._cachedFolderTreeStructure = rootNodes;
+        return rootNodes;
+    }
+
+    /**
+     * Flattens the hierarchical folder tree into visible nodes for template rendering.
+     * Operates in fast O(folders) time (~20-50 nodes) with quick string comparisons.
+     */
+    _renderFolderTree(rootNodes, folderMatchCounts = null, hasFilterContext = false) {
         const visibleNodes = [];
         const self = this;
+        const bannedFolders = AvatarRegistryService.getBannedFolders?.({ clone: false }) || [];
 
         function traverse(node, relDepth = 0) {
             const hasChildren = node.children.size > 0;
             const isExpanded = self.expandedFolders.has(node.path);
             const isSelected = self.selectedFolder === node.path;
-            const isFolderBanned = AvatarRegistryService.isFolderBanned?.(node.path) || false;
-            const folderTokens = Object.values(catalog).filter(t => t.path === node.path || t.path.startsWith(node.path + "/"));
-            const isAllBlacklisted = folderTokens.length > 0 && folderTokens.every(t => t.isBlacklisted);
+            const isFolderBanned = AvatarRegistryService.isFolderBanned?.(node.path, bannedFolders) || false;
+            const isAllBlacklisted = node.count > 0 && node.blacklistedCount === node.count;
             const isBanned = isFolderBanned || isAllBlacklisted;
-            const matchCount = node.matchCount || 0;
+            const matchCount = folderMatchCounts ? (folderMatchCounts.get(node.path) || 0) : 0;
             const isFilteredOut = hasFilterContext && matchCount === 0 && node.count > 0;
             const isFilteredMatched = hasFilterContext && matchCount > 0;
 
@@ -285,7 +334,7 @@ export class AvatarManifestApp extends FormApplication {
             });
 
             if (hasChildren && isExpanded) {
-                const sorted = Array.from(node.children.values()).sort((a, b) => a.name.localeCompare(b.name));
+                const sorted = Array.from(node.children.values()).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
                 for (const child of sorted) {
                     traverse(child, relDepth + 1);
                 }
@@ -315,7 +364,7 @@ export class AvatarManifestApp extends FormApplication {
             }
         }
 
-        const sortedRoots = Array.from(rootNodes.values()).sort((a, b) => a.name.localeCompare(b.name));
+        const sortedRoots = Array.from(rootNodes.values()).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
         for (const root of sortedRoots) {
             traverse(root, 0);
         }
@@ -324,9 +373,143 @@ export class AvatarManifestApp extends FormApplication {
     }
 
     async getData() {
-        const coverage = AvatarRegistryService.getCoverageReport();
-        const catalog = AvatarRegistryService.getCatalog();
-        const watchFolders = AvatarRegistryService.getWatchFolders();
+        const isTabCoverage = this.activeTab === "coverage";
+        const isTabCuration = this.activeTab === "curation";
+        const isTabFolders = this.activeTab === "folders";
+
+        const watchFolders = AvatarRegistryService.getWatchFolders({ clone: false });
+        let coverage = null;
+
+        // ---------------------------------------------------------------
+        // Fast-path: Coverage Intelligence Tab
+        // Skips folder tree construction, catalog filtering, and token pagination
+        // ---------------------------------------------------------------
+        if (isTabCoverage) {
+            coverage = AvatarRegistryService.getCoverageReport();
+            this._cachedCoverage = coverage;
+
+            return {
+                activeTab: this.activeTab,
+                isTabCoverage: true,
+                isTabCuration: false,
+                isTabFolders: false,
+                coverage,
+                watchFolders,
+                watchFolderEntries: [],
+                folderTree: [],
+                selectedFolder: this.selectedFolder,
+                scopedFolder: this.scopedFolder,
+                breadcrumbs: [],
+                sidebarWidth: this.sidebarWidth || 280,
+                isFolderSidebarCollapsed: this.isFolderSidebarCollapsed,
+                isOtherSpeciesExpanded: this.isOtherSpeciesExpanded,
+                speciesOptions: coverage.speciesList || CORE_SPECIES,
+                archetypeOptions: CANONICAL_ARCHETYPES,
+                tokens: [],
+                selectedCount: this.selectedPaths.size,
+                blacklistedCount: coverage.blacklistedTokens || 0,
+                curatedCount: coverage.manualTokens || 0,
+                isBlacklistedFilter: false,
+                isAllTokensActive: true,
+                isFilteredEmpty: false,
+                isFilteredSubset: false,
+                rawFolderCount: 0,
+                hasActiveFilters: false,
+                activeFilterCount: 0,
+                filters: {
+                    query: this.filterQuery,
+                    species: this.filterSpecies,
+                    archetype: this.filterArchetype,
+                    status: this.filterStatus,
+                    statusLabel: "",
+                    hasQuery: false,
+                    hasSpecies: false,
+                    hasArchetype: false,
+                    hasStatus: false,
+                    hasActiveFilters: false,
+                    activeFilterCount: 0
+                },
+                pagination: {
+                    current: 1,
+                    total: 1,
+                    hasPrev: false,
+                    hasNext: false,
+                    totalItems: 0,
+                    startItem: 0,
+                    endItem: 0
+                }
+            };
+        }
+
+        // ---------------------------------------------------------------
+        // Fast-path: Watch Folders Tab
+        // ---------------------------------------------------------------
+        if (isTabFolders) {
+            const catalog = AvatarRegistryService.getCatalog({ clone: false });
+            coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport();
+
+            const watchFolderEntries = watchFolders.map(folder => {
+                const normalizedFolder = folder.toLowerCase().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+                let tokenCount = 0;
+                for (const [tokenPath, token] of Object.entries(catalog)) {
+                    const p = tokenPath.toLowerCase();
+                    if (p.startsWith(normalizedFolder + "/") || token.folder === folder) {
+                        tokenCount++;
+                    }
+                }
+                return { folder, tokenCount };
+            });
+
+            return {
+                activeTab: this.activeTab,
+                isTabCoverage: false,
+                isTabCuration: false,
+                isTabFolders: true,
+                coverage,
+                watchFolders,
+                watchFolderEntries,
+                folderTree: [],
+                selectedFolder: "",
+                scopedFolder: "",
+                breadcrumbs: [],
+                sidebarWidth: this.sidebarWidth || 280,
+                isFolderSidebarCollapsed: this.isFolderSidebarCollapsed,
+                isOtherSpeciesExpanded: false,
+                speciesOptions: coverage.speciesList || CORE_SPECIES,
+                archetypeOptions: CANONICAL_ARCHETYPES,
+                tokens: [],
+                selectedCount: 0,
+                blacklistedCount: coverage.blacklistedTokens || 0,
+                curatedCount: coverage.manualTokens || 0,
+                isBlacklistedFilter: false,
+                isAllTokensActive: true,
+                isFilteredEmpty: false,
+                isFilteredSubset: false,
+                rawFolderCount: 0,
+                hasActiveFilters: false,
+                activeFilterCount: 0,
+                filters: {
+                    query: "",
+                    species: "all",
+                    archetype: "all",
+                    status: "all",
+                    statusLabel: "",
+                    hasQuery: false,
+                    hasSpecies: false,
+                    hasArchetype: false,
+                    hasStatus: false,
+                    hasActiveFilters: false,
+                    activeFilterCount: 0
+                },
+                pagination: { current: 1, total: 1, hasPrev: false, hasNext: false, totalItems: 0, startItem: 0, endItem: 0 }
+            };
+        }
+
+        // ---------------------------------------------------------------
+        // Token Curation Tab
+        // ---------------------------------------------------------------
+        const catalog = AvatarRegistryService.getCatalog({ clone: false });
+        coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport();
 
         // 1. Identify active filters and labels
         const query = (this.filterQuery || "").trim().toLowerCase();
@@ -350,101 +533,110 @@ export class AvatarManifestApp extends FormApplication {
         };
         const statusLabel = STATUS_LABELS[this.filterStatus] || this.filterStatus;
 
-        // Predicate to check if a token matches the active search & dropdown filters
-        const matchesActiveFilter = (t) => {
+        // 2. High-Performance Single-Pass Filter & Sorting Engine
+        // Pulls pre-sorted tokens and cached folder tree. Zero O(N log N) render sorting.
+        const allTokens = this._getSortedCatalogTokens(catalog);
+        const rootNodes = this._getBaseFolderTree(catalog, watchFolders);
+
+        const folderMatchCounts = hasActiveFilters ? new Map() : null;
+        const manualTokens = [];
+        const autoTokens = [];
+        let rawFolderCount = 0;
+
+        const selectedFolder = this.selectedFolder ? this.selectedFolder.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "") : "";
+        const selectedFolderPrefix = selectedFolder ? selectedFolder + "/" : "";
+
+        const isSpeciesGeneric = this.filterSpecies === "generic" || this.filterSpecies === "other";
+        const primarySpeciesSet = isSpeciesGeneric ? new Set(coverage.primarySpecies || CORE_SPECIES) : null;
+
+        for (let i = 0; i < allTokens.length; i++) {
+            const t = allTokens[i];
+
+            // 2a. Folder Context Check
+            if (selectedFolder) {
+                const p = (t.path || "").replace(/\\/g, "/");
+                const f = (t.folder || "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+                const inFolder = p === selectedFolder || p.startsWith(selectedFolderPrefix) || f === selectedFolder || f.startsWith(selectedFolderPrefix);
+                if (!inFolder) continue;
+            }
+            rawFolderCount++;
+
+            // 2b. Filter Predicates
             if (hasSpecies) {
-                if (this.filterSpecies === "generic" || this.filterSpecies === "other") {
-                    const primaryList = coverage.primarySpecies || CORE_SPECIES;
-                    if (t.species && primaryList.includes(t.species)) return false;
+                if (isSpeciesGeneric) {
+                    if (t.species && primarySpeciesSet.has(t.species)) continue;
                 } else if (t.species !== this.filterSpecies) {
-                    return false;
+                    continue;
                 }
             }
+
             if (hasArchetype) {
-                if (t.archetype !== this.filterArchetype && t.role !== this.filterArchetype) return false;
+                if (t.archetype !== this.filterArchetype && t.role !== this.filterArchetype) continue;
             }
+
             if (hasStatus) {
                 if (this.filterStatus === "manual") {
-                    if (!t.isManual || t.isBlacklisted) return false;
+                    if (!t.isManual || t.isBlacklisted) continue;
                 } else if (this.filterStatus === "blacklisted") {
-                    if (!t.isBlacklisted) return false;
+                    if (!t.isBlacklisted) continue;
                 } else if (this.filterStatus === "auto") {
-                    if (t.isManual || t.isBlacklisted) return false;
+                    if (t.isManual || t.isBlacklisted) continue;
                 } else if (this.filterStatus === "thin") {
-                    if (t.isBlacklisted) return false;
+                    if (t.isBlacklisted) continue;
                     const cell = coverage.matrix[t.species]?.[t.archetype];
-                    if (!cell || cell.status !== "thin") return false;
+                    if (!cell || cell.status !== "thin") continue;
                 }
             }
+
             if (hasQuery) {
                 const inName = (t.filename || "").toLowerCase().includes(query);
                 const inPath = (t.path || "").toLowerCase().includes(query);
                 const inTags = t.tags && t.tags.some(tag => tag.toLowerCase().includes(query));
-                if (!inName && !inPath && !inTags) return false;
+                if (!inName && !inPath && !inTags) continue;
             }
-            return true;
-        };
 
-        // 2. Build hierarchical folder tree with filter awareness
-        const folderTree = this._buildFolderTree(catalog, watchFolders, hasActiveFilters ? matchesActiveFilter : null);
+            // 2c. Record match for Folder Tree badge
+            if (hasActiveFilters && t.folder) {
+                const f = t.folder.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+                folderMatchCounts.set(f, (folderMatchCounts.get(f) || 0) + 1);
+            }
 
-        // 3. Filter tokens for the Curation tab
-        let tokens = Object.values(catalog);
-
-        // Unfiltered total for the current folder view (or entire catalog)
-        const rawTokensInContext = this.selectedFolder
-            ? Object.values(catalog).filter(t => t.path.startsWith(this.selectedFolder))
-            : Object.values(catalog);
-        const rawFolderCount = rawTokensInContext.length;
-
-        if (this.selectedFolder) {
-            tokens = tokens.filter(t => t.path.startsWith(this.selectedFolder));
+            // 2d. Partition into manual and auto. Since allTokens is pre-sorted,
+            // both partitions maintain alphabetical order with zero sort comparisons.
+            if (t.isManual) {
+                manualTokens.push(t);
+            } else {
+                autoTokens.push(t);
+            }
         }
 
-        if (this.filterSpecies === "generic" || this.filterSpecies === "other") {
-            const primaryList = coverage.primarySpecies || CORE_SPECIES;
-            tokens = tokens.filter(t => !t.species || t.species === "generic" || !primaryList.includes(t.species));
-        } else if (this.filterSpecies !== "all") {
-            tokens = tokens.filter(t => t.species === this.filterSpecies);
+        const tokens = manualTokens.length > 0
+            ? (autoTokens.length > 0 ? manualTokens.concat(autoTokens) : manualTokens)
+            : autoTokens;
+
+        // 3. Roll up Folder Matches across parent nodes in O(folders) time
+        if (hasActiveFilters && folderMatchCounts) {
+            const rollup = (node) => {
+                let sum = folderMatchCounts.get(node.path) || 0;
+                for (const child of node.children.values()) {
+                    sum += rollup(child);
+                }
+                folderMatchCounts.set(node.path, sum);
+                return sum;
+            };
+            for (const root of rootNodes.values()) {
+                rollup(root);
+            }
         }
 
-        if (this.filterArchetype !== "all") {
-            tokens = tokens.filter(t => t.archetype === this.filterArchetype || t.role === this.filterArchetype);
-        }
-
-        if (this.filterStatus === "manual") {
-            tokens = tokens.filter(t => t.isManual && !t.isBlacklisted);
-        } else if (this.filterStatus === "blacklisted") {
-            tokens = tokens.filter(t => t.isBlacklisted);
-        } else if (this.filterStatus === "auto") {
-            tokens = tokens.filter(t => !t.isManual && !t.isBlacklisted);
-        } else if (this.filterStatus === "thin") {
-            tokens = tokens.filter(t => {
-                if (t.isBlacklisted) return false;
-                const cell = coverage.matrix[t.species]?.[t.archetype];
-                return cell && cell.status === "thin";
-            });
-        }
-
-        if (query) {
-            tokens = tokens.filter(t =>
-                t.filename.toLowerCase().includes(query) ||
-                t.path.toLowerCase().includes(query) ||
-                (t.tags && t.tags.some(tag => tag.toLowerCase().includes(query)))
-            );
-        }
+        // 4. Flatten folder tree for template
+        const folderTree = this._renderFolderTree(rootNodes, folderMatchCounts, hasActiveFilters);
 
         const totalItems = tokens.length;
         const isFilteredEmpty = totalItems === 0 && hasActiveFilters;
         const isFilteredSubset = hasActiveFilters && totalItems < rawFolderCount;
 
-        // Sort tokens: manual/curated first, then alphabetical by name
-        tokens.sort((a, b) => {
-            if (a.isManual !== b.isManual) return a.isManual ? -1 : 1;
-            return a.filename.localeCompare(b.filename);
-        });
-
-        // 3. Paginate
+        // 5. Paginate
         const totalPages = Math.ceil(totalItems / this.itemsPerPage) || 1;
         this.totalPages = totalPages;
         this.currentPage = Math.min(Math.max(1, this.currentPage), totalPages);
@@ -483,26 +675,6 @@ export class AvatarManifestApp extends FormApplication {
             };
         });
 
-        // Calculate token counts per watch folder
-        const watchFolderEntries = watchFolders.map(folder => {
-            const normalizedFolder = folder.toLowerCase().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-            let tokenCount = 0;
-            for (const [tokenPath, token] of Object.entries(catalog)) {
-                const p = tokenPath.toLowerCase();
-                if (p.startsWith(normalizedFolder + "/") || token.folder === folder) {
-                    tokenCount++;
-                }
-            }
-            return { folder, tokenCount };
-        });
-
-        let blacklistedCount = 0;
-        let curatedCount = 0;
-        for (const tok of Object.values(catalog)) {
-            if (tok.isBlacklisted) blacklistedCount++;
-            else if (tok.isManual) curatedCount++;
-        }
-
         let breadcrumbs = [];
         if (this.scopedFolder) {
             const parts = this.scopedFolder.split("/").filter(Boolean);
@@ -526,7 +698,7 @@ export class AvatarManifestApp extends FormApplication {
             isTabFolders: this.activeTab === "folders",
             coverage,
             watchFolders,
-            watchFolderEntries,
+            watchFolderEntries: [],
             folderTree,
             selectedFolder: this.selectedFolder,
             scopedFolder: this.scopedFolder,
@@ -538,8 +710,8 @@ export class AvatarManifestApp extends FormApplication {
             archetypeOptions: CANONICAL_ARCHETYPES,
             tokens: paginatedTokens,
             selectedCount: this.selectedPaths.size,
-            blacklistedCount,
-            curatedCount,
+            blacklistedCount: coverage.blacklistedTokens || 0,
+            curatedCount: coverage.manualTokens || 0,
             isBlacklistedFilter: this.filterStatus === "blacklisted",
             isAllTokensActive: !this.selectedFolder && this.filterStatus !== "blacklisted",
             isFilteredEmpty,
@@ -599,6 +771,7 @@ export class AvatarManifestApp extends FormApplication {
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | Promoted '${speciesId}' to Primary Culture.`);
             }
+            this.invalidateCache();
             this.render();
         });
 
@@ -612,6 +785,7 @@ export class AvatarManifestApp extends FormApplication {
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | Demoted '${speciesId}' to Exotic / Minor Species.`);
             }
+            this.invalidateCache();
             this.render();
         });
 
@@ -789,6 +963,7 @@ export class AvatarManifestApp extends FormApplication {
             } else {
                 ui.notifications.info(`Folder '${folder}' unbanned (${result.count} tokens restored).`);
             }
+            this.invalidateCache();
             this.render();
         });
 
@@ -1077,6 +1252,7 @@ export class AvatarManifestApp extends FormApplication {
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | ${action} token: ${filename}`);
             }
+            this.invalidateCache();
             this.render();
         });
 
@@ -1103,6 +1279,7 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.info(`Ionrift | Reset ${count} tokens to Auto-detected status.`);
                 }
+                this.invalidateCache();
                 this.render();
             }
         });
@@ -1168,6 +1345,7 @@ export class AvatarManifestApp extends FormApplication {
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | Watched folder '${folder}' added. Click "Re-scan Folders" to catalogue tokens.`);
             }
+            this.invalidateCache();
             this.render();
         };
 
@@ -1196,6 +1374,7 @@ export class AvatarManifestApp extends FormApplication {
                         if (typeof ui !== "undefined" && ui.notifications) {
                             ui.notifications.info(`Ionrift | Watched folder '${target}' added. Click "Re-scan Folders" to catalogue tokens.`);
                         }
+                        this.invalidateCache();
                         this.render();
                     } else {
                         if (typeof ui !== "undefined" && ui.notifications) {
@@ -1232,6 +1411,7 @@ export class AvatarManifestApp extends FormApplication {
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | Removed '${folder}' from watch list.`);
             }
+            this.invalidateCache();
             this.render();
         });
 
@@ -1267,6 +1447,7 @@ export class AvatarManifestApp extends FormApplication {
             } finally {
                 btn.html(originalHtml);
                 btn.prop("disabled", false);
+                this.invalidateCache();
                 this.render();
             }
         });
@@ -1310,6 +1491,7 @@ export class AvatarManifestApp extends FormApplication {
             } finally {
                 btn.html(originalHtml);
                 btn.prop("disabled", false);
+                this.invalidateCache();
                 this.render();
             }
         });
@@ -1331,7 +1513,7 @@ export class AvatarManifestApp extends FormApplication {
         $("#ionrift-token-hover-loupe").removeClass("is-visible");
         this._showBackdrop();
 
-        const catalog = AvatarRegistryService.getCatalog();
+        const catalog = AvatarRegistryService.getCatalog({ clone: false });
         const catalogList = Object.values(catalog);
         const selectedCount = this.selectedPaths ? this.selectedPaths.size : 0;
 
@@ -1493,6 +1675,7 @@ export class AvatarManifestApp extends FormApplication {
                             this._activeDialog = null;
                             this._hideBackdrop();
                         }
+                        this.invalidateCache();
                         this.render();
                     }
                 },
@@ -1555,10 +1738,10 @@ export class AvatarManifestApp extends FormApplication {
 
     async _openTokenEditDialog(path) {
         if (!path) return;
-        let token = AvatarRegistryService.getToken(path);
+        let token = AvatarRegistryService.getToken(path, { clone: false });
         if (!token) {
             // Fallback: search across all tokens in catalog
-            const catalog = AvatarRegistryService.getCatalog();
+            const catalog = AvatarRegistryService.getCatalog({ clone: false });
             token = Object.values(catalog).find(t =>
                 t.path === path ||
                 decodeURIComponent(t.path || "") === decodeURIComponent(path) ||
@@ -1729,6 +1912,7 @@ export class AvatarManifestApp extends FormApplication {
                             this._activeDialog = null;
                             this._hideBackdrop();
                         }
+                        this.invalidateCache();
                         this.render();
                     }
                 },
@@ -2023,6 +2207,7 @@ export class AvatarManifestApp extends FormApplication {
                         if (typeof ui !== "undefined" && ui.notifications) {
                             ui.notifications.info(`Ionrift | Updated ${count} tokens.`);
                         }
+                        this.invalidateCache();
                         this.render();
                     }
                 },
@@ -2186,6 +2371,7 @@ export class AvatarManifestApp extends FormApplication {
                         if (typeof ui !== "undefined" && ui.notifications) {
                             ui.notifications.info(`Ionrift | Batch updated ${count} tokens in ${folderPath}.`);
                         }
+                        this.invalidateCache();
                         this.render();
                     }
                 },
@@ -2504,6 +2690,7 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-check"></i>',
                     label: "Done",
                     callback: () => {
+                        this.invalidateCache();
                         this.render();
                     }
                 }
@@ -2516,6 +2703,7 @@ export class AvatarManifestApp extends FormApplication {
                     this._activeDialog = null;
                     this._hideBackdrop();
                 }
+                this.invalidateCache();
                 this.render();
             },
             default: "close"

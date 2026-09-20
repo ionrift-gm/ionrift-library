@@ -6,6 +6,7 @@
 import { Logger } from "./platform/Logger.js";
 import { CANONICAL_ARCHETYPES, CORE_SPECIES, AvatarRegistryService } from "./AvatarRegistryService.js";
 import { SpeciesRegistry } from "./species/SpeciesRegistry.js";
+import { AvatarPersistenceService } from "./avatar/AvatarPersistenceService.js";
 
 const IMAGE_EXTENSIONS = new Set(["webp", "png", "jpg", "jpeg", "svg", "bmp", "tiff"]);
 
@@ -339,6 +340,11 @@ export class AvatarScanner {
             } catch (err) {
                 Logger.warn("AvatarScanner", `Failed to crawl folder ${folder}:`, err);
             }
+        }
+
+        // Overlay cross-world curation ledger onto newly scanned tokens
+        if (typeof AvatarPersistenceService !== "undefined" && AvatarPersistenceService.mergeCurationWithCatalog) {
+            AvatarPersistenceService.mergeCurationWithCatalog(catalog);
         }
 
         return { catalog, discoveredCount, updatedCount };

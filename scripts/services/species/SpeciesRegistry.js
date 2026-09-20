@@ -5,6 +5,7 @@
  * token folder bindings, fallback chains, naming lexicons, and mechanical traits.
  */
 import { Logger } from "../platform/Logger.js";
+import { AvatarPersistenceService } from "../avatar/AvatarPersistenceService.js";
 
 export const CORE_SPECIES = Object.freeze([
     "human",
@@ -309,6 +310,10 @@ export class SpeciesRegistry {
             }
         }
 
+        if (typeof AvatarPersistenceService !== "undefined" && AvatarPersistenceService.persistSpeciesRegistryDebounced) {
+            AvatarPersistenceService.persistSpeciesRegistryDebounced(custom);
+        }
+
         try {
             Logger.log("SpeciesRegistry", `Registered custom species: ${key} (${record.label})`);
         } catch {
@@ -347,6 +352,10 @@ export class SpeciesRegistry {
                 } catch {}
             }
 
+            if (typeof AvatarPersistenceService !== "undefined" && AvatarPersistenceService.persistSpeciesRegistryDebounced) {
+                AvatarPersistenceService.persistSpeciesRegistryDebounced(custom);
+            }
+
             try {
                 Logger.log("SpeciesRegistry", `Unregistered custom species: ${key}`);
             } catch {}
@@ -358,6 +367,27 @@ export class SpeciesRegistry {
         }
 
         return false;
+    }
+
+    /**
+     * Hydrates custom species from ionrift-data/library/species-registry.json.
+     */
+    static async initPersistence() {
+        if (typeof AvatarPersistenceService === "undefined" || !AvatarPersistenceService.loadSpeciesRegistry) return;
+        const currentCustom = this.getCustomSpecies();
+        const globalSpecies = await AvatarPersistenceService.loadSpeciesRegistry(currentCustom);
+        if (globalSpecies && typeof globalSpecies === "object") {
+            const merged = { ...currentCustom, ...globalSpecies };
+            this._cache = new Map(Object.entries(merged));
+            for (const [k, v] of Object.entries(merged)) {
+                this._inMemoryCustom.set(k, v);
+            }
+            if (typeof game !== "undefined" && game.settings?.set) {
+                try {
+                    await game.settings.set(this.MODULE_ID, this.SETTING_KEY, merged);
+                } catch {}
+            }
+        }
     }
 
     /**

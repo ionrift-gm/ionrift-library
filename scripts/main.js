@@ -4,6 +4,7 @@ import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
 import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
 import { AvatarManifestApp } from "./apps/diagnostics/AvatarManifestApp.js";
 import { AvatarRegistryService } from "./services/AvatarRegistryService.js";
+import { SpeciesRegistry } from "./services/species/SpeciesRegistry.js";
 import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.js";
 import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
 import { TerrainManagerApp } from "./apps/terrain/TerrainManagerApp.js";
@@ -218,7 +219,7 @@ Hooks.once("init", () => {
         scope: "world",
         config: false,
         type: Boolean,
-        default: false,
+        default: true,
         restricted: true
     });
 
@@ -226,7 +227,7 @@ Hooks.once("init", () => {
         try {
             return Boolean(game.settings.get(MODULE_ID, "enableTokenManifest"));
         } catch {
-            return false;
+            return true;
         }
     };
 
@@ -336,6 +337,16 @@ Hooks.once("ready", async () => {
     );
 
     if (tokenManifestActive) {
+        if (game.user.isGM) {
+            // Hydrate cross-world token curation and species registry from ionrift-data
+            AvatarRegistryService.initPersistence?.().catch(e =>
+                Logger.warn("Library", "Token curation persistence hydration failed:", e)
+            );
+            SpeciesRegistry.initPersistence?.().catch(e =>
+                Logger.warn("Library", "Species registry persistence hydration failed:", e)
+            );
+        }
+
         // Asynchronous background token art cache warming
         TokenArtResolver.warmCache().catch(e =>
             Logger.warn("Library", "Token art cache warming failed:", e)
