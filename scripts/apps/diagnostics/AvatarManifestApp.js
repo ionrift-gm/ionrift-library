@@ -1451,50 +1451,6 @@ export class AvatarManifestApp extends FormApplication {
                 this.render();
             }
         });
-
-        // 14. Scaffolding Seed Button
-        html.find("#scaffold-seed-btn").click(async ev => {
-            ev.preventDefault();
-            const confirmed = await this._confirmDialog({
-                title: "Seed Starter Token Art",
-                content: `
-                    <p>This will seed default dark-fantasy vector archetype tokens into <code>tokens/ionrift/</code> and catalog them.</p>
-                    <p style="font-size:0.85em; color:rgba(200,190,240,0.8); margin-top:6px;">Starter art provides immediate coverage for core archetypes (Guard, Scholar, Noble, Priest, Merchant, Commoner).</p>
-                `,
-                yesLabel: "Seed Tokens",
-                yesIcon: "fa-seedling",
-                noLabel: "Cancel",
-                noIcon: "fa-times",
-                isDestructive: false
-            });
-            if (!confirmed) return;
-
-            const btn = $(ev.currentTarget);
-            const originalHtml = btn.html();
-            btn.html('<i class="fas fa-spinner fa-spin"></i> Seeding...');
-            btn.prop("disabled", true);
-            try {
-                await TokenArtResolver.scaffoldFolders();
-                const watchFolders = AvatarRegistryService.getWatchFolders();
-                const result = await AvatarScanner.scanWatchFolders(watchFolders, AvatarRegistryService.getCatalog());
-                const state = AvatarRegistryService.getState();
-                state.catalog = result.catalog;
-                await AvatarRegistryService.saveState(state);
-                if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info("Ionrift | Seeded default token folders and cataloged starter assets.");
-                }
-            } catch (err) {
-                Logger.error("AvatarManifestApp", "Seeding failed:", err);
-                if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.error("Ionrift | Failed to seed starter art.");
-                }
-            } finally {
-                btn.html(originalHtml);
-                btn.prop("disabled", false);
-                this.invalidateCache();
-                this.render();
-            }
-        });
     }
 
     // -------------------------------------------------------------------

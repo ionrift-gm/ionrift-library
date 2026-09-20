@@ -1,46 +1,47 @@
 <div class="ionrift-app-container avatar-manifest-container" style="display:flex; flex-direction:column; height:100%; min-height:0;">
 
     <!-- Top Navigation Bar & Global KPI -->
-    <div class="dashboard-header" style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid rgba(140,110,240,0.2); background:rgba(12,10,24,0.6); flex-shrink:0;">
-        <div style="display:flex; align-items:center; gap:16px;">
-            <div class="dashboard-stat" style="display:flex; align-items:center; gap:10px;">
+    <div class="dashboard-header">
+        <div style="display:flex; align-items:center; gap:8px; flex:0 1 auto; min-width:0;">
+            <div class="dashboard-stat" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
                 <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; --gauge-color: {{#if (gte coverage.overallCoveragePct 70)}}#4ade80{{else if (gte coverage.overallCoveragePct 35)}}#facc15{{else}}#f87171{{/if}};">
                     <span>{{coverage.overallCoveragePct}}%</span>
                 </div>
-                <div class="dashboard-text" style="display:flex; flex-direction:column;">
-                    <span class="label" style="font-size:0.7em; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7);">Coverage Health</span>
-                    <span class="value" style="font-size:0.95em; font-weight:700; color:#fff;">
+                <div class="dashboard-text" style="display:flex; flex-direction:column; min-width:max-content; white-space:nowrap;">
+                    <span class="label" style="font-size:0.7em; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7); white-space:nowrap;">Coverage</span>
+                    <span class="value" style="font-size:0.95em; font-weight:700; color:#fff; white-space:nowrap;">
                         {{coverage.totalTokens}} Tokens
                         {{#if coverage.reservoirTokens}}
-                        <span style="font-size:0.75em; font-weight:500; color:rgba(180,165,220,0.65);">({{coverage.reservoirTokens}} Reservoir)</span>
+                        <span style="font-size:0.75em; font-weight:500; color:rgba(180,165,220,0.65);">({{coverage.reservoirTokens}})</span>
                         {{/if}}
                     </span>
                 </div>
             </div>
 
-            <!-- Tab Switcher -->
-            <nav class="manifest-nav-tabs sheet-tabs tabs" style="display:flex; gap:6px; margin-left:12px; border:none !important; border-top:none !important; border-bottom:none !important;">
-                <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabCoverage}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabCoverage}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+            <!-- Tab Switcher (Segmented Track) -->
+            <nav class="manifest-nav-tabs sheet-tabs tabs">
+                <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage">
                     <i class="fas fa-chart-pie"></i> Coverage Intelligence
                 </a>
-                <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabCuration}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabCuration}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+                <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation">
                     <i class="fas fa-tags"></i> Token Curation
                 </a>
-                <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders" style="padding:6px 14px; border-radius:6px; font-weight:600; font-size:0.85em; cursor:pointer; background:{{#if isTabFolders}}rgba(140,110,240,0.3){{else}}rgba(255,255,255,0.05){{/if}}; color:{{#if isTabFolders}}#fff{{else}}rgba(200,190,230,0.7){{/if}};">
+                <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders">
                     <i class="fas fa-folder-tree"></i> Watch Folders ({{watchFolders.length}})
                 </a>
             </nav>
         </div>
 
-        <div class="dashboard-header-actions" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-            <span class="manifest-sync-chip" style="font-size:0.73em; padding:3px 8px; border-radius:4px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:#86efac; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; flex:0 0 auto;" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
-                <i class="fas fa-globe-americas" style="color:#4ade80;"></i> Cross-World
+        <div class="dashboard-header-actions">
+            <span class="manifest-sync-chip" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
+                <i class="fas fa-globe-americas"></i> Cross-World
             </span>
-            <button type="button" id="add-species-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content; height:28px; line-height:26px; padding:0 10px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:4px; color:#d8b4fe; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Add a custom or homebrew species to the manifest and coverage matrix">
+            <div class="header-action-divider"></div>
+            <button type="button" id="add-species-btn" class="ionrift-btn header-action-btn" title="Add a custom or homebrew species to the manifest and coverage matrix">
                 <i class="fas fa-plus"></i> Add Species
             </button>
-            <button type="button" id="rescan-assets-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content; height:28px; line-height:26px; padding:0 10px; font-size:0.82em; display:inline-flex; align-items:center; gap:6px; background:rgba(120,90,200,0.25); border:1px solid rgba(140,110,240,0.4); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap; flex:0 0 auto; box-sizing:border-box;" title="Re-scan all watch folders for new images">
-                <i class="fas fa-sync-alt"></i> Re-scan Folders
+            <button type="button" id="rescan-assets-btn" class="ionrift-btn header-action-btn" title="Re-scan all watch folders for new images">
+                <i class="fas fa-sync-alt"></i> Re-scan
             </button>
         </div>
     </div>
@@ -189,9 +190,9 @@
                                         </span>
                                     </div>
                                     <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
-                                        <span class="manifest-legend-badge" style="color:#34d399; font-size:0.8em; font-weight:600;" title="{{coverage.exoticSpecies.length}} exotic species registered with {{coverage.otherRow.stats.exoticTokenCount}} total tokens">
-                                            <span style="width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 6px rgba(52,211,153,0.5);"></span>
-                                            {{coverage.exoticSpecies.length}} Exotic Species ({{coverage.otherRow.stats.exoticTokenCount}} tokens)
+                                        <span class="manifest-legend-badge" style="color:{{#if coverage.otherRow.stats.exoticTokenCount}}#34d399{{else}}rgba(180,165,220,0.65){{/if}}; font-size:0.8em; font-weight:600;" title="{{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} exotic species registered with {{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} total tokens">
+                                            <span style="width:8px; height:8px; border-radius:50%; background:{{#if coverage.otherRow.stats.exoticTokenCount}}#10b981{{else}}rgba(180,165,220,0.4){{/if}}; {{#if coverage.otherRow.stats.exoticTokenCount}}box-shadow:0 0 6px rgba(52,211,153,0.5);{{/if}}"></span>
+                                            {{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} Exotic Species ({{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} tokens)
                                         </span>
                                         <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned tokens available as global fallback">
                                             <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
@@ -503,7 +504,7 @@
                 </div>
 
                 <!-- Multi-select Batch Actions Bar -->
-                <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.82em; padding:2px 4px; flex-shrink:0;">
+                <div class="curation-batch-bar">
                     <div style="display:flex; align-items:center; gap:8px; flex:0 0 auto;">
                         <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                             <input type="checkbox" id="select-all-visible" class="ionrift-checkbox" />
@@ -521,13 +522,13 @@
                     </div>
 
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <button type="button" id="manage-tags-btn" class="ionrift-btn" style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 10px; font-size:0.82em; min-height:28px; height:28px; line-height:26px; background:rgba(168,85,247,0.2); border:1px solid rgba(168,85,247,0.4); border-radius:4px; color:#d8b4fe; cursor:pointer; white-space:nowrap;" title="Inspect all tags, purge redundant folder tags, and manage ignored tags">
+                        <button type="button" id="manage-tags-btn" class="ionrift-btn batch-actions-btn" title="Inspect all tags, purge redundant folder tags, and manage ignored tags">
                             <i class="fas fa-tags"></i> Manage Tags
                         </button>
-                        <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 10px; font-size:0.82em; min-height:28px; background:rgba(59,130,246,0.25); border:1px solid rgba(59,130,246,0.45); border-radius:4px; color:#93c5fd; cursor:pointer; white-space:nowrap;" title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
+                        <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
                             <i class="fas fa-wand-magic-sparkles"></i> Reset to Auto ({{selectedCount}})
                         </button>
-                        <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} style="width:auto !important; max-width:max-content !important; flex:0 0 auto !important; padding:4px 12px; font-size:0.82em; min-height:28px; background:rgba(140,110,240,0.3); border:1px solid rgba(140,110,240,0.5); border-radius:4px; color:#fff; cursor:pointer; white-space:nowrap;">
+                        <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}}>
                             <i class="fas fa-check-double"></i> Tag Selected ({{selectedCount}})
                         </button>
                     </div>
@@ -583,13 +584,8 @@
 
                         <!-- Clickable Actions -->
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                            <button type="button" class="token-action-icon-btn token-edit-badge-btn" data-path="{{t.path}}" title="Curate Species, Archetype, Role & Tags">
-                                <i class="fas fa-wrench"></i>
-                            </button>
-
-                            <button type="button" class="token-action-icon-btn toggle-blacklist-btn {{#if t.isBlacklisted}}is-active{{/if}}" data-path="{{t.path}}" title="{{#if t.isBlacklisted}}Un-blacklist (allow use){{else}}Blacklist (exclude from generation){{/if}}">
-                                <i class="fas fa-ban"></i>
-                            </button>
+                            <button type="button" class="token-action-icon-btn token-edit-badge-btn" data-path="{{t.path}}" title="Curate Species, Archetype, Role & Tags"><i class="fas fa-wrench"></i></button>
+                            <button type="button" class="token-action-icon-btn toggle-blacklist-btn {{#if t.isBlacklisted}}is-active{{/if}}" data-path="{{t.path}}" title="{{#if t.isBlacklisted}}Un-blacklist (allow use){{else}}Blacklist (exclude from generation){{/if}}"><i class="fas fa-ban"></i></button>
                         </div>
                     </div>
                     {{else}}
@@ -754,19 +750,6 @@
                         {{/each}}
                     {{/each}}
                 </div>
-            </div>
-
-            <!-- Starter Scaffolding Section -->
-            <div class="watch-scaffold-card">
-                <div>
-                    <h4>Scaffold Starter Art Tokens</h4>
-                    <p>
-                        Seeds the clean dark-fantasy vector archetype tokens into <code>tokens/ionrift/</code> so your world is immediately populated.
-                    </p>
-                </div>
-                <button type="button" id="scaffold-seed-btn" class="ionrift-btn">
-                    <i class="fas fa-seedling"></i> Seed Starter Art
-                </button>
             </div>
 
         </div>

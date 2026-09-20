@@ -1588,21 +1588,57 @@ button.ionrift-badge.classifier-override-btn:hover {
     width: 100%;
 }
 
-/* Avatar Manifest: Tab Navigation Reset (Suppress Foundry parchment borders) */
+/* Avatar Manifest: Tab Navigation Reset & Segmented Navigation Track */
 .avatar-manifest-app nav.sheet-tabs,
 .avatar-manifest-app nav.tabs,
-.avatar-manifest-app .manifest-nav-tabs {
+.avatar-manifest-app nav.manifest-nav-tabs {
     border: none !important;
     border-top: none !important;
     border-bottom: none !important;
     line-height: normal !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(140, 110, 240, 0.22) !important;
+    border-radius: 7px !important;
+    padding: 2px !important;
+    display: inline-flex !important;
+    gap: 3px !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5) !important;
 }
 
 .avatar-manifest-app .manifest-nav-tabs .nav-tab {
-    line-height: normal;
-    text-shadow: none;
+    height: 28px !important;
+    line-height: 28px !important;
+    padding: 0 7px !important;
+    border-radius: 5px !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    color: rgba(200, 190, 230, 0.7) !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    text-shadow: none !important;
+    transition: all 0.15s ease !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+.avatar-manifest-app .manifest-nav-tabs .nav-tab:hover {
+    color: #ffffff !important;
+    background: rgba(140, 110, 240, 0.14) !important;
+}
+
+.avatar-manifest-app .manifest-nav-tabs .nav-tab.active {
+    background: rgba(140, 110, 240, 0.32) !important;
+    border: 1px solid rgba(168, 85, 247, 0.55) !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Avatar Manifest: Legend Badges */
@@ -2381,16 +2417,19 @@ button.ionrift-badge.classifier-override-btn:hover {
     min-width: 28px !important;
     max-width: 28px !important;
     padding: 0 !important;
+    margin: 0 !important;
     display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
+    align-items: center !important;
+    justify-content: center !important;
     border-radius: 4px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+    line-height: 1 !important;
     cursor: pointer;
     flex: 0 0 28px !important;
     border: 1px solid rgba(140, 110, 240, 0.4);
     background: rgba(140, 110, 240, 0.2);
     color: #e2e8f0;
+    box-sizing: border-box !important;
     transition: all 0.15s ease;
 }
 .token-action-icon-btn:hover {
@@ -2596,7 +2635,16 @@ button.ionrift-badge.classifier-override-btn:hover {
 }
 
 .token-action-icon-btn i {
-    pointer-events: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 1em !important;
+    height: 1em !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    pointer-events: none !important;
 }
 
 /* Banned Folder Visual Cue */
@@ -4436,6 +4484,7 @@ button.ionrift-badge.classifier-override-btn:hover {
 
 .avatar-manifest-app button {
     box-sizing: border-box;
+    text-transform: none !important;
 }
 
 /* Tab Container Elasticity & Dead Void Cure */
@@ -4650,60 +4699,6 @@ button.ionrift-badge.classifier-override-btn:hover {
     box-shadow: 0 0 8px rgba(248, 113, 113, 0.3) !important;
 }
 
-/* Scaffold Starter Art Section */
-.avatar-manifest-app .watch-scaffold-card {
-    background: rgba(18, 14, 32, 0.6);
-    border: 1px solid rgba(139, 92, 246, 0.2);
-    border-radius: 8px;
-    padding: 16px 20px;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-.avatar-manifest-app .watch-scaffold-card h4 {
-    margin: 0 0 4px 0;
-    color: #ffffff;
-    font-size: 0.95rem;
-    font-weight: 700;
-}
-
-.avatar-manifest-app .watch-scaffold-card p {
-    margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.4;
-    color: rgba(220, 210, 255, 0.65);
-}
-
-.avatar-manifest-app .watch-scaffold-card button#scaffold-seed-btn {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    height: 36px !important;
-    padding: 0 16px !important;
-    margin: 0 !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-    background: rgba(34, 197, 94, 0.25) !important;
-    border: 1px solid rgba(34, 197, 94, 0.5) !important;
-    border-radius: 4px !important;
-    color: #4ade80 !important;
-    cursor: pointer !important;
-    white-space: nowrap !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    transition: all 0.2s ease !important;
-}
-
-.avatar-manifest-app .watch-scaffold-card button#scaffold-seed-btn:hover {
-    background: rgba(34, 197, 94, 0.4) !important;
-    border-color: #22c55e !important;
-    box-shadow: 0 0 10px rgba(34, 197, 94, 0.4) !important;
-    color: #ffffff !important;
-}
-
 @keyframes ionrift-shake {
     0%, 100% { transform: translateX(0); }
     20%, 60% { transform: translateX(-4px); }
@@ -4760,22 +4755,122 @@ button.ionrift-badge.classifier-override-btn:hover {
     box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
 }
 
-/* Manifest Header Actions */
+/* Manifest Header Layout & Partitions */
+.avatar-manifest-app .dashboard-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 8px 12px !important;
+    height: 50px !important;
+    background: rgba(12, 10, 24, 0.75) !important;
+    border-bottom: 1px solid rgba(140, 110, 240, 0.22) !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.avatar-manifest-app .dashboard-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+}
+
+.avatar-manifest-app .header-action-divider {
+    width: 1px !important;
+    height: 18px !important;
+    background: rgba(140, 110, 240, 0.25) !important;
+    margin: 0 2px !important;
+    flex-shrink: 0 !important;
+}
+
+.avatar-manifest-app .manifest-sync-chip {
+    font-size: 0.72rem !important;
+    padding: 2px 6px !important;
+    border-radius: 12px !important;
+    background: rgba(34, 197, 94, 0.08) !important;
+    border: 1px solid rgba(34, 197, 94, 0.28) !important;
+    color: #86efac !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    flex: 0 0 auto !important;
+    cursor: default !important;
+    user-select: none !important;
+}
+
 .avatar-manifest-app .dashboard-header button#add-species-btn,
-.avatar-manifest-app .dashboard-header button#rescan-assets-btn {
+.avatar-manifest-app .dashboard-header button#rescan-assets-btn,
+.avatar-manifest-app .dashboard-header button.header-action-btn {
     width: auto !important;
     max-width: max-content !important;
     height: 28px !important;
     min-height: 28px !important;
     max-height: 28px !important;
-    line-height: 26px !important;
-    padding: 0 12px !important;
+    line-height: 1 !important;
+    padding: 0 7px !important;
+    font-size: 0.78rem !important;
     white-space: nowrap !important;
     flex: 0 0 auto !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    justify-content: center !important;
+    gap: 5px !important;
     box-sizing: border-box !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+}
+
+/* Curation Multi-Select Batch Actions Bar */
+.avatar-manifest-app .curation-batch-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 4px 10px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    background: rgba(14, 10, 26, 0.65) !important;
+    border: 1px solid rgba(140, 110, 240, 0.18) !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    font-size: 0.82rem !important;
+}
+
+.avatar-manifest-app #manage-tags-btn,
+.avatar-manifest-app .batch-actions-btn {
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    line-height: 1 !important;
+    padding: 0 8px !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    border-radius: 4px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+}
+
+/* Code Pills & Monospace Badges */
+.avatar-manifest-app code,
+.avatar-manifest-app .ionrift-code-pill {
+    font-family: 'Consolas', 'Menlo', 'Courier New', monospace !important;
+    font-size: 0.82rem !important;
+    padding: 2px 6px !important;
+    background: rgba(140, 110, 240, 0.16) !important;
+    border: 1px solid rgba(140, 110, 240, 0.35) !important;
+    border-radius: 4px !important;
+    color: #e9d5ff !important;
+    margin: 0 2px !important;
+    display: inline-block !important;
+    vertical-align: baseline !important;
+    letter-spacing: 0.2px !important;
 }
 
 /* Token Tag Pills Interactive Styling */
