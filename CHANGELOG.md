@@ -3,12 +3,8 @@
 ## [2.6.0] - 2026-09-20
 
 ### Added
-- Custom Terrains: Import and manage custom terrain types across Ionrift modules. Example JSON format and Cheese Caves guide on the [wiki](https://github.com/ionrift-gm/ionrift-library/wiki/18-Custom-Terrains).
-- Cross-system buff adapter registry (`Dnd5eBuffAdapter`, `Pf2eBuffAdapter`, `FallbackBuffAdapter`) and `BuffApplicator` for dnd5e Active Effects and pf2e Effect items.
-- `BuffApplicator.applyBuffsRouted()` and `CookingGMExec` handler for cross-owner PF2e meal applies.
-- `CookingBuffs.isWellFed()` checks pf2e Effect items on the shared cooking slot.
-- Registry `preview: true` on **modules** uses the same client gate as overlay packs (`showPreviewContent`). Early access and premium module offers stay hidden until preview mode is on or the flag is cleared at release.
-- `game.ionrift.library.showPreviewContent(true|false)` helper for the preview gate.
+- Custom terrain support across Ionrift modules, with example configurations and guide on the [wiki](https://github.com/ionrift-gm/ionrift-library/wiki/18-Custom-Terrains).
+- Cross-system meal and buff support for D&D 5e and Pathfinder 2e.
 
 ## [2.5.14] - 2026-09-03
 
