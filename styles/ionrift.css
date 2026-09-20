@@ -307,13 +307,18 @@
    The outline persists until the user clicks elsewhere, creating a
    stale red border that bleeds outside container boundaries.
 
-   Suppress mouse-triggered :focus across the .ionrift-window contract,
-   but keep keyboard focus visible via :focus-visible with a violet ring
-   for a11y compliance. Documented in IONRIFT_UI_HANDBOOK.md §3. */
+   Suppress mouse-triggered :focus and Foundry core button.active / button:active
+   outlines across the .ionrift-window contract, but keep keyboard focus visible via
+   :focus-visible with a violet ring for a11y compliance. Documented in IONRIFT_UI_HANDBOOK.md §3. */
 .ionrift-window button:focus,
+.ionrift-window button:active,
+.ionrift-window button.active,
 .ionrift-window [role="button"]:focus,
+.ionrift-window [role="button"]:active,
+.ionrift-window [role="button"].active,
 .ionrift-window [tabindex]:focus,
-.ionrift-window a:focus {
+.ionrift-window a:focus,
+.ionrift-window a.button.active {
     outline: none !important;
     box-shadow: none !important;
 }
