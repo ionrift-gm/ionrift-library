@@ -1386,7 +1386,7 @@ export class AvatarManifestApp extends FormApplication {
         html.on("click", ".token-tag-pill.clickable", ev => {
             ev.preventDefault();
             ev.stopPropagation();
-            const tag = $(ev.currentTarget).data("tag");
+            const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
             if (tag) {
                 this.filterQuery = tag;
                 this.currentPage = 1;
@@ -1397,7 +1397,7 @@ export class AvatarManifestApp extends FormApplication {
         html.on("contextmenu", ".token-tag-pill.clickable", async ev => {
             ev.preventDefault();
             ev.stopPropagation();
-            const tag = $(ev.currentTarget).data("tag");
+            const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
             if (tag) {
                 await this._openTagManagerDialog({ searchTag: tag });
             }
@@ -2116,7 +2116,8 @@ export class AvatarManifestApp extends FormApplication {
                 const updateHidden = () => {
                     const tags = [];
                     $box.find(".editor-tag-chip").each(function() {
-                        tags.push($(this).data("tag"));
+                        const t = String($(this).attr("data-tag") ?? $(this).data("tag") ?? "").trim();
+                        if (t) tags.push(t);
                     });
                     $hidden.val(tags.join(", "));
                 };
@@ -2126,7 +2127,8 @@ export class AvatarManifestApp extends FormApplication {
                     if (!tag) return;
                     const currentTags = [];
                     $box.find(".editor-tag-chip").each(function() {
-                        currentTags.push($(this).data("tag"));
+                        const t = String($(this).attr("data-tag") ?? $(this).data("tag") ?? "").trim();
+                        if (t) currentTags.push(t);
                     });
                     if (currentTags.includes(tag)) {
                         $input.val("");
@@ -2379,7 +2381,7 @@ export class AvatarManifestApp extends FormApplication {
 
                 html.find(".remove-chip-btn").click(ev => {
                     ev.preventDefault();
-                    const tag = $(ev.currentTarget).data("tag");
+                    const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
                     const removeInput = html.find("#batch-remove-tags-input");
                     const current = removeInput.val().split(",").map(t => t.trim()).filter(Boolean);
                     if (!current.includes(tag)) {
@@ -2572,6 +2574,7 @@ export class AvatarManifestApp extends FormApplication {
 
         let currentSearch = (searchTag || "").trim().toLowerCase();
         let metricsData = AvatarRegistryService.getTagMetrics();
+        const selectedTags = new Set();
         const CHUNK_SIZE = 60;
         let renderedCount = CHUNK_SIZE;
         let searchDebounceTimer = null;
@@ -2582,16 +2585,21 @@ export class AvatarManifestApp extends FormApplication {
                 : metricsData.metrics;
         };
 
-        const renderRow = (m) => `
-            <tr style="border-bottom:1px solid rgba(140,110,240,0.12); transition:background 0.15s ease;" class="tag-row ${m.isRedundant ? 'is-redundant-row' : ''}">
+        const renderRow = (m) => {
+            const isChecked = selectedTags.has(m.tag);
+            return `
+            <tr style="border-bottom:1px solid rgba(140,110,240,0.12); transition:background 0.15s ease;" class="tag-row ${m.isRedundant ? 'is-redundant-row' : ''} ${isChecked ? 'is-selected-row' : ''}">
+                <td style="padding:6px 6px 6px 10px; text-align:center; width:36px;">
+                    <input type="checkbox" class="tag-row-checkbox" data-tag="${m.tag}" ${isChecked ? 'checked' : ''} style="accent-color:#a855f7; cursor:pointer; width:15px; height:15px; margin:0; vertical-align:middle;" />
+                </td>
                 <td style="padding:6px 10px; font-weight:600; font-size:0.84rem; color:${m.isRedundant ? '#fbbf24' : '#fff'};">
                     #${m.tag}
                     ${m.isRedundant ? '<span style="margin-left:6px; font-size:0.68rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> Redundant</span>' : ''}
                 </td>
-                <td style="padding:6px 10px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center;">
+                <td style="padding:6px 10px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center; width:110px;">
                     <strong>${m.count}</strong> <span style="font-size:0.75em; opacity:0.7;">(${m.pct}%)</span>
                 </td>
-                <td style="padding:6px 10px; text-align:right;">
+                <td style="padding:6px 10px; text-align:right; width:220px;">
                     <div style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
                         <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" draggable="false" title="Filter workspace to #${m.tag}">
                             <i class="fas fa-filter"></i> Filter
@@ -2605,7 +2613,8 @@ export class AvatarManifestApp extends FormApplication {
                     </div>
                 </td>
             </tr>
-        `;
+            `;
+        };
 
         const buildContent = () => {
             const { totalTokens, totalUniqueTags, redundantTags, ignoredTags } = metricsData;
@@ -2647,7 +2656,7 @@ export class AvatarManifestApp extends FormApplication {
             // Progressive initial slice
             const visibleRows = filteredMetrics.length > 0
                 ? filteredMetrics.slice(0, renderedCount).map(renderRow).join("")
-                : `<tr><td colspan="3" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
+                : `<tr><td colspan="4" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
 
             return `
                 <div class="tag-manager-modal-inner" style="display:flex; flex-direction:column; gap:10px; padding:2px 0; max-height:76vh; overflow:hidden;">
@@ -2692,14 +2701,36 @@ export class AvatarManifestApp extends FormApplication {
                         <span id="tag-manager-count-label" style="font-size:0.78rem; color:rgba(180,165,220,0.7); flex-shrink:0;">Showing ${filteredMetrics.length} of ${totalUniqueTags}</span>
                     </div>
 
+                    <!-- Batch Actions Bar (Reveals when >= 1 tag checked) -->
+                    <div id="tag-batch-action-bar" style="display:${selectedTags.size > 0 ? 'flex' : 'none'}; align-items:center; justify-content:space-between; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); border-radius:4px; padding:6px 12px; flex-shrink:0;">
+                        <span style="font-size:0.82rem; color:#fca5a5; font-weight:600; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-check-square"></i>
+                            <span><strong id="tag-selected-count">${selectedTags.size}</strong> tag(s) selected</span>
+                        </span>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <button type="button" class="ionrift-btn batch-purge-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(239,68,68,0.28); border:1px solid rgba(239,68,68,0.55); color:#fca5a5; cursor:pointer;" title="Purge all selected tags from tokens">
+                                <i class="fas fa-trash-can"></i> Purge Selected (<span class="batch-count-val">${selectedTags.size}</span>)
+                            </button>
+                            <button type="button" class="ionrift-btn batch-ignore-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Purge and ignore all selected tags">
+                                <i class="fas fa-ban"></i> Ignore Selected
+                            </button>
+                            <button type="button" class="ionrift-btn batch-deselect-all-btn" draggable="false" style="height:26px; line-height:24px; padding:0 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:rgba(200,190,240,0.8); cursor:pointer;">
+                                Deselect All
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Scrollable Table with Progressive Windowing -->
                     <div class="tag-manager-table-scroll" style="flex:1 1 0; min-height:220px; max-height:420px; overflow-y:auto; background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.2); border-radius:4px;">
                         <table style="width:100%; border-collapse:collapse; text-align:left;">
                             <thead>
                                 <tr style="background:rgba(18,14,32,0.92); border-bottom:1px solid rgba(140,110,240,0.25); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.75); position:sticky; top:0; z-index:2;">
+                                    <th style="padding:7px 6px 7px 10px; text-align:center; width:36px;">
+                                        <input type="checkbox" id="tag-select-all-visible" style="accent-color:#a855f7; cursor:pointer; width:15px; height:15px; margin:0; vertical-align:middle;" title="Select / Deselect all visible tags" />
+                                    </th>
                                     <th style="padding:7px 10px;">Tag Name</th>
                                     <th style="padding:7px 10px; text-align:center; width:110px;">Tokens Applied</th>
-                                    <th style="padding:7px 10px; text-align:right; width:230px;">Actions</th>
+                                    <th style="padding:7px 10px; text-align:right; width:220px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tag-manager-tbody">
@@ -2714,12 +2745,47 @@ export class AvatarManifestApp extends FormApplication {
         let dlg;
 
         const attachDialogListeners = ($html) => {
+            const updateBatchActionBar = () => {
+                const count = selectedTags.size;
+                const bar = $html.find("#tag-batch-action-bar");
+                if (count > 0) {
+                    bar.css("display", "flex");
+                    bar.find("#tag-selected-count").text(count);
+                    bar.find(".batch-count-val").text(count);
+                } else {
+                    bar.css("display", "none");
+                }
+                syncMasterCheckboxState();
+            };
+
+            const syncMasterCheckboxState = () => {
+                const filtered = getFilteredMetrics();
+                const master = $html.find("#tag-select-all-visible");
+                if (filtered.length === 0) {
+                    master.prop("checked", false).prop("indeterminate", false);
+                    return;
+                }
+                let visibleSelectedCount = 0;
+                for (const m of filtered) {
+                    if (selectedTags.has(m.tag)) visibleSelectedCount++;
+                }
+                if (visibleSelectedCount === 0) {
+                    master.prop("checked", false).prop("indeterminate", false);
+                } else if (visibleSelectedCount === filtered.length) {
+                    master.prop("checked", true).prop("indeterminate", false);
+                } else {
+                    master.prop("checked", false).prop("indeterminate", true);
+                }
+            };
+
             // Full refresh helper when data is modified
             const refreshAll = () => {
                 metricsData = AvatarRegistryService.getTagMetrics({ force: true });
                 renderedCount = CHUNK_SIZE;
+                this.invalidateCache();
                 $html.find(".tag-manager-modal-inner").replaceWith(buildContent());
                 bindScroll();
+                updateBatchActionBar();
             };
 
             // Progressive infinite scroll
@@ -2738,6 +2804,7 @@ export class AvatarManifestApp extends FormApplication {
                                 renderedCount += nextChunk.length;
                                 $html.find("#tag-manager-tbody").append(nextChunk.map(renderRow).join(""));
                                 isAppending = false;
+                                syncMasterCheckboxState();
                             });
                         }
                     }
@@ -2751,12 +2818,13 @@ export class AvatarManifestApp extends FormApplication {
                 const filtered = getFilteredMetrics();
                 const visibleRows = filtered.length > 0
                     ? filtered.slice(0, renderedCount).map(renderRow).join("")
-                    : `<tr><td colspan="3" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
+                    : `<tr><td colspan="4" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
                 
                 $html.find("#tag-manager-tbody").html(visibleRows);
                 $html.find("#tag-manager-count-label").text(`Showing ${filtered.length} of ${metricsData.totalUniqueTags}`);
                 $html.find("#tag-search-clear-btn").css("display", currentSearch ? "block" : "none");
                 $html.find(".tag-manager-table-scroll").scrollTop(0);
+                syncMasterCheckboxState();
             };
 
             $html.on("input", "#tag-manager-search-input", ev => {
@@ -2770,6 +2838,103 @@ export class AvatarManifestApp extends FormApplication {
                 currentSearch = "";
                 $html.find("#tag-manager-search-input").val("").focus();
                 updateFilteredRows();
+            });
+
+            // Checkbox selection delegated handlers
+            $html.on("change", ".tag-row-checkbox", ev => {
+                const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
+                if (!tag) return;
+                const checked = $(ev.currentTarget).prop("checked");
+                if (checked) {
+                    selectedTags.add(tag);
+                    $(ev.currentTarget).closest("tr").addClass("is-selected-row");
+                } else {
+                    selectedTags.delete(tag);
+                    $(ev.currentTarget).closest("tr").removeClass("is-selected-row");
+                }
+                updateBatchActionBar();
+            });
+
+            $html.on("change", "#tag-select-all-visible", ev => {
+                const checked = $(ev.currentTarget).prop("checked");
+                const filtered = getFilteredMetrics();
+                for (const m of filtered) {
+                    if (checked) selectedTags.add(m.tag);
+                    else selectedTags.delete(m.tag);
+                }
+                $html.find(".tag-row-checkbox").prop("checked", checked);
+                $html.find(".tag-row").toggleClass("is-selected-row", checked);
+                updateBatchActionBar();
+            });
+
+            $html.on("click", ".batch-deselect-all-btn", ev => {
+                ev.preventDefault();
+                selectedTags.clear();
+                $html.find(".tag-row-checkbox").prop("checked", false);
+                $html.find(".tag-row").removeClass("is-selected-row");
+                updateBatchActionBar();
+            });
+
+            $html.on("click", ".batch-purge-selected-btn", async ev => {
+                ev.preventDefault();
+                const tagsToPurge = Array.from(selectedTags);
+                if (tagsToPurge.length === 0) return;
+
+                const tagsListHtml = tagsToPurge.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToPurge.length > 24 ? ` ... (+${tagsToPurge.length - 24} more)` : "");
+
+                const confirmed = await this._confirmDialog({
+                    title: `Purge ${tagsToPurge.length} Selected Tags`,
+                    content: `
+                        <p>Are you sure you want to remove <strong>${tagsToPurge.length}</strong> selected tag(s) across all tokens in your catalog?</p>
+                        <div style="max-height:80px; overflow-y:auto; margin:8px 0; padding:6px 8px; background:rgba(0,0,0,0.45); border:1px solid rgba(239,68,68,0.25); border-radius:4px; font-size:0.78rem; color:#fca5a5; line-height:1.4;">
+                            ${tagsListHtml}
+                        </div>
+                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">This immediately strips these tags across all tokens. They are not added to the Ignored list.</p>
+                    `,
+                    yesLabel: `Purge ${tagsToPurge.length} Tags`,
+                    yesIcon: "fa-trash-can",
+                    isDestructive: true,
+                    keepParent: true
+                });
+                if (!confirmed) return;
+
+                const result = await AvatarRegistryService.removeTagsGlobally(tagsToPurge);
+                selectedTags.clear();
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Purged ${result.tags.length} tags across ${result.tokensModified} token instances.`);
+                }
+                refreshAll();
+            });
+
+            $html.on("click", ".batch-ignore-selected-btn", async ev => {
+                ev.preventDefault();
+                const tagsToIgnore = Array.from(selectedTags);
+                if (tagsToIgnore.length === 0) return;
+
+                const tagsListHtml = tagsToIgnore.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToIgnore.length > 24 ? ` ... (+${tagsToIgnore.length - 24} more)` : "");
+
+                const confirmed = await this._confirmDialog({
+                    title: `Purge & Ignore ${tagsToIgnore.length} Selected Tags`,
+                    content: `
+                        <p>Are you sure you want to remove <strong>${tagsToIgnore.length}</strong> tag(s) from all tokens AND permanently ignore them?</p>
+                        <div style="max-height:80px; overflow-y:auto; margin:8px 0; padding:6px 8px; background:rgba(0,0,0,0.45); border:1px solid rgba(239,68,68,0.25); border-radius:4px; font-size:0.78rem; color:#fca5a5; line-height:1.4;">
+                            ${tagsListHtml}
+                        </div>
+                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> Future folder re-scans will completely skip these tags.</p>
+                    `,
+                    yesLabel: `Purge & Ignore ${tagsToIgnore.length}`,
+                    yesIcon: "fa-ban",
+                    isDestructive: true,
+                    keepParent: true
+                });
+                if (!confirmed) return;
+
+                const result = await AvatarRegistryService.addIgnoredTags(tagsToIgnore, true);
+                selectedTags.clear();
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info(`Ionrift | Purged ${result.tags.length} tags from ${result.tokensModified} tokens and added to Ignored Tags.`);
+                }
+                refreshAll();
             });
 
             // Delegated Handlers (Eliminates 16,000+ listener bindings)
@@ -2794,7 +2959,7 @@ export class AvatarManifestApp extends FormApplication {
 
             $html.on("click", ".remove-ignored-chip-btn", async ev => {
                 ev.preventDefault();
-                const tag = $(ev.currentTarget).data("tag");
+                const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
                 if (tag) {
                     await AvatarRegistryService.removeIgnoredTag(tag);
                     if (typeof ui !== "undefined" && ui.notifications) {
@@ -2806,7 +2971,7 @@ export class AvatarManifestApp extends FormApplication {
 
             $html.on("click", ".tag-filter-btn", ev => {
                 ev.preventDefault();
-                const tag = $(ev.currentTarget).data("tag");
+                const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
                 if (tag) {
                     this.filterQuery = tag;
                     this.currentPage = 1;
@@ -2817,8 +2982,8 @@ export class AvatarManifestApp extends FormApplication {
 
             $html.on("click", ".tag-purge-btn", async ev => {
                 ev.preventDefault();
-                const tag = $(ev.currentTarget).data("tag");
-                const count = $(ev.currentTarget).data("count");
+                const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
+                const count = $(ev.currentTarget).attr("data-count") ?? $(ev.currentTarget).data("count");
                 const confirmed = await this._confirmDialog({
                     title: `Purge Tag: #${tag}`,
                     content: `
@@ -2841,8 +3006,8 @@ export class AvatarManifestApp extends FormApplication {
 
             $html.on("click", ".tag-ignore-btn", async ev => {
                 ev.preventDefault();
-                const tag = $(ev.currentTarget).data("tag");
-                const count = $(ev.currentTarget).data("count");
+                const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
+                const count = $(ev.currentTarget).attr("data-count") ?? $(ev.currentTarget).data("count");
                 const confirmed = await this._confirmDialog({
                     title: `Purge & Ignore: #${tag}`,
                     content: `
@@ -2881,13 +3046,9 @@ export class AvatarManifestApp extends FormApplication {
                 });
                 if (!confirmed) return;
 
-                let totalPurged = 0;
-                for (const t of redundant) {
-                    const res = await AvatarRegistryService.addIgnoredTag(t, true);
-                    totalPurged += res.purgedCount;
-                }
+                const res = await AvatarRegistryService.addIgnoredTags(redundant, true);
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Cleaned ${redundant.length} redundant tags from ${totalPurged} token instances.`);
+                    ui.notifications.info(`Ionrift | Cleaned ${res.tags.length} redundant tags from ${res.tokensModified} token instances.`);
                 }
                 refreshAll();
             });

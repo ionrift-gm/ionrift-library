@@ -78,11 +78,11 @@
                     <span class="manifest-legend-badge" style="color:#fda4af;" title="No specific role art: falls back to species commoner art">
                         <span style="width:8px; height:8px; border-radius:2px; background:#f43f5e; border:1px dashed #fff;"></span> Fallback (0)
                     </span>
-                    <span class="manifest-legend-badge" style="color:#fca5a5;" title="No art: falls back to SVG vector glyph">
+                    <span class="manifest-legend-badge" style="color:#fca5a5;" title="No art: falls back to default token art">
                         <span style="width:8px; height:8px; border-radius:2px; background:#ef4444;"></span> Missing (0)
                     </span>
                     {{#if coverage.reservoirTokens}}
-                    <span class="manifest-legend-badge" style="color:#d8b4fe;" title="{{coverage.reservoirTokens}} unassigned art tokens available in reservoir">
+                    <span class="manifest-legend-badge" style="color:#d8b4fe;" title="{{coverage.reservoirTokens}} unassigned art tokens awaiting curation">
                         <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
                     </span>
                     {{/if}}
@@ -200,7 +200,7 @@
                                             <span style="width:8px; height:8px; border-radius:50%; background:{{#if coverage.otherRow.stats.exoticTokenCount}}#10b981{{else}}rgba(180,165,220,0.4){{/if}}; {{#if coverage.otherRow.stats.exoticTokenCount}}box-shadow:0 0 6px rgba(52,211,153,0.5);{{/if}}"></span>
                                             {{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} Exotic Species ({{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} tokens)
                                         </span>
-                                        <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned tokens available as global fallback">
+                                        <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned tokens awaiting species curation">
                                             <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
                                         </span>
                                         <span style="color:#c084fc; font-size:0.78em; font-weight:600; margin-left:4px; display:inline-flex; align-items:center; gap:4px;">
