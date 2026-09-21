@@ -27,12 +27,32 @@ export class AvatarManifestApp extends FormApplication {
         this.expandedFolders = new Set();
         this.isFolderSidebarCollapsed = false;
         this.isOtherSpeciesExpanded = options.isOtherSpeciesExpanded ?? false;
+        let savedDiscount = false;
+        try {
+            savedDiscount = Boolean(game.settings.get("ionrift-library", "manifestDiscountNonCurated"));
+        } catch {}
+        this.discountNonCurated = options.discountNonCurated ?? savedDiscount;
         this._sidebarScrollTop = 0;
         this._activeDialog = null;
         this._loupeTimer = null;
         this._cachedCoverage = null;
         this._sortedCatalogTokens = null;
         this._cachedFolderTreeStructure = null;
+
+        // Reactive listener for live token minting from Avatar Studio
+        this._onAvatarRegistryUpdated = (data) => {
+            this.invalidateCache();
+            if (this.rendered) this.render();
+        };
+        Hooks.on("ionrift.avatarRegistryUpdated", this._onAvatarRegistryUpdated);
+    }
+
+    /** @override */
+    async close(options = {}) {
+        if (this._onAvatarRegistryUpdated) {
+            Hooks.off("ionrift.avatarRegistryUpdated", this._onAvatarRegistryUpdated);
+        }
+        return super.close(options);
     }
 
     /**
@@ -133,9 +153,11 @@ export class AvatarManifestApp extends FormApplication {
         noLabel = "Cancel",
         noIcon = "fa-times",
         isDestructive = false,
-        width = 440
+        width = 440,
+        keepParent = false
     }) {
-        if (this._activeDialog) {
+        const parentDialog = keepParent ? this._activeDialog : null;
+        if (!keepParent && this._activeDialog) {
             try { this._activeDialog.close(); } catch {}
             this._activeDialog = null;
         }
@@ -164,7 +186,9 @@ export class AvatarManifestApp extends FormApplication {
                         label: yesLabel,
                         callback: () => {
                             resolved = true;
-                            if (this._activeDialog === dlg) {
+                            if (parentDialog) {
+                                this._activeDialog = parentDialog;
+                            } else if (this._activeDialog === dlg) {
                                 this._activeDialog = null;
                                 this._hideBackdrop();
                             }
@@ -176,7 +200,9 @@ export class AvatarManifestApp extends FormApplication {
                         label: noLabel,
                         callback: () => {
                             resolved = true;
-                            if (this._activeDialog === dlg) {
+                            if (parentDialog) {
+                                this._activeDialog = parentDialog;
+                            } else if (this._activeDialog === dlg) {
                                 this._activeDialog = null;
                                 this._hideBackdrop();
                             }
@@ -186,7 +212,9 @@ export class AvatarManifestApp extends FormApplication {
                 },
                 default: isDestructive ? "no" : "yes",
                 close: () => {
-                    if (this._activeDialog === dlg) {
+                    if (parentDialog) {
+                        this._activeDialog = parentDialog;
+                    } else if (this._activeDialog === dlg) {
                         this._activeDialog = null;
                         this._hideBackdrop();
                     }
@@ -385,7 +413,7 @@ export class AvatarManifestApp extends FormApplication {
         // Skips folder tree construction, catalog filtering, and token pagination
         // ---------------------------------------------------------------
         if (isTabCoverage) {
-            coverage = AvatarRegistryService.getCoverageReport();
+            coverage = AvatarRegistryService.getCoverageReport(undefined, { discountNonCurated: this.discountNonCurated });
             this._cachedCoverage = coverage;
 
             return {
@@ -393,6 +421,7 @@ export class AvatarManifestApp extends FormApplication {
                 isTabCoverage: true,
                 isTabCuration: false,
                 isTabFolders: false,
+                discountNonCurated: this.discountNonCurated,
                 coverage,
                 watchFolders,
                 watchFolderEntries: [],
@@ -446,7 +475,7 @@ export class AvatarManifestApp extends FormApplication {
         // ---------------------------------------------------------------
         if (isTabFolders) {
             const catalog = AvatarRegistryService.getCatalog({ clone: false });
-            coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport();
+            coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport(undefined, { discountNonCurated: this.discountNonCurated });
 
             const watchFolderEntries = watchFolders.map(folder => {
                 const normalizedFolder = folder.toLowerCase().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
@@ -465,6 +494,7 @@ export class AvatarManifestApp extends FormApplication {
                 isTabCoverage: false,
                 isTabCuration: false,
                 isTabFolders: true,
+                discountNonCurated: this.discountNonCurated,
                 coverage,
                 watchFolders,
                 watchFolderEntries,
@@ -509,7 +539,7 @@ export class AvatarManifestApp extends FormApplication {
         // Token Curation Tab
         // ---------------------------------------------------------------
         const catalog = AvatarRegistryService.getCatalog({ clone: false });
-        coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport();
+        coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport(undefined, { discountNonCurated: this.discountNonCurated });
 
         // 1. Identify active filters and labels
         const query = (this.filterQuery || "").trim().toLowerCase();
@@ -691,14 +721,30 @@ export class AvatarManifestApp extends FormApplication {
             }
         }
 
+        const watchFolderEntries = (watchFolders || []).map(folder => {
+            const prefix = folder.endsWith("/") ? folder : folder + "/";
+            let tokenCount = 0;
+            for (const t of Object.values(catalog || {})) {
+                if (t.path && (t.path === folder || t.path.startsWith(prefix))) {
+                    tokenCount++;
+                }
+            }
+            return {
+                folder,
+                tokenCount
+            };
+        });
+
         return {
             activeTab: this.activeTab,
             isTabCoverage: this.activeTab === "coverage",
             isTabCuration: this.activeTab === "curation",
             isTabFolders: this.activeTab === "folders",
+            worldId: (typeof game !== "undefined" && game.world?.id) || "campaign",
+            discountNonCurated: this.discountNonCurated,
             coverage,
             watchFolders,
-            watchFolderEntries: [],
+            watchFolderEntries,
             folderTree,
             selectedFolder: this.selectedFolder,
             scopedFolder: this.scopedFolder,
@@ -754,6 +800,17 @@ export class AvatarManifestApp extends FormApplication {
             this.render();
         });
 
+        // 1a. Discount Non-Curated Tokens Toggle
+        html.find("#toggle-discount-noncurated-btn, #chk-discount-noncurated").click(async ev => {
+            ev.preventDefault();
+            this.discountNonCurated = !this.discountNonCurated;
+            try {
+                await game.settings.set("ionrift-library", "manifestDiscountNonCurated", this.discountNonCurated);
+            } catch {}
+            this.invalidateCache();
+            this.render();
+        });
+
         // 1b. Other / Exotic Species Drawer Toggle
         html.find(".other-species-toggle-btn, .other-species-row").click(ev => {
             if ($(ev.target).closest("button.promote-species-btn, button.demote-species-btn, .matrix-cell, a").length > 0) return;
@@ -794,6 +851,22 @@ export class AvatarManifestApp extends FormApplication {
             const species = $(ev.currentTarget).data("species");
             const archetype = $(ev.currentTarget).data("archetype");
             const caste = $(ev.currentTarget).data("caste");
+
+            // Alt-click or Shift-click directly opens Avatar Studio in Matrix Gap-Fill mode!
+            if ((ev.altKey || ev.shiftKey) && typeof game.ionrift?.cloud?.openAvatarStudio === "function") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                game.ionrift.cloud.openAvatarStudio({
+                    mode: "matrix-gap-fill",
+                    species: species,
+                    role: archetype || caste,
+                    archetype: archetype || caste,
+                    name: `${species} ${archetype || caste} Token`,
+                    framing: "top-down"
+                });
+                return;
+            }
+
             if (species) {
                 this.activeTab = "curation";
                 this.selectedFolder = ""; // Avoid 0-result collisions
@@ -802,6 +875,25 @@ export class AvatarManifestApp extends FormApplication {
                 if (caste && !archetype) this.filterQuery = caste;
                 this.currentPage = 1;
                 this.render();
+            }
+        });
+
+        // 2b. Mint single token from empty curation filter alert
+        html.find(".mint-matrix-token-btn").click(ev => {
+            ev.preventDefault();
+            const sp = this.filterSpecies !== "all" && this.filterSpecies !== "generic" ? this.filterSpecies : "human";
+            const arch = this.filterArchetype !== "all" ? this.filterArchetype : "commoner";
+            if (typeof game.ionrift?.cloud?.openAvatarStudio === "function") {
+                game.ionrift.cloud.openAvatarStudio({
+                    mode: "matrix-gap-fill",
+                    species: sp,
+                    role: arch,
+                    archetype: arch,
+                    name: `${sp} ${arch} Token`,
+                    framing: "top-down"
+                });
+            } else if (typeof ui !== "undefined" && ui.notifications) {
+                ui.notifications.warn("Ionrift Cloud is required to mint new tokens.");
             }
         });
 
@@ -1319,6 +1411,18 @@ export class AvatarManifestApp extends FormApplication {
         });
 
         // 11. Watch Folders: Add Folder logic with validation, Enter key, and toast feedback
+        const updateAddFolderBtnState = () => {
+            const inputEl = html.find("#new-watch-folder-input");
+            const addBtn = html.find("#add-watch-folder-btn");
+            const hasPath = Boolean((inputEl.val() || "").trim());
+            addBtn.prop("disabled", !hasPath);
+            if (hasPath) {
+                addBtn.attr("title", "Add folder to watched directories");
+            } else {
+                addBtn.attr("title", "Enter a folder path to add to watched directories");
+            }
+        };
+
         const commitAddFolder = async () => {
             const inputEl = html.find("#new-watch-folder-input");
             const rawVal = inputEl.val();
@@ -1330,6 +1434,7 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.warn("Ionrift | Please enter a valid directory path.");
                 }
+                updateAddFolderBtnState();
                 return;
             }
 
@@ -1342,6 +1447,7 @@ export class AvatarManifestApp extends FormApplication {
             }
 
             inputEl.val("");
+            updateAddFolderBtnState();
             if (typeof ui !== "undefined" && ui.notifications) {
                 ui.notifications.info(`Ionrift | Watched folder '${folder}' added. Click "Re-scan Folders" to catalogue tokens.`);
             }
@@ -1354,6 +1460,10 @@ export class AvatarManifestApp extends FormApplication {
             commitAddFolder();
         });
 
+        html.find("#new-watch-folder-input").on("input change keyup paste", () => {
+            updateAddFolderBtnState();
+        });
+
         html.find("#new-watch-folder-input").on("keydown", ev => {
             if (ev.key === "Enter" || ev.keyCode === 13) {
                 ev.preventDefault();
@@ -1361,6 +1471,8 @@ export class AvatarManifestApp extends FormApplication {
                 commitAddFolder();
             }
         });
+
+        updateAddFolderBtnState();
 
         html.find("#browse-watch-folder-btn").click(ev => {
             ev.preventDefault();
@@ -1723,11 +1835,14 @@ export class AvatarManifestApp extends FormApplication {
         $("#ionrift-token-hover-loupe").removeClass("is-visible");
         this._showBackdrop();
 
-        const rawFilename = token.filename || (token.path ? token.path.split("/").pop() : "");
-        const nameWithoutExt = rawFilename.replace(/\.[^/.]+$/, "");
-        const cleanName = nameWithoutExt.replace(/^\d+[a-z]?[-_ ]*/i, "") || nameWithoutExt;
+        let rawFilename = token.filename || (token.path ? token.path.split("/").pop() : "");
+        try { rawFilename = decodeURIComponent(rawFilename); } catch {}
+        const nameWithoutExt = rawFilename.replace(/\.[^/.]+$/, "").trim();
+        const cleanName = nameWithoutExt.replace(/^\d+[a-z]?[-_ ]*/i, "").trim() || nameWithoutExt;
 
-        const folderParts = (token.path || "").split("/").filter(Boolean);
+        let rawPath = token.path || "";
+        try { rawPath = decodeURIComponent(rawPath); } catch {}
+        const folderParts = rawPath.split("/").filter(Boolean);
         const shortFolder = folderParts.length > 1 ? folderParts.slice(0, -1).join(" / ") : (token.folder || "root");
 
         const allSpecies = AvatarRegistryService.getActiveSpeciesList ? AvatarRegistryService.getActiveSpeciesList() : CORE_SPECIES;
@@ -1760,66 +1875,86 @@ export class AvatarManifestApp extends FormApplication {
             </span>
         `).join("");
 
+        let isBlacklistedState = Boolean(token.isBlacklisted);
+
         const dlg = new Dialog({
             title: `Curate: ${cleanName}`,
             content: `
-                <form class="ionrift-form glass-ui" style="display:flex; flex-direction:column; gap:10px; padding:4px 0;">
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:6px; padding-bottom:8px; border-bottom:1px solid rgba(140,110,240,0.2);">
-                        <img src="${token.path}" style="width:52px; height:52px; border-radius:6px; object-fit:cover; border:1px solid rgba(140,110,240,0.4);" onerror="this.src='icons/svg/mystery-man.svg'" />
-                        <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
-                            <div style="font-size:0.95em; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${token.filename}">
-                                ${cleanName}
+                <form class="ionrift-form glass-ui curate-dialog-grid">
+                    <!-- LEFT: STUDIO CARD -->
+                    <div class="curate-studio-card">
+                        <div class="curate-studio-viewport">
+                            <img src="${token.path}" class="curate-studio-img" onerror="this.src='icons/svg/mystery-man.svg'" />
+                        </div>
+                        <div class="curate-studio-meta">
+                            <div class="curate-token-title" title="${cleanName}">${cleanName}</div>
+                            <div class="curate-status-pills">
+                                <span class="provenance-pill ${token.isBlacklisted ? 'is-blacklisted' : (token.isManual ? 'is-curated' : 'is-auto')}" id="curate-live-badge">
+                                    <i class="fas ${token.isBlacklisted ? 'fa-ban' : (token.isManual ? 'fa-lock' : 'fa-wand-magic-sparkles')}"></i>
+                                    <span id="curate-live-badge-text">${token.isBlacklisted ? 'Blacklisted' : (token.isManual ? 'Curated' : 'Auto')}</span>
+                                </span>
+                                ${token.role && token.role !== token.archetype ? `<span class="taxonomy-pill is-role" id="curate-role-pill"><i class="fas fa-briefcase"></i> <span id="curate-role-pill-text">${token.role}</span></span>` : '<span class="taxonomy-pill is-role" id="curate-role-pill" style="display:none;"><i class="fas fa-briefcase"></i> <span id="curate-role-pill-text"></span></span>'}
                             </div>
-                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                                ${token.isBlacklisted ? '<span class="provenance-pill is-blacklisted"><i class="fas fa-ban"></i> Blacklisted</span>' : (token.isManual ? '<span class="provenance-pill is-curated"><i class="fas fa-lock"></i> Curated</span>' : '<span class="provenance-pill is-auto"><i class="fas fa-wand-magic-sparkles"></i> Auto</span>')}
-                                ${token.role && token.role !== token.archetype ? `<span class="taxonomy-pill is-role"><i class="fas fa-briefcase"></i> ${token.role}</span>` : ''}
-                            </div>
-                            <div style="font-size:0.75em; color:rgba(200,190,240,0.65); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${token.path}">
+                            <div class="curate-token-path" title="${rawPath}">
                                 <i class="fas fa-folder" style="color:rgba(251,191,36,0.7); margin-right:4px;"></i>${shortFolder}
                             </div>
                         </div>
-                    </div>
-                    <div class="form-group-stacked">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <label style="margin:0;">Curation Provenance</label>
-                            <button type="button" id="dialog-reset-auto-btn" class="ionrift-btn" style="font-size:0.75rem; padding:2px 8px; width:auto; height:auto; min-height:22px; background:rgba(59,130,246,0.25); border:1px solid rgba(59,130,246,0.5); color:#93c5fd; cursor:pointer;" title="Re-evaluate metadata from filename and path">
-                                <i class="fas fa-wand-magic-sparkles"></i> Re-parse from Path
+                        <div class="curate-studio-actions">
+                            <button type="button" id="dialog-reset-auto-btn" class="ionrift-btn studio-btn-reparse" title="Re-evaluate metadata from path">
+                                <i class="fas fa-wand-magic-sparkles"></i> Re-parse
+                            </button>
+                            <button type="button" id="dialog-toggle-blacklist-btn" class="ionrift-btn studio-btn-blacklist ${token.isBlacklisted ? 'is-active' : ''}" title="Toggle Blacklist status">
+                                <i class="fas fa-ban"></i> <span id="blacklist-btn-text">${token.isBlacklisted ? 'Restore' : 'Blacklist'}</span>
                             </button>
                         </div>
-                        <select name="isManual" class="manifest-glass-select">
-                            <option value="false" ${!token.isManual ? "selected" : ""}>✨ Auto-Detected (Permits auto-updates on scan)</option>
-                            <option value="true" ${token.isManual ? "selected" : ""}>🔒 Curated by GM (Locked from auto-overwrites)</option>
-                        </select>
                     </div>
-                    <div class="form-group-stacked">
-                        <label>Species / Culture</label>
-                        <select name="species" class="manifest-glass-select">${speciesOpts}</select>
-                    </div>
-                    <div class="form-group-stacked" id="single-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
-                        <label style="color:#d8b4fe; font-size:0.82rem;"><i class="fas fa-plus-circle"></i> New Species Name</label>
-                        <input type="text" name="newSpeciesName" placeholder="e.g. Aarakocra" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
-                    </div>
-                    <div class="form-group-stacked">
-                        <label>Canonical Archetype</label>
-                        <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
-                    </div>
-                    <div class="form-group-stacked">
-                        <label>
-                            <span>Specific Role</span>
-                            <span class="label-hint">Optional</span>
-                        </label>
-                        <input type="text" name="role" value="${token.role || ""}" placeholder="e.g. watchman, cook, blacksmith">
-                    </div>
-                    <div class="form-group-stacked">
-                        <label>
-                            <span>Applied Tags</span>
-                            <span class="label-hint">Press Enter or Comma to add</span>
-                        </label>
-                        <div class="interactive-tag-box" id="token-tag-box">
-                            ${tagChipsHtml}
-                            <input type="text" class="tag-box-inline-input" placeholder="+ Add tag..." />
+
+                    <!-- RIGHT: TAXONOMY CONTROLS -->
+                    <div class="curate-form-fields">
+                        <div class="form-group-stacked">
+                            <label>Curation Provenance</label>
+                            <select name="isManual" class="manifest-glass-select">
+                                <option value="false" ${!token.isManual ? "selected" : ""}>✨ Auto-Detected (Permits auto-updates on scan)</option>
+                                <option value="true" ${token.isManual ? "selected" : ""}>🔒 Curated by GM (Locked from auto-overwrites)</option>
+                            </select>
                         </div>
-                        <input type="hidden" name="tags" id="token-tags-hidden" value="${tagsVal}" />
+
+                        <div class="form-group-stacked">
+                            <label>Species / Culture</label>
+                            <select name="species" class="manifest-glass-select">${speciesOpts}</select>
+                        </div>
+
+                        <div class="form-group-stacked is-hidden" id="single-new-species-row" style="display:none; margin-top:-2px;">
+                            <div class="new-species-input-wrapper">
+                                <i class="fas fa-plus-circle" style="color:#c084fc; font-size:0.85rem; flex-shrink:0;"></i>
+                                <input type="text" name="newSpeciesName" placeholder="Enter new species name (e.g. Aarakocra)..." autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="form-group-stacked">
+                            <label>Canonical Archetype</label>
+                            <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
+                        </div>
+
+                        <div class="form-group-stacked">
+                            <label>
+                                <span>Specific Role</span>
+                                <span class="label-hint">Optional</span>
+                            </label>
+                            <input type="text" name="role" value="${token.role || ""}" placeholder="e.g. watchman, cook, blacksmith">
+                        </div>
+
+                        <div class="form-group-stacked">
+                            <label>
+                                <span>Applied Tags</span>
+                                <span class="label-hint">Press Enter or Comma to add</span>
+                            </label>
+                            <div class="interactive-tag-box" id="token-tag-box">
+                                ${tagChipsHtml}
+                                <input type="text" class="tag-box-inline-input" placeholder="+ Add tag..." />
+                            </div>
+                            <input type="hidden" name="tags" id="token-tags-hidden" value="${tagsVal}" />
+                        </div>
                     </div>
                 </form>`,
             buttons: {
@@ -1827,49 +1962,57 @@ export class AvatarManifestApp extends FormApplication {
                     icon: '<i class="fas fa-save"></i>',
                     label: "Save Changes",
                     callback: async html => {
-                        let species = html.find('[name="species"]').val();
-                        if (species === "__add_new__") {
-                            const newName = html.find('[name="newSpeciesName"]').val()?.trim();
-                            if (newName) {
-                                const slug = SpeciesRegistry.normalizeKey(newName);
-                                await SpeciesRegistry.register({
-                                    id: slug,
-                                    label: newName.charAt(0).toUpperCase() + newName.slice(1),
-                                    tokenFolder: slug,
-                                    tokenFallbacks: ["generic"],
-                                    isCivilianSpecies: true
-                                });
-                                species = slug;
-                            } else {
-                                species = "generic";
+                        try {
+                            let species = html.find('[name="species"]').val();
+                            if (species === "__add_new__") {
+                                const newName = html.find('[name="newSpeciesName"]').val()?.trim();
+                                if (newName) {
+                                    const slug = SpeciesRegistry.normalizeKey(newName);
+                                    await SpeciesRegistry.register({
+                                        id: slug,
+                                        label: newName.charAt(0).toUpperCase() + newName.slice(1),
+                                        tokenFolder: slug,
+                                        tokenFallbacks: ["generic"],
+                                        isCivilianSpecies: true
+                                    });
+                                    species = slug;
+                                } else {
+                                    species = "generic";
+                                }
                             }
-                        }
-                        const archetype = html.find('[name="archetype"]').val();
-                        const role = html.find('[name="role"]').val() || archetype;
-                        const isManual = html.find('[name="isManual"]').val() === "true";
-                        
-                        const pendingInput = html.find('.tag-box-inline-input').val()?.trim()?.toLowerCase()?.replace(/^#+/, '');
-                        let tags = html.find('#token-tags-hidden').val().split(",").map(t => t.trim().toLowerCase().replace(/^#+/, "")).filter(Boolean);
-                        if (pendingInput && !tags.includes(pendingInput)) {
-                            tags.push(pendingInput);
-                        }
-                        if (species && species !== "generic" && !tags.includes(species)) {
-                            tags.push(species);
-                        }
+                            const archetype = html.find('[name="archetype"]').val();
+                            const role = html.find('[name="role"]').val() || archetype;
+                            const isManual = html.find('[name="isManual"]').val() === "true";
 
-                        await AvatarRegistryService.setTokenClassification(path, {
-                            species,
-                            archetype,
-                            role,
-                            tags,
-                            isManual
-                        });
-                        if (this._activeDialog === dlg) {
-                            this._activeDialog = null;
-                            this._hideBackdrop();
+                            const pendingInput = html.find('.tag-box-inline-input').val()?.trim()?.toLowerCase()?.replace(/^#+/, '');
+                            let tags = html.find('#token-tags-hidden').val().split(",").map(t => t.trim().toLowerCase().replace(/^#+/, "")).filter(Boolean);
+                            if (pendingInput && !tags.includes(pendingInput)) {
+                                tags.push(pendingInput);
+                            }
+                            if (species && species !== "generic" && !tags.includes(species)) {
+                                tags.push(species);
+                            }
+
+                            await AvatarRegistryService.setTokenClassification(path, {
+                                species,
+                                archetype,
+                                role,
+                                tags,
+                                isManual,
+                                isBlacklisted: isBlacklistedState
+                            });
+                            if (this._activeDialog === dlg) {
+                                this._activeDialog = null;
+                                this._hideBackdrop();
+                            }
+                            this.invalidateCache();
+                            this.render();
+                        } catch (err) {
+                            if (typeof ui !== "undefined" && ui.notifications) {
+                                ui.notifications.error("Failed to save curation: " + err.message);
+                            }
+                            console.error("Curation Save Error:", err);
                         }
-                        this.invalidateCache();
-                        this.render();
                     }
                 },
                 cancel: {
@@ -1882,9 +2025,56 @@ export class AvatarManifestApp extends FormApplication {
                 const $input = $box.find(".tag-box-inline-input");
                 const $hidden = html.find("#token-tags-hidden");
 
+                // Toggle Blacklist quick action
+                html.find("#dialog-toggle-blacklist-btn").click(ev => {
+                    ev.preventDefault();
+                    isBlacklistedState = !isBlacklistedState;
+                    const $btn = $(ev.currentTarget);
+                    $btn.toggleClass("is-active", isBlacklistedState);
+                    $btn.find("#blacklist-btn-text").text(isBlacklistedState ? "Restore" : "Blacklist");
+
+                    const $badge = html.find("#curate-live-badge");
+                    const $badgeText = html.find("#curate-live-badge-text");
+                    if (isBlacklistedState) {
+                        $badge.removeClass("is-curated is-auto").addClass("is-blacklisted");
+                        $badge.find("i").attr("class", "fas fa-ban");
+                        $badgeText.text("Blacklisted");
+                    } else {
+                        const isCurated = html.find('[name="isManual"]').val() === "true";
+                        $badge.removeClass("is-blacklisted").addClass(isCurated ? "is-curated" : "is-auto");
+                        $badge.find("i").attr("class", `fas ${isCurated ? "fa-lock" : "fa-wand-magic-sparkles"}`);
+                        $badgeText.text(isCurated ? "Curated" : "Auto");
+                    }
+                });
+
+                // Live badge updates on provenance dropdown change
+                html.find('[name="isManual"]').on("change", ev => {
+                    if (isBlacklistedState) return;
+                    const isCurated = $(ev.currentTarget).val() === "true";
+                    const $badge = html.find("#curate-live-badge");
+                    const $badgeText = html.find("#curate-live-badge-text");
+                    $badge.removeClass("is-blacklisted is-curated is-auto").addClass(isCurated ? "is-curated" : "is-auto");
+                    $badge.find("i").attr("class", `fas ${isCurated ? "fa-lock" : "fa-wand-magic-sparkles"}`);
+                    $badgeText.text(isCurated ? "Curated" : "Auto");
+                });
+
+                // Live role pill updates
+                html.find('[name="role"]').on("input", ev => {
+                    const roleVal = $(ev.currentTarget).val()?.trim() || "";
+                    const archVal = html.find('[name="archetype"]').val();
+                    const $pill = html.find("#curate-role-pill");
+                    const $text = html.find("#curate-role-pill-text");
+                    if (roleVal && roleVal !== archVal) {
+                        $text.text(roleVal);
+                        $pill.show();
+                    } else {
+                        $pill.hide();
+                    }
+                });
+
                 html.find('[name="species"]').on("change", ev => {
                     const isNew = $(ev.currentTarget).val() === "__add_new__";
-                    html.find("#single-new-species-row").toggle(isNew);
+                    html.find("#single-new-species-row").toggle(isNew).toggleClass("is-hidden", !isNew);
                     if (isNew) {
                         html.find('[name="newSpeciesName"]').focus();
                     }
@@ -1893,17 +2083,22 @@ export class AvatarManifestApp extends FormApplication {
                 html.find("#dialog-reset-auto-btn").click(ev => {
                     ev.preventDefault();
                     const parsed = AvatarScanner.parsePathMetadata(token.path || path);
-                    if (parsed.species && allSpecies.includes(parsed.species)) {
-                        html.find('[name="species"]').val(parsed.species);
-                    } else if (parsed.species) {
-                        html.find('[name="species"]').val("generic");
-                    }
+                    const targetSpecies = (parsed.species && allSpecies.includes(parsed.species)) ? parsed.species : (parsed.species ? "generic" : (token.species || "generic"));
+                    html.find('[name="species"]').val(targetSpecies).trigger("change");
                     if (parsed.archetype) {
                         html.find('[name="archetype"]').val(parsed.archetype);
                     }
-                    html.find('[name="role"]').val(parsed.role || "");
-                    html.find('[name="isManual"]').val("false");
-                    
+                    html.find('[name="role"]').val(parsed.role || "").trigger("input");
+                    html.find('[name="isManual"]').val("false").trigger("change");
+
+                    // Update live badge
+                    if (!isBlacklistedState) {
+                        const $badge = html.find("#curate-live-badge");
+                        $badge.removeClass("is-curated").addClass("is-auto");
+                        $badge.find("i").attr("class", "fas fa-wand-magic-sparkles");
+                        html.find("#curate-live-badge-text").text("Auto");
+                    }
+
                     $box.find(".editor-tag-chip").remove();
                     const clean = AvatarScanner.cleanTags(parsed.tags || []);
                     for (const t of clean) {
@@ -1984,7 +2179,7 @@ export class AvatarManifestApp extends FormApplication {
                 }
             },
             default: "save"
-        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal"], width: 540 });
+        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal"], width: 780 });
         this._activeDialog = dlg;
         dlg.render(true);
     }
@@ -2376,77 +2571,93 @@ export class AvatarManifestApp extends FormApplication {
         this._showBackdrop();
 
         let currentSearch = (searchTag || "").trim().toLowerCase();
+        let metricsData = AvatarRegistryService.getTagMetrics();
+        const CHUNK_SIZE = 60;
+        let renderedCount = CHUNK_SIZE;
+        let searchDebounceTimer = null;
+
+        const getFilteredMetrics = () => {
+            return currentSearch
+                ? metricsData.metrics.filter(m => m.tag.includes(currentSearch))
+                : metricsData.metrics;
+        };
+
+        const renderRow = (m) => `
+            <tr style="border-bottom:1px solid rgba(140,110,240,0.12); transition:background 0.15s ease;" class="tag-row ${m.isRedundant ? 'is-redundant-row' : ''}">
+                <td style="padding:6px 10px; font-weight:600; font-size:0.84rem; color:${m.isRedundant ? '#fbbf24' : '#fff'};">
+                    #${m.tag}
+                    ${m.isRedundant ? '<span style="margin-left:6px; font-size:0.68rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> Redundant</span>' : ''}
+                </td>
+                <td style="padding:6px 10px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center;">
+                    <strong>${m.count}</strong> <span style="font-size:0.75em; opacity:0.7;">(${m.pct}%)</span>
+                </td>
+                <td style="padding:6px 10px; text-align:right;">
+                    <div style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
+                        <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" draggable="false" title="Filter workspace to #${m.tag}">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <button type="button" class="tag-action-btn tag-purge-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="Purge #${m.tag} from all ${m.count} tokens">
+                            <i class="fas fa-trash-can"></i> Purge
+                        </button>
+                        <button type="button" class="tag-action-btn tag-ignore-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="Purge #${m.tag} and permanently ignore in future scans">
+                            <i class="fas fa-ban"></i> Ignore
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
 
         const buildContent = () => {
-            const metricsData = AvatarRegistryService.getTagMetrics();
-            const { metrics, totalTokens, totalUniqueTags, redundantTags, ignoredTags } = metricsData;
+            const { totalTokens, totalUniqueTags, redundantTags, ignoredTags } = metricsData;
+            const filteredMetrics = getFilteredMetrics();
 
-            const filteredMetrics = currentSearch
-                ? metrics.filter(m => m.tag.includes(currentSearch))
-                : metrics;
-
+            // 2-Deck Redundancy Banner (Rubric Rule 21 compliant)
             const redundantBanner = redundantTags.length > 0 ? `
-                <div class="tag-redundancy-alert-card" style="background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.4); border-radius:6px; padding:10px 12px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:4px;">
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-weight:700; color:#fbbf24; font-size:0.88rem; display:flex; align-items:center; gap:6px;">
+                <div class="tag-redundancy-alert-card">
+                    <div class="tag-redundancy-header-deck">
+                        <div class="tag-redundancy-title">
                             <i class="fas fa-triangle-exclamation"></i>
                             <span>${redundantTags.length} Redundant Tag(s) Flagged</span>
                         </div>
-                        <p style="margin:4px 0 0 0; font-size:0.8rem; color:rgba(254,243,199,0.9); line-height:1.4;">
-                            These tags appear on 75%+ of your tokens (e.g. ${redundantTags.map(t => `<code style="background:rgba(0,0,0,0.3); padding:1px 5px; border-radius:3px; color:#fde68a;">#${t}</code>`).join(", ")}) and typically originate from root folder scans.
-                        </p>
+                        <button type="button" class="ionrift-btn purge-all-redundant-btn" draggable="false" title="Purge all redundant tags and add them to Ignored Tags">
+                            <i class="fas fa-trash-can"></i> Purge All Redundant
+                        </button>
                     </div>
-                    <button type="button" class="ionrift-btn purge-all-redundant-btn" style="flex:0 0 auto; height:28px; line-height:26px; padding:0 10px; font-size:0.78rem; background:rgba(239,68,68,0.25); border:1px solid rgba(239,68,68,0.5); color:#fca5a5; cursor:pointer; white-space:nowrap;" title="Purge all redundant tags and add them to Ignored Tags">
-                        <i class="fas fa-trash-can"></i> Purge All Redundant
-                    </button>
+                    <div class="tag-redundancy-body-deck">
+                        <p style="margin:0 0 6px 0;">These tags appear on 75%+ of your tokens and typically originate from root folder scans:</p>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                            ${redundantTags.map(t => {
+                                const m = metricsData.metrics.find(x => x.tag === t);
+                                return `<span class="redundant-tag-pill">#${t} <small style="opacity:0.85;">(${m ? m.count : ''} · ${m ? m.pct + '%' : ''})</small></span>`;
+                            }).join("")}
+                        </div>
+                    </div>
                 </div>
             ` : '';
 
             const ignoredChipsHtml = ignoredTags.length > 0
                 ? ignoredTags.map(t => `
-                    <span class="ignored-tag-chip" style="display:inline-flex; align-items:center; gap:5px; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:4px; padding:2px 8px; font-size:0.75rem; color:#fca5a5;">
+                    <span class="ignored-tag-chip">
                         <i class="fas fa-ban" style="font-size:0.7em;"></i> #${t}
-                        <a class="remove-ignored-chip-btn" data-tag="${t}" style="cursor:pointer; color:#fee2e2; font-weight:700; text-decoration:none;" title="Remove from ignored list">&times;</a>
+                        <a class="remove-ignored-chip-btn" data-tag="${t}" draggable="false" title="Remove #${t} from ignored list">&times;</a>
                     </span>
                 `).join("")
-                : `<span style="font-size:0.78rem; color:rgba(180,165,220,0.5); font-style:italic;">No tags currently ignored</span>`;
+                : `<span style="font-size:0.78rem; color:rgba(180,165,220,0.5); font-style:italic;">No tags currently ignored. Add root folder names or noise tags here.</span>`;
 
-            const rowsHtml = filteredMetrics.length > 0
-                ? filteredMetrics.map(m => `
-                    <tr style="border-bottom:1px solid rgba(140,110,240,0.12); transition:background 0.15s ease;" class="tag-row ${m.isRedundant ? 'is-redundant-row' : ''}">
-                        <td style="padding:6px 8px; font-weight:600; font-size:0.85rem; color:${m.isRedundant ? '#fbbf24' : '#fff'};">
-                            #${m.tag}
-                            ${m.isRedundant ? '<span style="margin-left:6px; font-size:0.7rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> Redundant</span>' : ''}
-                        </td>
-                        <td style="padding:6px 8px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center;">
-                            <strong>${m.count}</strong> <span style="font-size:0.75em; opacity:0.7;">(${m.pct}%)</span>
-                        </td>
-                        <td style="padding:6px 8px; text-align:right;">
-                            <div style="display:inline-flex; align-items:center; gap:5px; justify-content:flex-end;">
-                                <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(140,110,240,0.2); border:1px solid rgba(140,110,240,0.4); border-radius:3px; color:#d8b4fe; cursor:pointer;" title="Filter workspace to #${m.tag}">
-                                    <i class="fas fa-filter"></i> Filter
-                                </button>
-                                <button type="button" class="tag-action-btn tag-purge-btn" data-tag="${m.tag}" data-count="${m.count}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); border-radius:3px; color:#fca5a5; cursor:pointer;" title="Purge #${m.tag} from all ${m.count} tokens">
-                                    <i class="fas fa-trash-can"></i> Purge
-                                </button>
-                                <button type="button" class="tag-action-btn tag-ignore-btn" data-tag="${m.tag}" data-count="${m.count}" style="padding:2px 8px; height:24px; line-height:22px; font-size:0.75rem; background:rgba(220,38,38,0.25); border:1px solid rgba(220,38,38,0.55); border-radius:3px; color:#fecaca; cursor:pointer;" title="Purge #${m.tag} and permanently ignore in future scans">
-                                    <i class="fas fa-ban"></i> Purge & Ignore
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join("")
-                : `<tr><td colspan="3" style="text-align:center; padding:16px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
+            // Progressive initial slice
+            const visibleRows = filteredMetrics.length > 0
+                ? filteredMetrics.slice(0, renderedCount).map(renderRow).join("")
+                : `<tr><td colspan="3" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
 
             return `
-                <div class="tag-manager-modal-inner" style="display:flex; flex-direction:column; gap:10px; padding:4px 0; max-height:76vh; overflow:hidden;">
+                <div class="tag-manager-modal-inner" style="display:flex; flex-direction:column; gap:10px; padding:2px 0; max-height:76vh; overflow:hidden;">
                     <!-- Overview Bar -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:8px 12px; flex-shrink:0;">
+                    <div class="tag-manager-overview">
                         <div style="display:flex; align-items:center; gap:16px;">
-                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.8);">Total Tokens: <strong style="color:#fff;">${totalTokens}</strong></span>
-                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.8);">Unique Tags: <strong style="color:#d8b4fe;">${totalUniqueTags}</strong></span>
+                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.85);">Total Tokens: <strong style="color:#fff;">${totalTokens}</strong></span>
+                            <span style="font-size:0.82rem; color:rgba(200,190,240,0.85);">Unique Tags: <strong style="color:#d8b4fe;">${totalUniqueTags}</strong></span>
                         </div>
-                        <span style="font-size:0.82rem; color:${redundantTags.length > 0 ? '#fbbf24' : '#4ade80'}; font-weight:600;">
+                        <span style="font-size:0.82rem; color:${redundantTags.length > 0 ? '#fbbf24' : '#4ade80'}; font-weight:600; display:flex; align-items:center; gap:5px;">
                             ${redundantTags.length > 0 ? `<i class="fas fa-triangle-exclamation"></i> ${redundantTags.length} Redundant` : '<i class="fas fa-check-circle"></i> Clean Taxonomy'}
                         </span>
                     </div>
@@ -2454,44 +2665,45 @@ export class AvatarManifestApp extends FormApplication {
                     ${redundantBanner}
 
                     <!-- Ignored Tags Card -->
-                    <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:8px 12px; flex-shrink:0;">
+                    <div style="background:rgba(14,10,24,0.75); border:1px solid rgba(140,110,240,0.2); border-radius:6px; padding:8px 12px; flex-shrink:0;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                            <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(200,190,240,0.7); margin:0;">
+                            <label style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(200,190,240,0.75); margin:0; display:flex; align-items:center; gap:6px;">
                                 <i class="fas fa-ban" style="color:#f87171;"></i> Ignored Tags & Stopwords (Skipped during scans)
                             </label>
                             <div style="display:flex; align-items:center; gap:6px;">
-                                <input type="text" id="new-ignored-tag-input" placeholder="e.g. tokesn, artpack" style="height:24px; padding:2px 8px; font-size:0.78rem; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:3px; color:#fff; width:140px;" />
-                                <button type="button" id="add-ignored-tag-btn" class="ionrift-btn" style="height:24px; line-height:22px; padding:0 8px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Add word to ignored tags">
+                                <input type="text" id="new-ignored-tag-input" placeholder="e.g. tokens, noise" style="height:24px; padding:2px 8px; font-size:0.78rem; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:3px; color:#fff; width:160px;" />
+                                <button type="button" id="add-ignored-tag-btn" class="ionrift-btn" draggable="false" style="height:24px; line-height:22px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Add word to ignored tags">
                                     <i class="fas fa-plus"></i> Ignore
                                 </button>
                             </div>
                         </div>
-                        <div class="ignored-chips-container" style="display:flex; flex-wrap:wrap; gap:5px; max-height:56px; overflow-y:auto;">
+                        <div class="ignored-chips-container" style="display:flex; flex-wrap:wrap; gap:5px; max-height:56px; overflow-y:auto; padding:2px 0;">
                             ${ignoredChipsHtml}
                         </div>
                     </div>
 
-                    <!-- Search Filter -->
-                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                    <!-- Search Filter Bar -->
+                    <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
                         <div style="position:relative; flex:1;">
-                            <i class="fas fa-search" style="position:absolute; left:8px; top:8px; font-size:0.8rem; color:rgba(180,165,220,0.5);"></i>
-                            <input type="text" id="tag-manager-search-input" value="${currentSearch}" placeholder="Filter active tags list..." style="width:100%; height:28px; padding-left:26px; font-size:0.82rem; background:rgba(0,0,0,0.35); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff;" />
+                            <i class="fas fa-search" style="position:absolute; left:9px; top:8px; font-size:0.8rem; color:rgba(180,165,220,0.5);"></i>
+                            <input type="text" id="tag-manager-search-input" value="${currentSearch}" placeholder="Filter active tags list..." style="width:100%; height:28px; padding-left:28px; padding-right:24px; font-size:0.82rem; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; box-shadow:inset 0 2px 4px rgba(0,0,0,0.6);" />
+                            <a id="tag-search-clear-btn" style="position:absolute; right:8px; top:5px; color:rgba(180,165,220,0.5); cursor:pointer; font-size:0.9rem; text-decoration:none; display:${currentSearch ? 'block' : 'none'};" title="Clear filter">&times;</a>
                         </div>
-                        <span style="font-size:0.78rem; color:rgba(180,165,220,0.6); flex-shrink:0;">Showing ${filteredMetrics.length} of ${totalUniqueTags}</span>
+                        <span id="tag-manager-count-label" style="font-size:0.78rem; color:rgba(180,165,220,0.7); flex-shrink:0;">Showing ${filteredMetrics.length} of ${totalUniqueTags}</span>
                     </div>
 
-                    <!-- Scrollable Table -->
-                    <div class="tag-manager-table-scroll" style="flex:1 1 0; min-height:180px; max-height:360px; overflow-y:auto; background:rgba(0,0,0,0.2); border:1px solid rgba(140,110,240,0.2); border-radius:4px;">
+                    <!-- Scrollable Table with Progressive Windowing -->
+                    <div class="tag-manager-table-scroll" style="flex:1 1 0; min-height:220px; max-height:420px; overflow-y:auto; background:rgba(0,0,0,0.25); border:1px solid rgba(140,110,240,0.2); border-radius:4px;">
                         <table style="width:100%; border-collapse:collapse; text-align:left;">
                             <thead>
-                                <tr style="background:rgba(18,14,32,0.85); border-bottom:1px solid rgba(140,110,240,0.25); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7); position:sticky; top:0; z-index:2;">
-                                    <th style="padding:6px 8px;">Tag Name</th>
-                                    <th style="padding:6px 8px; text-align:center; width:120px;">Tokens Applied</th>
-                                    <th style="padding:6px 8px; text-align:right; width:220px;">Actions</th>
+                                <tr style="background:rgba(18,14,32,0.92); border-bottom:1px solid rgba(140,110,240,0.25); font-size:0.75rem; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.75); position:sticky; top:0; z-index:2;">
+                                    <th style="padding:7px 10px;">Tag Name</th>
+                                    <th style="padding:7px 10px; text-align:center; width:110px;">Tokens Applied</th>
+                                    <th style="padding:7px 10px; text-align:right; width:230px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tag-manager-tbody">
-                                ${rowsHtml}
+                                ${visibleRows}
                             </tbody>
                         </table>
                     </div>
@@ -2502,19 +2714,65 @@ export class AvatarManifestApp extends FormApplication {
         let dlg;
 
         const attachDialogListeners = ($html) => {
-            const refreshModal = () => {
+            // Full refresh helper when data is modified
+            const refreshAll = () => {
+                metricsData = AvatarRegistryService.getTagMetrics({ force: true });
+                renderedCount = CHUNK_SIZE;
                 $html.find(".tag-manager-modal-inner").replaceWith(buildContent());
-                attachDialogListeners($html);
+                bindScroll();
             };
 
-            // Search filter
-            $html.find("#tag-manager-search-input").on("input", ev => {
+            // Progressive infinite scroll
+            let isAppending = false;
+            const bindScroll = () => {
+                const scrollEl = $html.find(".tag-manager-table-scroll");
+                scrollEl.off("scroll").on("scroll", ev => {
+                    if (isAppending) return;
+                    const el = ev.currentTarget;
+                    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 140) {
+                        const filtered = getFilteredMetrics();
+                        if (renderedCount < filtered.length) {
+                            isAppending = true;
+                            requestAnimationFrame(() => {
+                                const nextChunk = filtered.slice(renderedCount, renderedCount + CHUNK_SIZE);
+                                renderedCount += nextChunk.length;
+                                $html.find("#tag-manager-tbody").append(nextChunk.map(renderRow).join(""));
+                                isAppending = false;
+                            });
+                        }
+                    }
+                });
+            };
+            bindScroll();
+
+            // Surgical search filter updates (zero DOM thrashing, preserved input focus)
+            const updateFilteredRows = () => {
+                renderedCount = CHUNK_SIZE;
+                const filtered = getFilteredMetrics();
+                const visibleRows = filtered.length > 0
+                    ? filtered.slice(0, renderedCount).map(renderRow).join("")
+                    : `<tr><td colspan="3" style="text-align:center; padding:18px; font-size:0.82rem; color:rgba(180,165,220,0.6); font-style:italic;">No matching tags found.</td></tr>`;
+                
+                $html.find("#tag-manager-tbody").html(visibleRows);
+                $html.find("#tag-manager-count-label").text(`Showing ${filtered.length} of ${metricsData.totalUniqueTags}`);
+                $html.find("#tag-search-clear-btn").css("display", currentSearch ? "block" : "none");
+                $html.find(".tag-manager-table-scroll").scrollTop(0);
+            };
+
+            $html.on("input", "#tag-manager-search-input", ev => {
                 currentSearch = $(ev.currentTarget).val().trim().toLowerCase();
-                refreshModal();
-                $html.find("#tag-manager-search-input").focus().val("").val(currentSearch);
+                if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(updateFilteredRows, 120);
             });
 
-            // Add Ignored Tag
+            $html.on("click", "#tag-search-clear-btn", ev => {
+                ev.preventDefault();
+                currentSearch = "";
+                $html.find("#tag-manager-search-input").val("").focus();
+                updateFilteredRows();
+            });
+
+            // Delegated Handlers (Eliminates 16,000+ listener bindings)
             const commitAddIgnored = async () => {
                 const input = $html.find("#new-ignored-tag-input");
                 const val = input.val()?.trim()?.toLowerCase()?.replace(/^#+/, "");
@@ -2523,19 +2781,18 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.info(`Ionrift | Added '#${val}' to ignored tags (purged from ${result.purgedCount} tokens).`);
                 }
-                refreshModal();
+                refreshAll();
             };
 
-            $html.find("#add-ignored-tag-btn").off("click").on("click", commitAddIgnored);
-            $html.find("#new-ignored-tag-input").off("keydown").on("keydown", ev => {
+            $html.on("click", "#add-ignored-tag-btn", commitAddIgnored);
+            $html.on("keydown", "#new-ignored-tag-input", ev => {
                 if (ev.key === "Enter") {
                     ev.preventDefault();
                     commitAddIgnored();
                 }
             });
 
-            // Remove Ignored Tag
-            $html.find(".remove-ignored-chip-btn").off("click").on("click", async ev => {
+            $html.on("click", ".remove-ignored-chip-btn", async ev => {
                 ev.preventDefault();
                 const tag = $(ev.currentTarget).data("tag");
                 if (tag) {
@@ -2543,12 +2800,11 @@ export class AvatarManifestApp extends FormApplication {
                     if (typeof ui !== "undefined" && ui.notifications) {
                         ui.notifications.info(`Ionrift | Removed '#${tag}' from ignored tags.`);
                     }
-                    refreshModal();
+                    refreshAll();
                 }
             });
 
-            // Filter Workspace to Tag
-            $html.find(".tag-filter-btn").off("click").on("click", ev => {
+            $html.on("click", ".tag-filter-btn", ev => {
                 ev.preventDefault();
                 const tag = $(ev.currentTarget).data("tag");
                 if (tag) {
@@ -2559,8 +2815,7 @@ export class AvatarManifestApp extends FormApplication {
                 }
             });
 
-            // Purge Tag Globally
-            $html.find(".tag-purge-btn").off("click").on("click", async ev => {
+            $html.on("click", ".tag-purge-btn", async ev => {
                 ev.preventDefault();
                 const tag = $(ev.currentTarget).data("tag");
                 const count = $(ev.currentTarget).data("count");
@@ -2572,7 +2827,8 @@ export class AvatarManifestApp extends FormApplication {
                     `,
                     yesLabel: "Purge Tag",
                     yesIcon: "fa-trash-can",
-                    isDestructive: true
+                    isDestructive: true,
+                    keepParent: true
                 });
                 if (!confirmed) return;
 
@@ -2580,11 +2836,10 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.info(`Ionrift | Purged '#${tag}' from ${purged} tokens.`);
                 }
-                refreshModal();
+                refreshAll();
             });
 
-            // Purge & Ignore Tag
-            $html.find(".tag-ignore-btn").off("click").on("click", async ev => {
+            $html.on("click", ".tag-ignore-btn", async ev => {
                 ev.preventDefault();
                 const tag = $(ev.currentTarget).data("tag");
                 const count = $(ev.currentTarget).data("count");
@@ -2596,7 +2851,8 @@ export class AvatarManifestApp extends FormApplication {
                     `,
                     yesLabel: "Purge & Ignore",
                     yesIcon: "fa-ban",
-                    isDestructive: true
+                    isDestructive: true,
+                    keepParent: true
                 });
                 if (!confirmed) return;
 
@@ -2604,13 +2860,11 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.info(`Ionrift | Purged '#${tag}' from ${result.purgedCount} tokens and added to Ignored Tags.`);
                 }
-                refreshModal();
+                refreshAll();
             });
 
-            // Purge All Redundant Tags
-            $html.find(".purge-all-redundant-btn").off("click").on("click", async ev => {
+            $html.on("click", ".purge-all-redundant-btn", async ev => {
                 ev.preventDefault();
-                const metricsData = AvatarRegistryService.getTagMetrics();
                 const redundant = metricsData.redundantTags;
                 if (!redundant || redundant.length === 0) return;
 
@@ -2622,7 +2876,8 @@ export class AvatarManifestApp extends FormApplication {
                     `,
                     yesLabel: "Purge & Ignore All",
                     yesIcon: "fa-trash-can",
-                    isDestructive: true
+                    isDestructive: true,
+                    keepParent: true
                 });
                 if (!confirmed) return;
 
@@ -2634,7 +2889,7 @@ export class AvatarManifestApp extends FormApplication {
                 if (typeof ui !== "undefined" && ui.notifications) {
                     ui.notifications.info(`Ionrift | Cleaned ${redundant.length} redundant tags from ${totalPurged} token instances.`);
                 }
-                refreshModal();
+                refreshAll();
             });
         };
 
@@ -2655,6 +2910,7 @@ export class AvatarManifestApp extends FormApplication {
                 attachDialogListeners(html);
             },
             close: () => {
+                if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
                 if (this._activeDialog === dlg) {
                     this._activeDialog = null;
                     this._hideBackdrop();
@@ -2663,7 +2919,7 @@ export class AvatarManifestApp extends FormApplication {
                 this.render();
             },
             default: "close"
-        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal", "tag-manager-modal"], width: 620 });
+        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal", "tag-manager-modal"], width: 680 });
 
         this._activeDialog = dlg;
         dlg.render(true);

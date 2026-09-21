@@ -223,6 +223,15 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+    game.settings.register(MODULE_ID, "manifestDiscountNonCurated", {
+        name: "Discount Non-Curated Tokens",
+        hint: "When enabled, the Token Manifest discounts auto-detected tokens and only counts GM-curated tokens.",
+        scope: "client",
+        config: false,
+        type: Boolean,
+        default: false
+    });
+
     const isTokenManifestEnabled = () => {
         try {
             return Boolean(game.settings.get(MODULE_ID, "enableTokenManifest"));

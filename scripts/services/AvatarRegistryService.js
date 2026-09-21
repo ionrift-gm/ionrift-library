@@ -77,11 +77,21 @@ export class AvatarRegistryService {
             : this.getDefaultState();
     }
 
+    static _cachedTagMetrics = null;
+
+    /**
+     * Invalidates cached tag metrics when catalog or tags are modified.
+     */
+    static invalidateMetricsCache() {
+        this._cachedTagMetrics = null;
+    }
+
     /**
      * Persists updated registry state to world settings and debounces cross-world curation flush.
      * @param {object} state
      */
     static async saveState(state) {
+        this.invalidateMetricsCache();
         this._inMemoryState = foundry.utils.deepClone(state);
         if (typeof game !== "undefined" && game.settings) {
             try {
@@ -116,6 +126,7 @@ export class AvatarRegistryService {
                 state.ignoredTags = Array.from(new Set([...(state.ignoredTags || []), ...globalCuration.ignoredTags]));
             }
             this._inMemoryState = foundry.utils.deepClone(state);
+            this.invalidateMetricsCache();
             if (typeof game !== "undefined" && game.settings?.set) {
                 try {
                     await game.settings.set("ionrift-library", this.SETTING_KEY, state);
@@ -331,7 +342,11 @@ export class AvatarRegistryService {
      * Computes catalog-wide tag metrics, frequency counts, and flags potentially redundant tags.
      * @returns {{ metrics: Array<{ tag: string, count: number, pct: number, isRedundant: boolean }>, totalTokens: number, totalUniqueTags: number, redundantTags: Array<string>, ignoredTags: Array<string> }}
      */
-    static getTagMetrics(options = { clone: false }) {
+    static getTagMetrics(options = { clone: false, force: false }) {
+        if (!options.force && this._cachedTagMetrics) {
+            return options.clone ? foundry.utils.deepClone(this._cachedTagMetrics) : this._cachedTagMetrics;
+        }
+
         const state = this.getState(options);
         const catalog = state.catalog || {};
         const totalTokens = Object.keys(catalog).length;
@@ -360,13 +375,15 @@ export class AvatarRegistryService {
         // Sort by count descending, then alphabetical
         metrics.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
 
-        return {
+        this._cachedTagMetrics = {
             metrics,
             totalTokens,
             totalUniqueTags: metrics.length,
             redundantTags,
             ignoredTags: state.ignoredTags || []
         };
+
+        return options.clone ? foundry.utils.deepClone(this._cachedTagMetrics) : this._cachedTagMetrics;
     }
 
     // -------------------------------------------------------------------
@@ -686,18 +703,38 @@ export class AvatarRegistryService {
 
     /**
      * Returns curated or best-matching active tokens for a given species and archetype/role.
-     * Excludes blacklisted tokens.
+     * Excludes blacklisted tokens and tokens under banned folders.
+     * Respects discountNonCurated if enabled in options or world settings.
      * @param {string} species
      * @param {string} roleOrArchetype
+     * @param {object} [options={}]
+     * @param {boolean} [options.discountNonCurated]
      * @returns {string[]} Array of file paths
      */
-    static getTokensFor(species, roleOrArchetype) {
+    static getTokensFor(species, roleOrArchetype, options = {}) {
         const s = (species || RESERVOIR_SPECIES_KEY).toLowerCase();
         const r = (roleOrArchetype || "").toLowerCase();
         const catalog = this.getCatalog();
         const activeList = this.getActiveSpeciesList();
+        const bannedFolders = this.getBannedFolders({ clone: false });
 
-        const candidates = Object.values(catalog).filter(token => !token.isBlacklisted);
+        let discountNonCurated = options?.discountNonCurated;
+        if (discountNonCurated === undefined) {
+            try {
+                if (typeof game !== "undefined" && game.settings?.get) {
+                    discountNonCurated = Boolean(game.settings.get("ionrift-library", "manifestDiscountNonCurated"));
+                }
+            } catch {
+                discountNonCurated = false;
+            }
+        }
+
+        const candidates = Object.values(catalog).filter(token => {
+            if (!token || token.isBlacklisted) return false;
+            if (this.isFolderBanned(token.path, bannedFolders)) return false;
+            if (discountNonCurated && !token.isManual) return false;
+            return true;
+        });
         if (candidates.length === 0) return [];
 
         // 0.5 If species is "other", prioritize registered exotic species tokens before unassigned reservoir
@@ -749,13 +786,13 @@ export class AvatarRegistryService {
             }
         }
 
-        // 2. Species-wide loose matches (prefer species-commoner or any art of this species over cross-species!)
-        const speciesLoose = candidates.filter(t => t.species === s);
-        if (speciesLoose.length > 0) {
-            const commoners = speciesLoose.filter(t =>
-                t.archetype === "commoner" || t.role === "commoner" || !t.archetype
-            );
-            return (commoners.length > 0 ? commoners : speciesLoose).map(t => t.path);
+        // 2. Species-wide commoner matches (fall back to species commoner if role-specific art is missing)
+        const speciesCommoners = candidates.filter(t =>
+            t.species === s && (t.archetype === "commoner" || t.role === "commoner" || !t.archetype)
+        );
+        if (speciesCommoners.length > 0) {
+            const manual = speciesCommoners.filter(t => t.isManual);
+            return (manual.length > 0 ? manual : speciesCommoners).map(t => t.path);
         }
 
         // 2.5 Fallback Chain matches (e.g. thri-kreen -> insectoid -> monstrous)
@@ -774,13 +811,16 @@ export class AvatarRegistryService {
             if (fbLoose.length > 0) return fbLoose.map(t => t.path);
         }
 
-        // 3. Unassigned Reservoir match for this archetype/trade (only if this species has zero art)
-        const reservoirArchetypeMatches = candidates.filter(t =>
-            (!t.species || t.species === RESERVOIR_SPECIES_KEY || !activeList.includes(t.species)) &&
-            (t.role === r || t.archetype === r)
-        );
-        if (reservoirArchetypeMatches.length > 0) {
-            return reservoirArchetypeMatches.map(t => t.path);
+        // 3. Unassigned Reservoir match for this archetype/trade (only for generic/unassigned species queries, or explicit cross-species option)
+        const isGenericSpeciesQuery = !species || s === RESERVOIR_SPECIES_KEY || s === "other" || !activeList.includes(s);
+        if (isGenericSpeciesQuery || options?.allowCrossSpecies) {
+            const reservoirArchetypeMatches = candidates.filter(t =>
+                (!t.species || t.species === RESERVOIR_SPECIES_KEY || !activeList.includes(t.species)) &&
+                (t.role === r || t.archetype === r)
+            );
+            if (reservoirArchetypeMatches.length > 0) {
+                return reservoirArchetypeMatches.map(t => t.path);
+            }
         }
 
         // 4. Reservoir loose/commoner art (guards civilian queries against creature contamination)
@@ -804,6 +844,85 @@ export class AvatarRegistryService {
         return [];
     }
 
+    /**
+     * Returns the variety health status for a given species and archetype/role.
+     * Useful for UI badges, pips, and diagnostics.
+     * @param {string} species
+     * @param {string} roleOrArchetype
+     * @param {object} [options={}]
+     * @returns {{ status: string, count: number, level: "green"|"amber"|"red", color: string, label: string }}
+     */
+    static getTokenHealth(species, roleOrArchetype, options = {}) {
+        const s = (species || RESERVOIR_SPECIES_KEY).toLowerCase();
+        const r = (roleOrArchetype || "").toLowerCase();
+        const catalog = this.getCatalog();
+        const bannedFolders = this.getBannedFolders({ clone: false });
+        let discountNonCurated = options?.discountNonCurated;
+        if (discountNonCurated === undefined) {
+            try {
+                if (typeof game !== "undefined" && game.settings?.get) {
+                    discountNonCurated = Boolean(game.settings.get("ionrift-library", "manifestDiscountNonCurated"));
+                }
+            } catch {
+                discountNonCurated = false;
+            }
+        }
+
+        const candidates = Object.values(catalog).filter(token => {
+            if (!token || token.isBlacklisted) return false;
+            if (this.isFolderBanned(token.path, bannedFolders)) return false;
+            if (discountNonCurated && !token.isManual) return false;
+            return true;
+        });
+
+        // Exact match on species AND (role or archetype)
+        const exactMatches = candidates.filter(t =>
+            (t.species === s) && (t.role === r || t.archetype === r)
+        );
+        const exactCount = exactMatches.length;
+
+        if (exactCount >= 5) {
+            return {
+                status: "good",
+                count: exactCount,
+                level: "green",
+                color: "#4ade80",
+                label: `${exactCount} token${exactCount === 1 ? "" : "s"} (Healthy variety)`
+            };
+        }
+        if (exactCount >= 1) {
+            return {
+                status: "thin",
+                count: exactCount,
+                level: "amber",
+                color: "#facc15",
+                label: `${exactCount} token${exactCount === 1 ? "" : "s"} (Thin variety)`
+            };
+        }
+
+        // Check if species commoner fallback exists
+        const speciesCommoners = candidates.filter(t =>
+            t.species === s && (t.archetype === "commoner" || t.role === "commoner" || !t.archetype)
+        );
+        if (speciesCommoners.length > 0) {
+            return {
+                status: "fallback",
+                count: speciesCommoners.length,
+                level: "amber",
+                color: "#fb923c",
+                label: `Fallback to commoner (${speciesCommoners.length} token${speciesCommoners.length === 1 ? "" : "s"})`
+            };
+        }
+
+        return {
+            status: "missing",
+            count: 0,
+            level: "red",
+            color: "#f87171",
+            label: "Missing art (Using Foundry default)"
+        };
+    }
+
     // -------------------------------------------------------------------
     // Coverage Intelligence Engine
     // -------------------------------------------------------------------
@@ -813,11 +932,18 @@ export class AvatarRegistryService {
      * Calculates density, target depth (10 per archetype = 100%), and fallback states across active species.
      * Excess commoners are capped at target depth and cannot artificially boost coverage of missing roles.
      * @param {number} [targetPerArchetype=TARGET_PER_ARCHETYPE]
+     * @param {object} [options={}]
+     * @param {boolean} [options.discountNonCurated=false]
      * @returns {object}
      */
-    static getCoverageReport(targetPerArchetype = TARGET_PER_ARCHETYPE) {
+    static getCoverageReport(targetPerArchetype = TARGET_PER_ARCHETYPE, options = {}) {
+        const discountNonCurated = Boolean(options?.discountNonCurated);
         const catalog = (this._inMemoryState?.catalog) || this.getCatalog({ clone: false });
-        const activeTokens = Object.values(catalog).filter(t => !t.isBlacklisted);
+        const bannedFolders = this.getBannedFolders({ clone: false });
+        const allActiveTokens = Object.values(catalog).filter(t => !t.isBlacklisted && !this.isFolderBanned(t.path, bannedFolders));
+        const activeTokens = discountNonCurated
+            ? allActiveTokens.filter(t => t.isManual)
+            : allActiveTokens;
         const speciesList = this.getActiveSpeciesList();
         const primarySpeciesList = this.getPrimarySpeciesList();
         const exoticSpeciesList = this.getExoticSpeciesList();
@@ -1316,9 +1442,11 @@ export class AvatarRegistryService {
 
         return {
             totalTokens: activeTokens.length,
+            rawTotalTokens: allActiveTokens.length,
+            discountNonCurated,
             reservoirTokens,
             blacklistedTokens: Object.values(catalog).filter(t => t.isBlacklisted).length,
-            manualTokens: activeTokens.filter(t => t.isManual).length,
+            manualTokens: allActiveTokens.filter(t => t.isManual).length,
             overallCoveragePct,
             targetPerArchetype,
             archetypes: CANONICAL_ARCHETYPES,

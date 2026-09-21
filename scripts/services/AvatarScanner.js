@@ -247,6 +247,10 @@ export class AvatarScanner {
         // Long numeric strings / timestamps (e.g. 20230927195911, 20240101)
         if (/^\d{5,}$/.test(lower)) return true;
 
+        // URL-encoding remnants (e.g. 20cane, 20guard, %20, raw hex escapes)
+        if (/^20[a-z0-9]+$/i.test(lower)) return true;
+        if (/%[0-9a-f]{2}/i.test(lower)) return true;
+
         // Short numeric index / suffix (e.g. 2s, 01a, 01, 100, 4k, 2k)
         if (/^\d+[a-z]{0,2}$/i.test(lower)) return true;
 
@@ -317,7 +321,8 @@ export class AvatarScanner {
                             path: normalized,
                             filename: normalized.split("/").pop(),
                             folder: normalized.substring(0, normalized.lastIndexOf("/")),
-                            tags: this.cleanTags(existing.tags)
+                            tags: this.cleanTags(existing.tags),
+                            isBlacklisted: existing.isBlacklisted || isFolderBanned || false
                         };
                         continue;
                     }
