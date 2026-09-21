@@ -5686,6 +5686,25 @@ button.ionrift-badge.classifier-override-btn:hover {
     background: rgba(245, 158, 11, 0.18) !important;
 }
 
+.tag-manager-modal .tag-row.is-selected-row {
+    background: rgba(168, 85, 247, 0.15) !important;
+}
+
+.tag-manager-modal .tag-row.is-selected-row:hover {
+    background: rgba(168, 85, 247, 0.25) !important;
+}
+
+.tag-manager-modal .tag-row.is-redundant-row.is-selected-row {
+    background: rgba(245, 158, 11, 0.16) !important;
+    border-left: 2px solid #a855f7;
+}
+
+.tag-manager-modal .tag-row-checkbox,
+.tag-manager-modal #tag-select-all-visible {
+    accent-color: #a855f7 !important;
+    cursor: pointer;
+}
+
 .tag-manager-modal .tag-action-btn {
     display: inline-flex !important;
     align-items: center;

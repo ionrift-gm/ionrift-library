@@ -263,47 +263,76 @@ export class AvatarRegistryService {
     }
 
     /**
-     * Adds a tag to the ignored list and optionally purges it from all tokens in the catalog.
-     * @param {string} tag
+     * Adds an array of tags to the ignored list and optionally purges them in a single pass.
+     * @param {Array<string|number>} tags
      * @param {boolean} [purgeFromCatalog=true]
-     * @returns {Promise<{ tag: string, purgedCount: number }>}
+     * @returns {Promise<{ tags: string[], tokensModified: number }>}
      */
-    static async addIgnoredTag(tag, purgeFromCatalog = true) {
-        if (!tag || typeof tag !== "string") return { tag: "", purgedCount: 0 };
-        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
-        if (!cleanTag) return { tag: "", purgedCount: 0 };
+    static async addIgnoredTags(tags, purgeFromCatalog = true) {
+        if (!Array.isArray(tags) || tags.length === 0) return { tags: [], tokensModified: 0 };
+
+        const cleanTags = new Set(
+            tags.map(t => String(t ?? "").trim().toLowerCase().replace(/^#+/, "")).filter(Boolean)
+        );
+        if (cleanTags.size === 0) return { tags: [], tokensModified: 0 };
 
         const state = this.getState();
         state.ignoredTags = state.ignoredTags || [];
-        if (!state.ignoredTags.includes(cleanTag)) {
-            state.ignoredTags.push(cleanTag);
+        for (const t of cleanTags) {
+            if (!state.ignoredTags.some(it => String(it ?? "").trim().toLowerCase().replace(/^#+/, "") === t)) {
+                state.ignoredTags.push(t);
+            }
         }
 
-        let purgedCount = 0;
+        let tokensModified = 0;
         if (purgeFromCatalog && state.catalog) {
             for (const token of Object.values(state.catalog)) {
-                if (Array.isArray(token.tags) && token.tags.includes(cleanTag)) {
-                    token.tags = token.tags.filter(t => t.toLowerCase() !== cleanTag);
-                    purgedCount++;
+                if (Array.isArray(token.tags) && token.tags.length > 0) {
+                    let hasTag = false;
+                    token.tags = token.tags.filter(t => {
+                        const cleanT = String(t ?? "").trim().toLowerCase().replace(/^#+/, "");
+                        if (cleanTags.has(cleanT)) {
+                            hasTag = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (hasTag) tokensModified++;
                 }
             }
         }
 
         await this.saveState(state);
-        return { tag: cleanTag, purgedCount };
+        return { tags: Array.from(cleanTags), tokensModified };
+    }
+
+    /**
+     * Adds a tag to the ignored list and optionally purges it from all existing tokens in the catalog.
+     * @param {string|number} tag
+     * @param {boolean} [purgeFromCatalog=true]
+     * @returns {Promise<{ tag: string, purgedCount: number }>}
+     */
+    static async addIgnoredTag(tag, purgeFromCatalog = true) {
+        const cleanTag = String(tag ?? "").trim().toLowerCase().replace(/^#+/, "");
+        if (!cleanTag) return { tag: "", purgedCount: 0 };
+        const res = await this.addIgnoredTags([cleanTag], purgeFromCatalog);
+        return { tag: cleanTag, purgedCount: res.tokensModified };
     }
 
     /**
      * Removes a tag from the ignored list.
-     * @param {string} tag
+     * @param {string|number} tag
      * @returns {Promise<boolean>}
      */
     static async removeIgnoredTag(tag) {
-        if (!tag || typeof tag !== "string") return false;
-        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
+        const cleanTag = String(tag ?? "").trim().toLowerCase().replace(/^#+/, "");
+        if (!cleanTag) return false;
         const state = this.getState();
         const initialLen = (state.ignoredTags || []).length;
-        state.ignoredTags = (state.ignoredTags || []).filter(t => t.toLowerCase() !== cleanTag);
+        state.ignoredTags = (state.ignoredTags || []).filter(t => {
+            const cleanT = String(t ?? "").trim().toLowerCase().replace(/^#+/, "");
+            return cleanT !== cleanTag;
+        });
         if (state.ignoredTags.length !== initialLen) {
             await this.saveState(state);
             return true;
@@ -312,30 +341,51 @@ export class AvatarRegistryService {
     }
 
     /**
-     * Strips a tag from all tokens across the entire catalog without adding to ignored list.
-     * @param {string} tag
-     * @returns {Promise<number>} Number of tokens modified
+     * Strips an array of tags from all tokens across the entire catalog in a single pass.
+     * @param {Array<string|number>} tags
+     * @returns {Promise<{ tags: string[], tokensModified: number }>}
      */
-    static async removeTagGlobally(tag) {
-        if (!tag || typeof tag !== "string") return 0;
-        const cleanTag = tag.trim().toLowerCase().replace(/^#+/, "");
-        if (!cleanTag) return 0;
+    static async removeTagsGlobally(tags) {
+        if (!Array.isArray(tags) || tags.length === 0) return { tags: [], tokensModified: 0 };
+
+        const cleanTags = new Set(
+            tags.map(t => String(t ?? "").trim().toLowerCase().replace(/^#+/, "")).filter(Boolean)
+        );
+        if (cleanTags.size === 0) return { tags: [], tokensModified: 0 };
 
         const state = this.getState();
-        let count = 0;
+        let tokensModified = 0;
         if (state.catalog) {
             for (const token of Object.values(state.catalog)) {
-                if (Array.isArray(token.tags) && token.tags.includes(cleanTag)) {
-                    token.tags = token.tags.filter(t => t.toLowerCase() !== cleanTag);
-                    count++;
+                if (Array.isArray(token.tags) && token.tags.length > 0) {
+                    let hasTag = false;
+                    token.tags = token.tags.filter(t => {
+                        const cleanT = String(t ?? "").trim().toLowerCase().replace(/^#+/, "");
+                        if (cleanTags.has(cleanT)) {
+                            hasTag = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    if (hasTag) tokensModified++;
                 }
             }
         }
 
-        if (count > 0) {
+        if (tokensModified > 0) {
             await this.saveState(state);
         }
-        return count;
+        return { tags: Array.from(cleanTags), tokensModified };
+    }
+
+    /**
+     * Strips a tag from all tokens across the entire catalog without adding to ignored list.
+     * @param {string|number} tag
+     * @returns {Promise<number>} Number of tokens modified
+     */
+    static async removeTagGlobally(tag) {
+        const res = await this.removeTagsGlobally([tag]);
+        return res.tokensModified;
     }
 
     /**
@@ -811,11 +861,11 @@ export class AvatarRegistryService {
             if (fbLoose.length > 0) return fbLoose.map(t => t.path);
         }
 
-        // 3. Unassigned Reservoir match for this archetype/trade (only for generic/unassigned species queries, or explicit cross-species option)
-        const isGenericSpeciesQuery = !species || s === RESERVOIR_SPECIES_KEY || s === "other" || !activeList.includes(s);
+        // 3. Unassigned Reservoir match for this archetype/trade (ONLY for explicitly generic queries or when allowCrossSpecies is explicitly enabled)
+        const isGenericSpeciesQuery = !species || s === RESERVOIR_SPECIES_KEY;
         if (isGenericSpeciesQuery || options?.allowCrossSpecies) {
             const reservoirArchetypeMatches = candidates.filter(t =>
-                (!t.species || t.species === RESERVOIR_SPECIES_KEY || !activeList.includes(t.species)) &&
+                (!t.species || t.species === RESERVOIR_SPECIES_KEY) &&
                 (t.role === r || t.archetype === r)
             );
             if (reservoirArchetypeMatches.length > 0) {
@@ -836,7 +886,7 @@ export class AvatarRegistryService {
             }
             return true;
         });
-        if (reservoirLoose.length > 0) {
+        if ((isGenericSpeciesQuery || options?.allowCrossSpecies) && reservoirLoose.length > 0) {
             const commoners = reservoirLoose.filter(t => t.archetype === "commoner" || t.role === "commoner");
             return (commoners.length > 0 ? commoners : reservoirLoose).map(t => t.path);
         }

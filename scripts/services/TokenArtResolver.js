@@ -315,22 +315,24 @@ export class TokenArtResolver {
         const speciesLoose = this._getFilesFromCache(`${root}/${speciesKey}`);
         if (speciesLoose.length > 0) return this._pickRandom(speciesLoose);
 
-        // 4. Generic Species + Exact Role Title: tokens/ionrift/generic/{role}/
-        if (roleKey) {
+        // 4. Generic Species + Exact Role Title: tokens/ionrift/generic/{role}/ (ONLY for generic queries or allowCrossSpecies)
+        if ((speciesKey === "generic" || options?.allowCrossSpecies) && roleKey) {
             const genericRole = this._getFilesFromCache(`${root}/generic/${roleFolderKey}`)
                 || this._getFilesFromCache(`${root}/generic/${roleKey}`);
             if (genericRole.length > 0) return this._pickRandom(genericRole);
         }
 
         // 5. Generic Species + Canonical Archetype: tokens/ionrift/generic/{archetype}/
-        if (archetypeKey) {
+        if ((speciesKey === "generic" || options?.allowCrossSpecies) && archetypeKey) {
             const genericCanon = this._getFilesFromCache(`${root}/generic/${archetypeKey}`);
             if (genericCanon.length > 0) return this._pickRandom(genericCanon);
         }
 
         // 6. Generic Root Loose Files: tokens/ionrift/generic/
-        const genericLoose = this._getFilesFromCache(`${root}/generic`);
-        if (genericLoose.length > 0) return this._pickRandom(genericLoose);
+        if (speciesKey === "generic" || options?.allowCrossSpecies) {
+            const genericLoose = this._getFilesFromCache(`${root}/generic`);
+            if (genericLoose.length > 0) return this._pickRandom(genericLoose);
+        }
 
         // 7. Overlay Pack Art (Installed Content Overlays)
         const overlayArt = this._resolveOverlayArt(speciesKey, archetypeKey);
