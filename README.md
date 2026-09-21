@@ -71,13 +71,14 @@ To use this in your module, add it to your `module.json` dependencies:
 
 Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**:
 
-- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)** - Installation and creature indexing
-- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/2-Setup-Resonance)** - Sound configuration and presets
-- **[Resonance Calibration](https://github.com/ionrift-gm/ionrift-library/wiki/3-Resonance-Calibration)** - Fine-tuning sound bindings
-- **[Advanced Diagnostics](https://github.com/ionrift-gm/ionrift-library/wiki/4-Advanced-Diagnostics)** - Manifest inspection and troubleshooting
-- **[Targeting Sounds Per Creature](https://github.com/ionrift-gm/ionrift-library/wiki/5-Targeting-Sounds-Per-Creature)** - Per-item and per-actor sound scoping
-- **[Setup: Quartermaster](https://github.com/ionrift-gm/ionrift-library/wiki/10-Setup-Quartermaster)** - Loot generation and cache setup
-- **[Setup: Cursewright](https://github.com/ionrift-gm/ionrift-library/wiki/11-Setup-Cursewright)** - Cursed item lifecycle (Patreon module)
+- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)**: Installation and creature indexing
+- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/2-Setup-Resonance)**: Sound configuration and presets
+- **[Setup: Respite](https://github.com/ionrift-gm/ionrift-library/wiki/6-Setup-Respite)**: Structured rest phases, campsite placement, and downtime
+- **[Setup: Monstrous Feast](https://github.com/ionrift-gm/ionrift-library/wiki/13-Setup-Monstrous-Feast)**: Monster butchering, living cookbook, and camp meals
+- **[Setup: Quartermaster](https://github.com/ionrift-gm/ionrift-library/wiki/10-Setup-Quartermaster)**: Loot generation and cache setup
+- **[Setup: Waterline](https://github.com/ionrift-gm/ionrift-library/wiki/8-Setup-Waterline)**: Automated water detection and animated caustics
+- **[Setup: Quiz Night](https://github.com/ionrift-gm/ionrift-library/wiki/16-Setup-Quiz-Night)**: Campaign pub quizzes, editor, and live scoring
+- **[Setup: Cursewright](https://github.com/ionrift-gm/ionrift-library/wiki/11-Setup-Cursewright)**: Cursed item lifecycle (Patreon module)
 
 ## Bug Reports
 
@@ -89,7 +90,15 @@ If something isn't working:
 
 ---
 
-**Part of the [Ionrift Module Suite](https://github.com/ionrift-gm)**
+## Ionrift Module Suite
 
-[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Discord](https://discord.gg/vFGXf7Fncj) · [Patreon](https://patreon.com/ionrift)
+- **[Respite](https://github.com/ionrift-gm/ionrift-respite)**: Structured rest phases and downtime activities
+- **[Resonance](https://github.com/ionrift-gm/ionrift-resonance)**: Context-sensitive combat soundscapes and audio cues
+- **[Quartermaster](https://github.com/ionrift-gm/ionrift-quartermaster)**: Loot cache generation and inventory management
+- **[Monstrous Feast](https://github.com/ionrift-gm/ionrift-monstrous-feast)**: Butcher slain creatures and cook camp meals with buffs
+- **[Waterline](https://github.com/ionrift-gm/ionrift-waterline)**: Traced water caustics and procedural border walls
+- **[Quiz Night](https://ionrift.cloud/modules/quiz-night/)**: Live campaign pub quizzes and mystery prizes
+- **[Daggerheart Animator](https://github.com/ionrift-gm/ionrift-daggerheart-animator)**: Combat VFX bridge for Daggerheart
+
+[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Website](https://ionrift.cloud) · [Discord](https://discord.gg/vFGXf7Fncj) · [Patreon](https://patreon.com/ionrift)
 
