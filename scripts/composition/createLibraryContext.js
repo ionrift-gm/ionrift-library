@@ -62,6 +62,7 @@ import {
 } from "../services/rolls/RollRequestDcPulse.js";
 import { TokenArtResolver } from "../services/TokenArtResolver.js";
 import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
+import { ModuleSocket } from "../services/sockets/ModuleSocket.js";
 
 export function createLibraryContext() {
     const ctx = {
@@ -148,6 +149,8 @@ export function createLibraryContext() {
         AbstractPackRegistryApp,
         platform: PlatformHelper,
         createLogger: (label) => Logger.createModuleProxy(label),
+        createSocket: (moduleId, options) => new ModuleSocket(moduleId, options),
+        ModuleSocket,
         party: PartyRoster,
         PartyRosterApp,
         overlay: OverlayService,
