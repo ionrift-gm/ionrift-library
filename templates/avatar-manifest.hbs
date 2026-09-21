@@ -1,42 +1,42 @@
 <div class="ionrift-app-container avatar-manifest-container" style="display:flex; flex-direction:column; height:100%; min-height:0;">
 
-    <!-- Top Navigation Bar & Global KPI -->
+    <!-- Top Navigation Bar (Zero-Collision 3-Zone Architecture) -->
     <div class="dashboard-header">
-        <div style="display:flex; align-items:center; gap:8px; flex:0 1 auto; min-width:0;">
-            <div class="dashboard-stat" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-                <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; --gauge-color: {{#if (gte coverage.overallCoveragePct 70)}}#4ade80{{else if (gte coverage.overallCoveragePct 35)}}#facc15{{else}}#f87171{{/if}};">
-                    <span>{{coverage.overallCoveragePct}}%</span>
-                </div>
-                <div class="dashboard-text" style="display:flex; flex-direction:column; min-width:max-content; white-space:nowrap;">
-                    <span class="label" style="font-size:0.7em; text-transform:uppercase; letter-spacing:0.5px; color:rgba(180,165,220,0.7); white-space:nowrap;">Coverage</span>
-                    <span class="value" style="font-size:0.95em; font-weight:700; color:#fff; white-space:nowrap;">
-                        {{coverage.totalTokens}} Tokens
-                        {{#if coverage.reservoirTokens}}
-                        <span style="font-size:0.75em; font-weight:500; color:rgba(180,165,220,0.65);">({{coverage.reservoirTokens}})</span>
-                        {{/if}}
+        <!-- Zone 1: Gauge & Global Token Count with Cross-World Persistence Pill -->
+        <div class="header-kpi-zone">
+            <div class="dashboard-gauge" style="--pct: {{coverage.overallCoveragePct}}%; --gauge-color: {{#if (gte coverage.overallCoveragePct 70)}}#4ade80{{else if (gte coverage.overallCoveragePct 35)}}#facc15{{else}}#f87171{{/if}};">
+                <span>{{coverage.overallCoveragePct}}%</span>
+            </div>
+            <div class="dashboard-text">
+                <span class="label">
+                    Coverage {{#if discountNonCurated}}<span style="color:#c084fc; font-weight:700;">(Curated Only)</span>{{/if}}
+                </span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="value">
+                        {{coverage.totalTokens}} {{#if discountNonCurated}}Curated{{else}}Tokens{{/if}}
+                    </span>
+                    <span class="manifest-sync-chip" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
+                        <i class="fas fa-globe-americas"></i> Cross-World
                     </span>
                 </div>
             </div>
-
-            <!-- Tab Switcher (Segmented Track) -->
-            <nav class="manifest-nav-tabs sheet-tabs tabs">
-                <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage">
-                    <i class="fas fa-chart-pie"></i> Coverage Intelligence
-                </a>
-                <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation">
-                    <i class="fas fa-tags"></i> Token Curation
-                </a>
-                <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders">
-                    <i class="fas fa-folder-tree"></i> Watch Folders ({{watchFolders.length}})
-                </a>
-            </nav>
         </div>
 
+        <!-- Zone 2: Centered Nav Tabs (Segmented Track) -->
+        <nav class="manifest-nav-tabs sheet-tabs tabs">
+            <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage">
+                <i class="fas fa-chart-pie"></i> Coverage
+            </a>
+            <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation">
+                <i class="fas fa-tags"></i> Curation
+            </a>
+            <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders">
+                <i class="fas fa-folder-tree"></i> Watch Folders ({{watchFolders.length}})
+            </a>
+        </nav>
+
+        <!-- Zone 3: Global Action Buttons -->
         <div class="dashboard-header-actions">
-            <span class="manifest-sync-chip" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
-                <i class="fas fa-globe-americas"></i> Cross-World
-            </span>
-            <div class="header-action-divider"></div>
             <button type="button" id="add-species-btn" class="ionrift-btn header-action-btn" title="Add a custom or homebrew species to the manifest and coverage matrix">
                 <i class="fas fa-plus"></i> Add Species
             </button>
@@ -51,47 +51,53 @@
 
         <!-- TAB 1: COVERAGE & GAPS DASHBOARD -->
         {{#if isTabCoverage}}
-        <div style="flex:1 1 0; min-height:0; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:16px;">
+        <div class="manifest-coverage-panel" style="flex:1 1 0; min-height:0; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px;">
             
-            <!-- Legend / Guidance Banner with Protected Nowrap Badges -->
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; background:rgba(20,16,36,0.7); border:1px solid rgba(140,110,240,0.25); border-radius:8px; padding:10px 16px;">
-                <div style="font-size:0.85em; color:rgba(210,200,240,0.9); flex:1; min-width:180px;">
-                    <i class="fas fa-info-circle" style="color:#a78bfa; margin-right:6px;"></i>
-                    Click any cell to jump directly to curation. Target depth: 10 tokens per archetype for 100% species coverage.
+            <!-- 2-Deck Guidance & Legend Banner -->
+            <div class="coverage-guidance-banner">
+                <div class="guidance-deck-top">
+                    <div class="guidance-hint">
+                        <i class="fas fa-info-circle text-violet-400" style="color:#a78bfa; font-size:1.05rem;"></i>
+                        <span>Click any matrix cell to filter Curation. Target depth: 10 tokens per role for 100% variety.</span>
+                    </div>
+                    <label class="discount-checkbox-pill" title="Discount auto-detected tokens: only GM-curated tokens count toward species depth targets and coverage percentage">
+                        <input type="checkbox" id="chk-discount-noncurated" class="ionrift-checkbox" {{#if discountNonCurated}}checked{{/if}} />
+                        <span>Discount Non-Curated</span>
+                    </label>
                 </div>
-                <div style="display:flex; gap:10px; font-size:0.76em; text-transform:uppercase; font-weight:700; flex-shrink:0; align-items:center; flex-wrap:wrap;">
-                    <span class="manifest-legend-badge" style="color:#34d399;" title="Target met: 10 or more tokens for this role">
-                        <span style="width:10px; height:10px; border-radius:2px; background:#10b981; box-shadow:0 0 6px rgba(52,211,153,0.6);"></span> Target Met (10+)
+                <div class="guidance-deck-legend">
+                    <span class="manifest-legend-badge" style="color:#86efac;" title="Target met: 10 or more tokens for this role">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#22c55e;"></span> Target Met (10+)
                     </span>
-                    <span class="manifest-legend-badge" style="color:#86efac;" title="Healthy variety: 5 to 9 tokens">
-                        <span style="width:10px; height:10px; border-radius:2px; background:#22c55e;"></span> Healthy (5-9)
+                    <span class="manifest-legend-badge" style="color:#6ee7b7;" title="Healthy variety: 5 to 9 tokens">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#10b981;"></span> Healthy (5-9)
                     </span>
-                    <span class="manifest-legend-badge" style="color:#facc15;" title="Thin variety warning: 1 to 4 tokens">
-                        <span style="width:10px; height:10px; border-radius:2px; background:#eab308;"></span> Thin (1-4)
+                    <span class="manifest-legend-badge" style="color:#fde047;" title="Thin variety warning: 1 to 4 tokens">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#eab308;"></span> Thin (1-4)
                     </span>
                     <span class="manifest-legend-badge" style="color:#fda4af;" title="No specific role art: falls back to species commoner art">
-                        <span style="width:10px; height:10px; border-radius:2px; background:rgba(244,63,94,0.3); border:1px dashed #f43f5e;"></span> Fallback (0)
+                        <span style="width:8px; height:8px; border-radius:2px; background:#f43f5e; border:1px dashed #fff;"></span> Fallback (0)
                     </span>
                     <span class="manifest-legend-badge" style="color:#fca5a5;" title="No art: falls back to SVG vector glyph">
-                        <span style="width:10px; height:10px; border-radius:2px; background:#ef4444;"></span> Missing (0)
+                        <span style="width:8px; height:8px; border-radius:2px; background:#ef4444;"></span> Missing (0)
                     </span>
                     {{#if coverage.reservoirTokens}}
-                    <span class="manifest-legend-badge" style="color:rgba(192,132,252,0.85); border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned art tokens available in reservoir">
+                    <span class="manifest-legend-badge" style="color:#d8b4fe;" title="{{coverage.reservoirTokens}} unassigned art tokens available in reservoir">
                         <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
                     </span>
                     {{/if}}
                 </div>
             </div>
 
-            <!-- Heatmap Matrix Table -->
-            <div style="overflow-x:auto; background:rgba(15,12,28,0.8); border:1px solid rgba(140,110,240,0.2); border-radius:8px; padding:8px;">
-                <table class="manifest-matrix-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:0.82em;">
+            <!-- Heatmap Matrix Table Card -->
+            <div class="matrix-table-card">
+                <table class="manifest-matrix-table">
                     <thead>
-                        <tr style="border-bottom:1px solid rgba(140,110,240,0.3); color:rgba(200,190,240,0.7); text-transform:uppercase; font-size:0.75em; letter-spacing:0.5px;">
-                            <th style="text-align:left; padding:8px 12px; width:130px;">Species / Culture</th>
-                            <th style="padding:8px 6px; width:75px;" title="Target Depth Coverage: Credited tokens / 110 depth points (10 per role)">Coverage</th>
+                        <tr>
+                            <th class="species-name-cell" style="text-align:left; padding-left:12px;">Species</th>
+                            <th class="coverage-pct-cell" style="text-align:center;">Coverage</th>
                             {{#each coverage.archetypes as |arch|}}
-                            <th style="padding:8px 4px;">{{arch}}</th>
+                            <th class="archetype-col" style="text-align:center;" title="{{arch}}"><span class="col-title" style="text-align:center;" title="{{arch}}">{{arch}}</span></th>
                             {{/each}}
                         </tr>
                     </thead>
@@ -140,9 +146,9 @@
                             </td>
                             {{#each ../../coverage.archetypes as |arch|}}
                             {{#with (lookup (lookup ../../../coverage.matrix species) arch) as |cell|}}
-                            <td style="padding:4px;">
+                            <td style="padding:4px; text-align:center;">
                                 <div class="matrix-cell status-{{cell.status}}" data-species="{{species}}" data-archetype="{{arch}}"
-                                    title="{{species}} {{arch}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited towards 10-token target)">
+                                    title="{{species}} {{arch}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited). Click to filter curation, Alt-click to mint in Avatar Studio.">
                                     {{cell.count}}
                                 </div>
                             </td>
@@ -327,7 +333,7 @@
                                 </td>
                                 <td style="padding:4px;">
                                     <div class="matrix-cell status-{{cell.status}}" data-species="{{cSpecies}}" data-caste="{{cell.id}}" data-archetype="{{#if cell.bridgeTo}}{{cell.bridgeTo}}{{else}}{{cell.id}}{{/if}}"
-                                        title="{{cSpecies}} {{cell.label}}: {{cell.count}} token(s) (Target: {{cell.target}})">
+                                        title="{{cSpecies}} {{cell.label}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited). Click to filter curation, Alt-click to mint in Avatar Studio.">
                                         {{cell.count}}
                                     </div>
                                 </td>
@@ -647,6 +653,13 @@
                                     <i class="fas fa-layer-group"></i> View All Watched Folders
                                 </button>
                                 {{/if}}
+                                {{#if filters.hasSpecies}}
+                                {{#if filters.hasArchetype}}
+                                <button type="button" class="mint-matrix-token-btn ionrift-btn" style="background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.5); color:#d8b4fe;" title="Mint a single {{filters.species}} {{filters.archetype}} in Avatar Studio to fill this deficit">
+                                    <i class="fas fa-palette"></i> Mint {{filters.species}} {{filters.archetype}} in Avatar Studio
+                                </button>
+                                {{/if}}
+                                {{/if}}
                             </div>
                         </div>
                     </div>
@@ -690,26 +703,67 @@
         <!-- TAB 3: WATCH FOLDERS -->
         {{#if isTabFolders}}
         <div class="watch-folders-panel">
-            
+
+            <!-- Tier 1: Telemetry Glass KPI Cards -->
+            <div class="watch-telemetry-grid">
+                <div class="watch-telemetry-card">
+                    <div class="telemetry-icon-box">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="telemetry-body">
+                        <span class="telemetry-label">Indexed Assets</span>
+                        <span class="telemetry-value">{{coverage.rawTotalTokens}} Tokens</span>
+                        <span class="telemetry-sub">{{coverage.totalTokens}} Cataloged • {{coverage.reservoirTokens}} Reservoir</span>
+                    </div>
+                </div>
+
+                <div class="watch-telemetry-card">
+                    <div class="telemetry-icon-box">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="telemetry-body">
+                        <span class="telemetry-label">Coverage Readiness</span>
+                        <span class="telemetry-value">{{coverage.overallCoveragePct}}% Depth</span>
+                        <span class="telemetry-sub">{{#if discountNonCurated}}Curated Only{{else}}Standard Library{{/if}}</span>
+                    </div>
+                </div>
+
+                <div class="watch-telemetry-card">
+                    <div class="telemetry-icon-box">
+                        <i class="fas fa-globe-americas"></i>
+                    </div>
+                    <div class="telemetry-body">
+                        <span class="telemetry-label">Library Persistence</span>
+                        <span class="telemetry-value">Cross-World</span>
+                        <span class="telemetry-sub">Shared across all campaigns</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tier 2: Watched Folders Management Card -->
             <div class="watch-folders-card">
-                <h3>
-                    <i class="fas fa-folder-open" style="color:#a78bfa;"></i> Watched Asset Folders
-                </h3>
-                <div class="watch-folder-scope-callout" style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(140,110,240,0.12); border:1px solid rgba(140,110,240,0.3); border-radius:6px; margin:10px 0 14px 0; font-size:0.85em; color:rgba(225,215,250,0.9);">
-                    <i class="fas fa-globe" style="color:#a78bfa; font-size:1.1em; flex-shrink:0;"></i>
+                <div class="watch-folders-card-header">
+                    <h3>
+                        <i class="fas fa-folder-tree" style="color:#a78bfa;"></i> Watched Asset Folders
+                    </h3>
+                    <span class="active-count-badge">{{watchFolders.length}} Active {{#if (eq watchFolders.length 1)}}Directory{{else}}Directories{{/if}}</span>
+                </div>
+
+                <div class="watch-folder-scope-callout">
+                    <i class="fas fa-globe"></i>
                     <div>
                         <strong>World-Specific Watch Folders:</strong> Watched directories are configured separately for this world so different campaigns can monitor distinct token collections. Token tags, custom species, and manual assignments are automatically shared across all your worlds.
                     </div>
                 </div>
-                <p class="section-description">
-                    Declare directories in your Foundry User Data folder where token assets live. The scanner recursively catalogues images within these locations.
-                </p>
 
                 <!-- Add / Browse Folder Row -->
                 <div class="watch-folder-input-group">
                     <input type="text" id="new-watch-folder-input" placeholder="Paste path and press Enter, or browse server..." autocomplete="off" spellcheck="false">
                     <button type="button" id="browse-watch-folder-btn" class="ionrift-btn" title="Browse Server Folders">
                         <i class="fas fa-folder-open"></i> Browse Folders...
+                    </button>
+                    <button type="button" id="add-watch-folder-btn" class="ionrift-btn" disabled title="Enter a folder path to add to watched directories">
+                        <i class="fas fa-plus"></i> Add
                     </button>
                 </div>
 
@@ -725,6 +779,9 @@
                             <span class="folder-token-count" title="{{entry.tokenCount}} cataloged tokens in this directory">
                                 {{entry.tokenCount}} Tokens
                             </span>
+                            <span class="folder-badge-recursive" title="Subdirectories are recursively indexed">
+                                Recursive
+                            </span>
                             <button type="button" class="remove-watch-folder-btn" data-folder="{{entry.folder}}" title="Remove this watch folder">
                                 <i class="fas fa-trash-alt"></i> Remove
                             </button>
@@ -738,14 +795,18 @@
                                 <span class="folder-path" title="{{folder}}">{{folder}}</span>
                             </div>
                             <div class="folder-actions">
+                                <span class="folder-badge-recursive" title="Subdirectories are recursively indexed">
+                                    Recursive
+                                </span>
                                 <button type="button" class="remove-watch-folder-btn" data-folder="{{folder}}" title="Remove this watch folder">
                                     <i class="fas fa-trash-alt"></i> Remove
                                 </button>
                             </div>
                         </div>
                         {{else}}
-                        <div style="padding:16px; text-align:center; color:rgba(200,190,230,0.5); font-style:italic;">
-                            No watch folders configured. Click "Browse..." or enter a directory above.
+                        <div class="empty-watch-folders">
+                            <i class="fas fa-folder-open" style="font-size:2rem; color:rgba(168,85,247,0.4); margin-bottom:8px;"></i>
+                            <p>No watch folders configured. Enter a directory path or click Browse Folders to monitor token art.</p>
                         </div>
                         {{/each}}
                     {{/each}}

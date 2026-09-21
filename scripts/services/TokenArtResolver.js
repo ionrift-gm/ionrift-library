@@ -15,8 +15,7 @@
  * 5. Generic Archetype:    tokens/ionrift/generic/{archetype}/
  * 6. Generic Loose Art:    tokens/ionrift/generic/
  * 7. Overlay Pack Art:     ionrift-data/overlays/... (via OverlayService)
- * 8. Neutral Vector Glyph: modules/ionrift-library/assets/glyphs/{archetype}.svg
- * 9. Absolute Failsafe:    icons/svg/mystery-man.svg
+ * 8. Foundry Default Art: icons/svg/mystery-man.svg
  */
 import { PlatformHelper } from "./platform/PlatformHelper.js";
 import { OverlayService } from "./packs/OverlayService.js";
@@ -31,8 +30,10 @@ export class TokenArtResolver {
     /** Bundled neutral vector glyphs root */
     static GLYPHS_ROOT = "modules/ionrift-library/assets/glyphs";
 
-    /** Default fallback image */
-    static FALLBACK = "icons/svg/mystery-man.svg";
+    /** Default fallback image (Foundry default token art) */
+    static get FALLBACK() {
+        return (typeof CONST !== "undefined" && CONST.DEFAULT_TOKEN) ? CONST.DEFAULT_TOKEN : "icons/svg/mystery-man.svg";
+    }
 
     /** Standard species folders */
     static SPECIES = [
@@ -119,19 +120,13 @@ export class TokenArtResolver {
     }
 
     /**
-     * Returns the built-in neutral vector SVG glyph path for an archetype.
-     * @param {string} archetype 
-     * @returns {string} Path to SVG glyph
+     * Fallback token art when no custom art exists.
+     * Returns Foundry's default token art (icons/svg/mystery-man.svg).
+     * @param {string} [archetype] 
+     * @returns {string} Path to fallback art
      */
     static getNeutralGlyph(archetype) {
-        const arch = (archetype || "citizen").toLowerCase().trim();
-        const validGlyphs = [
-            "citizen", "guard", "soldier", "merchant", "noble",
-            "priest", "scholar", "thief", "artisan", "performer",
-            "beggar", "commoner"
-        ];
-        const selected = validGlyphs.includes(arch) ? arch : "citizen";
-        return `${this.GLYPHS_ROOT}/${selected}.svg`;
+        return this.FALLBACK;
     }
 
     /**
@@ -271,9 +266,20 @@ export class TokenArtResolver {
             ? options.archetype.toLowerCase().trim()
             : this.getCanonicalArchetype(roleKey);
 
+        let discountNonCurated = options?.discountNonCurated;
+        if (discountNonCurated === undefined) {
+            try {
+                if (typeof game !== "undefined" && game.settings?.get) {
+                    discountNonCurated = Boolean(game.settings.get(MODULE_ID, "manifestDiscountNonCurated"));
+                }
+            } catch {
+                discountNonCurated = false;
+            }
+        }
+
         // 0. Curated Avatar Registry Query (Highest priority: GMs hand-picked or auto-cataloged tokens)
         try {
-            const registryTokens = AvatarRegistryService.getTokensFor(speciesKey, archetypeKey || roleKey);
+            const registryTokens = AvatarRegistryService.getTokensFor(speciesKey, archetypeKey || roleKey, options);
             if (registryTokens.length > 0) {
                 return this._pickRandom(registryTokens);
             }
@@ -281,9 +287,15 @@ export class TokenArtResolver {
             // Registry query optional
         }
 
-        // If cache isn't warm yet, return neutral glyph instantly (never freeze mid-roll)
+        // When Discount Non-Curated is enabled and no curated tokens were found in the registry,
+        // do not guess un-curated raw disk folders: fall directly back to Foundry default art.
+        if (discountNonCurated) {
+            return this.FALLBACK;
+        }
+
+        // If cache isn't warm yet, return fallback instantly (never freeze mid-roll)
         if (!this._cacheReady && this._cache.size === 0) {
-            return this.getNeutralGlyph(archetypeKey);
+            return this.FALLBACK;
         }
 
         // 1. Exact Species + Exact Role Title: tokens/ionrift/{species}/{role}/
@@ -324,8 +336,8 @@ export class TokenArtResolver {
         const overlayArt = this._resolveOverlayArt(speciesKey, archetypeKey);
         if (overlayArt) return overlayArt;
 
-        // 8. Built-in Handcrafted Neutral Vector SVG Glyph
-        return this.getNeutralGlyph(archetypeKey);
+        // 8. Foundry Default Art (icons/svg/mystery-man.svg)
+        return this.FALLBACK;
     }
 
     /**
@@ -411,13 +423,27 @@ export class TokenArtResolver {
         if (!this._cache) return [];
         // Support paths with and without trailing slash or slight normalization variations
         const normalized = path.replace(/\/+$/, "");
-        return this._cache.get(normalized) || this._cache.get(`${normalized}/`) || [];
+        const rawFiles = this._cache.get(normalized) || this._cache.get(`${normalized}/`) || [];
+        if (!rawFiles || rawFiles.length === 0) return [];
+        try {
+            const banned = AvatarRegistryService.getBannedFolders({ clone: false });
+            if (banned && banned.length > 0) {
+                return rawFiles.filter(f => !AvatarRegistryService.isFolderBanned(f, banned));
+            }
+        } catch {}
+        return rawFiles;
     }
 
     static _resolveOverlayArt(speciesKey, archetypeKey) {
         if (!this._overlayCache || this._overlayCache.size === 0) return null;
+        let banned = [];
+        try {
+            banned = AvatarRegistryService.getBannedFolders({ clone: false }) || [];
+        } catch {}
+
         for (const [folder, files] of this._overlayCache.entries()) {
             const matching = files.filter(f => {
+                if (banned.length > 0 && AvatarRegistryService.isFolderBanned(f, banned)) return false;
                 const lower = f.toLowerCase();
                 return lower.includes(speciesKey) || lower.includes(archetypeKey);
             });
