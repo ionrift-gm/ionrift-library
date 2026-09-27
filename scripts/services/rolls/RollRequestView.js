@@ -197,6 +197,9 @@ export function buildRollRequestContext(opts = {}) {
         ownerSettled,
         ownerOutcome,
         ownerTotal,
+        tableLabel: opts.tableLabel ?? "",
+        outcomeText: opts.outcomeText ?? "",
+        showRollFace: Boolean(opts.tableLabel) && typeof ownerTotal === "number",
         rosterScroll: totalCount >= 6,
         rosterFocusCenter: hasFocus && !(opts.gmView ?? false),
         gmRollAction: opts.gmRollAction ?? "rollEventForPlayer",
@@ -512,6 +515,8 @@ export function buildPromptRollContext(payload = {}) {
         meta: isFormula ? { noDc: true } : {},
         participants,
         flow: payload.flow ?? "library",
+        tableLabel: payload.tableLabel ?? "",
+        outcomeText: payload.outcomeText ?? "",
         targetLabel: payload.flavor ?? "",
         state: rolled ? "submitted" : "pending",
         dcPulseActive: !isFormula

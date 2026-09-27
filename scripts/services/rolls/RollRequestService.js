@@ -15,12 +15,17 @@ const SOCKET_CHANNEL = `module.${MODULE_ID}`;
 const SOCKET_REQUEST = "rollRequest";
 const SOCKET_RESULT = "rollResult";
 const SOCKET_DISMISS = "rollDismiss";
+const SOCKET_OUTCOME_QUERY = "rollOutcomeQuery";
+const SOCKET_OUTCOME = "rollOutcome";
 const RELAY_CHANNEL = "module.ionrift-cursewright";
 const RELAY_REQUEST = "libraryRollRequest";
 const RELAY_RESULT = "libraryRollResult";
 
-/** @type {Map<string, { resolve: Function, reject: Function, timer?: ReturnType<typeof setTimeout> }>} */
+/** @type {Map<string, { resolve: Function, reject: Function, timer?: ReturnType<typeof setTimeout>, describeOutcome?: Function, targetUserId?: string }>} */
 const _pending = new Map();
+
+/** @type {Map<string, (text: string|null) => void>} */
+const _outcomeWaiters = new Map();
 
 /** @type {Set<string>} */
 const _seenRequestIds = new Set();
@@ -98,7 +103,13 @@ export class RollRequestService {
                 }, opts.timeoutMs)
                 : undefined;
 
-            _pending.set(requestId, { resolve, reject, timer });
+            _pending.set(requestId, {
+                resolve,
+                reject,
+                timer,
+                describeOutcome: opts.describeOutcome,
+                targetUserId: targetUser.id
+            });
 
             RollRequestService._broadcast({
                 type: SOCKET_REQUEST,
@@ -116,6 +127,8 @@ export class RollRequestService {
                 chatMode: opts.chatMode ?? "public",
                 title: opts.title ?? "Roll Request",
                 flavor: opts.flavor ?? "",
+                tableLabel: opts.tableLabel ?? "",
+                wantsOutcome: typeof opts.describeOutcome === "function",
                 source: opts.source ?? {}
             });
         });
@@ -145,6 +158,8 @@ export class RollRequestService {
         }
 
         const dismissedLocally = RollRequestPromptApp.dismiss(requestId);
+        const outcomeWaiter = _outcomeWaiters.get(requestId);
+        if (outcomeWaiter) outcomeWaiter(null);
         RollRequestService._broadcast({ type: SOCKET_DISMISS, requestId });
         return dismissedLocally || Boolean(pending);
     }
@@ -179,7 +194,22 @@ export class RollRequestService {
         }
 
         if (data.type === SOCKET_DISMISS) {
-            if (data.requestId) RollRequestPromptApp.dismiss(data.requestId);
+            if (data.requestId) {
+                RollRequestPromptApp.dismiss(data.requestId);
+                const outcomeWaiter = _outcomeWaiters.get(data.requestId);
+                if (outcomeWaiter) outcomeWaiter(null);
+            }
+            return;
+        }
+
+        if (data.type === SOCKET_OUTCOME_QUERY && String(data.requesterUserId) === String(game.user.id)) {
+            await RollRequestService._answerOutcomeQuery(data);
+            return;
+        }
+
+        if (data.type === SOCKET_OUTCOME && RollRequestService._isTargetUser(data.targetUserId)) {
+            const waiter = _outcomeWaiters.get(data.requestId);
+            if (waiter) waiter(data.outcomeText ?? "");
             return;
         }
 
@@ -234,7 +264,11 @@ export class RollRequestService {
                 rollMode: data.rollMode ?? "normal",
                 chatMode: data.chatMode ?? "public",
                 title: data.title,
-                flavor: data.flavor
+                flavor: data.flavor,
+                tableLabel: data.tableLabel ?? "",
+                requestOutcome: data.wantsOutcome
+                    ? (total) => RollRequestService._queryOutcome(data.requestId, data.requesterUserId, total)
+                    : null
             });
 
             RollRequestService._emitResult(data.requesterUserId, {
@@ -282,6 +316,57 @@ export class RollRequestService {
     }
 
     /**
+     * Player prompt asks the requester what the table row was.
+     * Resolves null if the answer does not arrive.
+     * @param {string} requestId
+     * @param {string} requesterUserId
+     * @param {number} total
+     * @returns {Promise<string|null>}
+     */
+    static _queryOutcome(requestId, requesterUserId, total) {
+        return new Promise((resolve) => {
+            const timer = setTimeout(() => {
+                _outcomeWaiters.delete(requestId);
+                resolve(null);
+            }, 5000);
+            _outcomeWaiters.set(requestId, (text) => {
+                clearTimeout(timer);
+                _outcomeWaiters.delete(requestId);
+                resolve(text);
+            });
+            RollRequestService._broadcast({
+                type: SOCKET_OUTCOME_QUERY,
+                requestId,
+                requesterUserId,
+                total
+            });
+        });
+    }
+
+    /**
+     * Requester answers a table-row query from the rolling client.
+     * @param {object} data
+     */
+    static async _answerOutcomeQuery(data) {
+        const pending = _pending.get(data.requestId);
+        let outcomeText = null;
+        if (typeof pending?.describeOutcome === "function") {
+            try {
+                outcomeText = String(await pending.describeOutcome({ total: data.total }) ?? "");
+            } catch (err) {
+                Logger.warn("Library", "RollRequest outcome lookup failed", err?.message ?? err);
+                outcomeText = null;
+            }
+        }
+        RollRequestService._broadcast({
+            type: SOCKET_OUTCOME,
+            requestId: data.requestId,
+            targetUserId: pending?.targetUserId,
+            outcomeText
+        });
+    }
+
+    /**
      * @param {string} requesterUserId
      * @param {object} payload
      */
@@ -300,6 +385,7 @@ export class RollRequestService {
         game.socket.emit(SOCKET_CHANNEL, data);
 
         if (!game.modules.get("ionrift-cursewright")?.active) return;
+        if (data.type !== SOCKET_REQUEST && data.type !== SOCKET_RESULT && data.type !== SOCKET_DISMISS) return;
 
         const relayType = data.type === SOCKET_REQUEST ? RELAY_REQUEST : RELAY_RESULT;
         game.socket.emit(RELAY_CHANNEL, { type: relayType, roll: data });
@@ -477,7 +563,9 @@ export class RollRequestService {
             rollMode: opts.rollMode ?? "normal",
             chatMode: opts.chatMode ?? "public",
             title: opts.title,
-            flavor: opts.flavor
+            flavor: opts.flavor,
+            tableLabel: opts.tableLabel ?? "",
+            describeOutcome: opts.describeOutcome
         });
 
         return {

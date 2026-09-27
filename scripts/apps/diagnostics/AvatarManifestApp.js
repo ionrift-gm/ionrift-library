@@ -408,6 +408,9 @@ export class AvatarManifestApp extends FormApplication {
         const watchFolders = AvatarRegistryService.getWatchFolders({ clone: false });
         let coverage = null;
 
+        const status = game.ionrift?.library?.getSubsystemStatus?.("tokenManifest");
+        const isStandby = status ? !status.isActive : false;
+
         // ---------------------------------------------------------------
         // Fast-path: Coverage Intelligence Tab
         // Skips folder tree construction, catalog filtering, and token pagination
@@ -418,6 +421,7 @@ export class AvatarManifestApp extends FormApplication {
 
             return {
                 activeTab: this.activeTab,
+                isStandby,
                 isTabCoverage: true,
                 isTabCuration: false,
                 isTabFolders: false,
@@ -477,7 +481,10 @@ export class AvatarManifestApp extends FormApplication {
             const catalog = AvatarRegistryService.getCatalog({ clone: false });
             coverage = this._cachedCoverage || AvatarRegistryService.getCoverageReport(undefined, { discountNonCurated: this.discountNonCurated });
 
-            const watchFolderEntries = watchFolders.map(folder => {
+            const primaryRoot = TokenArtResolver.getRootPath();
+            const allWatch = Array.from(new Set([primaryRoot, ...(watchFolders || [])]));
+
+            const watchFolderEntries = allWatch.map(folder => {
                 const normalizedFolder = folder.toLowerCase().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
                 let tokenCount = 0;
                 for (const [tokenPath, token] of Object.entries(catalog)) {
@@ -486,17 +493,23 @@ export class AvatarManifestApp extends FormApplication {
                         tokenCount++;
                     }
                 }
-                return { folder, tokenCount };
+                return {
+                    folder,
+                    tokenCount,
+                    isPrimary: folder.toLowerCase() === primaryRoot.toLowerCase()
+                };
             });
 
             return {
                 activeTab: this.activeTab,
+                isStandby,
                 isTabCoverage: false,
                 isTabCuration: false,
                 isTabFolders: true,
                 discountNonCurated: this.discountNonCurated,
                 coverage,
-                watchFolders,
+                primaryRoot,
+                watchFolders: allWatch,
                 watchFolderEntries,
                 folderTree: [],
                 selectedFolder: "",
@@ -737,6 +750,7 @@ export class AvatarManifestApp extends FormApplication {
 
         return {
             activeTab: this.activeTab,
+            isStandby,
             isTabCoverage: this.activeTab === "coverage",
             isTabCuration: this.activeTab === "curation",
             isTabFolders: this.activeTab === "folders",
@@ -1497,11 +1511,91 @@ export class AvatarManifestApp extends FormApplication {
             }).render(true);
         });
 
+        // 11b. Primary Art Root: Change Folder via FilePicker
+        html.find("#change-primary-root-btn").click(ev => {
+            ev.preventDefault();
+            const currentRoot = TokenArtResolver.getRootPath();
+            new FilePicker({
+                type: "folder",
+                current: currentRoot,
+                callback: async target => {
+                    if (!target) return;
+                    const cleanPath = target.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+                    if (cleanPath === currentRoot) return;
+
+                    await game.settings.set("ionrift-library", "tokenArtRoot", cleanPath);
+                    await AvatarRegistryService.addWatchFolder(cleanPath);
+
+                    const confirmScaffold = await this._confirmDialog({
+                        title: "Initialize Folder Structure?",
+                        content: `
+                            <p>Primary Art Root set to <code>${cleanPath}</code>.</p>
+                            <p class="notes" style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">
+                                Would you like to scaffold the standard species/archetype directory structure in this folder now?
+                            </p>
+                        `,
+                        yesLabel: "Scaffold Structure",
+                        yesIcon: "fa-folder-plus",
+                        noLabel: "Skip",
+                        noIcon: "fa-forward"
+                    });
+
+                    if (confirmScaffold) {
+                        try {
+                            await TokenArtResolver.scaffoldFolders();
+                            if (typeof ui !== "undefined" && ui.notifications) {
+                                ui.notifications.info("Ionrift | Folder structure verified and scaffolded.");
+                            }
+                        } catch (err) {
+                            console.error("Ionrift | Failed to scaffold folders:", err);
+                        }
+                    }
+
+                    if (typeof ui !== "undefined" && ui.notifications) {
+                        ui.notifications.info(`Ionrift | Primary Art Root set to '${cleanPath}'.`);
+                    }
+                    this.invalidateCache();
+                    this.render();
+                }
+            }).render(true);
+        });
+
+        // 11c. Primary Art Root: Scaffold Structure
+        html.find("#scaffold-primary-root-btn").click(async ev => {
+            ev.preventDefault();
+            const btn = $(ev.currentTarget);
+            const orig = btn.html();
+            btn.html('<i class="fas fa-spinner fa-spin"></i> Scaffolding...').prop("disabled", true);
+            try {
+                await TokenArtResolver.scaffoldFolders();
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.info("Ionrift | Primary token art folder structure scaffolded.");
+                }
+            } catch (err) {
+                console.error("Ionrift | Failed to scaffold folders:", err);
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.error("Ionrift | Failed to scaffold folders. See console for details.");
+                }
+            } finally {
+                btn.html(orig).prop("disabled", false);
+                this.invalidateCache();
+                this.render();
+            }
+        });
+
         // 12. Watch Folders: Remove Folder with Confirmation Guard
         html.find(".remove-watch-folder-btn").click(async ev => {
             ev.preventDefault();
             const folder = $(ev.currentTarget).data("folder");
             if (!folder) return;
+
+            const primaryRoot = TokenArtResolver.getRootPath();
+            if (folder.toLowerCase() === primaryRoot.toLowerCase()) {
+                if (typeof ui !== "undefined" && ui.notifications) {
+                    ui.notifications.warn("Ionrift | The Primary Art Root cannot be removed from watched folders.");
+                }
+                return;
+            }
 
             const confirmed = await this._confirmDialog({
                 title: "Remove Watched Folder",

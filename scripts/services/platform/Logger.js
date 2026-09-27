@@ -1,7 +1,7 @@
 export class Logger {
     static get debugEnabled() {
-        if (!game.settings.settings.has("ionrift-library.debug")) return false;
-        return game.settings.get("ionrift-library", "debug");
+        if (!globalThis.game?.settings?.settings?.has?.("ionrift-library.debug")) return false;
+        return globalThis.game.settings.get("ionrift-library", "debug");
     }
 
     static log(module, ...args) {
@@ -11,6 +11,7 @@ export class Logger {
     }
 
     static info(module, ...args) {
+        if (!this.debugEnabled) return;
         const prefix = `Ionrift ${module} |`;
         console.log(prefix, ...args);
     }
@@ -32,8 +33,8 @@ export class Logger {
      * that consumer modules can use without importing the Logger class directly
      * or writing their own delegation wrapper.
      *
-     * - `log()` is gated on the library's debug setting (silent when off).
-     * - `info()`, `warn()`, `error()` are always visible.
+     * - `log()` and `info()` are gated on the library debug setting (silent when off).
+     * - `warn()` and `error()` are always visible.
      * - Falls back to `console.*` if the Logger class is unreachable.
      *
      * Usage in consumer modules:

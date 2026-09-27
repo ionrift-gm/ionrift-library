@@ -1524,6 +1524,105 @@ button.ionrift-badge.classifier-override-btn:hover {
     color: #ffffff;
 }
 
+.sources-toggle-btn {
+    background: rgba(14, 10, 26, 0.85);
+    color: #e2e8f0;
+    border: 1px solid rgba(140, 110, 240, 0.35);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 0.82em;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+
+.sources-toggle-btn:hover,
+.sources-toggle-btn.active {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(168, 85, 247, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.25);
+}
+
+.entity-sources-drawer {
+    background: rgba(14, 10, 26, 0.95);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 12px 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.entity-sources-drawer .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #c4b5fd;
+}
+
+.entity-sources-drawer .drawer-hint {
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.entity-sources-drawer .sources-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+    max-height: 140px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.entity-sources-drawer .source-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.entity-sources-drawer .source-item:hover {
+    background: rgba(139, 92, 246, 0.1);
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+.entity-sources-drawer .source-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.entity-sources-drawer .source-package {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    padding: 1px 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+}
+
+.entity-sources-drawer .drawer-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
 .curation-token-thumb {
     width: 52px;
     height: 52px;
@@ -4835,7 +4934,7 @@ button.ionrift-badge.classifier-override-btn:hover {
     text-overflow: ellipsis !important;
 }
 
-/* Tier 2: Watched Folders Management Card */
+/* Watched Folders Management Card */
 .avatar-manifest-app .watch-folders-card {
     background: linear-gradient(180deg, rgba(26, 20, 46, 0.82) 0%, rgba(14, 11, 26, 0.92) 100%) !important;
     border: 1px solid rgba(168, 85, 247, 0.32) !important;
@@ -5096,6 +5195,74 @@ button.ionrift-badge.classifier-override-btn:hover {
     border-color: rgba(248, 113, 113, 0.4) !important;
     color: #fca5a5 !important;
     box-shadow: 0 0 8px rgba(248, 113, 113, 0.3) !important;
+}
+
+.avatar-manifest-app .watch-folder-item.is-primary-folder {
+    border-color: rgba(245, 158, 11, 0.35) !important;
+    background: rgba(30, 22, 54, 0.45) !important;
+}
+
+.avatar-manifest-app .watch-folder-item.is-primary-folder:hover {
+    border-color: rgba(245, 158, 11, 0.55) !important;
+    background: rgba(36, 26, 64, 0.6) !important;
+}
+
+.avatar-manifest-app .folder-badge-primary {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    color: #fbbf24 !important;
+    background: rgba(245, 158, 11, 0.15) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    border-radius: 3px !important;
+    padding: 2px 6px !important;
+}
+
+.avatar-manifest-app .watch-folder-item .folder-action-btn.primary-action-btn,
+.avatar-manifest-app .watch-folder-item button#change-primary-root-btn,
+.avatar-manifest-app .watch-folder-item button#scaffold-primary-root-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.avatar-manifest-app .watch-folder-item button#change-primary-root-btn {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.25) 0%, rgba(180, 83, 9, 0.35) 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.5) !important;
+    color: #fef3c7 !important;
+}
+
+.avatar-manifest-app .watch-folder-item button#change-primary-root-btn:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.45) 0%, rgba(217, 119, 6, 0.6) 100%) !important;
+    border-color: rgba(251, 191, 36, 0.85) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.35) !important;
+}
+
+.avatar-manifest-app .watch-folder-item button#scaffold-primary-root-btn {
+    background: linear-gradient(135deg, rgba(140, 110, 240, 0.25) 0%, rgba(91, 33, 182, 0.35) 100%) !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    color: #e9d5ff !important;
+}
+
+.avatar-manifest-app .watch-folder-item button#scaffold-primary-root-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.45) 0%, rgba(126, 34, 206, 0.6) 100%) !important;
+    border-color: rgba(192, 132, 252, 0.85) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.35) !important;
 }
 
 @keyframes ionrift-shake {
@@ -5797,4 +5964,186 @@ button.ionrift-badge.classifier-override-btn:hover {
     background: rgba(168, 85, 247, 0.65);
     border-radius: 3px;
     box-shadow: 0 0 6px rgba(168, 85, 247, 0.35);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IONRIFT SETTINGS PROVENANCE & CONSUMER INDICATIONS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Form group container for consumer-tagged settings (aligns title directly with action button) */
+.form-group.has-ionrift-consumer {
+    align-items: flex-start !important;
+}
+
+.form-group.has-ionrift-consumer > label {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 3px !important;
+    line-height: 1.35 !important;
+}
+
+.form-group.has-ionrift-consumer > label .ionrift-consumer-title-row {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+}
+
+.form-group.has-ionrift-consumer > .form-fields {
+    align-self: flex-start !important;
+}
+
+/* Consumer provenance strip injected into label */
+.ionrift-consumer-strip {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 1px 0 2px 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+}
+
+/* Micro Lead Label ("Used by" / "Available for") */
+.ionrift-consumer-lead {
+    font-family: var(--ionrift-font-stack, "Signika", sans-serif) !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    text-transform: none !important;
+    letter-spacing: 0.02em !important;
+    user-select: none !important;
+    line-height: 1 !important;
+}
+
+.ionrift-consumer-lead.state-active {
+    color: #9c9990 !important;
+}
+
+.ionrift-consumer-lead.state-standby {
+    color: #78756d !important;
+}
+
+/* Container for module icon chips */
+.ionrift-consumer-icons {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+/* Individual Module Icon: Clean flat glyph, NO button box, NO outline, NO bevel, NO bounce */
+.ionrift-consumer-chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 1px 3px !important;
+    font-size: 0.78rem !important;
+    cursor: default !important;
+    transition: color 0.15s ease, opacity 0.15s ease !important;
+    position: relative !important;
+    transform: none !important;
+}
+
+/* Active Module Glyph: Soft violet accent */
+.ionrift-consumer-chip.state-active {
+    color: #a78bfa !important;
+    opacity: 0.85 !important;
+}
+
+.ionrift-consumer-chip.state-active:hover {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.ionrift-consumer-chip.state-active i {
+    color: inherit !important;
+}
+
+/* Standby Module Glyph: Muted slate */
+.ionrift-consumer-chip.state-standby {
+    color: #8c897f !important;
+    opacity: 0.7 !important;
+}
+
+.ionrift-consumer-chip.state-standby:hover {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.ionrift-consumer-chip.state-standby i {
+    color: inherit !important;
+}
+
+/* Base pill container (legacy fallback) */
+.ionrift-consumer-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+    font-family: var(--ionrift-font-stack, "Signika", sans-serif) !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    cursor: default !important;
+    user-select: none !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-consumer-pill.state-active {
+    background: rgba(139, 92, 246, 0.12) !important;
+    border: 1px solid rgba(139, 92, 246, 0.45) !important;
+    color: #c4b5fd !important;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+.ionrift-consumer-pill.state-active i {
+    color: #a78bfa !important;
+    font-size: 0.75rem !important;
+}
+
+.ionrift-consumer-pill.state-standby {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+}
+
+.ionrift-consumer-pill.state-standby i {
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 0.75rem !important;
+}
+
+/* Subsystem Window Header Banner (Inside Application windows) */
+.ionrift-subsystem-banner {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: rgba(15, 15, 20, 0.92) !important;
+    border-bottom: 1px solid rgba(139, 92, 246, 0.25) !important;
+    padding: 6px 12px !important;
+    font-size: 0.78rem !important;
+    font-family: var(--ionrift-font-stack, "Signika", sans-serif) !important;
+    margin: -8px -8px 10px -8px !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-subsystem-banner.state-standby {
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+    background: rgba(20, 20, 25, 0.85) !important;
+}
+
+.ionrift-subsystem-banner .banner-message {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 0.75rem !important;
 }

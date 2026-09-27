@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.7.0] - 2026-09-28
+
+### Added
+- Central socket library introduced.
+- Settings menus now show only sections relevant to currently installed and active Ionrift modules.
+- Collapsed settings groups stay pinned to their headers during scrolling for easier navigation.
+- Roll request prompts now synchronize with 3D dice animations, waiting for rolls to settle before closing.
+- Table roll requests now resolve matching result rows and record the outcome text directly onto chat cards.
+- Primary Art Root folder selector in the Avatar Manifest manager for custom token directories.
+- One-click folder scaffolding tool to generate standard species and archetype directories on disk.
+- Sources drawer in the Entity Classifier allowing GMs to choose which compendiums and world actors to scan.
+- Standby status indicators for subsystems waiting on companion modules.
+- Refreshed Ionrift Glass styling across configuration windows, buttons, and inputs.
+
+### Fixed
+- Settings sections keep header controls visible when window height is constrained.
+- Species queries with cross-species fallbacks now match correctly in the avatar reservoir.
+- Suppressed unnecessary notification toasts during token folder verification.
+
 ## [2.6.0] - 2026-09-20
 
 ### Added

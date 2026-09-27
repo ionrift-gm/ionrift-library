@@ -38,6 +38,12 @@ import { PartyRoster } from "../services/party/PartyRoster.js";
 import { TerrainRegistry, terrainRegistry, normalizeTerrainCategory } from "../services/terrain/TerrainRegistry.js";
 import { RollRequestService } from "../services/rolls/RollRequestService.js";
 import {
+    armDiceSoNiceSettle,
+    postRollAndSettle,
+    presentRoll,
+    waitForDiceSoNice
+} from "../services/rolls/DiceSettle.js";
+import {
     buildRollRequestContext,
     buildEventPlayerRollContext,
     buildEventGmRollContext,
@@ -63,6 +69,7 @@ import {
 import { TokenArtResolver } from "../services/TokenArtResolver.js";
 import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
 import { ModuleSocket } from "../services/sockets/ModuleSocket.js";
+import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "../data/subsystemDefinitions.js";
 
 export function createLibraryContext() {
     const ctx = {
@@ -116,7 +123,11 @@ export function createLibraryContext() {
             ensureDcPulse: ensureDcPulseAnimation,
             debugAnimation: inspectDcAnimation,
             watchAnimation: watchDcAnimation,
-            forceDcPulseTest
+            forceDcPulseTest,
+            armDiceSoNiceSettle,
+            waitForDiceSoNice,
+            postRollAndSettle,
+            presentRoll
         },
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
         importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),
@@ -129,6 +140,9 @@ export function createLibraryContext() {
         setWorldSetting,
         log: (module, ...args) => Logger.log(module, ...args),
         openValidator: () => new ClassifierValidatorApp().render(true),
+        openEntityManifest: () => new ClassifierValidatorApp().render(true),
+        EntityManifestApp: ClassifierValidatorApp,
+        ClassifierValidatorApp,
         openTokenManifest: (opts) => new AvatarManifestApp(opts).render(true),
         openAvatarManifest: (opts) => new AvatarManifestApp(opts).render(true),
         tokenRegistry: AvatarRegistryService,
@@ -161,7 +175,9 @@ export function createLibraryContext() {
         compendiumGuard: CompendiumConfigGuard,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
-        cleanup: LegacyAssetSweeper
+        cleanup: LegacyAssetSweeper,
+        subsystems: SUBSYSTEM_DEFINITIONS,
+        getSubsystemStatus
     };
 
     exposeLibraryApi(ctx);

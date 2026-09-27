@@ -42,7 +42,8 @@ export class SettingsStatusHelper {
                     icon = `<i class="fas fa-exclamation-circle" style="color: #ef4444; margin-left: 8px;" title="Token Missing"></i>`;
                 }
 
-                label.append(icon);
+                const target = label.find('.ionrift-consumer-title-row').length ? label.find('.ionrift-consumer-title-row') : label;
+                target.append(icon);
             });
 
         } else {

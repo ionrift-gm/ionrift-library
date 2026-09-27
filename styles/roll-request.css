@@ -324,6 +324,15 @@
 .ionrift-roll-request .check-module-skill {
     font-size: 0.92rem;
     letter-spacing: 0.02em;
+    text-align: center;
+}
+
+.ionrift-roll-request .check-module-formula {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
 }
 
 .ionrift-roll-request .check-module-dc-row {
@@ -383,7 +392,7 @@
     z-index: 1;
 }
 
-/* â”€â”€ Owner result acknowledgement on the DC badge â”€â”€ */
+/* Owner result acknowledgement on the DC badge */
 .ionrift-roll-request .event-dc-badge.circular.event-dc-badge--pass {
     border-color: rgba(46, 204, 113, 0.85);
     background: radial-gradient(circle at 50% 35%, rgba(46, 204, 113, 0.35), rgba(46, 204, 113, 0.14));
@@ -428,6 +437,12 @@
 
 .ionrift-roll-request__outcome--pass { color: #2ecc71; }
 .ionrift-roll-request__outcome--fail { color: #e74c3c; }
+.ionrift-roll-request__outcome--find {
+    color: #ddd6fe;
+    text-align: center;
+    max-width: 18rem;
+    line-height: 1.35;
+}
 
 .ionrift-roll-request__event-title {
     font-size: 0.78rem;
@@ -669,6 +684,8 @@
 }
 
 .ionrift-roll-request-prompt {
+    width: min(92vw, 22rem);
+    min-width: min(92vw, 18rem);
     max-width: min(92vw, 420px);
     padding: 1rem 1.1rem 0.85rem;
     border-radius: 10px;

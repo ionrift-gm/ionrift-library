@@ -102,14 +102,14 @@ export class RollRequestPromptApp {
                 overlay.remove();
             };
 
-            const finish = (result) => {
+            const finish = (result, delay = 900) => {
                 if (settled) return;
                 settled = true;
                 finishTimer = window.setTimeout(() => {
                     finishTimer = null;
                     cleanup();
                     resolve(result);
-                }, 900);
+                }, delay);
             };
 
             const fail = (err) => {
@@ -160,11 +160,16 @@ export class RollRequestPromptApp {
                 const chatMode = payload.chatMode ?? "public";
                 const rollMode = payload.rollMode ?? "normal";
                 const dc = Number.isFinite(payload.dc) ? payload.dc : null;
-                const flavorText = payload.flavor
-                    ? `<strong>${actor.name}</strong> - ${payload.flavor}`
-                    : type === "formula"
-                        ? `<strong>${actor.name}</strong> - ${payload.formula ?? "Roll"}`
-                        : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
+                const tableNote = payload.tableLabel
+                    ? `${payload.tableLabel}${payload.flavor ? `. ${payload.flavor}` : ""}`
+                    : "";
+                const flavorText = tableNote
+                    ? `<strong>${actor.name}</strong>: ${tableNote}`
+                    : payload.flavor
+                        ? `<strong>${actor.name}</strong> - ${payload.flavor}`
+                        : type === "formula"
+                            ? `<strong>${actor.name}</strong> - ${payload.formula ?? "Roll"}`
+                            : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
 
                 try {
                     let result;
@@ -174,24 +179,37 @@ export class RollRequestPromptApp {
                         result = await executeSkillRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
                     } else if (type === "formula") {
                         result = await executeFormulaRoll(actor, payload.formula ?? "1d4", {
-                            flavor: payload.flavor ?? payload.formula ?? "Roll",
+                            flavorHtml: flavorText,
                             chatMode
                         });
                     } else {
                         result = await executeAbilityRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
                     }
 
+                    let outcomeText = "";
+                    if (payload.tableLabel) {
+                        await render({
+                            rolled: true,
+                            total: result.total,
+                            passed: result.passed,
+                            outcomeText: ""
+                        });
+                        outcomeText = await RollRequestPromptApp.#lookupOutcome(payload, result.total);
+                        await RollRequestPromptApp.#appendOutcomeToChat(result.message, flavorText, outcomeText);
+                    }
+
                     await render({
                         rolled: true,
                         total: result.total,
-                        passed: result.passed
+                        passed: result.passed,
+                        outcomeText
                     });
 
                     finish({
                         total: result.total,
                         passed: result.passed,
                         natD20: result.natD20
-                    });
+                    }, payload.tableLabel ? 2600 : 900);
                 } catch (err) {
                     rolling = false;
                     fail(err);
@@ -244,6 +262,50 @@ export class RollRequestPromptApp {
 
         const template = await foundry.applications.handlebars.getTemplate(TEMPLATE_PATH);
         return template(context);
+    }
+
+    /**
+     * Resolve the table row for a formula roll. A local describer wins.
+     * A remote prompt asks the requester, who owns the grant.
+     * @param {object} payload
+     * @param {number} total
+     * @returns {Promise<string>}
+     */
+    static async #lookupOutcome(payload, total) {
+        try {
+            if (typeof payload.describeOutcome === "function") {
+                const text = await payload.describeOutcome({ total });
+                return String(text || "Nothing on this row");
+            }
+            if (typeof payload.requestOutcome === "function") {
+                const text = await payload.requestOutcome(total);
+                if (text == null) return `Rolled ${total}`;
+                return String(text || "Nothing on this row");
+            }
+        } catch (err) {
+            console.warn("Roll request outcome lookup failed", err);
+        }
+        return `Rolled ${total}`;
+    }
+
+    /**
+     * Add the table row under the dice flavor so chat shows the find.
+     * @param {ChatMessage|null|undefined} message
+     * @param {string} flavorText
+     * @param {string} outcomeText
+     */
+    static async #appendOutcomeToChat(message, flavorText, outcomeText) {
+        if (!outcomeText || outcomeText.startsWith("Rolled ")) return;
+        if (typeof message?.update !== "function") return;
+        const safe = String(outcomeText)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        try {
+            await message.update({ flavor: `${flavorText}<br><strong>${safe}</strong>` });
+        } catch (err) {
+            console.warn("Roll request could not record the table row on the dice message", err);
+        }
     }
 
     /**

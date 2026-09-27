@@ -72,9 +72,6 @@ export class BugReportService {
         if (!game.user.isGM) {
             return { ok: false, error: "Only the GM can send bug reports." };
         }
-        if (!CloudRelayService.isAuthenticated()) {
-            return { ok: false, error: "not_connected" };
-        }
 
         let report = opts.report ?? await this.collect(opts);
         const draftJson = BugReportBuilder.serialize(report);
@@ -173,7 +170,7 @@ export class BugReportService {
 
     /** @returns {boolean} */
     static canSubmit() {
-        return !!game.user?.isGM && CloudRelayService.isAuthenticated();
+        return !!game.user?.isGM;
     }
 
     static getDiscordUrl() {
@@ -188,12 +185,12 @@ export class BugReportService {
     static formatSubmitError(error) {
         if (!error) return "Upload failed.";
         if (error === "not_connected") {
-            return "Connect Patreon in Ionrift Library (free tier is fine), or copy the report for Discord.";
+            return "Could not reach report service. Copy the report and paste it in Discord.";
         }
         const text = String(error);
         const lower = text.toLowerCase();
         if (lower === "not found" || lower.includes("404")) {
-            return "Upload is not available on the server yet. Copy the report and paste it in Discord.";
+            return "Upload service is not available. Copy the report and paste it in Discord.";
         }
         return text;
     }

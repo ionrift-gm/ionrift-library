@@ -4,6 +4,9 @@
  */
 
 import { adapterRegistry } from "../systems/SystemAdapterRegistry.js";
+import { armDiceSoNiceSettle, waitForDiceSoNice } from "./DiceSettle.js";
+
+export { armDiceSoNiceSettle, waitForDiceSoNice };
 
 export const SKILL_DISPLAY_NAMES = {
     acr: "Acrobatics", ani: "Animal Handling", arc: "Arcana",
@@ -98,21 +101,6 @@ export async function postRollToChat(actor, roll, flavor, chatMode = "public") {
 }
 
 /**
- * @param {number} [timeoutMs=5000]
- * @returns {Promise<void>}
- */
-export async function waitForDiceSoNice(timeoutMs = 5000) {
-    if (!game.modules?.get?.("dice-so-nice")?.active) return;
-    return new Promise((resolve) => {
-        const timeout = setTimeout(resolve, timeoutMs);
-        Hooks.once("diceSoNiceRollComplete", () => {
-            clearTimeout(timeout);
-            resolve();
-        });
-    });
-}
-
-/**
  * @param {number|null} dc
  * @param {number} total
  * @param {"normal"|"advantage"|"disadvantage"|"force-pass"|"force-fail"} rollMode
@@ -148,8 +136,14 @@ export async function executeAbilityRoll(actor, abilityKey, dc, flavor, rollMode
     const formula = buildD20Formula(rollMode, modifier);
     const roll = new Roll(formula);
     await roll.evaluate();
-    await postRollToChat(actor, roll, flavor, chatMode);
-    await waitForDiceSoNice();
+    const gate = armDiceSoNiceSettle();
+    try {
+        await postRollToChat(actor, roll, flavor, chatMode);
+    } catch (err) {
+        gate.cancel();
+        throw err;
+    }
+    await gate.wait();
     const total = roll.total ?? 0;
     return {
         total,
@@ -177,8 +171,14 @@ export async function executeSkillRoll(actor, skillKey, dc, flavor, rollMode = "
     const formula = buildD20Formula(rollMode, modifier);
     const roll = new Roll(formula);
     await roll.evaluate();
-    await postRollToChat(actor, roll, flavor, chatMode);
-    await waitForDiceSoNice();
+    const gate = armDiceSoNiceSettle();
+    try {
+        await postRollToChat(actor, roll, flavor, chatMode);
+    } catch (err) {
+        gate.cancel();
+        throw err;
+    }
+    await gate.wait();
     const total = roll.total ?? 0;
     return {
         total,
@@ -228,23 +228,32 @@ export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = 
  * @param {object} [opts]
  * @param {string} [opts.flavor]
  * @param {"public"|"gmroll"|"blind"|"self"} [opts.chatMode="public"]
- * @returns {Promise<{ total: number, formula: string, passed: null, natD20: null, roll: Roll }>}
+ * @returns {Promise<{ total: number, formula: string, passed: null, natD20: null, roll: Roll, message: ChatMessage|null }>}
  */
-export async function executeFormulaRoll(actor, formula, { flavor = "", chatMode = "public" } = {}) {
+export async function executeFormulaRoll(actor, formula, { flavor = "", flavorHtml = "", chatMode = "public" } = {}) {
     const rollData = typeof actor?.getRollData === "function" ? actor.getRollData() : {};
     const roll = new Roll(String(formula ?? "0"), rollData);
     await roll.evaluate();
-    const flavorText = flavor
-        ? `<strong>${actor.name}</strong> - ${flavor}`
-        : `<strong>${actor.name}</strong> - ${formula}`;
-    await postRollToChat(actor, roll, flavorText, chatMode);
-    await waitForDiceSoNice();
+    const flavorText = flavorHtml
+        || (flavor
+            ? `<strong>${actor.name}</strong>: ${flavor}`
+            : `<strong>${actor.name}</strong>: ${formula}`);
+    const gate = armDiceSoNiceSettle();
+    let message;
+    try {
+        message = await postRollToChat(actor, roll, flavorText, chatMode);
+    } catch (err) {
+        gate.cancel();
+        throw err;
+    }
+    await gate.wait();
     return {
         total: roll.total ?? 0,
         formula: String(formula ?? "0"),
         passed: null,
         natD20: null,
-        roll
+        roll,
+        message: message ?? null
     };
 }
 

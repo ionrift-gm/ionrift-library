@@ -862,7 +862,7 @@ export class AvatarRegistryService {
         }
 
         // 3. Unassigned Reservoir match for this archetype/trade (ONLY for explicitly generic queries or when allowCrossSpecies is explicitly enabled)
-        const isGenericSpeciesQuery = !species || s === RESERVOIR_SPECIES_KEY;
+        const isGenericSpeciesQuery = !species || s === RESERVOIR_SPECIES_KEY || !activeList.includes(s);
         if (isGenericSpeciesQuery || options?.allowCrossSpecies) {
             const reservoirArchetypeMatches = candidates.filter(t =>
                 (!t.species || t.species === RESERVOIR_SPECIES_KEY) &&

@@ -15,7 +15,7 @@
  * @property {string} moduleId
  * @property {string} [moduleLabel] - Notification prefix (defaults to moduleId)
  * @property {string} anchorKey - First menu/setting used to locate the section container
- * @property {object} quickSetup
+ * @property {object} [quickSetup] - Preset picker. Omit when the module only needs groups.
  * @property {string} quickSetup.title
  * @property {string} quickSetup.subtitle
  * @property {ProfileDefinition[]} quickSetup.profiles
@@ -199,13 +199,78 @@ export class ModuleConfigProfiles {
     }
 
     /**
-     * @param {HTMLElement|JQuery} root
+     * Stop a flex column in the settings sheet from shrinking a row to a hairline.
+     * The group header keeps its own height, so a collapsed row reads as an empty section.
+     * @param {HTMLElement} el
+     */
+    static _pinSettingsRow(el) {
+        if (!el?.style) return;
+        el.style.flexShrink = "0";
+        el.style.minHeight = "min-content";
+    }
+
+    /**
+     * @param {ParentNode} container
+     */
+    static _pinGroupedRows(container) {
+        if (!container?.querySelectorAll) return;
+        const headers = container.querySelectorAll(".ionrift-settings-group-header, .respite-settings-group-header");
+        for (const header of headers) {
+            ModuleConfigProfiles._pinSettingsRow(header);
+            let sibling = header.nextElementSibling;
+            while (sibling
+                && !sibling.classList.contains("ionrift-settings-group-header")
+                && !sibling.classList.contains("respite-settings-group-header")
+                && !sibling.classList.contains("ionrift-settings-divider")) {
+                if (sibling.classList.contains("form-group")) {
+                    ModuleConfigProfiles._pinSettingsRow(sibling);
+                }
+                sibling = sibling.nextElementSibling;
+            }
+        }
+    }
+
+    /**
+     * Pull a grouped control back under its header when it sits outside the section.
+     * Leaves rows that are already in the section where they are.
+     * @param {HTMLElement} container
+     * @param {ParentNode} root
+     * @param {ModuleConfigRegistration} config
+     */
+    static _reclaimGroupedRows(container, root, config) {
+        const scope = container.closest?.(".window-app, .application") || root;
+        const headers = [...container.querySelectorAll(".ionrift-settings-group-header, .respite-settings-group-header")];
+        if (!headers.length) return;
+
+        for (const group of config.groups ?? []) {
+            const header = headers.find(node => node.querySelector("span")?.textContent === group.title);
+            if (!header) continue;
+            let cursor = header;
+            for (const key of group.keys) {
+                const inSection = ModuleConfigProfiles.getGroup(container, config.moduleId, key);
+                if (inSection) {
+                    ModuleConfigProfiles._pinSettingsRow(inSection);
+                    continue;
+                }
+                const el = ModuleConfigProfiles.getGroup(scope, config.moduleId, key);
+                if (!el || container.contains(el)) continue;
+                const after = cursor.nextElementSibling;
+                if (after) container.insertBefore(el, after);
+                else container.appendChild(el);
+                ModuleConfigProfiles._pinSettingsRow(el);
+                cursor = el;
+            }
+        }
+    }
+
+    /**
+     * @param {HTMLElement|JQuery|Document} root
      * @param {ModuleConfigRegistration} config
      */
     static enhanceSettingsSection(root, config) {
         if (!root || !config) return;
         if (root.jquery) root = root[0];
-        if (!(root instanceof HTMLElement)) return;
+        if (!root || typeof root.querySelector !== "function") return;
 
         const { moduleId, anchorKey, quickSetup, groups } = config;
 
@@ -215,20 +280,30 @@ export class ModuleConfigProfiles {
 
         const container = anchor.parentElement;
         if (!container) return;
-        if (container.querySelector(`.ionrift-quick-setup[data-module="${moduleId}"]`)) return;
+        const groupedMarker = `.ionrift-quick-setup[data-module="${moduleId}"], .ionrift-settings-grouped[data-module="${moduleId}"]`;
+        if (container.querySelector(groupedMarker)) {
+            ModuleConfigProfiles._pinGroupedRows(container);
+            ModuleConfigProfiles._reclaimGroupedRows(container, root, config);
+            return;
+        }
 
         const supportGroup = ModuleConfigProfiles.getGroup(root, moduleId, "supportLink");
         let boundary = null;
-        if (supportGroup) {
+        if (supportGroup && supportGroup.parentElement === container) {
             const prev = supportGroup.previousElementSibling;
             boundary = (prev?.classList?.contains("ionrift-settings-divider")) ? prev : supportGroup;
         }
-        const place = (node) => boundary
-            ? container.insertBefore(node, boundary)
-            : container.appendChild(node);
+        const place = (node) => {
+            ModuleConfigProfiles._pinSettingsRow(node);
+            if (boundary && boundary.parentElement === container) {
+                container.insertBefore(node, boundary);
+                return;
+            }
+            container.appendChild(node);
+        };
 
-        for (const group of groups) {
-            const present = group.keys
+        for (const group of groups ?? []) {
+            const present = (group.keys ?? [])
                 .map(k => ModuleConfigProfiles.getGroup(root, moduleId, k))
                 .filter(Boolean);
             if (!present.length) continue;
@@ -239,6 +314,17 @@ export class ModuleConfigProfiles {
             place(header);
 
             for (const el of present) place(el);
+        }
+
+        if (!quickSetup?.profiles?.length) {
+            const marker = document.createElement("div");
+            marker.className = "ionrift-settings-grouped";
+            marker.dataset.module = moduleId;
+            marker.hidden = true;
+            const first = container.firstChild;
+            if (first) container.insertBefore(marker, first);
+            else container.appendChild(marker);
+            return;
         }
 
         const guideBtn = quickSetup.onGuide
@@ -298,11 +384,49 @@ export class ModuleConfigProfiles {
     }
 
     /**
-     * @param {HTMLElement|JQuery} html
+     * @param {HTMLElement|JQuery|Document} html
      */
     static enhanceAll(html) {
-        for (const config of ModuleConfigProfiles._registry.values()) {
-            ModuleConfigProfiles.enhanceSettingsSection(html, config);
-        }
+        const seen = new Set();
+        const visit = (root) => {
+            if (!root || seen.has(root)) return;
+            seen.add(root);
+            for (const config of ModuleConfigProfiles._registry.values()) {
+                ModuleConfigProfiles.enhanceSettingsSection(root, config);
+            }
+        };
+
+        visit(html);
+        const connected = html?.jquery ? html[0]?.isConnected : html?.isConnected;
+        if (!connected && typeof document !== "undefined") visit(document);
+
+        ModuleConfigProfiles._scheduleLivePass();
+    }
+
+    /**
+     * Foundry sometimes hands the settings hook a form that is not in the
+     * document yet, or paints the module category a beat later. A second
+     * pass on the live document is a no-op once the quick setup block exists,
+     * apart from pinning row height.
+     */
+    static _scheduleLivePass() {
+        if (ModuleConfigProfiles._livePassQueued) return;
+        if (typeof document === "undefined") return;
+        ModuleConfigProfiles._livePassQueued = true;
+
+        const pass = () => {
+            for (const config of ModuleConfigProfiles._registry.values()) {
+                ModuleConfigProfiles.enhanceSettingsSection(document, config);
+            }
+        };
+        const finish = () => { ModuleConfigProfiles._livePassQueued = false; };
+
+        setTimeout(() => {
+            pass();
+            setTimeout(() => {
+                pass();
+                finish();
+            }, 50);
+        }, 0);
     }
 }
