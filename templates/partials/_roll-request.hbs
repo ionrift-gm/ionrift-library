@@ -7,7 +7,22 @@
     {{/if}}
 
     <div class="event-check-module">
-        <div class="check-module-skill">{{rollRequest.skillName}}</div>
+        <div class="check-module-skill">{{#if rollRequest.tableLabel}}{{rollRequest.tableLabel}}{{else}}{{rollRequest.skillName}}{{/if}}</div>
+        {{#if rollRequest.tableLabel}}
+        <div class="check-module-formula">{{rollRequest.skillName}}</div>
+        {{/if}}
+        {{#if rollRequest.showRollFace}}
+        <div class="check-module-dc-row check-module-dc-row--readonly">
+            <div class="event-dc-badge circular">
+                <span class="dc-label">Roll</span>
+                <span class="dc-value">{{rollRequest.ownerTotal}}</span>
+            </div>
+            <div class="ionrift-roll-request__outcome ionrift-roll-request__outcome--find">
+                {{#if rollRequest.outcomeText}}{{rollRequest.outcomeText}}{{else}}Reading the table{{/if}}
+            </div>
+        </div>
+        {{else}}
+        {{#unless rollRequest.tableLabel}}
         <div class="check-module-dc-row check-module-dc-row--readonly">
             <div class="ionrift-dc-stage{{#if rollRequest.ownerOutcome}} ionrift-dc-stage--{{rollRequest.ownerOutcome}}{{/if}}">
                 {{#if rollRequest.dcPulseActive}}
@@ -35,6 +50,8 @@
             </div>
             {{/if}}
         </div>
+        {{/unless}}
+        {{/if}}
         {{#if rollRequest.targetLabel}}
         <div class="check-module-target">{{rollRequest.targetLabel}}</div>
         {{/if}}
@@ -154,9 +171,11 @@
         {{/each}}
     </div>
     {{else if rollRequest.allRolled}}
+    {{#unless rollRequest.tableLabel}}
     <div class="event-roll-submitted">
         <i class="fas fa-check"></i> All requested rolls are in.
     </div>
+    {{/unless}}
     {{else if rollRequest.participants.length}}
     <div class="event-check-waiting">
         <i class="fas fa-hourglass-half"></i> Waiting for other party members to roll...

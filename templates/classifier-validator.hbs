@@ -21,15 +21,46 @@
                 placeholder="Search entity manifest..." value="{{filters.query}}">
         </div>
 
-        <div style="display:flex; gap: 10px;">
-            <select id="confidence-filter" style="width: 150px;">
+        <div style="display:flex; gap: 8px; align-items: center;">
+            <select id="confidence-filter" class="manifest-glass-select" style="width: 140px;">
                 <option value="all">All Entities</option>
-                <option value="low">Needs Review (Low Confidence)</option>
-                <option value="med">Uncertain (Medium Confidence)</option>
+                <option value="low">Needs Review</option>
+                <option value="med">Uncertain</option>
             </select>
-            <button id="refresh-validator" title="Re-scan Manifest"><i class="fas fa-sync"></i></button>
+            <button type="button" id="toggle-sources-drawer" class="sources-toggle-btn ionrift-btn-subtle {{#if sources.showDrawer}}active{{/if}}" title="Configure Indexed Sources">
+                <i class="fas fa-layer-group"></i> <span class="btn-text">Sources ({{sources.activeCount}})</span>
+            </button>
+            <button type="button" id="refresh-validator" title="Re-scan Manifest"><i class="fas fa-sync {{#if isScanning}}fa-spin{{/if}}"></i></button>
         </div>
     </div>
+
+    <!-- Compendium Sources Drawer -->
+    {{#if sources.showDrawer}}
+    <div class="entity-sources-drawer">
+        <div class="drawer-header">
+            <span><i class="fas fa-layer-group"></i> Indexed Sources</span>
+            <span class="drawer-hint">Select compendiums and world actors to scan for creature classification</span>
+        </div>
+        <div class="sources-list">
+            <label class="source-item">
+                <input type="checkbox" name="source_world" {{#if sources.includeWorld}}checked{{/if}}>
+                <span class="source-name"><i class="fas fa-globe"></i> World Actors</span>
+            </label>
+            {{#each sources.packs}}
+            <label class="source-item">
+                <input type="checkbox" name="pack_{{this.id}}" data-pack-id="{{this.id}}" {{#if this.isSelected}}checked{{/if}}>
+                <span class="source-name"><i class="fas fa-book"></i> {{this.label}}</span>
+                <span class="source-package">{{this.packageName}}</span>
+            </label>
+            {{/each}}
+        </div>
+        <div class="drawer-footer">
+            <button type="button" id="apply-sources-btn" class="ionrift-save-btn">
+                <i class="fas fa-arrows-rotate"></i> Re-index Selected Sources
+            </button>
+        </div>
+    </div>
+    {{/if}}
 
     <!-- Results List -->
     <div class="ionrift-list">
@@ -51,7 +82,7 @@
                 <!-- Class Badge (click to override) -->
                 <button type="button"
                     class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}{{/if}}"
-                    title="{{#if this.isManual}}Manual classification{{else}}Detected class — click to override{{/if}}"
+                    title="{{#if this.isManual}}Manual classification{{else}}Detected class (click to override){{/if}}"
                     data-actor-id="{{this.actorId}}"
                     data-uuid="{{this.uuid}}"
                     data-class-id="{{this.rawClassId}}"
@@ -84,8 +115,8 @@
         style="padding: 10px 20px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; gap: 20px;">
 
         <!-- Left: Source Info (Fixed width to prevent squish) -->
-        <div style="font-size: 0.85em; color: #666; flex: 0 0 auto; white-space: nowrap;">
-            <i class="fas fa-info-circle"></i> Source: World & SRD
+        <div style="font-size: 0.85em; color: #aaa; flex: 0 0 auto; white-space: nowrap;">
+            <i class="fas fa-database"></i> {{sources.summary}}
         </div>
 
         <!-- Center: Pagination (Flex 1 to take varied space) -->

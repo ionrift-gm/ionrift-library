@@ -9,6 +9,10 @@ export class ClassifierValidatorApp extends FormApplication {
         this.itemsPerPage = 50;
         this._filterQuery = "";
         this._filterMode = "all";
+        this._showSourcesDrawer = false;
+        this._isScanning = false;
+        this._includeWorld = true;
+        this._selectedPacks = null;
     }
 
     static get defaultOptions() {
@@ -25,6 +29,44 @@ export class ClassifierValidatorApp extends FormApplication {
 
     async _updateObject(event, formData) {
         // No settings to save
+    }
+
+    _getAvailableActorPacks() {
+        if (!game.packs) return [];
+        return game.packs
+            .filter(p => p.documentName === "Actor")
+            .map(p => ({
+                id: p.metadata.id,
+                label: p.metadata.label || p.metadata.id,
+                packageName: p.metadata.packageName || "world",
+                count: p.index?.size ?? p.size ?? 0
+            }));
+    }
+
+    _getDefaultSelectedPacks() {
+        const sysId = game.system?.id;
+        const available = this._getAvailableActorPacks();
+        return available.filter(p => {
+            const id = p.id;
+            const label = (p.label || "").toLowerCase();
+            if (sysId === "dnd5e" && id === "dnd5e.monsters") return true;
+            if (sysId === "daggerheart" && (id.includes("adversaries") || label.includes("adversaries"))) return true;
+            if (available.length <= 2) return true;
+            return false;
+        }).map(p => p.id);
+    }
+
+    _getSelectedPacks() {
+        if (this._selectedPacks) return this._selectedPacks;
+        try {
+            const saved = game.settings.get("ionrift-library", "entityManifestPacks");
+            if (Array.isArray(saved) && saved.length > 0) {
+                this._selectedPacks = new Set(saved);
+                return this._selectedPacks;
+            }
+        } catch { /* ok */ }
+        this._selectedPacks = new Set(this._getDefaultSelectedPacks());
+        return this._selectedPacks;
     }
 
     async getData() {
@@ -52,7 +94,6 @@ export class ClassifierValidatorApp extends FormApplication {
 
         // 2. Sort (Alphabetical A-Z by default)
         filtered.sort((a, b) => a.name.localeCompare(b.name));
-
 
         // 3. Paginate
         const totalItems = filtered.length;
@@ -89,6 +130,26 @@ export class ClassifierValidatorApp extends FormApplication {
             }
         }
 
+        const selectedSet = this._getSelectedPacks();
+        const availablePacks = this._getAvailableActorPacks();
+        const packSources = availablePacks.map(p => ({
+            ...p,
+            isSelected: selectedSet.has(p.id)
+        }));
+
+        let sourcesSummary = "";
+        const packCount = selectedSet.size;
+        if (this._includeWorld && packCount === 0) {
+            sourcesSummary = "World Actors";
+        } else if (!this._includeWorld && packCount === 1) {
+            const pack = game.packs?.get?.(Array.from(selectedSet)[0]);
+            sourcesSummary = pack?.metadata?.label || "1 Compendium";
+        } else if (this._includeWorld && packCount > 0) {
+            sourcesSummary = `World + ${packCount} Compendium${packCount > 1 ? "s" : ""}`;
+        } else {
+            sourcesSummary = `${packCount} Compendium${packCount > 1 ? "s" : ""}`;
+        }
+
         return {
             results: paginated,
             stats: stats,
@@ -104,18 +165,27 @@ export class ClassifierValidatorApp extends FormApplication {
             filters: {
                 query: this._filterQuery,
                 mode: this._filterMode
-            }
+            },
+            sources: {
+                includeWorld: this._includeWorld,
+                packs: packSources,
+                showDrawer: this._showSourcesDrawer,
+                activeCount: (this._includeWorld ? 1 : 0) + packCount,
+                summary: sourcesSummary
+            },
+            isScanning: this._isScanning
         };
     }
 
     async _scanActors() {
+        this._isScanning = true;
         this._results = [];
-        ui.notifications.info("Ionrift | Scanning Entity Manifest...");
+        ui.notifications?.info("Ionrift | Scanning Entity Manifest...");
 
         let actors = [];
 
         // 1. World Actors (Full Data)
-        if (game.actors) {
+        if (this._includeWorld && game.actors) {
             const worldActors = game.actors
                 .filter(a => a.type !== 'character')
                 .map(a => ({
@@ -126,47 +196,39 @@ export class ClassifierValidatorApp extends FormApplication {
             actors = actors.concat(worldActors);
         }
 
-        // 2. Compendium Scan (Thorough)
-        const sysId = game.system.id;
-        const targetPacks = game.packs.filter(p => {
-            if (p.documentName !== "Actor") return false;
-            const id = p.metadata.id;
-            const label = p.metadata.label.toLowerCase();
+        // 2. Compendium Scan (Selected Packs)
+        const selectedPackIds = this._getSelectedPacks();
+        const availablePacks = game.packs ? game.packs.filter(p => p.documentName === "Actor" && selectedPackIds.has(p.metadata.id)) : [];
 
-            // DnD5e: Standard SRD
-            if (sysId === "dnd5e" && id === "dnd5e.monsters") return true;
-
-            // Daggerheart: Look for standard "adversaries" pack
-            if (sysId === "daggerheart" && (id.includes("adversaries") || label.includes("adversaries"))) return true;
-
-            return false;
-        });
-
-        for (const pack of targetPacks) {
-            // Fetch necessary fields including system-specific details
-            const index = await pack.getIndex({
-                fields: [
-                    "flags",
-                    "system.details.type",
-                    "system.details.alignment",
-                    "system.details.biography",
-                    "system.ancestry",      // Daggerheart
-                    "system.description"    // Common
-                ]
-            });
-            const packActors = index.map(i => {
-                const uuid = i.uuid ?? `Compendium.${pack.collection}.Actor.${i._id}`;
-                return {
-                    ...this._classifyData({ ...i, uuid }),
-                    source: pack.metadata.label,
-                    uuid
-                };
-            });
-            actors = actors.concat(packActors);
+        for (const pack of availablePacks) {
+            try {
+                const index = await pack.getIndex({
+                    fields: [
+                        "flags",
+                        "system.details.type",
+                        "system.details.alignment",
+                        "system.details.biography",
+                        "system.ancestry",
+                        "system.description"
+                    ]
+                });
+                const packActors = index.map(i => {
+                    const uuid = i.uuid ?? `Compendium.${pack.collection}.Actor.${i._id}`;
+                    return {
+                        ...this._classifyData({ ...i, uuid }),
+                        source: pack.metadata.label || pack.metadata.id,
+                        uuid
+                    };
+                });
+                actors = actors.concat(packActors);
+            } catch (err) {
+                Logger.warn("Library", `Failed indexing pack ${pack.metadata.id}:`, err);
+            }
         }
 
         // Exclude Players/Characters
         this._results = actors.filter(r => r.classId !== "player");
+        this._isScanning = false;
     }
 
     _classifyData(actorOrIndex) {
@@ -371,6 +433,38 @@ export class ClassifierValidatorApp extends FormApplication {
                 });
                 await this.render(true);
             }
+        });
+
+        // Toggle Sources Drawer
+        html.find("#toggle-sources-drawer").click((ev) => {
+            ev.preventDefault();
+            this._showSourcesDrawer = !this._showSourcesDrawer;
+            this.render();
+        });
+
+        // Apply Sources and Re-index
+        html.find("#apply-sources-btn").click(async (ev) => {
+            ev.preventDefault();
+            const applyBtn = $(ev.currentTarget);
+            applyBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Indexing Sources...');
+
+            const includeWorld = html.find('input[name="source_world"]').is(":checked");
+            const selectedPacks = new Set();
+            html.find('input[data-pack-id]:checked').each((_, el) => {
+                selectedPacks.add($(el).data("packId"));
+            });
+
+            this._includeWorld = includeWorld;
+            this._selectedPacks = selectedPacks;
+
+            try {
+                await game.settings.set("ionrift-library", "entityManifestPacks", Array.from(selectedPacks));
+            } catch { /* ok */ }
+
+            await this._scanActors();
+            this._showSourcesDrawer = false;
+            this.currentPage = 1;
+            this.render();
         });
 
         // Re-Scan

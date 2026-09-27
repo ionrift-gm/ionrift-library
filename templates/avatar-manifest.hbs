@@ -1,5 +1,14 @@
 <div class="ionrift-app-container avatar-manifest-container" style="display:flex; flex-direction:column; height:100%; min-height:0;">
 
+    {{#if isStandby}}
+    <div class="ionrift-subsystem-banner state-standby" style="margin: 0; padding: 7px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div class="banner-summary" style="display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-pause-circle" style="color:rgba(255,255,255,0.5);"></i>
+            <span class="banner-message"><strong>Standby Mode:</strong> No active modules (such as Civic Architect or Cloud) are currently using this token manifest. Custom curation changes will be saved to your world.</span>
+        </div>
+    </div>
+    {{/if}}
+
     <!-- Top Navigation Bar (Zero-Collision 3-Zone Architecture) -->
     <div class="dashboard-header">
         <!-- Zone 1: Gauge & Global Token Count with Cross-World Persistence Pill -->
@@ -420,7 +429,7 @@
                     </div>
 
                     {{#each folderTree as |f|}}
-                    <div class="folder-tree-node {{#if f.isSelected}}is-active{{/if}} {{#if f.isBanned}}is-banned-folder{{/if}} {{#if f.isFilteredOut}}is-filtered-out{{/if}}" data-folder="{{f.path}}" style="padding-left:{{f.indentPx}}px;" title="{{f.path}} ({{#if f.hasFilterContext}}{{f.matchCount}} of {{f.count}} tokens match active filters{{else}}{{f.count}} tokens{{/if}}){{#if f.isBanned}} [BANNED - Excluded from generation]{{/if}}">
+                    <div class="folder-tree-node {{#if f.isSelected}}is-active{{/if}} {{#if f.isBanned}}is-banned-folder{{/if}} {{#if f.isFilteredOut}}is-filtered-out{{/if}}" data-folder="{{f.path}}" style="padding-left:{{f.indentPx}}px;" title="{{f.path}} ({{#if f.hasFilterContext}}{{f.matchCount}} of {{f.count}} tokens match active filters{{else}}{{f.count}} tokens{{/if}}){{#if f.isBanned}} [BANNED: Excluded from generation]{{/if}}">
                         {{#if f.hasChildren}}
                         <span class="folder-tree-caret" title="{{#if f.isExpanded}}Collapse{{else}}Expand{{/if}}">
                             <i class="fas {{#if f.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
@@ -675,7 +684,7 @@
                 <!-- Pagination Footer -->
                 <div class="curation-pagination-footer">
                     <div class="pagination-summary" title="Showing tokens {{pagination.startItem}} through {{pagination.endItem}} of {{pagination.totalItems}}">
-                        Showing {{pagination.startItem}} - {{pagination.endItem}} of {{pagination.totalItems}}
+                        Showing {{pagination.startItem}} to {{pagination.endItem}} of {{pagination.totalItems}}
                     </div>
                     <div class="pagination-controls-group">
                         <button type="button" class="page-first ionrift-btn manifest-page-btn" {{#unless pagination.hasPrev}}disabled{{/unless}} title="First Page">
@@ -740,7 +749,7 @@
                 </div>
             </div>
 
-            <!-- Tier 2: Watched Folders Management Card -->
+            <!-- Watched Folders Management Card -->
             <div class="watch-folders-card">
                 <div class="watch-folders-card-header">
                     <h3>
@@ -770,21 +779,35 @@
                 <!-- Folders List -->
                 <div class="watch-folder-list">
                     {{#each watchFolderEntries as |entry|}}
-                    <div class="watch-folder-item">
+                    <div class="watch-folder-item {{#if entry.isPrimary}}is-primary-folder{{/if}}">
                         <div class="folder-info">
                             <i class="fas fa-folder folder-icon"></i>
                             <span class="folder-path" title="{{entry.folder}}">{{entry.folder}}</span>
+                            {{#if entry.isPrimary}}
+                            <span class="folder-badge-primary" title="Primary token art repository">
+                                Primary Root
+                            </span>
+                            {{/if}}
                         </div>
                         <div class="folder-actions">
                             <span class="folder-token-count" title="{{entry.tokenCount}} cataloged tokens in this directory">
                                 {{entry.tokenCount}} Tokens
                             </span>
+                            {{#if entry.isPrimary}}
+                            <button type="button" id="change-primary-root-btn" class="folder-action-btn primary-action-btn" title="Choose a different primary folder via FilePicker">
+                                <i class="fas fa-folder-tree"></i> Change Root...
+                            </button>
+                            <button type="button" id="scaffold-primary-root-btn" class="folder-action-btn primary-action-btn" title="Create or verify the standard species/archetype folder tree and README">
+                                <i class="fas fa-folder-plus"></i> Scaffold
+                            </button>
+                            {{else}}
                             <span class="folder-badge-recursive" title="Subdirectories are recursively indexed">
                                 Recursive
                             </span>
                             <button type="button" class="remove-watch-folder-btn" data-folder="{{entry.folder}}" title="Remove this watch folder">
                                 <i class="fas fa-trash-alt"></i> Remove
                             </button>
+                            {{/if}}
                         </div>
                     </div>
                     {{else}}

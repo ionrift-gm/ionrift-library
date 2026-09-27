@@ -18,6 +18,7 @@
  * 8. Foundry Default Art: icons/svg/mystery-man.svg
  */
 import { PlatformHelper } from "./platform/PlatformHelper.js";
+import { Logger } from "./platform/Logger.js";
 import { OverlayService } from "./packs/OverlayService.js";
 import { AvatarRegistryService } from "./AvatarRegistryService.js";
 import { MODULE_ID } from "../data/moduleId.js";
@@ -157,7 +158,7 @@ export class TokenArtResolver {
                 this._overlayCache = new Map();
             }
 
-            console.log(`Ionrift Library | Scanning token art at: ${root}...`);
+            Logger.log("Library", `Scanning token art at: ${root}...`);
 
             try {
                 // Step 1: Probe root directory. If missing, complete immediately.
@@ -167,7 +168,7 @@ export class TokenArtResolver {
                 } catch {
                     // Root doesn't exist; world is fresh or unpopulated.
                     this._cacheReady = true;
-                    console.log(`Ionrift Library | Token root '${root}' not found. Defaulting to neutral glyphs.`);
+                    Logger.log("Library", `Token root '${root}' not found. Defaulting to neutral glyphs.`);
                     return;
                 }
 
@@ -202,9 +203,9 @@ export class TokenArtResolver {
                 await this._warmOverlayPacks();
 
                 this._cacheReady = true;
-                console.log(`Ionrift Library | Token art cache ready (${this._cache.size} folders indexed).`);
+                Logger.log("Library", `Token art cache ready (${this._cache.size} folders indexed).`);
             } catch (err) {
-                console.warn("Ionrift Library | Error during token art cache crawl:", err);
+                Logger.warn("Library", "Error during token art cache crawl:", err);
                 this._cacheReady = true;
             } finally {
                 this._warmingPromise = null;
@@ -358,13 +359,14 @@ export class TokenArtResolver {
      * Idempotently creates root, standard species folders, generic/ with core archetypes,
      * and a helpful README.txt explaining conventions.
      */
-    static async scaffoldFolders() {
+    static async scaffoldFolders({ force = false } = {}) {
         const FP = PlatformHelper.FP;
         if (!FP) return;
         const source = PlatformHelper.fileSource;
         const root = this.getRootPath();
 
-        console.log(`Ionrift Library | Scaffolding token art directories at '${root}'...`);
+        if (!force && this._scaffoldedRoots?.has(root)) return;
+        Logger.log("Library", `Scaffolding token art directories at '${root}'...`);
 
         // Create root
         await PlatformHelper.ensureDirectory(root, source);
@@ -380,7 +382,7 @@ export class TokenArtResolver {
             await PlatformHelper.ensureDirectory(`${root}/generic/${arch}`, source);
         }
 
-        // Create README.txt explaining conventions
+        // Create README.txt explaining conventions if not already present
         const readmeContent = [
             "Ionrift Token Art Directory",
             "===========================",
@@ -401,13 +403,35 @@ export class TokenArtResolver {
         ].join("\n");
 
         try {
-            const readmeFile = new File([readmeContent], "README.txt", { type: "text/plain" });
-            await FP.upload(source, root, readmeFile, {});
+            let exists = false;
+            try {
+                const browse = await FP.browse(source, root);
+                exists = (browse.files ?? []).some(f => {
+                    const name = f.split("/").pop().split("\\").pop();
+                    return name.toLowerCase() === "readme.txt";
+                });
+            } catch {
+                // Ignore browse errors
+            }
+
+            if (!exists) {
+                await PlatformHelper.withSuppressedToasts(async () => {
+                    let readmeFile;
+                    if (typeof File !== "undefined" && typeof Blob !== "undefined") {
+                        const blob = new Blob([readmeContent], { type: "text/plain" });
+                        readmeFile = new File([blob], "README.txt", { type: "text/plain" });
+                    } else {
+                        readmeFile = { name: "README.txt", size: readmeContent.length, type: "text/plain" };
+                    }
+                    await FP.upload(source, root, readmeFile, { notify: false }, { notify: false });
+                });
+            }
         } catch {
             // README write optional
         }
 
-        console.log("Ionrift Library | Token art folder structure ready.");
+        (this._scaffoldedRoots ??= new Set()).add(root);
+        Logger.log("Library", "Token art folder structure ready.");
         await this.warmCache({ force: true });
     }
 

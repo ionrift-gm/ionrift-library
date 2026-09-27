@@ -55,7 +55,7 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
             <div class="terrain-empty-state">
                 <i class="fas fa-mountain-sun"></i>
                 <p>No custom terrains imported.</p>
-                <p class="terrain-empty-hint">Import a terrain JSON to add new locations for Quartermaster, Respite, and other modules.</p>
+                <p class="terrain-empty-hint">Import a terrain JSON to add new locations.</p>
             </div>
             <div class="terrain-actions">
                 <button type="button" class="terrain-import-btn">

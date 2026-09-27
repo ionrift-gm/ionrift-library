@@ -86,6 +86,7 @@ export class SettingsLayout {
         }
 
         const selectors = [
+            `button[data-key="${moduleId}.validatorMenu"]`,
             `button[data-key="${moduleId}.setupWizard"]`,
             `[name^="${moduleId}."`
         ];
@@ -163,7 +164,6 @@ export class SettingsLayout {
     static registerFooter(moduleId, {
         wiki        = WIKI_DEFAULT,
         discord     = true,
-        diagnostics = null,
     } = {}) {
 
         SettingsLayout._registeredModules.add(moduleId);
@@ -191,18 +191,6 @@ export class SettingsLayout {
             type: BugReportApp.forModule(moduleId),
             restricted: true,
         });
-
-        // Diagnostics (library only)
-        if (diagnostics) {
-            game.settings.registerMenu(moduleId, "diagnosticMenu", {
-                name: "System Diagnostics",
-                label: "Run Diagnostics",
-                hint: "",
-                icon: "fas fa-heartbeat",
-                type: diagnostics,
-                restricted: true
-            });
-        }
 
         // Wiki / Guides
         if (wiki) {
@@ -314,7 +302,7 @@ export class SettingsLayout {
         const $container = $supportGroup.parent();
 
         // Collect footer menu groups to move to bottom
-        const footerKeys = ["supportLink", "bugReportMenu", "diagnosticMenu", "wikiLink"];
+        const footerKeys = ["supportLink", "bugReportMenu", "wikiLink"];
         const footerGroups = [];
         for (const key of footerKeys) {
             const $btn = $html.find(`button[data-key="${moduleId}.${key}"]`);
@@ -431,6 +419,84 @@ export class SettingsLayout {
         if (html) SettingsLayout.refreshPackAlertUI(html);
     }
 
+    /**
+     * Injects consumer provenance strips into module settings rows
+     * for ionrift-library subsystems.
+     *
+     * @param {jQuery|Element} [html]
+     */
+    static injectConsumerBadges(html) {
+        const root = html instanceof Element ? html : (html ? html[0] : document);
+        if (!root?.querySelectorAll) return;
+
+        const lib = game.ionrift?.library;
+        const definitions = lib?.subsystems;
+        const getStatus = lib?.getSubsystemStatus;
+        if (!definitions || !getStatus) return;
+
+        for (const [subsystemKey, def] of Object.entries(definitions)) {
+            const status = getStatus(subsystemKey);
+            if (!status?.visible) continue;
+
+            const btn = root.querySelector(
+                `button[data-key="ionrift-library.${def.key}"], button[data-key="${def.key}"], button[data-action="${def.key}"], [name="ionrift-library.${def.key}"], [name="${def.key}"]`
+            );
+            if (!btn) continue;
+
+            // Target the actual .form-group (do NOT stop at .form-fields)
+            const formGroup = btn.closest(".form-group") || btn.closest("fieldset") || btn.parentElement;
+            if (!formGroup) continue;
+
+            formGroup.classList.add("has-ionrift-consumer");
+
+            // Strip any stale/misplaced chips from notes or button containers, and redundant status tick icons
+            formGroup.querySelectorAll(".form-fields .hint, .form-fields .notes, .form-fields .ionrift-consumer-strip, p.notes .ionrift-consumer-strip, p.hint .ionrift-consumer-strip, .ionrift-integration-icon").forEach(el => el.remove());
+
+            // Prevent duplicate injection in label
+            if (formGroup.querySelector("label .ionrift-consumer-strip")) continue;
+
+            const label = formGroup.querySelector("label");
+            if (!label) continue;
+
+            // Wrap existing label content in title row to preserve inline alignment with any status icons
+            let titleRow = label.querySelector(".ionrift-consumer-title-row");
+            if (!titleRow) {
+                titleRow = document.createElement("span");
+                titleRow.className = "ionrift-consumer-title-row";
+                while (label.firstChild) {
+                    titleRow.appendChild(label.firstChild);
+                }
+                label.appendChild(titleRow);
+            }
+
+            const strip = document.createElement("span");
+            strip.className = "ionrift-consumer-strip";
+
+            const lead = document.createElement("span");
+            lead.className = `ionrift-consumer-lead ${status.isActive ? "state-active" : "state-standby"}`;
+            lead.textContent = status.isActive ? "Used by" : "Available for";
+            strip.appendChild(lead);
+
+            const iconsContainer = document.createElement("span");
+            iconsContainer.className = "ionrift-consumer-icons";
+
+            const consumers = status.isActive ? status.activeConsumerDetails : status.dormantConsumerDetails;
+            for (const consumer of (consumers || [])) {
+                const chip = document.createElement("span");
+                chip.className = `ionrift-consumer-chip ${status.isActive ? "state-active" : "state-standby"}`;
+                const tip = status.isActive ? consumer.name : `${consumer.name} (Not active)`;
+                chip.setAttribute("data-tooltip", tip);
+                chip.setAttribute("title", tip);
+                chip.setAttribute("aria-label", tip);
+                chip.innerHTML = `<i class="${consumer.icon}"></i>`;
+                iconsContainer.appendChild(chip);
+            }
+
+            strip.appendChild(iconsContainer);
+            label.appendChild(strip);
+        }
+    }
+
     /** @returns {Promise<void>} */
     static async #runPackAlertRefresh() {
         SettingsLayout._packAlertLastRefresh = Date.now();
@@ -447,9 +513,11 @@ Hooks.on("renderSettingsConfig", (app, html, data) => {
 
     SettingsLayout.refreshPackAlertUI(html);
     SettingsLayout.suppressLegacyPackButtons(html);
+    SettingsLayout.injectConsumerBadges(html);
 
     queueMicrotask(() => {
         game.ionrift?.library?.ModuleConfigProfiles?.enhanceAll?.(html);
         SettingsLayout.ensurePackAlertsFresh(html).catch(() => {});
+        SettingsLayout.injectConsumerBadges(html);
     });
 });

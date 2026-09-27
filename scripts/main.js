@@ -1,11 +1,9 @@
 import { MODULE_ID } from "./data/moduleId.js";
 import { createLibraryContext } from "./composition/createLibraryContext.js";
-import { DiagnosticApp } from "./apps/diagnostics/DiagnosticApp.js";
 import { ClassifierValidatorApp } from "./apps/diagnostics/ClassifierValidatorApp.js";
 import { AvatarManifestApp } from "./apps/diagnostics/AvatarManifestApp.js";
 import { AvatarRegistryService } from "./services/AvatarRegistryService.js";
 import { SpeciesRegistry } from "./services/species/SpeciesRegistry.js";
-import { CreatureIndexSetupApp } from "./apps/diagnostics/CreatureIndexSetupApp.js";
 import { PartyRosterApp } from "./apps/party/PartyRosterApp.js";
 import { TerrainManagerApp } from "./apps/terrain/TerrainManagerApp.js";
 import { SettingsLayout } from "./utils/SettingsLayout.js";
@@ -20,6 +18,9 @@ import { InstallHealthCheck } from "./services/packs/InstallHealthCheck.js";
 import { ItemEnrichmentEngine } from "./services/items/ItemEnrichmentEngine.js";
 import { RollRequestService } from "./services/rolls/RollRequestService.js";
 import { TokenArtResolver } from "./services/TokenArtResolver.js";
+import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "./data/subsystemDefinitions.js";
+
+export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus };
 
 const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
 Hooks.on("renderItemSheet", _onEnrichSheet);
@@ -67,6 +68,13 @@ Hooks.once("init", () => {
         config: false,
         type: Object,
         default: {}
+    });
+
+    game.settings.register(MODULE_ID, "entityManifestPacks", {
+        scope: "world",
+        config: false,
+        type: Array,
+        default: []
     });
 
     game.settings.register(MODULE_ID, "installedPacks", {
@@ -213,6 +221,7 @@ Hooks.once("init", () => {
         restricted: true
     });
 
+
     game.settings.register(MODULE_ID, "enableTokenManifest", {
         name: "Enable Token Manifest (Preview)",
         hint: "Feature flag for Token Manifest and token curation diagnostics.",
@@ -240,39 +249,34 @@ Hooks.once("init", () => {
         }
     };
 
+    const tokenManifestVisible = isTokenManifestEnabled() && getSubsystemStatus("tokenManifest").visible;
+
     game.settings.register(MODULE_ID, "tokenArtRoot", {
         name: "Token Art Directory",
         hint: "Root directory path for Ionrift-managed resident and actor token art.",
         scope: "world",
-        config: isTokenManifestEnabled(),
+        config: false,
         type: String,
         default: "tokens/ionrift",
         restricted: true,
         onChange: () => {
-            if (!isTokenManifestEnabled()) return;
             TokenArtResolver.refreshCache().catch(e =>
                 Logger.warn("Library", "Failed to refresh token art cache on root change:", e)
             );
         }
     });
 
-    game.settings.registerMenu(MODULE_ID, "setupWizard", {
-        name: "Creature Database",
-        label: "Initialize Database",
-        hint: "Build the local creature index. Required for Resonance and other monster-aware modules.",
-        icon: "fas fa-database",
-        type: CreatureIndexSetupApp,
-        restricted: true
-    });
-
-    game.settings.registerMenu(MODULE_ID, "partyRosterMenu", {
-        name: "Party Roster",
-        label: "Edit Roster",
-        hint: "Choose which characters are in the active adventuring party. Used by Respite, Workshop, and other modules.",
-        icon: "fas fa-users",
-        type: PartyRosterApp,
-        restricted: true
-    });
+    const partyRosterStatus = getSubsystemStatus("partyRoster");
+    if (partyRosterStatus.visible) {
+        game.settings.registerMenu(MODULE_ID, "partyRosterMenu", {
+            name: "Party Roster",
+            label: "Edit Roster",
+            hint: "Choose which characters are in the active adventuring party.",
+            icon: "fas fa-users",
+            type: PartyRosterApp,
+            restricted: true
+        });
+    }
 
     game.settings.register(MODULE_ID, "avatarRegistry", {
         name: "Token Registry",
@@ -283,7 +287,7 @@ Hooks.once("init", () => {
         default: AvatarRegistryService.getDefaultState()
     });
 
-    if (isTokenManifestEnabled()) {
+    if (tokenManifestVisible) {
         game.settings.registerMenu(MODULE_ID, "avatarManifest", {
             name: "Token Manifest",
             label: "Manage Tokens",
@@ -294,37 +298,31 @@ Hooks.once("init", () => {
         });
     }
 
-    game.settings.registerMenu(MODULE_ID, "validatorMenu", {
-        name: "Logic Inspector",
-        label: "Inspect Logic",
-        hint: "",
-        icon: "fas fa-code-branch",
-        type: ClassifierValidatorApp,
-        restricted: true
-    });
+    const entityManifestStatus = getSubsystemStatus("entityManifest");
+    if (entityManifestStatus.visible) {
+        game.settings.registerMenu(MODULE_ID, "validatorMenu", {
+            name: "Entity Manifest",
+            label: "Inspect Entities",
+            hint: "Inspect creature classifications, taxonomy confidence, and monster tags.",
+            icon: "fas fa-list-check",
+            type: ClassifierValidatorApp,
+            restricted: true
+        });
+    }
 
-    game.settings.registerMenu(MODULE_ID, "terrainManager", {
-        name: "Custom Terrains",
-        label: "Manage Terrains",
-        hint: "Import or remove custom terrain types. Available to all Ionrift modules.",
-        icon: "fas fa-mountain-sun",
-        type: TerrainManagerApp,
-        restricted: true
-    });
+    const terrainStatus = getSubsystemStatus("customTerrains");
+    if (terrainStatus.visible) {
+        game.settings.registerMenu(MODULE_ID, "terrainManager", {
+            name: "Custom Terrains",
+            label: "Manage Terrains",
+            hint: "Import or remove custom terrain types.",
+            icon: "fas fa-mountain-sun",
+            type: TerrainManagerApp,
+            restricted: true
+        });
+    }
 
-    SettingsLayout.registerFooter(MODULE_ID, {
-        diagnostics: DiagnosticApp
-    });
-
-    Hooks.on("ionrift.runDiagnostics", (reportBuilder) => {
-        reportBuilder.addResult("Ionrift Library", "Modules Loaded", "PASS", "Library Active");
-        try {
-            Logger.log("Library", "Diagnostic Write Test");
-            reportBuilder.addResult("Ionrift Library", "Console Access", "PASS", "Can write to console.");
-        } catch (e) {
-            reportBuilder.addResult("Ionrift Library", "Console Access", "WARN", "Console write failed?");
-        }
-    });
+    SettingsLayout.registerFooter(MODULE_ID);
 });
 
 Hooks.once("ready", async () => {
@@ -343,7 +341,7 @@ Hooks.once("ready", async () => {
 
     const tokenManifestActive = Boolean(
         game.settings.get(MODULE_ID, "enableTokenManifest")
-    );
+    ) && getSubsystemStatus("tokenManifest").visible;
 
     if (tokenManifestActive) {
         if (game.user.isGM) {
@@ -372,41 +370,6 @@ Hooks.once("ready", async () => {
         CompendiumConfigGuard.repairWorld().catch(e =>
             Logger.warn("Library", "Compendium config self-heal failed:", e)
         );
-
-        const INDEXING_PROTOCOL_VERSION = "1";
-        const storedVersion = game.settings.get(MODULE_ID, "indexSetupVersion");
-
-        if (storedVersion.includes(".") && storedVersion !== "0.0.0") {
-            game.settings.set(MODULE_ID, "indexSetupVersion", INDEXING_PROTOCOL_VERSION);
-        }
-
-        if (game.ionrift.integration) {
-            game.ionrift.integration.registerApp(MODULE_ID, {
-                settingsKey: [`${MODULE_ID}.setupWizard`],
-                checkStatus: async () => {
-                    const currentStored = game.settings.get(MODULE_ID, "indexSetupVersion");
-
-                    if (currentStored === INDEXING_PROTOCOL_VERSION) {
-                        return {
-                            status: game.ionrift.integration.STATUS.CONNECTED,
-                            label: "Indexed",
-                            message: "Creature Index Up-to-Date"
-                        };
-                    } else if (currentStored && currentStored !== "0.0.0") {
-                        return {
-                            status: game.ionrift.integration.STATUS.WARNING,
-                            label: "Outdated",
-                            message: "Index Version Mismatch. Re-Initialize"
-                        };
-                    }
-                    return {
-                        status: game.ionrift.integration.STATUS.CONNECTED,
-                        label: "Not yet built",
-                        message: "Initialize when ready."
-                    };
-                }
-            });
-        }
 
         InstallHealthCheck.run().catch(e => Logger.warn("Library", "Install health check failed:", e));
     }

@@ -54,3 +54,10 @@ ionrift-brand/
 /tools/
 
 test_imports.ps1
+
+# Internal engineering docs (DEV_PROTOCOLS §22)
+docs/
+*_STRATEGY.md
+*_PLAN.md
+*_SPEC.md
+

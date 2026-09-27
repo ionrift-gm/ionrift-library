@@ -63,15 +63,91 @@ export class CloudRelayService {
     }
 
     static async initSupportReport(payload) {
-        return { ok: false, error: "Connected support reports are unavailable.", payload };
+        const { context, summary, byteLength } = payload ?? {};
+        if (!context || !byteLength) {
+            return { ok: false, error: "Missing report init fields." };
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-init`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ context, summary, byteLength }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 429) {
+                    return { ok: false, error: "Daily report limit reached. Try again tomorrow or use Discord." };
+                }
+                const msg = await response.text();
+                return { ok: false, error: msg || `HTTP ${response.status}` };
+            }
+
+            const data = await response.json();
+            return {
+                ok: true,
+                reportId: data.reportId,
+                reference: data.reference,
+            };
+        } catch (err) {
+            return { ok: false, error: err?.message ?? "Network error." };
+        }
     }
 
     static async uploadSupportReport(reportId, reportJson) {
-        return { ok: false, error: "Connected support reports are unavailable.", reportId, reportJson };
+        if (!reportId || reportJson == null) {
+            return { ok: false, error: "Missing report data." };
+        }
+
+        let report;
+        try {
+            report = typeof reportJson === "string" ? JSON.parse(reportJson) : reportJson;
+        } catch {
+            return { ok: false, error: "Invalid report format." };
+        }
+
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-upload`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reportId, report }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 403) {
+                    return { ok: false, error: "Report session expired. Try again." };
+                }
+                const msg = await response.text();
+                return { ok: false, error: msg || `Upload failed (${response.status})` };
+            }
+
+            const data = await response.json();
+            return {
+                ok: true,
+                reportId: data.reportId,
+                reference: data.reference,
+            };
+        } catch (err) {
+            return { ok: false, error: err?.message ?? "Network error." };
+        }
     }
 
     static async completeSupportReport(reportId) {
-        return { ok: false, error: "Connected support reports are unavailable.", reportId };
+        if (!reportId) return { ok: false, error: "Missing reportId." };
+        try {
+            const response = await fetch(`${this.API_URL}/support/report-complete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reportId }),
+            });
+            if (!response.ok) {
+                return { ok: false, error: `Complete failed (${response.status})` };
+            }
+            const data = await response.json();
+            return { ok: true, reportId: data.reportId, reference: data.reference };
+        } catch (err) {
+            return { ok: false, error: err?.message ?? "Network error." };
+        }
     }
 
     static warnIfExpiringSoon(opts) {

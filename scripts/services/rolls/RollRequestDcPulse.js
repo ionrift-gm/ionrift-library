@@ -186,7 +186,7 @@ export function inspectDcAnimation(root) {
     } else if (report.rippleCount === 0) {
         console.warn("Template missing .ionrift-dc-ripple spans. Hard reload the world (Ctrl+F5).");
     } else if (report.prefersReducedMotion) {
-        console.info("prefers-reduced-motion is on (Windows Animation effects off). DC pulse uses WAAPI instead of CSS.");
+        Logger.log("prefers-reduced-motion is on (Windows Animation effects off). DC pulse uses WAAPI instead of CSS.");
     } else if (!report.stylesheetKeyframes.ionriftDcRipple) {
         console.warn("CSS @keyframes ionrift-dc-ripple not found in loaded stylesheets.");
     }
