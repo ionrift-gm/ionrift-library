@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.7.0] - 2026-09-28
+## [3.0.0] - 2026-09-28
 
 ### Added
 - Central socket library introduced.
