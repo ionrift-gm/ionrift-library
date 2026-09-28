@@ -1,4 +1,4 @@
-name: CI — Lint & Static Analysis
+﻿name: CI - Lint & Static Analysis
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
   workflow_dispatch:
 
-# ionrift-library does NOT receive repository_dispatch — it IS the library.
+# ionrift-library does NOT receive repository_dispatch - it IS the library.
 # It triggers fan-out to consumers after all checks pass.
 
 jobs:
@@ -21,12 +21,10 @@ jobs:
       include_html: false
       include_styles: true
       inclusion_scan_dirs: 'scripts/ styles/'
-      # Vendor exclusion — library ships a bundled vendor copy.
+      # Vendor exclusion: library ships a bundled vendor copy.
       eslint_extra_args: "--ignore-pattern 'scripts/vendor/**'"
       eslint_max_warnings: 50
-      # Test-vector imports (classifierTestVectors.js, PatreonStatusTests.js) are
-      # dev-only files excluded from the public repo — all imports are try/catch guarded.
-      # The static checker can't evaluate those guards, so skip import integrity here.
+      # Dev test-vector imports are excluded from the public package; imports are guarded.
       skip_import_integrity: true
 
   hygiene:
@@ -51,10 +49,10 @@ jobs:
     secrets:
       CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Fan-out — trigger consumer CIs after all library checks pass.
+  # -----------------------------------------------------------------------------
+  # Fan-out - trigger consumer CIs after all library checks pass.
   # Gated on every check; any failure blocks propagation.
-  # ─────────────────────────────────────────────────────────────────────────────
+  # -----------------------------------------------------------------------------
   fan-out:
     name: Trigger Consumer CIs
     runs-on: ubuntu-latest

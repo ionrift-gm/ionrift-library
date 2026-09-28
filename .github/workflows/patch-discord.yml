@@ -1,4 +1,4 @@
-name: Patch Discord Release Note
+﻿name: Patch Discord Release Note
 
 on:
   workflow_dispatch:
@@ -57,7 +57,7 @@ jobs:
             const repo = process.env.GITHUB_REPOSITORY;
             const payload = {
               embeds: [{
-                title: `📚 Ionrift Library — v${version}`,
+                title: `📚 Ionrift Library - v${version}`,
                 description: desc,
                 color: 0x6B4FA0,
                 url: `https://github.com/${repo}/releases/tag/v${version}`
