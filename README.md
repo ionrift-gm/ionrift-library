@@ -1,14 +1,10 @@
 # Ionrift Library
-![Downloads](https://img.shields.io/github/downloads/ionrift-gm/ionrift-library/latest/total?color=violet&label=Downloads)
-![Latest Release](https://img.shields.io/github/v/release/ionrift-gm/ionrift-library?color=violet&label=Latest%20Version)
-![Foundry Version](https://img.shields.io/badge/Foundry-v12-333333?style=flat&logo=foundryvirtualtabletop)
-![Systems](https://img.shields.io/badge/systems-dnd5e%20%7C%20daggerheart-blue)
+![Downloads](https://img.shields.io/github/downloads/ionrift-gm/ionrift-library/total?color=violet&label=Downloads)
+![Version](https://img.shields.io/github/v/release/ionrift-gm/ionrift-library?color=violet&label=Latest%20Version)
+![Foundry Version](https://img.shields.io/badge/Foundry-v12--v14-333333?style=flat&logo=foundryvirtualtabletop)
+![Systems](https://img.shields.io/badge/systems-dnd5e%20%7C%20pf2e%20%7C%20daggerheart%20%7C%20sf2e-blue)
 
-
-
-**The Core Library for Ionrift modules.**
-
-Shared utilities for the Ionrift ecosystem supporting **DnD5e** and **[Daggerheart](https://foundryvtt.com/packages/daggerheart)**. Centralizes logic between modules to prevent code drift and fragmentation. **Ionrift Resonance** uses the library to classify a "Skeleton", ensuring consistent behavior across the suite.
+**Core shared infrastructure, multi-system adapters, and creature taxonomy for the Ionrift module suite.**
 
 ### Support Ionrift
 
@@ -17,88 +13,91 @@ Shared utilities for the Ionrift ecosystem supporting **DnD5e** and **[Daggerhea
 
 > Documentation, setup guides, and troubleshooting: **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**
 
-## Setup
+Ionrift Library provides common data contracts, multi-system adapters, tabletop roll requests, and creature taxonomy for all Ionrift modules.
 
-![Attunement Protocol](docs/attunement_flow.gif)
+---
 
-First-time setup walks you through:
-1. Registering the library with your world
-2. Configuring integration status checks
-3. Verifying creature classifier data
+## Core Capabilities
 
-For detailed installation steps, troubleshooting, and FAQ see the **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)**.
+- **Multi-System Adapters.** Native normalization for DnD 5e, Pathfinder 2e, Starfinder 2e, Daggerheart, and Universal Tabletop systems. Keeps sheet data, rests, and roll calculations consistent across modules.
+- **Tabletop Roll Requests.** Interactive prompt cards for ability checks, saving throws, and skill challenges. Includes live DC pulse cues, advantage selectors, and dice settle animations.
+- **Creature Index & Taxonomy.** Standardizes actor data into concept identifiers (`undead`, `construct`, `beast`) and confidence ratings. Powers audio triggers in Resonance and recipe unlocks in Monstrous Feast.
+- **Shared Cooking Engine.** Centralized ingredient classification, condition multipliers, and active effect buff resolution shared between Respite and Monstrous Feast.
+- **Environmental & Species Registries.** Unified biome definitions (`TerrainRegistry`) and creature taxonomy tables (`SpeciesRegistry`) shared across the suite.
+- **Party Roster Service.** Cross-module tracking for active adventuring party members, linked canvas tokens, and actor caching.
+- **In-Game Bug Reporter.** Bundles console captures, active versions, and module states into structured support reports without exposing sensitive data.
 
-## Features
+<img src="assets/screenshots/library-manifest-inspector.png" alt="Entity Manifest Inspector showing creature classification and taxonomy confidence" width="560" />
 
-### Creature Classifier
+---
 
-![Classifier Manifest](docs/classifier_manifest.gif)
+## Setup & Configuration
 
-Standardizes actor data into concept IDs (`undead`, `construct`) and prompts.
+1. Install **Ionrift Library** from the Foundry VTT package manager.
+2. Enable the module in your world.
+3. Access tools under **Game Settings > Module Settings > Ionrift Library**:
+   - **Party Roster:** Designate active party characters.
+   - **Entity Manifest:** Inspect creature classifications, confidence scores, and taxonomy tags.
+   - **Token Manifest:** Review curated token art coverage and directory paths.
+   - **Custom Terrains:** Manage custom terrain definitions for rest and loot generation.
 
-**Usage:**
+<img src="assets/screenshots/library-settings-v2.png" alt="Ionrift Library Module Settings" width="560" />
+
+---
+
+## Developer Integration
+
+Dependent modules declare Ionrift Library in `module.json`:
+
+```json
+"relationships": {
+    "requires": [
+        {
+            "id": "ionrift-library",
+            "type": "module",
+            "compatibility": { "minimum": "3.0.0" }
+        }
+    ]
+}
+```
+
+### Creature Classification API
+
 ```javascript
-// Check if library is active
 if (game.ionrift?.library?.classifyCreature) {
     const result = game.ionrift.library.classifyCreature(actor.name);
-    
     if (result.id !== "unknown") {
         console.log(result.id);          // e.g. "skeleton"
         console.log(result.sound);       // e.g. "MONSTER_SKELETON"
-        console.log(result.tags);        // Set of tags: {"undead", "skeleton", "bone"}
+        console.log(result.tags);        // e.g. Set {"undead", "skeleton", "bone"}
         console.log(result.confidence);  // 0.0 to 1.0
     }
 }
 ```
 
-### System Check
-On `ready`, the library runs a self-diagnostic unit test to ensure the classification logic is performing as expected. Check the Console (F12) for the `[PASS]` report.
-
-## Integration
-To use this in your module, add it to your `module.json` dependencies:
-
-```json
-"relationships": {
-    "requires": [
-        { "id": "ionrift-library", "type": "module" }
-    ]
-}
-```
-
 ---
 
-## Documentation
+## Requirements
 
-Full guides, screenshots, and troubleshooting on the **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)**:
+- **Foundry VTT:** v12 through v14.
+- **Supported Game Systems:** DnD 5e, Pathfinder 2e, Starfinder 2e, Daggerheart, or Universal Tabletop systems.
 
-- **[Setup: Core Library](https://github.com/ionrift-gm/ionrift-library/wiki/1-Setup-Core-Library)**: Installation and creature indexing
-- **[Setup: Resonance](https://github.com/ionrift-gm/ionrift-library/wiki/2-Setup-Resonance)**: Sound configuration and presets
-- **[Setup: Respite](https://github.com/ionrift-gm/ionrift-library/wiki/6-Setup-Respite)**: Structured rest phases, campsite placement, and downtime
-- **[Setup: Monstrous Feast](https://github.com/ionrift-gm/ionrift-library/wiki/13-Setup-Monstrous-Feast)**: Monster butchering, living cookbook, and camp meals
-- **[Setup: Quartermaster](https://github.com/ionrift-gm/ionrift-library/wiki/10-Setup-Quartermaster)**: Loot generation and cache setup
-- **[Setup: Waterline](https://github.com/ionrift-gm/ionrift-library/wiki/8-Setup-Waterline)**: Automated water detection and animated caustics
-- **[Setup: Quiz Night](https://github.com/ionrift-gm/ionrift-library/wiki/16-Setup-Quiz-Night)**: Campaign pub quizzes, editor, and live scoring
-- **[Setup: Cursewright](https://github.com/ionrift-gm/ionrift-library/wiki/11-Setup-Cursewright)**: Cursed item lifecycle (Patreon module)
+---
 
 ## Bug Reports
 
-If something isn't working:
-
-1. Check the **[wiki](https://github.com/ionrift-gm/ionrift-library/wiki)** for common fixes.
-2. Post to the **[Ionrift Discord](https://discord.gg/vFGXf7Fncj)** with your Foundry version, module versions, and any console errors (F12).
-3. Or open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
+1. Check the **[Ionrift Wiki](https://github.com/ionrift-gm/ionrift-library/wiki)** for common setup guides.
+2. Post to the **[Ionrift Discord](https://discord.gg/vFGXf7Fncj)** with your Foundry version, module versions, and console output.
+3. Open a **[GitHub Issue](https://github.com/ionrift-gm/ionrift-library/issues)**.
 
 ---
 
-## Ionrift Module Suite
+## License
 
-- **[Respite](https://github.com/ionrift-gm/ionrift-respite)**: Structured rest phases and downtime activities
-- **[Resonance](https://github.com/ionrift-gm/ionrift-resonance)**: Context-sensitive combat soundscapes and audio cues
-- **[Quartermaster](https://github.com/ionrift-gm/ionrift-quartermaster)**: Loot cache generation and inventory management
-- **[Monstrous Feast](https://github.com/ionrift-gm/ionrift-monstrous-feast)**: Butcher slain creatures and cook camp meals with buffs
-- **[Waterline](https://github.com/ionrift-gm/ionrift-waterline)**: Traced water caustics and procedural border walls
-- **[Quiz Night](https://ionrift.cloud/modules/quiz-night/)**: Live campaign pub quizzes and mystery prizes
-- **[Daggerheart Animator](https://github.com/ionrift-gm/ionrift-daggerheart-animator)**: Combat VFX bridge for Daggerheart
+Released under the [MIT License](./LICENSE).
 
-[Wiki / Guides](https://github.com/ionrift-gm/ionrift-library/wiki) · [Website](https://ionrift.cloud) · [Discord](https://discord.gg/vFGXf7Fncj) · [Patreon](https://patreon.com/ionrift)
+---
 
+**Part of the [Ionrift Module Suite](https://github.com/ionrift-gm)**
+
+[Wiki](https://github.com/ionrift-gm/ionrift-library/wiki) · [Discord](https://discord.gg/vFGXf7Fncj) · [Patreon](https://patreon.com/ionrift)
