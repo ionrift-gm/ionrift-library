@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- On Foundry 13, settings sections under Quick setup show their buttons and options again. Section headers no longer sit over an empty gap.
+
 ## [3.0.0] - 2026-09-28
 
 ### Added

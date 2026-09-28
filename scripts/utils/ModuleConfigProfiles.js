@@ -50,11 +50,69 @@ export class ModuleConfigProfiles {
      * @returns {HTMLElement|null}
      */
     static getGroup(root, moduleId, key) {
-        if (!root) return null;
-        const byMenu = root.querySelector(`button[data-key="${moduleId}.${key}"]`);
-        if (byMenu) return byMenu.closest(".form-group");
-        const bySetting = root.querySelector(`[name="${moduleId}.${key}"]`);
-        return bySetting ? bySetting.closest(".form-group") : null;
+        if (!root?.querySelector) return null;
+        const id = `${moduleId}.${key}`;
+        const selectors = [
+            `button[data-key="${id}"]`,
+            `[name="${id}"]`,
+            `[data-setting="${id}"]`,
+            `[data-setting-id="${id}"]`
+        ];
+        for (const selector of selectors) {
+            const hit = root.querySelector(selector);
+            if (hit) return ModuleConfigProfiles._rowForControl(hit);
+        }
+        return null;
+    }
+
+    /**
+     * The setting row, not a wrapper that also holds other settings.
+     * Foundry 13 sometimes has no per-setting form-group, so the nearest
+     * form-group is the whole category. Moving that hides every control in it.
+     * @param {HTMLElement} hit
+     * @returns {HTMLElement|null}
+     */
+    static _rowForControl(hit) {
+        if (!hit) return null;
+        const group = typeof hit.closest === "function"
+            ? hit.closest(".form-group, fieldset")
+            : null;
+        const row = group
+            || (hit.classList?.contains?.("form-group") ? hit : null)
+            || hit.parentElement
+            || hit;
+        const id = hit.getAttribute?.("data-key")
+            || hit.getAttribute?.("name")
+            || hit.getAttribute?.("data-setting")
+            || hit.getAttribute?.("data-setting-id")
+            || "";
+        const controls = row.querySelectorAll?.("button[data-key], [name], [data-setting], [data-setting-id]") ?? [];
+        let others = 0;
+        for (const control of controls) {
+            if (control === hit) continue;
+            const controlId = control.getAttribute("data-key")
+                || control.getAttribute("name")
+                || control.getAttribute("data-setting")
+                || control.getAttribute("data-setting-id")
+                || "";
+            if (controlId && controlId !== id) others += 1;
+        }
+        if (others === 0) return row;
+        const parent = hit.parentElement;
+        if (parent && parent !== row) return parent;
+        return hit;
+    }
+
+    /**
+     * Foundry 14 keeps a moved settings row visible. Foundry 13 does not:
+     * a row pulled out of the set it just showed stays hidden, which leaves
+     * the section header and an empty rule.
+     * @returns {boolean}
+     */
+    static _relocateSettingsRows() {
+        const generation = Number.parseInt(String(globalThis.game?.release?.generation ?? ""), 10);
+        if (!Number.isFinite(generation)) return true;
+        return generation >= 14;
     }
 
     /**
@@ -210,6 +268,44 @@ export class ModuleConfigProfiles {
     }
 
     /**
+     * @param {HTMLElement} el
+     * @param {{ force?: boolean }} [options]
+     */
+    static _revealSettingsRow(el, { force = false } = {}) {
+        if (!el) return;
+        el.hidden = false;
+        el.classList?.remove?.("hidden");
+        ModuleConfigProfiles._pinSettingsRow(el);
+        if (!force || !el.style?.setProperty) return;
+        el.style.setProperty("display", "flex", "important");
+        el.style.setProperty("flex-shrink", "0", "important");
+        el.style.setProperty("min-height", "min-content", "important");
+        el.style.setProperty("overflow", "visible", "important");
+        el.style.setProperty("visibility", "visible", "important");
+    }
+
+    /**
+     * @param {ParentNode} container
+     * @param {boolean} force
+     */
+    static _revealGroupedRows(container, force) {
+        if (!container?.querySelectorAll) return;
+        const headers = container.querySelectorAll(".ionrift-settings-group-header, .respite-settings-group-header");
+        for (const header of headers) {
+            let sibling = header.nextElementSibling;
+            while (sibling
+                && !sibling.classList.contains("ionrift-settings-group-header")
+                && !sibling.classList.contains("respite-settings-group-header")
+                && !sibling.classList.contains("ionrift-settings-divider")) {
+                if (sibling.classList.contains("form-group")) {
+                    ModuleConfigProfiles._revealSettingsRow(sibling, { force });
+                }
+                sibling = sibling.nextElementSibling;
+            }
+        }
+    }
+
+    /**
      * @param {ParentNode} container
      */
     static _pinGroupedRows(container) {
@@ -281,9 +377,11 @@ export class ModuleConfigProfiles {
         const container = anchor.parentElement;
         if (!container) return;
         const groupedMarker = `.ionrift-quick-setup[data-module="${moduleId}"], .ionrift-settings-grouped[data-module="${moduleId}"]`;
+        const relocate = ModuleConfigProfiles._relocateSettingsRows();
         if (container.querySelector(groupedMarker)) {
             ModuleConfigProfiles._pinGroupedRows(container);
-            ModuleConfigProfiles._reclaimGroupedRows(container, root, config);
+            if (relocate) ModuleConfigProfiles._reclaimGroupedRows(container, root, config);
+            else ModuleConfigProfiles._revealGroupedRows(container, true);
             return;
         }
 
@@ -294,7 +392,7 @@ export class ModuleConfigProfiles {
             boundary = (prev?.classList?.contains("ionrift-settings-divider")) ? prev : supportGroup;
         }
         const place = (node) => {
-            ModuleConfigProfiles._pinSettingsRow(node);
+            ModuleConfigProfiles._revealSettingsRow(node, { force: !relocate });
             if (boundary && boundary.parentElement === container) {
                 container.insertBefore(node, boundary);
                 return;
@@ -311,8 +409,15 @@ export class ModuleConfigProfiles {
             const header = document.createElement("div");
             header.className = "ionrift-settings-group-header respite-settings-group-header";
             header.innerHTML = `<i class="${group.icon}"></i><span>${group.title}</span>`;
-            place(header);
 
+            if (!relocate && present[0]?.parentElement) {
+                present[0].parentElement.insertBefore(header, present[0]);
+                ModuleConfigProfiles._revealSettingsRow(header, { force: true });
+                for (const el of present) ModuleConfigProfiles._revealSettingsRow(el, { force: true });
+                continue;
+            }
+
+            place(header);
             for (const el of present) place(el);
         }
 
