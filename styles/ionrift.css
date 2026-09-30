@@ -2,20 +2,61 @@
 /* Merged from Ionrift Sounds & Ionrift Lib */
 
 :root {
-    --ionrift-glass-bg: rgba(15, 15, 20, 0.96);
-    --ionrift-glass-border: 1px solid rgba(139, 92, 246, 0.4);
-    --ionrift-glass-shadow: 0 0 20px rgba(0, 0, 0, 0.9);
+    /* ── Ionrift Obsidian Glass Tokens ───────────────────────── */
+    --ionrift-glass-bg: rgba(14, 10, 26, 0.95);
+    --ionrift-glass-border: 1px solid rgba(155, 89, 182, 0.35);
+    --ionrift-glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(155, 89, 182, 0.2);
     --ionrift-font-stack: "Signika", sans-serif;
-    --ionrift-accent: #8b5cf6;
-    /* Violet */
-    --ionrift-accent-glow: 0 0 15px rgba(139, 92, 246, 0.5);
+
+    /* ── Surface Luminance Elevation (Respite Layers) ────────── */
+    --ionrift-surface-l1: rgba(0, 0, 0, 0.22);          /* Recessed lists / sidebars */
+    --ionrift-surface-l2: rgba(0, 0, 0, 0.28);          /* Elevated cards / sections */
+    --ionrift-surface-l3: rgba(0, 0, 0, 0.35);          /* Inset wells & form inputs */
+    --ionrift-surface-border: rgba(255, 255, 255, 0.06);
+    --ionrift-surface-border-subtle: rgba(255, 255, 255, 0.04);
+    --ionrift-surface-border-focus: rgba(255, 255, 255, 0.12);
+
+    /* ── Accent Color Hierarchy ─────────────────────────────── */
+    --ionrift-accent: #9b59b6;                          /* Refined Amethyst (Lead Standard) */
+    --ionrift-accent-violet: #8b5cf6;                   /* Vibrant Violet fallback */
+    --ionrift-accent-glow: rgba(155, 89, 182, 0.35);
+    --ionrift-accent-muted: rgba(155, 89, 182, 0.20);
+    --ionrift-accent-subtle: rgba(155, 89, 182, 0.12);
+    --ionrift-accent-lavender: #c4a0dc;                 /* Secondary text, badges, readouts */
     --ionrift-text-main: #ffffff;
     --ionrift-text-muted: #e0e0e0;
+
+    /* ── 3-Tier Button System (Respite Anatomy) ──────────────── */
+    --ionrift-btn-primary-bg: rgba(155, 89, 182, 0.18);
+    --ionrift-btn-primary-border: rgba(155, 89, 182, 0.35);
+    --ionrift-btn-primary-text: rgba(210, 170, 235, 0.95);
+    --ionrift-btn-primary-hover-bg: rgba(155, 89, 182, 0.28);
+    --ionrift-btn-primary-hover-border: rgba(155, 89, 182, 0.50);
+
+    --ionrift-btn-ghost-bg: rgba(255, 255, 255, 0.06);
+    --ionrift-btn-ghost-border: rgba(255, 255, 255, 0.12);
+    --ionrift-btn-ghost-text: rgba(255, 255, 255, 0.78);
+    --ionrift-btn-ghost-hover-bg: rgba(255, 255, 255, 0.10);
+    --ionrift-btn-ghost-hover-border: rgba(255, 255, 255, 0.22);
+
+    --ionrift-btn-danger-bg: rgba(239, 68, 68, 0.12);
+    --ionrift-btn-danger-border: rgba(239, 68, 68, 0.25);
+    --ionrift-btn-danger-text: rgba(252, 165, 165, 0.90);
+    --ionrift-btn-danger-hover-bg: rgba(239, 68, 68, 0.20);
+    --ionrift-btn-danger-hover-border: rgba(239, 68, 68, 0.40);
+
+    /* ── Typography & Geometry ───────────────────────────────── */
+    --ionrift-font-primary: "Signika", sans-serif;
+    --ionrift-radius-sm: 4px;
+    --ionrift-radius-md: 6px;
+    --ionrift-radius-lg: 8px;
 }
 
 /* Base Window Styling (The "Purple/Black Glass" Look) */
-.ionrift-window.window-app.glass-ui,
-.ionrift-window.window-app.ionrift,
+.ionrift-window,
+.ionrift-window.application,
+.application.ionrift-window,
+.ionrift-window.window-app,
 .ionrift-window.dialog {
     background: var(--ionrift-glass-bg) !important;
     backdrop-filter: blur(24px);
@@ -66,23 +107,40 @@
     min-height: 0;
     height: auto;
     margin: 0;
-    background: linear-gradient(to bottom, #4a4a4a, #2a2a2a) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #fff !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-    border-radius: 4px;
-    padding: 6px 10px;
+    background: var(--ionrift-btn-ghost-bg) !important;
+    border: 1px solid var(--ionrift-btn-ghost-border) !important;
+    color: var(--ionrift-btn-ghost-text) !important;
+    border-radius: var(--ionrift-radius-sm, 4px);
+    padding: 6px 12px;
     font-size: 0.82rem;
     font-weight: 600;
     line-height: 1.2;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
 }
 
 .ionrift-window.dialog .dialog-buttons button:hover,
 .ionrift-window.dialog .form-footer button:hover {
-    background: rgba(139, 92, 246, 0.6) !important;
-    border-color: var(--ionrift-accent) !important;
-    box-shadow: 0 0 10px rgba(139, 92, 246, 0.4) !important;
+    background: var(--ionrift-btn-ghost-hover-bg) !important;
+    border-color: var(--ionrift-btn-ghost-hover-border) !important;
+    color: #ffffff !important;
+}
+
+.ionrift-window.dialog .dialog-buttons button.default,
+.ionrift-window.dialog .dialog-buttons button.primary,
+.ionrift-window.dialog .form-footer button.default,
+.ionrift-window.dialog .form-footer button.primary {
+    background: var(--ionrift-btn-primary-bg) !important;
+    border-color: var(--ionrift-btn-primary-border) !important;
+    color: var(--ionrift-btn-primary-text) !important;
+}
+
+.ionrift-window.dialog .dialog-buttons button.default:hover,
+.ionrift-window.dialog .dialog-buttons button.primary:hover,
+.ionrift-window.dialog .form-footer button.default:hover,
+.ionrift-window.dialog .form-footer button.primary:hover {
+    background: var(--ionrift-btn-primary-hover-bg) !important;
+    border-color: var(--ionrift-btn-primary-hover-border) !important;
+    box-shadow: 0 0 10px var(--ionrift-accent-glow) !important;
 }
 
 .ionrift-classifier-override-form .form-group {
@@ -895,40 +953,31 @@ button.ionrift-badge.classifier-override-btn:hover {
     box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
 }
 
-/* Custom Scrollbars - Purple Theme */
+/* Custom Scrollbars - Purple Theme (Respite Standard) */
 .ionrift-window,
+.ionrift-window *,
 .ionrift-sound-config .content,
-.ionrift-window .results-table,
-.ionrift-window .scrollable,
 .ionrift-list {
     scrollbar-color: #6d28d9 rgba(0, 0, 0, 0.4) !important;
     scrollbar-width: thin !important;
 }
 
 .ionrift-window ::-webkit-scrollbar,
-.ionrift-window *::-webkit-scrollbar,
-.ionrift-window .window-content::-webkit-scrollbar,
-.ionrift-window .sheet-body::-webkit-scrollbar,
-.ionrift-window .tab::-webkit-scrollbar,
-.ionrift-window ul::-webkit-scrollbar,
-.ionrift-window ol::-webkit-scrollbar {
-    width: 8px !important;
-    height: 8px !important;
+.ionrift-window *::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
     background: rgba(0, 0, 0, 0.4) !important;
 }
 
 .ionrift-window ::-webkit-scrollbar-track,
-.ionrift-window *::-webkit-scrollbar-track,
-.ionrift-window .window-content::-webkit-scrollbar-track {
+.ionrift-window *::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.4) !important;
     border-radius: 4px;
 }
 
 .ionrift-window ::-webkit-scrollbar-thumb,
-.ionrift-window *::-webkit-scrollbar-thumb,
-.ionrift-window .window-content::-webkit-scrollbar-thumb {
+.ionrift-window *::-webkit-scrollbar-thumb {
     background: #6d28d9 !important;
-    /* Purple-700 */
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     transition: background 0.2s;
@@ -937,7 +986,6 @@ button.ionrift-badge.classifier-override-btn:hover {
 .ionrift-window ::-webkit-scrollbar-thumb:hover,
 .ionrift-window *::-webkit-scrollbar-thumb:hover {
     background: #8b5cf6 !important;
-    /* Purple-500 */
 }
 
 /* ----------------------------------------- */
@@ -6146,4 +6194,432 @@ button.ionrift-badge.classifier-override-btn:hover {
 .ionrift-subsystem-banner .banner-message {
     color: rgba(255, 255, 255, 0.7) !important;
     font-size: 0.75rem !important;
+}
+
+/* ==========================================================================
+   Ionrift Shared Component Suite (Respite Convergence Benchmark)
+   Exported by ionrift-library Kernel for universal module usage.
+   ========================================================================== */
+
+/* ── Section Cards & Elevations ─────────────────────────────── */
+.ionrift-window .ionrift-card,
+.ionrift-card {
+    background: var(--ionrift-surface-l2, rgba(0, 0, 0, 0.28)) !important;
+    border: 1px solid var(--ionrift-surface-border, rgba(255, 255, 255, 0.06)) !important;
+    border-radius: var(--ionrift-radius-lg, 8px) !important;
+    padding: 0.65rem 0.85rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-window .ionrift-card--muted,
+.ionrift-card--muted {
+    background: var(--ionrift-surface-l1, rgba(0, 0, 0, 0.22)) !important;
+    border-color: var(--ionrift-surface-border-subtle, rgba(255, 255, 255, 0.04)) !important;
+}
+
+.ionrift-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.ionrift-card-title {
+    font-size: 0.68rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    margin: 0 !important;
+}
+
+.ionrift-card-title i {
+    color: var(--ionrift-accent-lavender, #c4a0dc) !important;
+    font-size: 0.72rem !important;
+}
+
+.ionrift-card-desc {
+    margin: -0.2rem 0 0.35rem 0 !important;
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── Scope Badges & Metadata Chips ─────────────────────────── */
+.ionrift-scope-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+    padding: 2px 7px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: var(--ionrift-accent-lavender, #c4a0dc) !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+}
+
+.ionrift-scope-badge i {
+    font-size: 0.65rem !important;
+}
+
+.ionrift-scope-badge--world {
+    background: rgba(155, 89, 182, 0.15) !important;
+    border-color: rgba(155, 89, 182, 0.35) !important;
+    color: var(--ionrift-accent-lavender, #c4a0dc) !important;
+}
+
+.ionrift-scope-badge--gm {
+    background: rgba(234, 179, 8, 0.12) !important;
+    border-color: rgba(234, 179, 8, 0.35) !important;
+    color: #fde047 !important;
+}
+
+/* ── Setting Rows & Field Anatomy ──────────────────────────── */
+.ionrift-setting-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+    padding: 0.35rem 0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-setting-row:last-child {
+    border-bottom: none !important;
+}
+
+.ionrift-setting-row--stacked {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.35rem !important;
+}
+
+.ionrift-setting-row--action {
+    background: rgba(0, 0, 0, 0.15) !important;
+    padding: 0.5rem 0.65rem !important;
+    border-radius: var(--ionrift-radius-md, 6px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+.ionrift-setting-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+.ionrift-setting-label {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+}
+
+.ionrift-setting-hint {
+    font-size: 0.68rem !important;
+    line-height: 1.35 !important;
+    color: rgba(255, 255, 255, 0.45) !important;
+    margin: 0 !important;
+}
+
+/* ── Custom Pill Slider Toggle Switch ──────────────────────── */
+.ionrift-toggle {
+    position: relative !important;
+    display: inline-block !important;
+    width: 34px !important;
+    height: 18px !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+}
+
+.ionrift-toggle input {
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+}
+
+.ionrift-toggle .ionrift-slider {
+    position: absolute !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 18px !important;
+    transition: all 0.2s ease !important;
+}
+
+.ionrift-toggle .ionrift-slider::before {
+    position: absolute !important;
+    content: "" !important;
+    height: 12px !important;
+    width: 12px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+    background: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 50% !important;
+    transition: all 0.2s ease !important;
+}
+
+.ionrift-toggle input:checked + .ionrift-slider {
+    background: rgba(155, 89, 182, 0.35) !important;
+    border-color: var(--ionrift-accent, #9b59b6) !important;
+    box-shadow: 0 0 8px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35)) !important;
+}
+
+.ionrift-toggle input:checked + .ionrift-slider::before {
+    transform: translateX(16px) !important;
+    background: #ffffff !important;
+}
+
+/* ── Inset Inputs & Ranges ─────────────────────────────────── */
+.ionrift-window input.ionrift-input,
+.ionrift-window select.ionrift-input,
+.ionrift-input {
+    background: var(--ionrift-surface-l3, rgba(0, 0, 0, 0.35)) !important;
+    border: 1px solid var(--ionrift-surface-border-focus, rgba(255, 255, 255, 0.12)) !important;
+    border-radius: var(--ionrift-radius-sm, 4px) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    font-size: 0.82rem !important;
+    padding: 0.32rem 0.5rem !important;
+    line-height: 1.3 !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.ionrift-window input.ionrift-input:focus,
+.ionrift-window select.ionrift-input:focus,
+.ionrift-input:focus {
+    outline: none !important;
+    border-color: rgba(155, 89, 182, 0.55) !important;
+    box-shadow: 0 0 0 1px rgba(155, 89, 182, 0.25) !important;
+}
+
+.ionrift-input--qty {
+    max-width: 4.5rem !important;
+    text-align: center !important;
+}
+
+.ionrift-range-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    flex-shrink: 0 !important;
+}
+
+.ionrift-unit {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ── Unified 3-Tier Button Primitives ──────────────────────── */
+.ionrift-btn {
+    all: unset !important;
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.4rem !important;
+    padding: 0.42rem 0.85rem !important;
+    border-radius: var(--ionrift-radius-md, 6px) !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    border: 1px solid var(--ionrift-btn-ghost-border, rgba(255, 255, 255, 0.12)) !important;
+    background: var(--ionrift-btn-ghost-bg, rgba(255, 255, 255, 0.06)) !important;
+    color: var(--ionrift-btn-ghost-text, rgba(255, 255, 255, 0.78)) !important;
+    transition: all 0.15s ease !important;
+    line-height: 1.2 !important;
+}
+
+.ionrift-btn:hover:not(:disabled) {
+    background: var(--ionrift-btn-ghost-hover-bg, rgba(255, 255, 255, 0.10)) !important;
+    border-color: var(--ionrift-btn-ghost-hover-border, rgba(255, 255, 255, 0.22)) !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.ionrift-btn:disabled {
+    opacity: 0.35 !important;
+    cursor: default !important;
+}
+
+.ionrift-btn--primary {
+    background: var(--ionrift-btn-primary-bg, rgba(155, 89, 182, 0.18)) !important;
+    border-color: var(--ionrift-btn-primary-border, rgba(155, 89, 182, 0.35)) !important;
+    color: var(--ionrift-btn-primary-text, rgba(210, 170, 235, 0.95)) !important;
+}
+
+.ionrift-btn--primary:hover:not(:disabled) {
+    background: var(--ionrift-btn-primary-hover-bg, rgba(155, 89, 182, 0.28)) !important;
+    border-color: var(--ionrift-btn-primary-hover-border, rgba(155, 89, 182, 0.50)) !important;
+    box-shadow: 0 0 10px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35)) !important;
+}
+
+.ionrift-btn--danger {
+    background: var(--ionrift-btn-danger-bg, rgba(239, 68, 68, 0.12)) !important;
+    border-color: var(--ionrift-btn-danger-border, rgba(239, 68, 68, 0.25)) !important;
+    color: var(--ionrift-btn-danger-text, rgba(252, 165, 165, 0.90)) !important;
+}
+
+.ionrift-btn--danger:hover:not(:disabled) {
+    background: var(--ionrift-btn-danger-hover-bg, rgba(239, 68, 68, 0.20)) !important;
+    border-color: var(--ionrift-btn-danger-hover-border, rgba(239, 68, 68, 0.40)) !important;
+}
+
+.ionrift-btn i {
+    font-size: 0.72rem !important;
+    line-height: 1 !important;
+}
+
+/* ── Subdued Nav Tabs ──────────────────────────────────────── */
+.ionrift-nav-tabs {
+    display: flex !important;
+    flex: 0 0 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 0 12px !important;
+    background: rgba(0, 0, 0, 0.28) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+}
+
+.ionrift-nav-tabs .item {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 6px 12px !important;
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    text-decoration: none !important;
+    box-sizing: border-box !important;
+    height: 32px !important;
+}
+
+.ionrift-nav-tabs .item:hover {
+    color: rgba(255, 255, 255, 0.85) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.ionrift-nav-tabs .item.active {
+    color: rgba(255, 255, 255, 0.95) !important;
+    border-bottom-color: var(--ionrift-accent, #9b59b6) !important;
+    background: rgba(155, 89, 182, 0.14) !important;
+}
+
+.ionrift-tab-body {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    padding: 0.75rem 1rem 1rem !important;
+    min-height: 0 !important;
+}
+
+.ionrift-tab-body .tab:not(.active) {
+    display: none !important;
+}
+
+.ionrift-tab-body .tab.active {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.65rem !important;
+}
+
+/* ── Split Footer Bar ──────────────────────────────────────── */
+.ionrift-footer {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    padding: 0.55rem 0.85rem !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-footer-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+}
+
+.ionrift-footer-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+}
+
+/* ── Master-Detail 2-Column Grid ───────────────────────────── */
+.ionrift-master-detail {
+    flex: 1 1 auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(168px, 32%) 1fr !important;
+    gap: 0.55rem !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.ionrift-master-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.2rem !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    padding: 0.35rem !important;
+    background: var(--ionrift-surface-l1, rgba(0, 0, 0, 0.22)) !important;
+    border: 1px solid var(--ionrift-surface-border, rgba(255, 255, 255, 0.06)) !important;
+    border-radius: var(--ionrift-radius-md, 6px) !important;
+}
+
+.ionrift-detail-canvas {
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.55rem !important;
+    padding-right: 0.1rem !important;
+}
+
+/* ── Non-Blocking Save Flash Animation ─────────────────────── */
+@keyframes ionrift-saved-flash {
+    0%, 100% {
+        border-color: rgba(34, 197, 94, 0.35);
+        background: rgba(34, 197, 94, 0.12);
+        box-shadow: none;
+    }
+    35% {
+        border-color: rgba(34, 197, 94, 0.75);
+        background: rgba(34, 197, 94, 0.22);
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.35);
+    }
+}
+
+.ionrift-saved-flash {
+    animation: ionrift-saved-flash 1.35s ease !important;
 }
