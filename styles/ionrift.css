@@ -4886,14 +4886,14 @@ button.ionrift-badge.classifier-override-btn:hover {
     margin: 4px 0 !important;
 }
 
-.ionrift-directory-btn,
-.ionrift-civics-btn,
-.ionrift-cache-btn,
-.ionrift-ledger-btn,
-.ionrift-sound-manager-btn,
-.ionrift-test-btn,
-.cartographer-create-scene-btn,
-[class*="ionrift-btn-"] {
+button.ionrift-directory-btn,
+button.ionrift-civics-btn,
+button.ionrift-cache-btn,
+button.ionrift-ledger-btn,
+button.ionrift-sound-manager-btn,
+button.ionrift-test-btn,
+button.cartographer-create-scene-btn,
+button[class*="ionrift-btn-"] {
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.28) 0%, rgba(76, 29, 149, 0.38) 100%) !important;
     border: 1px solid rgba(168, 85, 247, 0.45) !important;
     color: #e9d5ff !important;
@@ -4904,7 +4904,7 @@ button.ionrift-badge.classifier-override-btn:hover {
     padding: 4px 8px !important;
     cursor: pointer !important;
     transition: all 0.15s ease !important;
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 6px !important;
@@ -4916,25 +4916,41 @@ button.ionrift-badge.classifier-override-btn:hover {
     overflow: hidden !important;
 }
 
+/* Ensure inner icons and text spans are seamless inline children */
+.ionrift-directory-btn i,
+.ionrift-directory-btn span,
+button[class*="ionrift-btn-"] i,
+button[class*="ionrift-btn-"] span {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
 /* Standalone fallback when injected directly without .ionrift-directory-toolbar */
 .ionrift-directory-btn:not(.ionrift-directory-toolbar *),
-.ionrift-civics-btn:not(.ionrift-directory-toolbar *),
-.ionrift-sound-manager-btn:not(.ionrift-directory-toolbar *),
-.cartographer-create-scene-btn:not(.ionrift-directory-toolbar *),
-.ionrift-test-btn:not(.ionrift-directory-toolbar *) {
+button[class*="ionrift-btn-"]:not(.ionrift-directory-toolbar *) {
     margin: 4px 8px !important;
     width: calc(100% - 16px) !important;
 }
 
 /* Inside .ionrift-directory-toolbar */
-.ionrift-directory-toolbar .ionrift-directory-btn,
-.ionrift-directory-toolbar .ionrift-civics-btn,
-.ionrift-directory-toolbar .ionrift-cache-btn,
-.ionrift-directory-toolbar .ionrift-ledger-btn,
-.ionrift-directory-toolbar .ionrift-sound-manager-btn,
-.ionrift-directory-toolbar .ionrift-test-btn,
-.ionrift-directory-toolbar .cartographer-create-scene-btn,
-.ionrift-directory-toolbar [class*="ionrift-btn-"] {
+.ionrift-directory-toolbar button.ionrift-directory-btn,
+.ionrift-directory-toolbar button.ionrift-civics-btn,
+.ionrift-directory-toolbar button.ionrift-cache-btn,
+.ionrift-directory-toolbar button.ionrift-ledger-btn,
+.ionrift-directory-toolbar button.ionrift-sound-manager-btn,
+.ionrift-directory-toolbar button.ionrift-test-btn,
+.ionrift-directory-toolbar button.cartographer-create-scene-btn,
+.ionrift-directory-toolbar button[class*="ionrift-btn-"] {
     margin: 0 !important;
     flex: 1 1 0 !important;
     min-width: 0 !important;
@@ -4950,14 +4966,14 @@ button.ionrift-badge.classifier-override-btn:hover {
     padding: 4px !important;
 }
 
-.ionrift-directory-btn:hover,
-.ionrift-civics-btn:hover,
-.ionrift-cache-btn:hover,
-.ionrift-ledger-btn:hover,
-.ionrift-sound-manager-btn:hover,
-.ionrift-test-btn:hover,
-.cartographer-create-scene-btn:hover,
-[class*="ionrift-btn-"]:hover {
+button.ionrift-directory-btn:hover,
+button.ionrift-civics-btn:hover,
+button.ionrift-cache-btn:hover,
+button.ionrift-ledger-btn:hover,
+button.ionrift-sound-manager-btn:hover,
+button.ionrift-test-btn:hover,
+button.cartographer-create-scene-btn:hover,
+button[class*="ionrift-btn-"]:hover {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.48) 0%, rgba(91, 33, 182, 0.58) 100%) !important;
     border-color: rgba(192, 132, 252, 0.8) !important;
     color: #ffffff !important;
@@ -4965,27 +4981,27 @@ button.ionrift-badge.classifier-override-btn:hover {
 }
 
 /* Suppress the Foundry "Red Halo of Doom" on focus */
-.ionrift-directory-btn:focus,
-.ionrift-civics-btn:focus,
-.ionrift-cache-btn:focus,
-.ionrift-ledger-btn:focus,
-.ionrift-sound-manager-btn:focus,
-.ionrift-test-btn:focus,
-.cartographer-create-scene-btn:focus,
-[class*="ionrift-btn-"]:focus {
+button.ionrift-directory-btn:focus,
+button.ionrift-civics-btn:focus,
+button.ionrift-cache-btn:focus,
+button.ionrift-ledger-btn:focus,
+button.ionrift-sound-manager-btn:focus,
+button.ionrift-test-btn:focus,
+button.cartographer-create-scene-btn:focus,
+button[class*="ionrift-btn-"]:focus {
     outline: none !important;
     box-shadow: 0 0 8px rgba(168, 85, 247, 0.4) !important;
     border-color: rgba(192, 132, 252, 0.8) !important;
 }
 
-.ionrift-directory-btn:focus-visible,
-.ionrift-civics-btn:focus-visible,
-.ionrift-cache-btn:focus-visible,
-.ionrift-ledger-btn:focus-visible,
-.ionrift-sound-manager-btn:focus-visible,
-.ionrift-test-btn:focus-visible,
-.cartographer-create-scene-btn:focus-visible,
-[class*="ionrift-btn-"]:focus-visible {
+button.ionrift-directory-btn:focus-visible,
+button.ionrift-civics-btn:focus-visible,
+button.ionrift-cache-btn:focus-visible,
+button.ionrift-ledger-btn:focus-visible,
+button.ionrift-sound-manager-btn:focus-visible,
+button.ionrift-test-btn:focus-visible,
+button.cartographer-create-scene-btn:focus-visible,
+button[class*="ionrift-btn-"]:focus-visible {
     outline: 2px solid rgba(168, 85, 247, 0.85) !important;
     outline-offset: 2px !important;
     box-shadow: none !important;

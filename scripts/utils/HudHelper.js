@@ -68,7 +68,7 @@ export class HudHelper {
         const iconHtml = options.icon ? `<i class="${options.icon}" aria-hidden="true"></i>` : "";
         const labelHtml = options.compact
             ? ""
-            : `<span class="ionrift-btn-label">${options.label || ""}</span>`;
+            : `<span class="ionrift-dir-text">${options.label || ""}</span>`;
         btn.innerHTML = `${iconHtml}${labelHtml}`;
 
         btn.addEventListener("click", (ev) => {
