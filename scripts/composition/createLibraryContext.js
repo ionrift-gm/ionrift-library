@@ -1,5 +1,7 @@
 import { MODULE_ID, MODULE_LABEL } from "../data/moduleId.js";
 import { classifyCreature, listClassifierOptions, runSelfTests, setActorClassification } from "../utils/creatureClassifier.js";
+import { Cascade } from "../utils/Cascade.js";
+import { normalizeSpellSchool, SPELL_SCHOOL_MAP } from "../data/spellSchools.js";
 import { SidebarHelper } from "../utils/SidebarHelper.js";
 import { SettingsStatusHelper } from "../utils/SettingsStatusHelper.js";
 import { SettingsLayout } from "../utils/SettingsLayout.js";
@@ -153,6 +155,9 @@ export function createLibraryContext() {
         system: adapterRegistry,
         adapterRegistry,
         IonriftSystemAdapter,
+        Cascade,
+        normalizeSpellSchool,
+        SPELL_SCHOOL_MAP,
         terrains: terrainRegistry,
         TerrainRegistry,
         normalizeTerrainCategory,

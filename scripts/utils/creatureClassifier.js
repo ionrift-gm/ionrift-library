@@ -1,5 +1,6 @@
 import { Logger } from "../services/platform/Logger.js";
 import { getClassifierData } from "../data/classifierData.js";
+import { Cascade } from "./Cascade.js";
 
 const LIB_MODULE = "ionrift-library";
 const CLASSIFICATION_OVERRIDES_KEY = "classificationOverrides";
@@ -58,6 +59,7 @@ function _materializeClassificationOverride(raw, classifierData) {
         id,
         sound,
         tags,
+        cascade: Cascade.build(id),
         confidence: 1.0,
         isOverride: true
     };
@@ -144,6 +146,7 @@ export function classifyCreature(actorOrName) {
             id: "player",
             sound: "MONSTER_HUMANOID",
             tags: new Set(["player", "character", "adventurer"]),
+            cascade: ["player"],
             confidence: 1.0
         };
     }
@@ -188,7 +191,7 @@ export function classifyCreature(actorOrName) {
         description += " " + itemNames.toLowerCase() + " " + itemDescs.toLowerCase();
     }
 
-    if (!name) return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), confidence: 0 };
+    if (!name) return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), cascade: ["unknown", "generic"], confidence: 0 };
 
     const nameLower = name.toLowerCase();
 
@@ -208,6 +211,7 @@ export function classifyCreature(actorOrName) {
                     id: exception.id,
                     sound: exception.sound,
                     tags: new Set(exception.tags),
+                    cascade: Cascade.build(exception.id),
                     confidence: exception.confidence,
                     isException: true
                 };
@@ -258,7 +262,7 @@ export function classifyCreature(actorOrName) {
     }
 
     if (!bestMatch) {
-        return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), confidence: 0 };
+        return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), cascade: ["unknown", "generic"], confidence: 0 };
     }
 
     // 3. Assemble Tags & Boost Confidence via Description
@@ -299,10 +303,12 @@ export function classifyCreature(actorOrName) {
         finalTags.add("multitude");
     }
 
+    const id = bestMatch.subtype ? `${bestMatch.type}_${bestMatch.subtype}` : bestMatch.type;
     return {
-        id: bestMatch.subtype ? `${bestMatch.type}_${bestMatch.subtype}` : bestMatch.type,
+        id,
         type: bestMatch.type,
         subtype: bestMatch.subtype,
+        cascade: Cascade.build(id),
         sound: bestMatch.data.sound || bestMatch.parentData?.sound || "MONSTER_GENERIC",
         tags: finalTags,
         confidence: Math.min(confidence, 1.0)

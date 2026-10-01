@@ -1,5 +1,6 @@
 import { IonriftSystemAdapter } from "../IonriftSystemAdapter.js";
 import { Logger } from "../../platform/Logger.js";
+import { normalizeSpellSchool } from "../../../data/spellSchools.js";
 
 export class DnD5eAdapter extends IonriftSystemAdapter {
     static #SUPPORTED = new Set([
@@ -250,5 +251,84 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
             const partyId = game.actors?.party?.id;
             if (partyId && actor?.id === partyId) fire();
         });
+    }
+
+    // ── Item Attack & Damage Semantics Overrides ────────────────
+
+    getAttackCategory(item) {
+        if (!item) return "utility";
+        const at = item.system?.actionType;
+        const type = item.type;
+        if (type === "spell" || at === "msak" || at === "rsak") return "magic";
+        if (at === "rwak") return "ranged";
+        if (at === "mwak") return "melee";
+        if (at === "heal") return "heal";
+        return "utility";
+    }
+
+    getDamageTypes(item) {
+        if (!item) return [];
+        const types = [];
+        // Legacy 5e: damage.parts [[formula, type], ...]
+        if (Array.isArray(item.system?.damage?.parts)) {
+            for (const [, t] of item.system.damage.parts) {
+                if (t && typeof t === "string") types.push(t.toLowerCase());
+            }
+        }
+        // Modern 5e (v3.x+): damage.base.types (Set or Array)
+        if (item.system?.damage?.base?.types) {
+            for (const t of item.system.damage.base.types) {
+                if (t) types.push(String(t).toLowerCase());
+            }
+        }
+        // Activities (Foundry v12+ / dnd5e 4.x+)
+        if (item.system?.activities) {
+            for (const act of Object.values(item.system.activities)) {
+                if (act.damage?.parts) {
+                    for (const p of act.damage.parts) {
+                        const dt = Array.isArray(p) ? p[1] : (p?.types ? [...p.types][0] : p?.type);
+                        if (dt) types.push(String(dt).toLowerCase());
+                    }
+                }
+            }
+        }
+        return [...new Set(types.filter(Boolean))];
+    }
+
+    getSpellSchool(item) {
+        return normalizeSpellSchool(item?.system?.school);
+    }
+
+    static #WEAPON_KEYWORDS = {
+        bow: "bow", crossbow: "crossbow", longbow: "bow", shortbow: "bow",
+        firearm: "firearm", pistol: "firearm", musket: "firearm", gun: "firearm",
+        sling: "sling", dagger: "dagger", knife: "dagger",
+        axe: "axe", hatchet: "axe", greataxe: "axe",
+        sword: "sword", blade: "sword", longsword: "sword", shortsword: "sword",
+        scimitar: "sword", rapier: "sword", greatsword: "sword",
+        hammer: "bludgeon", mace: "bludgeon", flail: "bludgeon",
+        maul: "bludgeon", club: "bludgeon", morningstar: "bludgeon",
+        spear: "polearm", halberd: "polearm", glaive: "polearm",
+        pike: "polearm", javelin: "polearm", trident: "polearm",
+        staff: "staff", quarterstaff: "staff",
+        // Natural weapons
+        claw: "claw", bite: "bite", slam: "slam", tail: "tail",
+        tentacle: "tentacle", sting: "sting", horn: "horn",
+    };
+
+    getWeaponFamily(item) {
+        if (!item) return null;
+        const baseItem = item.system?.type?.baseItem || item.system?.baseItem || "";
+        const name = (item.name || "").toLowerCase();
+        const search = `${name} ${baseItem}`.toLowerCase();
+        for (const [keyword, family] of Object.entries(DnD5eAdapter.#WEAPON_KEYWORDS)) {
+            if (search.includes(keyword)) return family;
+        }
+        return null;
+    }
+
+    isNaturalWeapon(item) {
+        const family = this.getWeaponFamily(item);
+        return ["claw", "bite", "slam", "tail", "tentacle", "sting", "horn"].includes(family);
     }
 }

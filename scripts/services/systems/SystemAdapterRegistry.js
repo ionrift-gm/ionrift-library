@@ -58,6 +58,13 @@ export class SystemAdapterRegistry {
     getPowerScoreContribution(item, weights) {
         return this.current.getPowerScoreContribution(item, weights);
     }
+    getAttackCategory(item) { return this.current.getAttackCategory(item); }
+    getDamageTypes(item) { return this.current.getDamageTypes(item); }
+    getPrimaryDamageType(item) { return this.current.getPrimaryDamageType(item); }
+    getSpellSchool(item) { return this.current.getSpellSchool(item); }
+    getWeaponFamily(item) { return this.current.getWeaponFamily(item); }
+    isNaturalWeapon(item) { return this.current.isNaturalWeapon(item); }
+    getItemContext(item) { return this.current.getItemContext(item); }
 }
 
 export const adapterRegistry = new SystemAdapterRegistry();

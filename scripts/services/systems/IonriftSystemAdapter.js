@@ -1,3 +1,5 @@
+import { Cascade } from "../../utils/Cascade.js";
+
 /**
  * Base class for system-specific actor and item queries.
  * Subclasses override `systemId` and selected methods; unimplemented paths use safe defaults.
@@ -202,5 +204,96 @@ export class IonriftSystemAdapter {
             score += parseInt(attackBonus, 10) * (w.flatBonus ?? 0);
         }
         return score;
+    }
+
+    // ── Item Attack & Damage Semantics ──────────────────────────
+
+    /**
+     * Classify the attack delivery of an item.
+     * @param {Item|object} item
+     * @returns {"melee"|"ranged"|"magic"|"utility"|"heal"}
+     */
+    getAttackCategory(item) {
+        return "utility";
+    }
+
+    /**
+     * Get all damage types dealt by an item.
+     * @param {Item|object} item
+     * @returns {string[]}  e.g. ["slashing", "fire"]
+     */
+    getDamageTypes(item) {
+        return [];
+    }
+
+    /**
+     * Get the primary (first) damage type.
+     * @param {Item|object} item
+     * @returns {string|null}
+     */
+    getPrimaryDamageType(item) {
+        const types = this.getDamageTypes(item);
+        return types[0] ?? null;
+    }
+
+    /**
+     * Get the normalized spell school name.
+     * @param {Item|object} item
+     * @returns {string|null}  e.g. "evocation", "necromancy"
+     */
+    getSpellSchool(item) {
+        return null;
+    }
+
+    /**
+     * Get the weapon family from system data or name heuristics.
+     * @param {Item|object} item
+     * @returns {string|null}  e.g. "sword", "bow", "axe", "claw"
+     */
+    getWeaponFamily(item) {
+        return null;
+    }
+
+    /**
+     * Whether this is a natural/monster weapon (claw, bite, etc).
+     * @param {Item|object} item
+     * @returns {boolean}
+     */
+    isNaturalWeapon(item) {
+        return false;
+    }
+
+    /**
+     * Build a complete item context for cascade resolution.
+     * Combines attack category, damage types, weapon family, and spell school
+     * into a single structured object with a pre-built cascade.
+     * @param {Item|object} item
+     * @returns {{
+     *   category: "melee"|"ranged"|"magic"|"utility"|"heal",
+     *   damageTypes: string[],
+     *   primaryDamageType: string|null,
+     *   school: string|null,
+     *   weaponFamily: string|null,
+     *   isNatural: boolean,
+     *   tags: string[],
+     *   cascade: string[]
+     * }}
+     */
+    getItemContext(item) {
+        const category = this.getAttackCategory(item);
+        const damageTypes = this.getDamageTypes(item);
+        const school = this.getSpellSchool(item);
+        const family = this.getWeaponFamily(item);
+        const tags = [...new Set([...damageTypes, family, school].filter(Boolean))];
+        return {
+            category,
+            damageTypes,
+            primaryDamageType: damageTypes[0] ?? null,
+            school,
+            weaponFamily: family,
+            isNatural: this.isNaturalWeapon(item),
+            tags,
+            cascade: Cascade.fromKeys([...tags, category, "default"])
+        };
     }
 }
