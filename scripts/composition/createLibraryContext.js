@@ -3,6 +3,7 @@ import { classifyCreature, listClassifierOptions, runSelfTests, setActorClassifi
 import { Cascade } from "../utils/Cascade.js";
 import { normalizeSpellSchool, SPELL_SCHOOL_MAP } from "../data/spellSchools.js";
 import { SidebarHelper } from "../utils/SidebarHelper.js";
+import { HudHelper } from "../utils/HudHelper.js";
 import { SettingsStatusHelper } from "../utils/SettingsStatusHelper.js";
 import { SettingsLayout } from "../utils/SettingsLayout.js";
 import { ModuleConfigProfiles } from "../utils/ModuleConfigProfiles.js";
@@ -84,6 +85,8 @@ export function createLibraryContext() {
         refreshArtCache: () => TokenArtResolver.refreshCache(),
         scaffoldTokenArtFolders: () => TokenArtResolver.scaffoldFolders(),
         SidebarHelper,
+        HudHelper,
+        hud: HudHelper,
         classifyCreature,
         listClassifierOptions,
         setActorClassification,
@@ -195,6 +198,7 @@ export function exposeLibraryApi(ctx) {
         ...(game.ionrift.library || {}),
         ...ctx
     };
+    game.ionrift.hud = HudHelper;
     game.ionrift.integration = IntegrationStatus.instance;
 }
 
