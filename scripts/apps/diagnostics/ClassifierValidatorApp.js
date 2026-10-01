@@ -1,5 +1,6 @@
 import { Logger } from "../../services/platform/Logger.js";
 import { classifyCreature, listClassifierOptions, setActorClassification } from "../../utils/creatureClassifier.js";
+import { CompendiumSourceService } from "../../services/packs/CompendiumSourceService.js";
 
 export class ClassifierValidatorApp extends FormApplication {
     constructor(options = {}) {
@@ -35,12 +36,17 @@ export class ClassifierValidatorApp extends FormApplication {
         if (!game.packs) return [];
         return game.packs
             .filter(p => p.documentName === "Actor")
-            .map(p => ({
-                id: p.metadata.id,
-                label: p.metadata.label || p.metadata.id,
-                packageName: p.metadata.packageName || "world",
-                count: p.index?.size ?? p.size ?? 0
-            }));
+            .map(p => {
+                const id = p.metadata?.id || p.collection;
+                const [pkgId] = id.split(".");
+                const { packageTitle } = CompendiumSourceService.resolvePackageMetadata(pkgId);
+                return {
+                    id,
+                    label: p.metadata?.label || id,
+                    packageName: packageTitle,
+                    count: p.index?.size ?? p.size ?? 0
+                };
+            });
     }
 
     _getDefaultSelectedPacks() {

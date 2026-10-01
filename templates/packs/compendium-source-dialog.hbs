@@ -1,0 +1,50 @@
+<form class="ionrift-loot-pool-config ionrift-compendium-source-dialog">
+    {{#if instructions}}
+    <p class="pool-instructions">{{instructions}}</p>
+    {{/if}}
+
+    <div class="scroll-forge-toolbar ionrift-source-toolbar">
+        <button type="button" class="cache-btn-accent ionrift-source-select-all" title="Select all compendiums">
+            <i class="fas fa-check-double"></i> Select all
+        </button>
+        <button type="button" class="cache-btn-accent ionrift-source-select-none" title="Deselect all compendiums">
+            <i class="fas fa-times"></i> Select none
+        </button>
+        <button type="button" class="cache-btn-secondary ionrift-source-toggle-all" title="Invert selection">
+            <i class="fas fa-right-left"></i> Invert
+        </button>
+    </div>
+
+    <div class="ionrift-sources-scroll forge-source-scroll">
+        {{#each groups}}
+        <div class="pool-group">
+            <div class="pool-group-header">
+                <i class="fas fa-box-archive"></i> {{this.label}}
+            </div>
+            {{#each this.packs}}
+            <label class="pool-pack-row {{#if this.recommended}}pack-recommended{{/if}}">
+                <input type="checkbox" name="pack-{{this.id}}" {{#if this.enabled}}checked{{/if}} />
+                <span class="pool-pack-label">{{this.label}}</span>
+                {{#if this.recommended}}
+                <span class="pool-pack-badge badge-recommended">Recommended</span>
+                {{/if}}
+                {{#if this.countLabel}}
+                <span class="pool-pack-id">({{this.countLabel}})</span>
+                {{/if}}
+                <span class="pool-pack-id">{{this.id}}</span>
+            </label>
+            {{/each}}
+        </div>
+        {{else}}
+        <p class="ionrift-empty-note" style="padding: 16px; opacity: 0.7; text-align: center;">
+            <i class="fas fa-circle-info"></i> No matching compendiums found.
+        </p>
+        {{/each}}
+    </div>
+
+    <footer class="pool-footer">
+        <button type="submit" class="cache-btn-accent">
+            <i class="fas fa-save"></i> {{#if saveLabel}}{{saveLabel}}{{else}}Save sources{{/if}}
+        </button>
+    </footer>
+</form>

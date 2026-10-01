@@ -33,6 +33,8 @@ import { OverlayService } from "../services/packs/OverlayService.js";
 import { OverlayItemMaterialiser } from "../services/packs/OverlayItemMaterialiser.js";
 import { LegacyAssetSweeper } from "../services/packs/LegacyAssetSweeper.js";
 import { CompendiumConfigGuard } from "../services/packs/CompendiumConfigGuard.js";
+import { CompendiumSourceService } from "../services/packs/CompendiumSourceService.js";
+import { BaseCompendiumSourceApp } from "../apps/packs/BaseCompendiumSourceApp.js";
 import { ItemEnrichmentEngine } from "../services/items/ItemEnrichmentEngine.js";
 import { ItemMintingService } from "../services/items/ItemMintingService.js";
 import { adapterRegistry } from "../services/systems/SystemAdapterRegistry.js";
@@ -181,6 +183,9 @@ export function createLibraryContext() {
         setOverlayActive: (overlayId, active, meta) => OverlayService.setOverlayActive(overlayId, active, meta),
         getOverlayState: (overlayId, moduleId, sublayer) => OverlayService.getOverlayState(overlayId, moduleId, sublayer),
         compendiumGuard: CompendiumConfigGuard,
+        compendiumSources: CompendiumSourceService,
+        CompendiumSourceService,
+        BaseCompendiumSourceApp,
         diagnoseCompendiumConfig: () => CompendiumConfigGuard.diagnose(),
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
         cleanup: LegacyAssetSweeper,

@@ -14,13 +14,15 @@ import { PartyRoster } from "./services/party/PartyRoster.js";
 import { terrainRegistry } from "./services/terrain/TerrainRegistry.js";
 import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/packs/LegacyAssetSweeper.js";
 import { CompendiumConfigGuard } from "./services/packs/CompendiumConfigGuard.js";
+import { CompendiumSourceService } from "./services/packs/CompendiumSourceService.js";
+import { BaseCompendiumSourceApp } from "./apps/packs/BaseCompendiumSourceApp.js";
 import { InstallHealthCheck } from "./services/packs/InstallHealthCheck.js";
 import { ItemEnrichmentEngine } from "./services/items/ItemEnrichmentEngine.js";
 import { RollRequestService } from "./services/rolls/RollRequestService.js";
 import { TokenArtResolver } from "./services/TokenArtResolver.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "./data/subsystemDefinitions.js";
 
-export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus };
+export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus, CompendiumSourceService, BaseCompendiumSourceApp };
 
 const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
 Hooks.on("renderItemSheet", _onEnrichSheet);
