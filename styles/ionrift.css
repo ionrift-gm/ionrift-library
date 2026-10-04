@@ -19,7 +19,9 @@
     /* ── Accent Color Hierarchy ─────────────────────────────── */
     --ionrift-accent: #9b59b6;                          /* Refined Amethyst (Lead Standard) */
     --ionrift-accent-violet: #8b5cf6;                   /* Vibrant Violet fallback */
-    --ionrift-accent-glow: rgba(155, 89, 182, 0.35);
+    --ionrift-accent-glow-color: rgba(155, 89, 182, 0.35);
+    /* Full box-shadow value (3.0 contract, consumed by released modules). Use -color for the bare colour. */
+    --ionrift-accent-glow: 0 0 15px rgba(155, 89, 182, 0.35);
     --ionrift-accent-muted: rgba(155, 89, 182, 0.20);
     --ionrift-accent-subtle: rgba(155, 89, 182, 0.12);
     --ionrift-accent-lavender: #c4a0dc;                 /* Secondary text, badges, readouts */
@@ -74,12 +76,15 @@
     --ionrift-radius-lg: 8px;
 }
 
-/* Base Window Styling (The "Purple/Black Glass" Look) */
-.ionrift-window,
-.ionrift-window.application,
+/* Base Window Styling (The "Purple/Black Glass" Look)
+   Scoped to real window shells. Released modules also put .ionrift-window on
+   inline elements (e.g. Respite 4.0.x chat cards), which must not turn into glass. */
 .application.ionrift-window,
-.ionrift-window.window-app,
-.ionrift-window.dialog {
+.window-app.ionrift-window,
+.ionrift-window.dialog,
+/* Library-owned floating panels that are not Application shells */
+.ionrift-window.ionrift-roll-request-prompt,
+.ionrift-window.ionrift-armor-modal {
     background: var(--ionrift-glass-bg) !important;
     backdrop-filter: blur(24px);
     border: var(--ionrift-glass-border) !important;
@@ -162,7 +167,7 @@
 .ionrift-window.dialog .form-footer button.primary:hover {
     background: var(--ionrift-btn-primary-hover-bg) !important;
     border-color: var(--ionrift-btn-primary-hover-border) !important;
-    box-shadow: 0 0 10px var(--ionrift-accent-glow) !important;
+    box-shadow: 0 0 10px var(--ionrift-accent-glow-color) !important;
 }
 
 .ionrift-classifier-override-form .form-group {
@@ -1038,7 +1043,7 @@ button.ionrift-badge.classifier-override-btn:hover {
 .ionrift-save-btn:hover {
     background: var(--ionrift-btn-primary-hover-bg, rgba(155, 89, 182, 0.28)) !important;
     border-color: var(--ionrift-btn-primary-hover-border, rgba(155, 89, 182, 0.50)) !important;
-    box-shadow: 0 0 12px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35)) !important;
+    box-shadow: 0 0 12px var(--ionrift-accent-glow-color, rgba(155, 89, 182, 0.35)) !important;
 }
 
 /* Custom Scrollbars - Purple Theme (Respite Standard) */
@@ -4876,7 +4881,10 @@ button.ionrift-badge.classifier-override-btn:hover {
    GM-only quick action buttons in Foundry sidebar directories (Actors, Items,
    Playlists, Scenes). Enforces 8px edge padding to align with native action
    buttons and search inputs, Ionrift Glass violet gradient, and flex layout.
-   Documented in IONRIFT_UI_HANDBOOK.md §10 and UI_STANDARDS.md.            */
+   Documented in IONRIFT_UI_HANDBOOK.md §10 and UI_STANDARDS.md.
+   The ionrift-btn-* wildcard is scoped to the directory header/toolbar only:
+   ionrift-btn-* classes are also used for ordinary buttons inside windows
+   (library and consumer templates) and must not inherit this treatment.   */
 .ionrift-directory-toolbar {
     padding-inline: 8px !important;
     display: flex !important;
@@ -4893,7 +4901,8 @@ button.ionrift-ledger-btn,
 button.ionrift-sound-manager-btn,
 button.ionrift-test-btn,
 button.cartographer-create-scene-btn,
-button[class*="ionrift-btn-"] {
+.ionrift-directory-toolbar button[class*="ionrift-btn-"],
+.directory-header button[class*="ionrift-btn-"] {
     background: linear-gradient(135deg, rgba(124, 58, 237, 0.28) 0%, rgba(76, 29, 149, 0.38) 100%) !important;
     border: 1px solid rgba(168, 85, 247, 0.45) !important;
     color: #e9d5ff !important;
@@ -4919,8 +4928,10 @@ button[class*="ionrift-btn-"] {
 /* Ensure inner icons and text spans are seamless inline children */
 .ionrift-directory-btn i,
 .ionrift-directory-btn span,
-button[class*="ionrift-btn-"] i,
-button[class*="ionrift-btn-"] span {
+.ionrift-directory-toolbar button[class*="ionrift-btn-"] i,
+.directory-header button[class*="ionrift-btn-"] i,
+.ionrift-directory-toolbar button[class*="ionrift-btn-"] span,
+.directory-header button[class*="ionrift-btn-"] span {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -4937,7 +4948,7 @@ button[class*="ionrift-btn-"] span {
 
 /* Standalone fallback when injected directly without .ionrift-directory-toolbar */
 .ionrift-directory-btn:not(.ionrift-directory-toolbar *),
-button[class*="ionrift-btn-"]:not(.ionrift-directory-toolbar *) {
+.directory-header button[class*="ionrift-btn-"]:not(.ionrift-directory-toolbar *) {
     margin: 4px 8px !important;
     width: calc(100% - 16px) !important;
 }
@@ -4973,7 +4984,8 @@ button.ionrift-ledger-btn:hover,
 button.ionrift-sound-manager-btn:hover,
 button.ionrift-test-btn:hover,
 button.cartographer-create-scene-btn:hover,
-button[class*="ionrift-btn-"]:hover {
+.ionrift-directory-toolbar button[class*="ionrift-btn-"]:hover,
+.directory-header button[class*="ionrift-btn-"]:hover {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.48) 0%, rgba(91, 33, 182, 0.58) 100%) !important;
     border-color: rgba(192, 132, 252, 0.8) !important;
     color: #ffffff !important;
@@ -4988,7 +5000,8 @@ button.ionrift-ledger-btn:focus,
 button.ionrift-sound-manager-btn:focus,
 button.ionrift-test-btn:focus,
 button.cartographer-create-scene-btn:focus,
-button[class*="ionrift-btn-"]:focus {
+.ionrift-directory-toolbar button[class*="ionrift-btn-"]:focus,
+.directory-header button[class*="ionrift-btn-"]:focus {
     outline: none !important;
     box-shadow: 0 0 8px rgba(168, 85, 247, 0.4) !important;
     border-color: rgba(192, 132, 252, 0.8) !important;
@@ -5001,7 +5014,8 @@ button.ionrift-ledger-btn:focus-visible,
 button.ionrift-sound-manager-btn:focus-visible,
 button.ionrift-test-btn:focus-visible,
 button.cartographer-create-scene-btn:focus-visible,
-button[class*="ionrift-btn-"]:focus-visible {
+.ionrift-directory-toolbar button[class*="ionrift-btn-"]:focus-visible,
+.directory-header button[class*="ionrift-btn-"]:focus-visible {
     outline: 2px solid rgba(168, 85, 247, 0.85) !important;
     outline-offset: 2px !important;
     box-shadow: none !important;
@@ -6513,7 +6527,7 @@ button[class*="ionrift-btn-"]:focus-visible {
 .ionrift-toggle input:checked + .ionrift-slider {
     background: rgba(155, 89, 182, 0.35) !important;
     border-color: var(--ionrift-accent, #9b59b6) !important;
-    box-shadow: 0 0 8px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35)) !important;
+    box-shadow: 0 0 8px var(--ionrift-accent-glow-color, rgba(155, 89, 182, 0.35)) !important;
 }
 
 .ionrift-toggle input:checked + .ionrift-slider::before {
@@ -6602,7 +6616,7 @@ button[class*="ionrift-btn-"]:focus-visible {
 .ionrift-btn--primary:hover:not(:disabled) {
     background: var(--ionrift-btn-primary-hover-bg, rgba(155, 89, 182, 0.28)) !important;
     border-color: var(--ionrift-btn-primary-hover-border, rgba(155, 89, 182, 0.50)) !important;
-    box-shadow: 0 0 10px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35)) !important;
+    box-shadow: 0 0 10px var(--ionrift-accent-glow-color, rgba(155, 89, 182, 0.35)) !important;
 }
 
 .ionrift-btn--danger {

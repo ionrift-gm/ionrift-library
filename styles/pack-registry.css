@@ -133,7 +133,7 @@
 .pack-toggle-input:checked + .pack-toggle-switch {
     background: rgba(155, 89, 182, 0.35);
     border-color: var(--ionrift-accent, #9b59b6);
-    box-shadow: 0 0 8px var(--ionrift-accent-glow, rgba(155, 89, 182, 0.35));
+    box-shadow: 0 0 8px var(--ionrift-accent-glow-color, rgba(155, 89, 182, 0.35));
 }
 
 .pack-toggle-input:checked + .pack-toggle-switch::after {
