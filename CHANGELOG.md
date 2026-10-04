@@ -1,9 +1,25 @@
 # Changelog
 
-## [Unreleased]
+## [3.1.0] - 2026-10-04
+
+### Added
+- Standardized segmented tab navigation across windows.
+- Universal compendium source picker to filter packs scanned by modules.
+- Shared canvas HUD button primitives.
+- Centralized D&D 5e spell school and damage classification.
+- Standardized status badges, card containers, and toggle inputs.
+
+### Changed
+- Directory toolbar buttons embed icons and labels.
+- Directory and HUD buttons default to GM-only.
+- Suppressed the default red border on directory buttons.
 
 ### Fixed
-- On Foundry 13, settings sections under Quick setup show their buttons and options again. Section headers no longer sit over an empty gap.
+- On Foundry 13, settings sections under Quick setup show their buttons and options again.
+- Headings on light chat cards render in dark text.
+- Glass styling is scoped to windows and dialogs, leaving chat cards untouched.
+- Dialog buttons no longer stretch when using subtle or secondary styles.
+- Restored accent glow compatibility across companion modules.
 
 ## [3.0.0] - 2026-09-28
 

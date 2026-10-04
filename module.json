@@ -31,7 +31,7 @@
                         "url":  "https://patreon.com/ionrift"
                     }
                 ],
-    "download":  "https://github.com/ionrift-gm/ionrift-library/releases/download/v3.0.0/module.zip",
+    "download":  "https://github.com/ionrift-gm/ionrift-library/releases/download/v3.1.0/module.zip",
     "license":  "LICENSE",
     "socket":  true
 }
