@@ -15,14 +15,14 @@ export class SidebarHelper {
      * @param {string} options.label - Text label.
      * @param {string} options.icon - FontAwesome icon class.
      * @param {Function} options.onClick - Click handler.
-     * @param {boolean} [options.restricted=false] - If true, only shows for GM (3.0 contract).
+     * @param {boolean} [options.restricted=true] - GM only unless explicitly set to false.
      * @param {string} [options.className] - Additional classes.
      * @param {number} [options.order=50] - Weight.
      */
     static injectButton(sidebarId, html, options = {}) {
         return HudHelper.injectDirectoryButton(sidebarId, html, {
             ...options,
-            restricted: options.restricted ?? false
+            restricted: options.restricted ?? true
         });
     }
 }

@@ -249,12 +249,34 @@
 }
 
 /* Headings within content */
-.ionrift-window h1,
-.ionrift-window h2,
-.ionrift-window h3 {
+/* Scoped to real windows so inline uses of the class (chat cards) keep their own headings */
+.application.ionrift-window h1,
+.application.ionrift-window h2,
+.application.ionrift-window h3,
+.window-app.ionrift-window h1,
+.window-app.ionrift-window h2,
+.window-app.ionrift-window h3,
+.ionrift-window.dialog h1,
+.ionrift-window.dialog h2,
+.ionrift-window.dialog h3,
+.ionrift-window.ionrift-roll-request-prompt h1,
+.ionrift-window.ionrift-roll-request-prompt h2,
+.ionrift-window.ionrift-roll-request-prompt h3,
+.ionrift-window.ionrift-armor-modal h1,
+.ionrift-window.ionrift-armor-modal h2,
+.ionrift-window.ionrift-armor-modal h3 {
     border-bottom: 2px solid var(--ionrift-accent) !important;
     color: var(--ionrift-text-main) !important;
 }
+
+/* Light chat parchment cards (e.g. Respite) heading contrast override */
+.respite-chat-parchment h1,
+.respite-chat-parchment h2,
+.respite-chat-parchment h3 {
+    color: #2b2116 !important;
+    border-bottom: 1px solid rgba(80, 50, 120, 0.28) !important;
+}
+
 
 /* Tab Navigation - Respite Segmented & Unified Standards */
 .ionrift-window nav.tabs,
