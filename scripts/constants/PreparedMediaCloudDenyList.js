@@ -1,20 +1,12 @@
 /**
- * Historical prepared-media deny list and manual download links.
- *
- * All packs now use browser download and manual unzip. The deny list remains
- * for compatibility with older clients during the transition.
+ * Historical prepared-media deny list.
  *
  * Source of truth (preferred):
  *   - registry.json / PACK_CATALOG field `cloudInstall: false`
  *   - middleware `/packs/download` is retired
  *
  * Fallback deny-list: hard IDs for Library builds that see a stale registry
- * before Pages/CDN catch up. Prefer shrinking this list over growing it.
- * Do not add every new generative companion here; registry cloudInstall:false
- * and preparedMedia already gate Annex / sideload.
- *
- * Already-local overlays remain readable. Align with
- * FOUNDRY_AI_POLICY_REMEDIATION.md §2a.
+ * before Pages/CDN catch up.
  */
 
 /** @type {ReadonlySet<string>} */
@@ -25,16 +17,6 @@ export const PREPARED_MEDIA_CLOUD_DENY_IDS = Object.freeze(new Set([
     "respite-art-core",
     "ionrift-soundpack-core"
 ]));
-
-/** Public Patreon / download pages for offline packs (browser only). */
-export const PREPARED_MEDIA_OFFLINE_URLS = Object.freeze({
-    "respite-core-art-overlay": "https://www.patreon.com/posts/154985310",
-    "respite-art-core": "https://www.patreon.com/posts/154985310",
-    "resonance-core-overlay": "https://www.patreon.com/posts/155880618",
-    "ionrift-soundpack-core": "https://www.patreon.com/posts/155880618",
-    "respite-cooking-art-overlay":
-        "https://api.ionrift.cloud/packs/public/respite-cooking-art-overlay/latest"
-});
 
 /**
  * @param {string} packId
@@ -69,16 +51,4 @@ export function formatOverlayUnzipPath(moduleId, sublayer = "core") {
         ? sublayer.trim()
         : "core";
     return `ionrift-data/overlays/${moduleId}/${layer}/`;
-}
-
-/**
- * Prefer registry publicDownloadUrl / patreonUrl when present.
- * @param {string} packId
- * @param {{ publicDownloadUrl?: string, patreonUrl?: string }|null} [entry]
- * @returns {string|null}
- */
-export function resolvePreparedMediaOfflineUrl(packId, entry = null) {
-    if (entry?.publicDownloadUrl) return entry.publicDownloadUrl;
-    if (entry?.patreonUrl) return entry.patreonUrl;
-    return PREPARED_MEDIA_OFFLINE_URLS[packId] ?? null;
 }

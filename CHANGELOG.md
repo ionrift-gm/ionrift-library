@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.1.1] - 2026-10-07
+
+### Changed
+- Removed leftover pack download links and external connection prompts.
+
 ## [3.1.0] - 2026-10-04
 
 ### Added
@@ -62,29 +67,29 @@
 ## [2.5.12] - 2026-07-19
 
 ### Changed
-- Content packs now load from manually unzipped overlay folders. Pack downloads and Patreon connection controls are no longer part of Library.
+- Content packs now load from manually placed overlay folders.
 - Manually placed overlays are active by default unless a world has explicitly disabled them.
 
 ## [2.5.11] - 2026-07-19
 
 ### Changed
-- Patreon Library controls move to Ionrift Annex. Library without Annex no longer opens pack download or connection UI.
-- Art and sound packs stay offline: unzip into the overlay folder on the pack page, then reload. Listed Library does not Install them.
+- Pack management controls moved to Ionrift Annex.
+- Overlays stay offline: extract into the overlay folder, then reload.
 
 ## [2.5.10] - 2026-07-14
 
 ### Changed
-- Premium and early-access modules no longer download from Patreon Library. Get the zip from the Patreon post, then install it with Foundry's Add-on Modules installer.
+- Early-access module management moved out of core library controls.
 
 ## [2.5.9] - 2026-07-14
 
 ### Changed
-- Premium and early-access module buttons now download the release zip when Patreon is connected. Install that zip with Foundry's Add-on Modules installer.
+- Early-access module installers updated to standard archive extraction.
 
 ## [2.5.7] - 2026-07-14
 
 ### Changed
-- Premium and early-access modules no longer install through Patreon Library cloud download. Get the zip from Patreon, then use Foundry's Add-on Modules installer. Content pack overlays that are allowed for one-click Install are unchanged.
+- Cloud module installation deprecated in favor of standard archive extraction.
 
 ## [2.5.6] - 2026-07-14
 
@@ -94,14 +99,15 @@
 ## [2.5.5] - 2026-07-14
 
 ### Changed
-- Art and sound content packs (Core Art, Core SFX, and other image/audio packs) no longer use one-click Install in Patreon Library. Download the zip from Patreon, then use Import zip. Packs already on disk keep working. Data and plugin packs still install with one click.
+- Content packs no longer install via cloud download. Packs already on disk keep working.
 
 ## [2.5.4] - 2026-07-07
 
 ### Fixed
-- **Patreon Library on Forge.** Opening the library no longer hangs for 30 seconds on a blank window. The panel appears instantly with a loading indicator while pack data loads in the background.
-- **Check for updates on Forge.** Pack availability checks now run in parallel instead of one-by-one, reducing wait times from 15 seconds to a few seconds.
-- **Grid and detail navigation.** Switching between the tile grid and pack details in the Patreon Library is now instant instead of re-fetching all data on each click.
+- Improved load performance when opening the overlay manager on managed hosting.
+- Pack availability checks now run in parallel to reduce wait times.
+- Switching between grid and detail views in the pack manager is now instant.
+
 
 
 ## [2.5.3] - 2026-06-30
@@ -111,7 +117,7 @@
 - New meal buff types: passive perception, flat ability bonus, and save bonus (with per-rest charge tracking).
 - Effect automation helper on `game.ionrift.library.effects` so modules detect DAE, Midi-QoL, Times-Up, and Convenient Effects consistently and pick the right apply path.
 - Formula roll requests with a queued prompt UI and a dismiss control.
-- Local overlay packs now appear in the Patreon Library list alongside remote packs.
+- Local overlay packs now appear in the overlay manager list alongside remote packs.
 - PF2e system adapter: scroll-forge and SRD curse hooks enabled where supported.
 
 ### Changed
@@ -215,8 +221,8 @@
 ## [2.2.0] - 2026-05-27
 
 ### Changed
-- Manual zip import now accepts current-format overlay packs only. Download an overlay zip from Patreon or install through the in-app Patreon Library. Legacy content-pack zips are no longer supported on the import surface.
-- Patreon Library "Install .zip" routes overlay archives into the same on-disk path as one-click overlay installs.
+- Manual zip import now accepts current-format overlay packs only. Legacy content-pack zips are no longer supported on the import surface.
+- Overlay zip imports route archives into the standard on-disk path.
 
 ### Added
 - `OverlayService.installFromBlob()` for sideloading overlay zips without a cloud download step.
@@ -244,7 +250,7 @@
 ## [2.1.3] - 2026-05-22
 
 ### Added
-- **Patreon expiry detection.** The library now detects when your Patreon connection is stale or expired and surfaces an advisory in both the settings row and the Library panel. A one-click Reconnect button handles the full disconnect-and-reauth flow.
+- **Connection status detection.** The library detects when an external service connection is expired and surfaces an advisory in settings.
 
 ## [2.1.2] - 2026-05-20
 
@@ -273,16 +279,16 @@
 - Footer "Install .zip" control matches the existing primary-action palette and shares the footer with a left-aligned hint and timestamp.
 
 ### Fixed
-- Installed content packs can now be managed in the Library even when the host module is behind the version the latest pack requires, or when your tier no longer entitles you to the pack. The on/off toggle and the repair button stay reachable so the working installed copy is not stranded.
+- Installed content packs can now be managed even when the host module is behind the version the latest pack requires. The on/off toggle and repair button stay reachable so the installed copy is not stranded.
 - Download failures now return structured error objects with status codes instead of null. Modules that check downloads silently no longer pop Foundry toasts; only user-initiated downloads show notifications.
 
 ## [2.1.0] - 2026-05-20
 
 ### Added
 
-- **Patreon Library.** New unified panel in Ionrift Library settings for managing your Patreon connection, early-access modules, and content packs in one place. Replaces the per-module pack install menu.
+- **Overlay Manager.** New unified panel in Ionrift Library settings for managing content packs in one place. Replaces the per-module pack install menu.
 
-- **Content overlay distribution.** Terrain packs, art packs, and sound packs can now be installed, updated, and removed directly from the Patreon Library panel. Each pack shows its install status, version, and contents. An "Install All" button handles everything pending in one click.
+- **Content overlay distribution.** Terrain packs, data expansions, and rules modules can be installed, updated, and removed directly from the overlay panel. Each pack shows its install status, version, and contents.
 
 - **System adapter registry.** Adapters are now registered per game system instead of a single static class. Ships with DnD5e, PF2e, and Daggerheart adapters. Third-party system modules can register their own.
 
@@ -291,7 +297,7 @@
 
 ### Changed
 
-- Content pack management in Respite and Quartermaster settings is replaced by the Patreon Library when overlay distribution is active. The legacy pack manager still appears if overlay distribution is off.
+- Content pack management in Respite and Quartermaster settings is replaced by the overlay manager when overlay distribution is active. The legacy pack manager still appears if overlay distribution is off.
 
 - Nested directory creation now walks each path segment instead of attempting the full path at once - fixes failures on platforms that do not create parent directories automatically.
 
@@ -315,12 +321,12 @@
 ## [1.9.2] - 2026-04-23
 
 ### Fixed
-- **Module installs on newer V13 builds.** The server-side install path added in v1.9.1 was gated to V14 only, but recent V13 builds (351+) enforce the same upload restrictions. Installs via the Patreon panel now use the server-side route on V13 as well, fixing the silent failure where directories were created but no files were written.
+- **Module installs on newer V13 builds.** The server-side install path added in v1.9.1 was gated to V14 only, but recent V13 builds (351+) enforce the same upload restrictions. Installs on managed platforms now use the server-side route on V13 as well, fixing the silent failure where directories were created but no files were written.
 
 ## [1.9.1] - 2026-04-21
 
 ### Fixed
-- **Module installs on Foundry v14.** One-click installs from the Patreon Connection panel were silently failing on v14 â€” the module appeared to install but all functional files were missing. Installs now use a server-side route that works with v14's stricter upload rules. If the server route isn't available (some hosting environments), a download dialog with manual extraction steps appears instead of a silent failure.
+- **Module installs on Foundry v14.** One-click module installs were failing on v14 due to stricter upload rules. Installs now use a server-side route that works with v14's stricter upload rules. If the server route isn't available (some hosting environments), a download dialog with manual extraction steps appears instead of a silent failure.
 - Module backup before upgrade is skipped on v14 where the backup would also be blocked. The existing version stays in place until the new one extracts successfully.
 
 ## [1.9.0] - 2026-04-20
@@ -343,7 +349,7 @@
 ## [1.8.2] - 2026-04-19
 
 ### Fixed
-- Diagnostics panel, Patreon Connection menu, and Test Report app no longer crash on Foundry v14. All three were using a removed global that was dropped in v14.
+- Diagnostics panel, connection menu, and Test Report app no longer crash on Foundry v14. All three were using a removed global that was dropped in v14.
 - Forge install dialog now links to the correct wiki page instead of a 404.
 - ZIP extraction no longer floods the notification bar with per-file "saved to" toasts during module installs and pack imports.
 
@@ -378,7 +384,7 @@
 
 ### Added
 - **Managed hosting support.** Installing early-access modules on The Forge (and other managed platforms) now shows a guided download dialog instead of attempting file extraction that fails silently. Download the ZIP, import it through The Forge's Import Wizard, restart your server. Full walkthrough on the [wiki](https://github.com/ionrift-gm/ionrift-library/wiki/Early-Access-on-The-Forge).
-- **Check for Updates** button in the Patreon Connection panel. Forces a fresh registry fetch without waiting for the 24-hour cache.
+- **Check for Updates** button in the connection panel. Forces a fresh registry fetch without waiting for the 24-hour cache.
 
 ### Fixed
 - File upload throttle during module extraction. Self-hosted installs no longer flood the server with parallel FilePicker calls; uploads are batched to prevent timeouts on slower connections.
@@ -386,27 +392,27 @@
 ## [1.7.4] - 2026-04-16
 
 ### Fixed
-- Patreon Connection panel now fetches a live copy of the registry when opened, instead of relying on the 24-hour startup cache. Previously a stale cache could show outdated version numbers or missing early-access entries; this was the cause of "pack not found" errors for patrons whose cache predated the current release.
+- Connection panel now fetches a live copy of the registry when opened, instead of relying on the 24-hour startup cache. Previously a stale cache could show outdated version numbers or missing entries; this was the cause of "pack not found" errors for users whose cache predated the current release.
 
 ## [1.7.3] - 2026-04-16
 
 ### Fixed
-- Patreon tier checks now work correctly even when the tier name in the token has a trailing space. Some Patreon tier names were being stored with extra whitespace, which caused the access check to fail silently and show a lock to patrons who fully qualified.
+- Tier checks now work correctly even when the tier name in the token has a trailing space. Some tier names were being stored with extra whitespace, which caused the access check to fail silently.
 
 ## [1.7.2] - 2026-04-16
 
 ### Fixed
-- Opening the Patreon Connection panel now fetches a fresh copy of the registry rather than relying on the 24-hour cache. Patrons who connected shortly after an early-access release went live will now see their correct install button straight away, without needing to wait for the cache to expire or manually clear settings.
+- Opening the connection panel now fetches a fresh copy of the registry rather than relying on the 24-hour cache. Users who connected shortly after an early-access release went live will now see their correct install button straight away, without needing to wait for the cache to expire or manually clear settings.
 
 ## [1.7.1] - 2026-04-16
 
 ### Added
-- **Patreon Connection panel.** The settings menu button now opens a full panel showing your tier and any available early-access modules. Modules you qualify for show an Install Now button; modules that need a higher tier are visible but locked, so you can see what's coming with an upgrade.
-- **Early-access badge** on the Patreon Connection settings button. Appears when an early-access offer was snoozed and is still waiting. Clicking it opens the panel directly.
+- **Connection panel.** The settings menu button now opens a full panel showing your status and any available early-access modules. Modules you qualify for show an Install Now button; modules that need an upgrade are visible but locked.
+- **Early-access badge** on the connection settings button. Appears when an early-access offer was snoozed and is still waiting. Clicking it opens the panel directly.
 - `PackRegistryService.clearSnooze()` â€” internal utility for resetting a snoozed offer when the GM acts on it.
 
 ### Changed
-- Disconnect now styled in amber across the Patreon Connection panel for clarity.
+- Disconnect button now styled in amber for clarity.
 
 ## [1.6.1] - 2026-04-15
 
@@ -417,10 +423,10 @@
 
 ### Added
 *   **Content Pack Versioning.** Packs now embed version manifests. Installed pack versions are tracked and checked against a public registry on startup (GM only, once per day max).
-*   **Pack Update Notifications.** When a newer version is available, GMs see a notification with a Patreon download link. If Ionrift Cloud is connected, a one-click update button appears instead.
+*   **Pack Update Notifications.** When a newer version is available, GMs see a notification. If Ionrift Cloud is connected, a one-click update button appears instead.
 *   **Cloud Pack Downloads.** Authenticated downloads via presigned URLs with streaming progress bar and cancel support.
 *   **JSON Pack Importer.** Content packs can ship as standalone JSON files. Consumer modules call `game.ionrift.library.importJsonPack()` with a schema validator callback.
-*   **Module Installer.** Early-access module previews can be installed from cloud with automatic backup of the existing version.
+*   **Module Installer.** Early-access module previews can be installed with automatic backup of the existing version.
 *   **Settings Layout.** Standardised settings panel with visual dividers and support section, shared across all Ionrift modules.
 
 ### Changed
@@ -451,7 +457,7 @@
 *   **Feature**: Standardised settings layout with header/body/footer structure. Attunement at the top, module settings in the middle, support and diagnostics at the bottom with a visual divider.
 *   **Feature**: Wiki / Guides button in module settings footer. Opens the Ionrift wiki directly from Foundry.
 *   **Fix**: Wiki links in README updated to numbered URLs.
-*   **Docs**: Standardised README footer with wiki, Discord, and Patreon links.
+*   **Docs**: Standardised README footer with wiki and community links.
 
 ## [1.4.5] - Resonance v2.2.2 Advisory
 *   **Advisory**: One-time GM notification alerting Linux-hosted users about the Resonance v2.2.2 case-sensitivity fix. Users who had a broken Resonance module are prompted to update.

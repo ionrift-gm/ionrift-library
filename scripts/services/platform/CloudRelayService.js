@@ -15,7 +15,7 @@ export class CloudRelayService {
     }
 
     static get EXPIRED_COPY() {
-        return "In-app Patreon connections are retired.";
+        return "In-app connections are retired.";
     }
 
     static getSigil() {
@@ -49,7 +49,7 @@ export class CloudRelayService {
     }
 
     static async connect() {
-        ui.notifications?.warn?.("In-app Patreon connections are retired. Use the pack links on Patreon.");
+        ui.notifications?.warn?.("In-app connections are retired.");
     }
 
     static async disconnect() {
@@ -57,7 +57,7 @@ export class CloudRelayService {
     }
 
     static async requestDownload(packId, version, options = {}) {
-        const message = "In-app pack downloads are retired. Use the pack links on Patreon.";
+        const message = "In-app pack downloads are retired.";
         if (!options.silent) ui.notifications?.warn?.(message);
         return { status: 410, error: message, packId, version };
     }
