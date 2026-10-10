@@ -115,7 +115,7 @@ export class PartyRoster {
         if (ids.length) return ids.map(id => game.actors.get(id)).filter(Boolean);
 
         const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
-            ?? (a => a.hasPlayerOwner && (a.type === "character" || a.system?.isCharacter));
+            ?? (a => a?.hasPlayerOwner && (a.type === "character" || a.system?.isCharacter) && !a.flags?.["item-piles"]?.data?.enabled && !(a.name || "").toLowerCase().includes("item pile"));
         return game.actors.filter(isPc);
     }
 
@@ -255,7 +255,7 @@ export class PartyRoster {
         if (ids.length) return ids.includes(actorId);
         const actor = game.actors.get(actorId);
         const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
-            ?? (a => a?.hasPlayerOwner && a?.type === "character");
+            ?? (a => a?.hasPlayerOwner && (a.type === "character" || a.system?.isCharacter) && !a.flags?.["item-piles"]?.data?.enabled && !(a.name || "").toLowerCase().includes("item pile"));
         return isPc(actor);
     }
 

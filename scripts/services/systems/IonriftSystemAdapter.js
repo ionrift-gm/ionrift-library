@@ -11,8 +11,14 @@ export class IonriftSystemAdapter {
     getLevel(actor) { return 1; }
     getKnownSpells(actor) { return new Set(); }
     getClassNames(actor) { return []; }
-    getTraits(actor) { return new Set(); }
-    isPlayerCharacter(actor) { return actor?.hasPlayerOwner && actor?.type === "character"; }
+    isPlayerCharacter(actor) {
+        if (!actor || !actor.hasPlayerOwner) return false;
+        if (actor.type !== "character" && !actor.system?.isCharacter) return false;
+        if (actor.flags?.["item-piles"]?.data?.enabled) return false;
+        if (actor.type === "itempile") return false;
+        if ((actor.name || "").toLowerCase().includes("item pile")) return false;
+        return true;
+    }
 
     /**
      * Resolve party members from the system's native party feature, if one

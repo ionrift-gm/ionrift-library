@@ -44,7 +44,7 @@ export class PartyRosterApp extends foundry.applications.api.ApplicationV2 {
         const rosterSet = new Set(roster);
 
         const isPc = game.ionrift?.library?.system?.isPlayerCharacter?.bind(game.ionrift.library.system)
-            ?? (a => a.hasPlayerOwner && a.type === "character");
+            ?? (a => a?.hasPlayerOwner && (a.type === "character" || a.system?.isCharacter) && !a.flags?.["item-piles"]?.data?.enabled && !(a.name || "").toLowerCase().includes("item pile"));
         const allCandidates = game.actors.filter(isPc);
         const isFirstUse = roster.length === 0;
 
