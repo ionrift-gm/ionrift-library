@@ -6943,3 +6943,75 @@ html body .ionrift-window ::-webkit-scrollbar-thumb:hover,
 html body .ionrift-window *::-webkit-scrollbar-thumb:hover {
     background: var(--ionrift-accent, #9b59b6) !important;
 }
+
+/* Scene configuration groups. One look for every module that adds a block
+   to the scene sheet. Legend carries an icon. The control sits on the right.
+   The note wraps underneath. */
+fieldset.ionrift-scene-fieldset {
+    margin: 10px 0 14px 0 !important;
+    padding: 10px 14px 12px 14px !important;
+    border: 1px solid var(--ionrift-accent-glow-color, rgba(155, 89, 182, 0.35)) !important;
+    border-radius: 8px !important;
+    background: rgba(14, 10, 26, 0.25) !important;
+    box-sizing: border-box !important;
+}
+
+fieldset.ionrift-scene-fieldset legend {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+    padding: 0 6px !important;
+    font-size: var(--font-size-13, 13px) !important;
+    font-weight: 600 !important;
+    color: var(--ionrift-accent-lavender, #c4a0dc) !important;
+}
+
+fieldset.ionrift-scene-fieldset legend i {
+    font-size: 12px !important;
+    color: var(--ionrift-accent, #9b59b6) !important;
+}
+
+.form-group.ionrift-scene-config {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px 12px !important;
+    margin: 0 !important;
+}
+
+.form-group.ionrift-scene-config label {
+    flex: 1 1 auto !important;
+    margin: 0 !important;
+    font-size: var(--font-size-13, 13px) !important;
+    font-weight: 600 !important;
+    color: var(--color-text-primary, #F8FAFC) !important;
+    cursor: pointer !important;
+}
+
+.form-group.ionrift-scene-config .form-fields {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    margin: 0 !important;
+}
+
+.form-group.ionrift-scene-config .form-fields input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    accent-color: var(--ionrift-accent, #9b59b6) !important;
+}
+
+.form-group.ionrift-scene-config .hint,
+.form-group.ionrift-scene-config .notes {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    margin: 6px 0 0 0 !important;
+    font-size: var(--font-size-12, 11.5px) !important;
+    line-height: 1.4 !important;
+    color: var(--color-form-hint, #94A3B8) !important;
+}
