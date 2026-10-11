@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Socket messages now verify who sent them.
+- Range checks no longer skip measurement when a module turns the GM bypass off.
+
 ## [3.1.1] - 2026-10-07
 
 ### Changed

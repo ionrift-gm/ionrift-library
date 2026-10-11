@@ -300,7 +300,8 @@ export function canReachToken(sourceToken, targetToken, options = {}) {
     const maxSquares = resolveMaxSquares(options);
     const maxDistance = resolveMaxDistance(options, maxSquares);
     const useGrid = resolveUseGrid(options);
-    const api = armsReachApi();
+    // Arms Reach has its own GM bypass, so it can't honour an explicit bypass:false.
+    const api = options.bypass === false ? null : armsReachApi();
 
     if (typeof api?.isReachable === "function") {
         try {

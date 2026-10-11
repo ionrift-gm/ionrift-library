@@ -73,7 +73,7 @@ export class ModuleSocket {
             socket.off(this.channel, this._boundListener);
         }
 
-        this._boundListener = (data) => this._onReceive(data);
+        this._boundListener = (data, senderId) => this._onReceive(data, senderId);
         socket.on(this.channel, this._boundListener);
         this._isReady = true;
         this._log("log", `Socket listening on ${this.channel}`);
@@ -345,11 +345,14 @@ export class ModuleSocket {
     /**
      * Internal receiver: validates envelopes and dispatches to listeners.
      * @param {object} data
+     * @param {string} [senderId] - Sender id supplied by the Foundry server. When present it
+     *   replaces the self-reported `data.senderId`, which any client can forge.
      * @private
      */
-    _onReceive(data) {
+    _onReceive(data, senderId) {
         if (!data || typeof data !== "object") return;
         if (!data.type) return;
+        if (senderId) data = { ...data, senderId };
 
         // Scope filter
         if (this.scope && data.scope !== this.scope) return;
