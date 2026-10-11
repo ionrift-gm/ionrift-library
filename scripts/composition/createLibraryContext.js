@@ -76,6 +76,7 @@ import { TokenArtResolver } from "../services/TokenArtResolver.js";
 import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
 import { ModuleSocket } from "../services/sockets/ModuleSocket.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "../data/subsystemDefinitions.js";
+import { ChatSurface } from "../services/chat/ChatSurface.js";
 
 export function createLibraryContext() {
     const ctx = {
@@ -193,7 +194,9 @@ export function createLibraryContext() {
         repairCompendiumConfig: (options) => CompendiumConfigGuard.repairWorld(options),
         cleanup: LegacyAssetSweeper,
         subsystems: SUBSYSTEM_DEFINITIONS,
-        getSubsystemStatus
+        getSubsystemStatus,
+        chat: ChatSurface,
+        ChatSurface
     };
 
     exposeLibraryApi(ctx);

@@ -1,0 +1,187 @@
+/* ==========================================================================
+   Ionrift Library: Chat Surface
+   One palette for anything Ionrift puts in the chat log.
+
+   Rules (DEV_PROTOCOLS §44):
+   - Chips are opaque and carry both colours. They read the same on a light
+     system card, a dark system card, or one of our own cards, so nothing has
+     to guess which surface it landed on.
+   - Bare text injected into someone else's card does not set a colour. Use
+     .ionrift-chat-value: it inherits the colour the system chose for that
+     card, which by definition matches the card.
+   - Cards we own use .ionrift-chat-card. Every text token in it is checked
+     against the card background by the test harness.
+   - No .theme-dark / .theme-light overrides. Foundry's theme does not decide
+     what colour a chat card is.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Chips
+   -------------------------------------------------------------------------- */
+
+.ionrift-chat-chip.ionrift-chat-chip {
+    --ionrift-chip-bg: #2b2f36;
+    --ionrift-chip-fg: #f3f4f6;
+    --ionrift-chip-border: #6b7280;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px;
+    border: 1px solid var(--ionrift-chip-border);
+    border-radius: 12px;
+    background: var(--ionrift-chip-bg) !important;
+    color: var(--ionrift-chip-fg) !important;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+    text-shadow: none;
+    box-shadow: none;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.ionrift-chat-chip.ionrift-chat-chip i,
+.ionrift-chat-chip.ionrift-chat-chip span {
+    color: inherit !important;
+}
+
+.ionrift-chat-chip--upper.ionrift-chat-chip--upper {
+    text-transform: uppercase;
+    font-size: 0.74rem;
+}
+
+.ionrift-chat-chip--die.ionrift-chat-chip--die {
+    --ionrift-chip-bg: #312e81;
+    --ionrift-chip-fg: #eef2ff;
+    --ionrift-chip-border: #818cf8;
+}
+
+.ionrift-chat-chip--success.ionrift-chat-chip--success {
+    --ionrift-chip-bg: #166534;
+    --ionrift-chip-fg: #f0fdf4;
+    --ionrift-chip-border: #4ade80;
+}
+
+.ionrift-chat-chip--danger.ionrift-chat-chip--danger {
+    --ionrift-chip-bg: #991b1b;
+    --ionrift-chip-fg: #fef2f2;
+    --ionrift-chip-border: #f87171;
+}
+
+.ionrift-chat-chip--warning.ionrift-chat-chip--warning {
+    --ionrift-chip-bg: #854d0e;
+    --ionrift-chip-fg: #fefce8;
+    --ionrift-chip-border: #facc15;
+}
+
+.ionrift-chat-chip--info.ionrift-chat-chip--info {
+    --ionrift-chip-bg: #1e40af;
+    --ionrift-chip-fg: #eff6ff;
+    --ionrift-chip-border: #60a5fa;
+}
+
+.ionrift-chat-chip--arcane.ionrift-chat-chip--arcane {
+    --ionrift-chip-bg: #5b21b6;
+    --ionrift-chip-fg: #f5f3ff;
+    --ionrift-chip-border: #a78bfa;
+}
+
+/* --------------------------------------------------------------------------
+   Values inside foreign cards: size and weight only, colour inherited
+   -------------------------------------------------------------------------- */
+
+.ionrift-chat-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: inherit;
+}
+
+.ionrift-chat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Cards we own
+   -------------------------------------------------------------------------- */
+
+.ionrift-chat-card {
+    --ionrift-card-bg: #14121c;
+    --ionrift-card-border: #3a3550;
+    --ionrift-card-text: #e8e6ef;
+    --ionrift-card-muted: #b4afc4;
+    --ionrift-card-strong: #ffffff;
+    --ionrift-card-accent: #c4b5fd;
+    --ionrift-card-rule: #2e2a40;
+
+    background: var(--ionrift-card-bg);
+    border: 1px solid var(--ionrift-card-border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--ionrift-card-text);
+    text-shadow: none;
+}
+
+.ionrift-chat-card[data-tone="gold"] { --ionrift-card-accent: #f2cf6b; }
+.ionrift-chat-card[data-tone="danger"] { --ionrift-card-accent: #fca5a5; }
+.ionrift-chat-card[data-tone="success"] { --ionrift-card-accent: #86efac; }
+.ionrift-chat-card[data-tone="info"] { --ionrift-card-accent: #93c5fd; }
+.ionrift-chat-card[data-tone="neutral"] { --ionrift-card-accent: #e5e7eb; }
+
+.ionrift-chat-card p,
+.ionrift-chat-card li,
+.ionrift-chat-card span,
+.ionrift-chat-card div {
+    color: inherit;
+}
+
+.ionrift-chat-card strong,
+.ionrift-chat-card b {
+    color: var(--ionrift-card-strong);
+}
+
+.ionrift-chat-card em,
+.ionrift-chat-card .ionrift-chat-card__muted {
+    color: var(--ionrift-card-muted);
+}
+
+.ionrift-chat-card a:not(.content-link):not(.inline-roll) {
+    color: var(--ionrift-card-accent);
+}
+
+.ionrift-chat-card__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--ionrift-card-rule);
+    color: var(--ionrift-card-accent);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.ionrift-chat-card__header i {
+    color: inherit;
+}
+
+.ionrift-chat-card__footer {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--ionrift-card-rule);
+}
+
+.ionrift-chat-card button {
+    background: #231f33;
+    border: 1px solid var(--ionrift-card-border);
+    color: var(--ionrift-card-text);
+}
+
+.ionrift-chat-card button:hover {
+    border-color: var(--ionrift-card-accent);
+    color: var(--ionrift-card-strong);
+}

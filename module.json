@@ -16,7 +16,8 @@
                    "styles/ionrift.css",
                    "styles/ionrift-library.css",
                    "styles/roll-request.css",
-                   "styles/pack-registry.css"
+                   "styles/pack-registry.css",
+                   "styles/chat-surface.css"
                ],
     "relationships":  {
                           "requires":  [
