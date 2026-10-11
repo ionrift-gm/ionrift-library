@@ -21,8 +21,9 @@ import { ItemEnrichmentEngine } from "./services/items/ItemEnrichmentEngine.js";
 import { RollRequestService } from "./services/rolls/RollRequestService.js";
 import { TokenArtResolver } from "./services/TokenArtResolver.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "./data/subsystemDefinitions.js";
+import { IgnitionService } from "./services/items/IgnitionService.js";
 
-export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus, CompendiumSourceService, BaseCompendiumSourceApp };
+export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus, CompendiumSourceService, BaseCompendiumSourceApp, IgnitionService };
 
 const _onEnrichSheet = (...args) => ItemEnrichmentEngine.onRenderItemSheet(...args);
 Hooks.on("renderItemSheet", _onEnrichSheet);
@@ -251,7 +252,32 @@ Hooks.once("init", () => {
         }
     };
 
-    const tokenManifestVisible = isTokenManifestEnabled() && getSubsystemStatus("tokenManifest").visible;
+    game.settings.register(MODULE_ID, "tokenReachDefaultSquares", {
+        name: "Default Reach Squares",
+        scope: "world",
+        config: false,
+        type: Number,
+        default: 1,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "tokenReachUseGrid", {
+        name: "Token Reach Use Grid",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
+
+    game.settings.register(MODULE_ID, "tokenReachBypassGM", {
+        name: "Token Reach Bypass GM",
+        scope: "world",
+        config: false,
+        type: Boolean,
+        default: true,
+        restricted: true
+    });
 
     game.settings.register(MODULE_ID, "tokenArtRoot", {
         name: "Token Art Directory",

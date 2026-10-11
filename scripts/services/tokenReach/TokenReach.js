@@ -23,12 +23,24 @@ const SETTING_USE_GRID = "tokenReachUseGrid";
  * @property {string|null} [reason] Short failure reason for UI copy.
  */
 
+function getSetting(key, fallback) {
+    try {
+        if (!game.settings?.settings?.has?.(`${LIBRARY_ID}.${key}`)) return fallback;
+        return game.settings.get(LIBRARY_ID, key);
+    } catch {
+        return fallback;
+    }
+}
+
 /**
  * @param {Token|object|null|undefined} token
  * @returns {{ x: number, y: number }|null}
  */
 function tokenCenterPoint(token) {
     if (!token) return null;
+    if (token.center && typeof token.center.x === "number" && typeof token.center.y === "number") {
+        return { x: token.center.x, y: token.center.y };
+    }
     if (typeof token.getCenterPoint === "function") {
         try {
             return token.getCenterPoint({ elevation: false });
@@ -37,6 +49,15 @@ function tokenCenterPoint(token) {
         }
     }
     const doc = token.document ?? token;
+    if (doc.documentName === "Wall" || Array.isArray(doc.c)) {
+        const coords = doc.c ?? [];
+        if (coords.length >= 4) {
+            return {
+                x: (Number(coords[0]) + Number(coords[2])) / 2,
+                y: (Number(coords[1]) + Number(coords[3])) / 2
+            };
+        }
+    }
     const gridSize = canvas?.grid?.size ?? 100;
     const width = Number(doc.width ?? 1);
     const height = Number(doc.height ?? 1);
@@ -80,7 +101,7 @@ function elevationWithinTolerance(sourceToken, targetToken, tolerance = 5) {
 function resolveMaxSquares(options = {}) {
     const fromOptions = Number(options.squares);
     if (Number.isFinite(fromOptions) && fromOptions > 0) return fromOptions;
-    const fromSetting = Number(game.settings?.get?.(LIBRARY_ID, SETTING_DEFAULT_SQUARES));
+    const fromSetting = Number(getSetting(SETTING_DEFAULT_SQUARES, 1));
     if (Number.isFinite(fromSetting) && fromSetting > 0) return fromSetting;
     return 1;
 }
@@ -91,7 +112,7 @@ function resolveMaxSquares(options = {}) {
  */
 function resolveUseGrid(options = {}) {
     if (typeof options.useGrid === "boolean") return options.useGrid;
-    return game.settings?.get?.(LIBRARY_ID, SETTING_USE_GRID) !== false;
+    return getSetting(SETTING_USE_GRID, true) !== false;
 }
 
 /**
@@ -221,7 +242,7 @@ export function reachFailureMessage(result, options = {}) {
  */
 export function shouldBypassReach(options = {}) {
     if (typeof options.bypass === "boolean") return options.bypass;
-    if (game.user?.isGM && game.settings?.get?.(LIBRARY_ID, SETTING_BYPASS_GM) !== false) {
+    if (game.user?.isGM && getSetting(SETTING_BYPASS_GM, true) !== false) {
         return true;
     }
     return false;
@@ -282,21 +303,22 @@ export function canReachToken(sourceToken, targetToken, options = {}) {
     const api = armsReachApi();
 
     if (typeof api?.isReachable === "function") {
-        let ok = false;
         try {
-            ok = Boolean(api.isReachable(sourceToken, targetToken, maxDistance, useGrid));
+            const ok = Boolean(api.isReachable(sourceToken, targetToken, maxDistance, useGrid));
+            if (ok) {
+                return {
+                    ok: true,
+                    provider: "arms-reach",
+                    distance: null,
+                    spaces: null,
+                    maxDistance,
+                    maxSquares,
+                    reason: null
+                };
+            }
         } catch {
-            ok = false;
+            /* fall through to measureFallbackReach */
         }
-        return {
-            ok,
-            provider: "arms-reach",
-            distance: null,
-            spaces: null,
-            maxDistance,
-            maxSquares,
-            reason: ok ? null : "distance"
-        };
     }
 
     return measureFallbackReach(sourceToken, targetToken, { ...options, squares: maxSquares, useGrid, maxDistance });

@@ -37,6 +37,7 @@ import { CompendiumSourceService } from "../services/packs/CompendiumSourceServi
 import { BaseCompendiumSourceApp } from "../apps/packs/BaseCompendiumSourceApp.js";
 import { ItemEnrichmentEngine } from "../services/items/ItemEnrichmentEngine.js";
 import { ItemMintingService } from "../services/items/ItemMintingService.js";
+import { IgnitionService } from "../services/items/IgnitionService.js";
 import { adapterRegistry } from "../services/systems/SystemAdapterRegistry.js";
 import { IonriftSystemAdapter } from "../services/systems/IonriftSystemAdapter.js";
 import { PartyRoster } from "../services/party/PartyRoster.js";
@@ -170,6 +171,8 @@ export function createLibraryContext() {
         cloud: CloudRelayService,
         bugReport: BugReportService,
         minting: ItemMintingService,
+        ignition: IgnitionService,
+        IgnitionService,
         AbstractPackRegistryApp,
         platform: PlatformHelper,
         createLogger: (label) => Logger.createModuleProxy(label),
