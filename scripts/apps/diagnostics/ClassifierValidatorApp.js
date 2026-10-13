@@ -57,6 +57,7 @@ export class ClassifierValidatorApp extends FormApplication {
             const label = (p.label || "").toLowerCase();
             if (sysId === "dnd5e" && id === "dnd5e.monsters") return true;
             if (sysId === "daggerheart" && (id.includes("adversaries") || label.includes("adversaries"))) return true;
+            if (sysId === "pf2e" && (id.includes("monster-core") || id.includes("pathfinder-bestiary"))) return true;
             if (available.length <= 2) return true;
             return false;
         }).map(p => p.id);
@@ -215,7 +216,8 @@ export class ClassifierValidatorApp extends FormApplication {
                         "system.details.alignment",
                         "system.details.biography",
                         "system.ancestry",
-                        "system.description"
+                        "system.description",
+                        "system.traits"
                     ]
                 });
                 const packActors = index.map(i => {

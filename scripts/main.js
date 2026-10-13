@@ -315,6 +315,7 @@ Hooks.once("init", () => {
         default: AvatarRegistryService.getDefaultState()
     });
 
+    const tokenManifestVisible = isTokenManifestEnabled() && getSubsystemStatus("tokenManifest").visible;
     if (tokenManifestVisible) {
         game.settings.registerMenu(MODULE_ID, "avatarManifest", {
             name: "Token Manifest",
