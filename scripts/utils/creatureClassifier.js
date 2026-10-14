@@ -1,6 +1,7 @@
 import { Logger } from "../services/platform/Logger.js";
 import { getClassifierData } from "../data/classifierData.js";
 import { Cascade } from "./Cascade.js";
+import { classifyPf2eCreature } from "./pf2eSemanticRules.js";
 
 const LIB_MODULE = "ionrift-library";
 const CLASSIFICATION_OVERRIDES_KEY = "classificationOverrides";
@@ -153,6 +154,12 @@ export function classifyCreature(actorOrName) {
 
     const manual = _resolveActorClassificationOverride(actorOrName);
     if (manual) return manual;
+
+    // PF2e / SF2e: Abstract morphological rules, system trait composition, and description verb/noun inference
+    const sysId = typeof game !== "undefined" ? game?.system?.id : null;
+    if (sysId === "pf2e" || sysId === "sf2e") {
+        return classifyPf2eCreature(actorOrName, CLASSIFIER_DATA);
+    }
 
     // Extract Description
     let description = (typeof actorOrName === 'object' && actorOrName.system?.description?.value)

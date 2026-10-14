@@ -215,6 +215,7 @@ export class ClassifierValidatorApp extends FormApplication {
                         "system.details.type",
                         "system.details.alignment",
                         "system.details.biography",
+                        "system.details.publicNotes",
                         "system.ancestry",
                         "system.description",
                         "system.traits"
@@ -522,6 +523,7 @@ export class ClassifierValidatorApp extends FormApplication {
                         // Some systems use system.details.biography.value, others just biography
                         const paths = [
                             "system.description.value",
+                            "system.details.publicNotes",
                             "system.details.biography.value",
                             "system.biography.value",
                             "system.description",

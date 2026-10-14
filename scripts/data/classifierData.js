@@ -305,11 +305,20 @@ const DAGGERHEART_DATA = {
     }
 };
 
+const PF2E_DATA = {
+    ...DND5E_DATA,
+    environment: DAGGERHEART_DATA.environment
+};
+
 export function getClassifierData() {
     if (typeof game === 'undefined' || !game.system) return DAGGERHEART_DATA; // Startup safety fallback
 
     if (game.system.id === "dnd5e") {
         return DND5E_DATA;
+    }
+
+    if (game.system.id === "pf2e" || game.system.id === "sf2e") {
+        return PF2E_DATA;
     }
 
     if (game.system.id === "daggerheart") {
@@ -320,4 +329,4 @@ export function getClassifierData() {
     return DAGGERHEART_DATA;
 }
 
-export { DAGGERHEART_DATA };
+export { DAGGERHEART_DATA, PF2E_DATA };
