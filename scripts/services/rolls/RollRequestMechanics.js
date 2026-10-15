@@ -4,7 +4,8 @@
  */
 
 import { adapterRegistry } from "../systems/SystemAdapterRegistry.js";
-import { armDiceSoNiceSettle, waitForDiceSoNice } from "./DiceSettle.js";
+import { armDiceSoNiceSettle, settleAfter, waitForDiceSoNice } from "./DiceSettle.js";
+import { messageOptionsForMode, resolveRollMode } from "./RollModeResolver.js";
 
 export { armDiceSoNiceSettle, waitForDiceSoNice };
 
@@ -15,6 +16,12 @@ export const SKILL_DISPLAY_NAMES = {
     med: "Medicine", nat: "Nature", prc: "Perception",
     prf: "Performance", per: "Persuasion", rel: "Religion",
     slt: "Sleight of Hand", ste: "Stealth", sur: "Survival",
+    perception: "Perception", society: "Society", thievery: "Thievery",
+    occultism: "Occultism", crafting: "Crafting", diplomacy: "Diplomacy",
+    athletics: "Athletics", acrobatics: "Acrobatics", stealth: "Stealth",
+    arcana: "Arcana", history: "History", nature: "Nature",
+    religion: "Religion", medicine: "Medicine", survival: "Survival",
+    deception: "Deception", intimidation: "Intimidation", performance: "Performance",
     str: "Strength", dex: "Dexterity", con: "Constitution",
     int: "Intelligence", wis: "Wisdom", cha: "Charisma"
 };
@@ -39,8 +46,14 @@ export function getAbilityMod(actor, key) {
  * @returns {number}
  */
 export function getSkillMod(actor, key) {
-    const skill = actor?.system?.skills?.[key];
-    if (skill) return skill.total ?? skill.mod ?? 0;
+    const skill = actor?.system?.skills?.[key] ?? actor?.skills?.[key];
+    if (skill && Number.isFinite(skill.total ?? skill.mod ?? skill.value)) {
+        return Number(skill.total ?? skill.mod ?? skill.value);
+    }
+    if (key === "perception" || key === "prc") {
+        const perc = actor?.perception?.mod ?? actor?.system?.perception?.mod ?? actor?.system?.attributes?.perception?.totalModifier;
+        if (Number.isFinite(perc)) return Number(perc);
+    }
     return getAbilityMod(actor, key);
 }
 
@@ -82,22 +95,25 @@ export function getNatD20FromRoll(roll) {
     const t0 = roll?.terms?.[0];
     const r0 = t0?.results?.[0]?.result;
     if (typeof r0 === "number") return r0;
-    return roll?.dice?.[0]?.results?.[0]?.result ?? null;
+    return roll?.dice?.[0]?.results?.[0]?.result ?? roll?.dice?.[0]?.total ?? null;
 }
 
 /**
  * @param {Actor} actor
  * @param {Roll} roll
  * @param {string} flavor
- * @param {"public"|"gmroll"|"blind"|"self"} [chatMode="public"]
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
+ * @param {{ treatHalfBlindAsBlind?: boolean }} [options]
  * @returns {Promise<ChatMessage>}
  */
-export async function postRollToChat(actor, roll, flavor, chatMode = "public") {
+export async function postRollToChat(actor, roll, flavor, chatMode = "client", options = {}) {
+    const resolved = resolveRollMode(chatMode, options);
+    const createOpts = messageOptionsForMode(chatMode, options);
     return roll.toMessage({
         speaker: ChatMessage.getSpeaker({ actor }),
         flavor,
-        rollMode: chatMode
-    });
+        rollMode: resolved.rollMode
+    }, createOpts);
 }
 
 /**
@@ -119,10 +135,10 @@ export function evaluatePassed(dc, total, rollMode) {
  * @param {number} dc
  * @param {string} flavor
  * @param {"normal"|"advantage"|"disadvantage"|"force-pass"|"force-fail"} rollMode
- * @param {"public"|"gmroll"|"blind"|"self"} chatMode
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
  * @returns {Promise<{ total: number, passed: boolean|null, natD20: number|null, roll: Roll|null }>}
  */
-export async function executeAbilityRoll(actor, abilityKey, dc, flavor, rollMode = "normal", chatMode = "public") {
+export async function executeAbilityRoll(actor, abilityKey, dc, flavor, rollMode = "normal", chatMode = "client") {
     if (rollMode === "force-pass") {
         const total = Number.isFinite(dc) ? dc : 20;
         return { total, passed: true, natD20: 1, roll: null };
@@ -159,10 +175,10 @@ export async function executeAbilityRoll(actor, abilityKey, dc, flavor, rollMode
  * @param {number} dc
  * @param {string} flavor
  * @param {"normal"|"advantage"|"disadvantage"|"force-pass"|"force-fail"} rollMode
- * @param {"public"|"gmroll"|"blind"|"self"} chatMode
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
  * @returns {Promise<{ total: number, passed: boolean|null, natD20: number|null, roll: Roll|null }>}
  */
-export async function executeSkillRoll(actor, skillKey, dc, flavor, rollMode = "normal", chatMode = "public") {
+export async function executeSkillRoll(actor, skillKey, dc, flavor, rollMode = "normal", chatMode = "client") {
     if (rollMode === "force-pass" || rollMode === "force-fail") {
         return executeAbilityRoll(actor, skillKey, dc, flavor, rollMode, chatMode);
     }
@@ -194,21 +210,22 @@ export async function executeSkillRoll(actor, skillKey, dc, flavor, rollMode = "
  * @param {number} dc
  * @param {string} flavor
  * @param {"normal"|"advantage"|"disadvantage"|"force-pass"|"force-fail"} rollMode
- * @param {"public"|"gmroll"|"blind"|"self"} chatMode
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
  * @returns {Promise<{ total: number, passed: boolean|null, natD20: number|null, roll: Roll|null }>}
  */
-export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = "normal", chatMode = "public") {
+export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = "normal", chatMode = "client") {
     if (rollMode === "force-pass" || rollMode === "force-fail") {
         return executeAbilityRoll(actor, abilityKey, dc, flavor, rollMode, chatMode);
     }
 
     if (typeof actor.rollAbilitySave === "function") {
-        const saveRoll = await actor.rollAbilitySave(abilityKey, {
+        const resolved = resolveRollMode(chatMode);
+        const saveRoll = await settleAfter(() => actor.rollAbilitySave(abilityKey, {
             dc,
             chatMessage: true,
-            rollMode: chatMode,
+            rollMode: resolved.rollMode,
             fastForward: false
-        });
+        }));
         const total = saveRoll?.total ?? 0;
         return {
             total,
@@ -227,21 +244,29 @@ export async function executeSaveRoll(actor, abilityKey, dc, flavor, rollMode = 
  * @param {string} formula
  * @param {object} [opts]
  * @param {string} [opts.flavor]
- * @param {"public"|"gmroll"|"blind"|"self"} [opts.chatMode="public"]
+ * @param {string} [opts.flavorHtml]
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [opts.chatMode="client"]
+ * @param {boolean} [opts.treatHalfBlindAsBlind=false]
  * @returns {Promise<{ total: number, formula: string, passed: null, natD20: null, roll: Roll, message: ChatMessage|null }>}
  */
-export async function executeFormulaRoll(actor, formula, { flavor = "", flavorHtml = "", chatMode = "public" } = {}) {
+export async function executeFormulaRoll(actor, formula, {
+    flavor = "",
+    flavorHtml = "",
+    chatMode = "client",
+    treatHalfBlindAsBlind = false
+} = {}) {
     const rollData = typeof actor?.getRollData === "function" ? actor.getRollData() : {};
     const roll = new Roll(String(formula ?? "0"), rollData);
     await roll.evaluate();
+    const actorName = actor?.name ? `<strong>${actor.name}</strong>: ` : "";
     const flavorText = flavorHtml
         || (flavor
-            ? `<strong>${actor.name}</strong>: ${flavor}`
-            : `<strong>${actor.name}</strong>: ${formula}`);
+            ? `${actorName}${flavor}`
+            : `${actorName}${formula}`);
     const gate = armDiceSoNiceSettle();
     let message;
     try {
-        message = await postRollToChat(actor, roll, flavorText, chatMode);
+        message = await postRollToChat(actor, roll, flavorText, chatMode, { treatHalfBlindAsBlind });
     } catch (err) {
         gate.cancel();
         throw err;
@@ -264,16 +289,17 @@ export async function executeFormulaRoll(actor, formula, { flavor = "", flavorHt
  * @param {number} dc
  * @param {string} context
  * @param {"normal"|"advantage"|"disadvantage"} rollMode
+ * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
  * @returns {Promise<{ total: number, passed: boolean|null, skill: string, natD20: number|null }>}
  */
-export async function rollForPlayer(actor, skills, dc, context = "Skill check", rollMode = "normal") {
+export async function rollForPlayer(actor, skills, dc, context = "Skill check", rollMode = "normal", chatMode = "client") {
     const skillList = Array.isArray(skills) ? skills : [skills];
     const skill = pickBestSkill(actor, skillList);
     const skillName = SKILL_DISPLAY_NAMES[skill] ?? skill.toUpperCase();
     const modeLabel = rollMode === "advantage" ? " [Advantage]"
         : rollMode === "disadvantage" ? " [Disadvantage]" : "";
     const flavor = `<strong>${actor.name}</strong> - ${context} (${skillName}, DC ${dc}) [GM roll]${modeLabel}`;
-    const result = await executeSkillRoll(actor, skill, dc, flavor, rollMode, "public");
+    const result = await executeSkillRoll(actor, skill, dc, flavor, rollMode, chatMode);
     return {
         total: result.total,
         passed: result.passed,

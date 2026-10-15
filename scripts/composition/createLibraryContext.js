@@ -43,10 +43,13 @@ import { IonriftSystemAdapter } from "../services/systems/IonriftSystemAdapter.j
 import { PartyRoster } from "../services/party/PartyRoster.js";
 import { TerrainRegistry, terrainRegistry, normalizeTerrainCategory } from "../services/terrain/TerrainRegistry.js";
 import { RollRequestService } from "../services/rolls/RollRequestService.js";
+import { RollService } from "../services/rolls/RollService.js";
+import { SystemChecks } from "../services/rolls/checks/SystemChecks.js";
 import {
     armDiceSoNiceSettle,
     postRollAndSettle,
     presentRoll,
+    settleAfter,
     waitForDiceSoNice
 } from "../services/rolls/DiceSettle.js";
 import {
@@ -108,6 +111,8 @@ export function createLibraryContext() {
         storyMoment: {
             open: (opts) => StoryMomentApp.open(opts)
         },
+        rolls: RollService,
+        checks: SystemChecks,
         rollRequest: {
             request: (opts) => RollRequestService.request(opts),
             requestDetached: (opts, callback) => RollRequestService.requestDetached(opts, callback),
@@ -136,7 +141,8 @@ export function createLibraryContext() {
             armDiceSoNiceSettle,
             waitForDiceSoNice,
             postRollAndSettle,
-            presentRoll
+            presentRoll,
+            settleAfter
         },
         importJsonPack: (opts) => JsonPackService.importJsonPack(opts),
         importJsonFromFile: (file, opts) => JsonPackService.importFromFile(file, opts),

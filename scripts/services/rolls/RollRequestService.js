@@ -124,7 +124,7 @@ export class RollRequestService {
                 formula: opts.formula ?? "",
                 dc,
                 rollMode,
-                chatMode: opts.chatMode ?? "public",
+                chatMode: opts.chatMode ?? "client",
                 title: opts.title ?? "Roll Request",
                 flavor: opts.flavor ?? "",
                 tableLabel: opts.tableLabel ?? "",
@@ -262,7 +262,7 @@ export class RollRequestService {
                 formula: data.formula,
                 dc: data.dc,
                 rollMode: data.rollMode ?? "normal",
-                chatMode: data.chatMode ?? "public",
+                chatMode: data.chatMode ?? "client",
                 title: data.title,
                 flavor: data.flavor,
                 tableLabel: data.tableLabel ?? "",
@@ -526,7 +526,7 @@ export class RollRequestService {
      * @param {string} context
      */
     static async _rollGmFallback(actor, opts, dc, context) {
-        const chatMode = opts.chatMode ?? "public";
+        const chatMode = opts.chatMode ?? "client";
         const rollMode = opts.rollMode ?? "normal";
         const flavor = `<strong>${actor.name}</strong> - ${context} [GM roll]`;
 
@@ -561,7 +561,7 @@ export class RollRequestService {
             formula: opts.formula,
             dc: opts.dc,
             rollMode: opts.rollMode ?? "normal",
-            chatMode: opts.chatMode ?? "public",
+            chatMode: opts.chatMode ?? "client",
             title: opts.title,
             flavor: opts.flavor,
             tableLabel: opts.tableLabel ?? "",

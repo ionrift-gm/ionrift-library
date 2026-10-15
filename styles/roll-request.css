@@ -1,4 +1,4 @@
-﻿/* Ionrift shared roll-request UI */
+/* Ionrift shared roll-request UI */
 /* ---- Centered check module: skill, circular nudgeable DC, watch avatars ---- */
 .event-check-module {
     display: flex;
@@ -681,9 +681,12 @@
 
 .ionrift-roll-request-overlay {
     z-index: 10050;
+    background: transparent;
+    pointer-events: none;
 }
 
 .ionrift-roll-request-prompt {
+    pointer-events: auto;
     width: min(92vw, 22rem);
     min-width: min(92vw, 18rem);
     max-width: min(92vw, 420px);

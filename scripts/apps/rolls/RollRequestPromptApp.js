@@ -102,9 +102,14 @@ export class RollRequestPromptApp {
                 overlay.remove();
             };
 
-            const finish = (result, delay = 900) => {
+            const finish = (result, delay = 0) => {
                 if (settled) return;
                 settled = true;
+                if (delay <= 0) {
+                    cleanup();
+                    resolve(result);
+                    return;
+                }
                 finishTimer = window.setTimeout(() => {
                     finishTimer = null;
                     cleanup();
@@ -149,6 +154,13 @@ export class RollRequestPromptApp {
                     button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Rolling...`;
                 }
 
+                const hasTableLookup = Boolean(payload.tableLabel);
+                if (!hasTableLookup) {
+                    cleanup();
+                } else {
+                    overlay.hidden = true;
+                }
+
                 const type = payload.type ?? "skill";
                 const typeLabel = type === "save" ? "Saving Throw"
                     : type === "skill" ? "Skill Check"
@@ -157,7 +169,7 @@ export class RollRequestPromptApp {
                 const keyLabel = type === "formula"
                     ? (payload.formula ?? "dice")
                     : (SKILL_DISPLAY_NAMES[payload.key] ?? String(payload.key ?? "").toUpperCase());
-                const chatMode = payload.chatMode ?? "public";
+                const chatMode = payload.chatMode ?? "client";
                 const rollMode = payload.rollMode ?? "normal";
                 const dc = Number.isFinite(payload.dc) ? payload.dc : null;
                 const tableNote = payload.tableLabel
@@ -186,18 +198,28 @@ export class RollRequestPromptApp {
                         result = await executeAbilityRoll(actor, payload.key, dc, flavorText, rollMode, chatMode);
                     }
 
-                    let outcomeText = "";
-                    if (payload.tableLabel) {
-                        await render({
-                            rolled: true,
+                    if (!hasTableLookup) {
+                        finish({
                             total: result.total,
                             passed: result.passed,
-                            outcomeText: ""
-                        });
-                        outcomeText = await RollRequestPromptApp.#lookupOutcome(payload, result.total);
-                        await RollRequestPromptApp.#appendOutcomeToChat(result.message, flavorText, outcomeText);
+                            natD20: result.natD20
+                        }, 0);
+                        return;
                     }
 
+                    if (settled) return;
+                    overlay.hidden = false;
+
+                    await render({
+                        rolled: true,
+                        total: result.total,
+                        passed: result.passed,
+                        outcomeText: ""
+                    });
+                    const outcomeText = await RollRequestPromptApp.#lookupOutcome(payload, result.total);
+                    await RollRequestPromptApp.#appendOutcomeToChat(result.message, flavorText, outcomeText);
+
+                    if (settled) return;
                     await render({
                         rolled: true,
                         total: result.total,
@@ -209,7 +231,7 @@ export class RollRequestPromptApp {
                         total: result.total,
                         passed: result.passed,
                         natD20: result.natD20
-                    }, payload.tableLabel ? 2600 : 900);
+                    }, 2600);
                 } catch (err) {
                     rolling = false;
                     fail(err);
