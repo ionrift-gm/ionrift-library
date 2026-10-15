@@ -47,10 +47,13 @@ import { RollService } from "../services/rolls/RollService.js";
 import { SystemChecks } from "../services/rolls/checks/SystemChecks.js";
 import {
     armDiceSoNiceSettle,
+    diceSoNiceActive,
+    observeDiceSoNice,
     postRollAndSettle,
     presentRoll,
     settleAfter,
-    waitForDiceSoNice
+    waitForDiceSoNice,
+    waitForInFlightDice
 } from "../services/rolls/DiceSettle.js";
 import {
     buildRollRequestContext,
@@ -82,6 +85,7 @@ import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "../data/subsystemDefi
 import { ChatSurface } from "../services/chat/ChatSurface.js";
 
 export function createLibraryContext() {
+    observeDiceSoNice();
     const ctx = {
         MODULE_ID,
         MODULE_LABEL,
@@ -139,7 +143,9 @@ export function createLibraryContext() {
             watchAnimation: watchDcAnimation,
             forceDcPulseTest,
             armDiceSoNiceSettle,
+            diceSoNiceActive,
             waitForDiceSoNice,
+            waitForInFlightDice,
             postRollAndSettle,
             presentRoll,
             settleAfter

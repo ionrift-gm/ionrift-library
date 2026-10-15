@@ -8,8 +8,11 @@
  */
 
 const queue = [];
+const idleWaiters = [];
 let listening = false;
 let listenerId = null;
+let startListenerId = null;
+let inFlight = 0;
 
 /**
  * @returns {boolean}
@@ -23,15 +26,39 @@ export function diceSoNiceActive() {
     return true;
 }
 
+function flushIdleWaiters() {
+    if (inFlight > 0) return;
+    const waiters = idleWaiters.splice(0);
+    for (const finish of waiters) finish();
+}
+
+function noteRollStart() {
+    inFlight += 1;
+}
+
+function noteRollComplete() {
+    if (inFlight > 0) inFlight -= 1;
+    flushIdleWaiters();
+}
+
 function ensureListener() {
     if (listening) return;
     const hooks = globalThis.Hooks;
     if (typeof hooks?.on !== "function") return;
     listening = true;
     listenerId = hooks.on("diceSoNiceRollComplete", () => {
+        noteRollComplete();
         const next = queue.shift();
         next?.finish();
     });
+    startListenerId = hooks.on("diceSoNiceRollStart", () => {
+        noteRollStart();
+    });
+}
+
+/** Bind the Dice So Nice start/complete observers. Safe to call more than once. */
+export function observeDiceSoNice() {
+    ensureListener();
 }
 
 /**
@@ -119,6 +146,45 @@ export async function waitForDiceSoNice(timeoutMs = 5000) {
 }
 
 /**
+ * Wait until Dice So Nice has no throw in the air.
+ * Resolves immediately when Dice So Nice is inactive or idle.
+ * A short grace window catches a throw that starts on the same hook turn.
+ * @param {{ graceMs?: number, timeoutMs?: number }} [opts]
+ * @returns {Promise<void>}
+ */
+export async function waitForInFlightDice({ graceMs = 200, timeoutMs = 8000 } = {}) {
+    if (!diceSoNiceActive()) return;
+    ensureListener();
+    if (inFlight <= 0 && graceMs > 0) {
+        await new Promise((resolve) => { setTimeout(resolve, graceMs); });
+    }
+    if (inFlight <= 0) return;
+
+    await new Promise((resolve) => {
+        let settled = false;
+        let timer = null;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            resolve();
+        };
+        idleWaiters.push(finish);
+        if (inFlight <= 0) {
+            const idx = idleWaiters.indexOf(finish);
+            if (idx >= 0) idleWaiters.splice(idx, 1);
+            finish();
+            return;
+        }
+        timer = setTimeout(() => {
+            const idx = idleWaiters.indexOf(finish);
+            if (idx >= 0) idleWaiters.splice(idx, 1);
+            finish();
+        }, timeoutMs);
+    });
+}
+
+/**
  * Animate a roll that was not posted to chat. Awaiting this is the settle.
  * Do not use on a roll that was also sent to chat.
  * @param {Roll} roll
@@ -139,8 +205,12 @@ export async function presentRoll(roll, user) {
 /** Test hook. Drops pending gates and lets the next arm bind a fresh listener. */
 export function resetDiceSettleForTests() {
     for (const entry of queue.splice(0)) entry.finish();
+    inFlight = 0;
+    flushIdleWaiters();
     const hooks = globalThis.Hooks;
     if (listening && listenerId != null) hooks?.off?.("diceSoNiceRollComplete", listenerId);
+    if (startListenerId != null) hooks?.off?.("diceSoNiceRollStart", startListenerId);
     listening = false;
     listenerId = null;
+    startListenerId = null;
 }
