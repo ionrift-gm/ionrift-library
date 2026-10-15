@@ -13,6 +13,7 @@ let listening = false;
 let listenerId = null;
 let startListenerId = null;
 let inFlight = 0;
+let silentInFlight = 0;
 
 /**
  * @returns {boolean}
@@ -51,7 +52,8 @@ function ensureListener() {
         const next = queue.shift();
         next?.finish();
     });
-    startListenerId = hooks.on("diceSoNiceRollStart", () => {
+    startListenerId = hooks.on("diceSoNiceRollStart", (messageId) => {
+        if (silentInFlight > 0 && messageId === null) return;
         noteRollStart();
     });
 }
@@ -195,10 +197,16 @@ export async function presentRoll(roll, user) {
     if (!roll || !diceSoNiceActive()) return;
     const dice3d = globalThis.game?.dice3d;
     if (typeof dice3d?.showForRoll !== "function") return;
+    ensureListener();
+    silentInFlight += 1;
+    noteRollStart();
     try {
         await dice3d.showForRoll(roll, user ?? globalThis.game.user, true);
     } catch {
         /* animation is optional */
+    } finally {
+        silentInFlight = Math.max(0, silentInFlight - 1);
+        noteRollComplete();
     }
 }
 
@@ -206,6 +214,7 @@ export async function presentRoll(roll, user) {
 export function resetDiceSettleForTests() {
     for (const entry of queue.splice(0)) entry.finish();
     inFlight = 0;
+    silentInFlight = 0;
     flushIdleWaiters();
     const hooks = globalThis.Hooks;
     if (listening && listenerId != null) hooks?.off?.("diceSoNiceRollComplete", listenerId);
