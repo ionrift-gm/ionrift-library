@@ -118,12 +118,36 @@
     --ionrift-card-accent: #c4b5fd;
     --ionrift-card-rule: #2e2a40;
 
-    background: var(--ionrift-card-bg);
+    background: var(--ionrift-card-bg) !important;
     border: 1px solid var(--ionrift-card-border);
     border-radius: 6px;
     padding: 8px 10px;
-    color: var(--ionrift-card-text);
-    text-shadow: none;
+    color: var(--ionrift-card-text) !important;
+    text-shadow: none !important;
+}
+
+:is(
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) {
+    --ionrift-card-bg: #14121c;
+    --ionrift-card-border: #3a3550;
+    --ionrift-card-text: #e8e6ef;
+    --ionrift-card-muted: #b4afc4;
+    --ionrift-card-strong: #ffffff;
+    --ionrift-card-accent: #c4b5fd;
+    --ionrift-card-rule: #2e2a40;
+
+    background: var(--ionrift-card-bg) !important;
+    color: var(--ionrift-card-text) !important;
+    text-shadow: none !important;
 }
 
 .ionrift-chat-card[data-tone="gold"] { --ionrift-card-accent: #f2cf6b; }
@@ -175,13 +199,140 @@
     border-top: 1px solid var(--ionrift-card-rule);
 }
 
-.ionrift-chat-card button {
-    background: #231f33;
-    border: 1px solid var(--ionrift-card-border);
-    color: var(--ionrift-card-text);
+/* --------------------------------------------------------------------------
+   Buttons inside cards we own (immune to unlayered .primary / .secondary leaks)
+   -------------------------------------------------------------------------- */
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button {
+    --ionrift-card-btn-bg: #231f33;
+    --ionrift-card-btn-fg: #e8e6ef;
+    --ionrift-card-btn-border: #4c4668;
+    --ionrift-card-btn-hover-bg: #2e2942;
+    --ionrift-card-btn-hover-border: var(--ionrift-card-accent, #c4b5fd);
+
+    background: var(--ionrift-card-btn-bg) !important;
+    border: 1px solid var(--ionrift-card-btn-border) !important;
+    color: var(--ionrift-card-btn-fg) !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
 }
 
-.ionrift-chat-card button:hover {
-    border-color: var(--ionrift-card-accent);
-    color: var(--ionrift-card-strong);
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button:is([data-tone="primary"], .ionrift-chat-btn--primary, .primary, .tw-btn-primary, .ionrift-btn-primary) {
+    --ionrift-card-btn-bg: #0c4a6e;
+    --ionrift-card-btn-fg: #f0f9ff;
+    --ionrift-card-btn-border: #38bdf8;
+    --ionrift-card-btn-hover-bg: #075985;
+    --ionrift-card-btn-hover-border: #7dd3fc;
 }
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button:is([data-tone="secondary"], .ionrift-chat-btn--secondary, .secondary, .tw-btn-secondary) {
+    --ionrift-card-btn-bg: #1e293b;
+    --ionrift-card-btn-fg: #f1f5f9;
+    --ionrift-card-btn-border: #64748b;
+    --ionrift-card-btn-hover-bg: #334155;
+    --ionrift-card-btn-hover-border: #94a3b8;
+}
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button:is([data-tone="danger"], .ionrift-chat-btn--danger, .danger) {
+    --ionrift-card-btn-bg: #7f1d1d;
+    --ionrift-card-btn-fg: #fef2f2;
+    --ionrift-card-btn-border: #f87171;
+    --ionrift-card-btn-hover-bg: #991b1b;
+    --ionrift-card-btn-hover-border: #fca5a5;
+}
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button:is([data-tone="gold"], .ionrift-chat-btn--gold, .ionrift-chat-btn-ascend) {
+    --ionrift-card-btn-bg: #3b1d5e;
+    --ionrift-card-btn-fg: #fef08a;
+    --ionrift-card-btn-border: #a855f7;
+    --ionrift-card-btn-hover-bg: #4c2478;
+    --ionrift-card-btn-hover-border: #facc15;
+}
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button:hover:not(:disabled) {
+    background: var(--ionrift-card-btn-hover-bg) !important;
+    border-color: var(--ionrift-card-btn-hover-border) !important;
+    color: var(--ionrift-card-strong) !important;
+}
+
+:is(
+    .ionrift-chat-card,
+    .ionrift-pacing-card,
+    .ionrift-qol-chat,
+    .tripwire-chat-card,
+    .cw-removal-card,
+    .ionrift-quiz-chat,
+    .ionrift-nemesis-chat-card,
+    .ionrift-cache-card,
+    .mf-butcher-card,
+    .mf-share-card
+) button i {
+    color: inherit !important;
+}
+

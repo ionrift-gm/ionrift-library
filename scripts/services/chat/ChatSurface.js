@@ -10,9 +10,23 @@
 
 /** @typedef {"neutral"|"die"|"success"|"danger"|"warning"|"info"|"arcane"} ChipTone */
 /** @typedef {"arcane"|"gold"|"danger"|"success"|"info"|"neutral"} CardTone */
+/** @typedef {"default"|"primary"|"secondary"|"danger"|"gold"} ButtonTone */
 
 export const CHIP_TONES = Object.freeze(["neutral", "die", "success", "danger", "warning", "info", "arcane"]);
 export const CARD_TONES = Object.freeze(["arcane", "gold", "danger", "success", "info", "neutral"]);
+export const BUTTON_TONES = Object.freeze(["default", "primary", "secondary", "danger", "gold"]);
+export const CARD_ROOT_CLASSES = Object.freeze([
+    "ionrift-chat-card",
+    "ionrift-pacing-card",
+    "ionrift-qol-chat",
+    "tripwire-chat-card",
+    "cw-removal-card",
+    "ionrift-quiz-chat",
+    "ionrift-nemesis-chat-card",
+    "ionrift-cache-card",
+    "mf-butcher-card",
+    "mf-share-card"
+]);
 
 const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
 
@@ -31,6 +45,8 @@ function iconHtml(icon) {
 export const ChatSurface = {
     CHIP_TONES,
     CARD_TONES,
+    BUTTON_TONES,
+    CARD_ROOT_CLASSES,
 
     /**
      * Opaque pill. Safe inside any card, light or dark.
@@ -63,6 +79,22 @@ export const ChatSurface = {
      */
     row(...parts) {
         return `<div class="ionrift-chat-row">${parts.filter(Boolean).join("")}</div>`;
+    },
+
+    /**
+     * Action button inside an Ionrift chat card, protected against unlayered
+     * foreign class overrides (.primary / .secondary).
+     * @param {string} text  Plain text label, escaped.
+     * @param {{ tone?: ButtonTone, icon?: string, action?: string, className?: string }} [opts]
+     */
+    button(text, { tone = "default", icon, action, className = "" } = {}) {
+        const t = BUTTON_TONES.includes(tone) ? tone : "default";
+        const classes = ["ionrift-chat-btn"];
+        if (t !== "default") classes.push(`ionrift-chat-btn--${t}`);
+        if (className) classes.push(className);
+        const toneAttr = t !== "default" ? ` data-tone="${t}"` : "";
+        const actionAttr = action ? ` data-action="${escapeHtml(action)}"` : "";
+        return `<button type="button" class="${classes.join(" ")}"${toneAttr}${actionAttr}>${iconHtml(icon)}${icon ? " " : ""}${escapeHtml(text)}</button>`;
     },
 
     /**
