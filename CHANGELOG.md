@@ -1,10 +1,22 @@
 # Changelog
 
-## [Unreleased]
+## [3.2.0] - 2026-10-18
+
+### Added
+- Ionrift chat cards share one dark card style with readable buttons, and other modules' chat styling no longer bleeds into them.
+- Shared check handling for D&D 5e and Pathfinder 2e roll requests.
+- Support for lighting and putting out carried light sources, used by companion modules.
+- Scene configuration panels and the compendium source curator match the rest of the suite.
+
+### Changed
+- Better Pathfinder 2e creature recognition, with bestiary defaults.
 
 ### Fixed
 - Socket messages now verify who sent them.
 - Range checks no longer skip measurement when a module turns the GM bypass off.
+- The roll request prompt clears once 3D dice finish rolling.
+- Chat and roll prompts no longer break when a hosted server briefly returns an error page while loading.
+- Item Piles containers are no longer counted as party members.
 
 ## [3.1.1] - 2026-10-07
 
