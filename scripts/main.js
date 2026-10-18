@@ -34,12 +34,9 @@ Hooks.once("init", () => {
     Logger.log("Library", "Initializing Shared Library");
     ConsoleCapture.install();
 
-    const rollRequestPartialPath = `modules/${MODULE_ID}/templates/partials/_roll-request.hbs`;
-    foundry.applications.handlebars.loadTemplates([rollRequestPartialPath]);
-    fetch(rollRequestPartialPath)
-        .then((response) => response.text())
-        .then((source) => Handlebars.registerPartial("rollRequest", source))
-        .catch((err) => Logger.warn("Library", "Failed to load roll-request partial:", err));
+    foundry.applications.handlebars.loadTemplates({
+        rollRequest: `modules/${MODULE_ID}/templates/partials/_roll-request.hbs`
+    }).catch((err) => Logger.warn("Library", "Failed to load roll-request partial:", err));
 
     createLibraryContext();
 
