@@ -27,7 +27,23 @@ export function diceSoNiceActive() {
     return true;
 }
 
+/**
+ * Returns true when Dice So Nice's 3D physics box is present in the live client
+ * and has no active or queued throw. Used to self-heal `inFlight` if an external
+ * caller invokes `game.dice3d.showForRoll` directly (which emits `diceSoNiceRollStart`
+ * with `messageId = null` without a matching `diceSoNiceRollComplete`).
+ * @returns {boolean}
+ */
+function isLiveBoxPhysicallyIdle() {
+    const d3d = globalThis.game?.dice3d;
+    if (!d3d?.box) return false;
+    return !d3d.box.rolling && !d3d.box._preparingThrow && (d3d.queue?.length ?? 0) === 0;
+}
+
 function flushIdleWaiters() {
+    if (inFlight > 0 && silentInFlight === 0 && isLiveBoxPhysicallyIdle()) {
+        inFlight = 0;
+    }
     if (inFlight > 0) return;
     const waiters = idleWaiters.splice(0);
     for (const finish of waiters) finish();
@@ -160,6 +176,9 @@ export async function waitForInFlightDice({ graceMs = 200, timeoutMs = 8000 } = 
     if (inFlight <= 0 && graceMs > 0) {
         await new Promise((resolve) => { setTimeout(resolve, graceMs); });
     }
+    if (inFlight > 0 && silentInFlight === 0 && isLiveBoxPhysicallyIdle()) {
+        inFlight = 0;
+    }
     if (inFlight <= 0) return;
 
     await new Promise((resolve) => {
@@ -172,7 +191,8 @@ export async function waitForInFlightDice({ graceMs = 200, timeoutMs = 8000 } = 
             resolve();
         };
         idleWaiters.push(finish);
-        if (inFlight <= 0) {
+        if (inFlight <= 0 || (silentInFlight === 0 && isLiveBoxPhysicallyIdle())) {
+            if (silentInFlight === 0 && isLiveBoxPhysicallyIdle()) inFlight = 0;
             const idx = idleWaiters.indexOf(finish);
             if (idx >= 0) idleWaiters.splice(idx, 1);
             finish();

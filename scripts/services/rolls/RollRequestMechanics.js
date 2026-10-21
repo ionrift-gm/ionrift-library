@@ -54,6 +54,13 @@ export function getSkillMod(actor, key) {
         const perc = actor?.perception?.mod ?? actor?.system?.perception?.mod ?? actor?.system?.attributes?.perception?.totalModifier;
         if (Number.isFinite(perc)) return Number(perc);
     }
+    if (key === "stealth" || key === "ste") {
+        const alt = actor?.skills?.stealth ?? actor?.system?.skills?.ste ?? actor?.system?.skills?.stealth;
+        if (alt && Number.isFinite(alt.total ?? alt.mod ?? alt.value)) {
+            return Number(alt.total ?? alt.mod ?? alt.value);
+        }
+        return getAbilityMod(actor, "dex");
+    }
     return getAbilityMod(actor, key);
 }
 

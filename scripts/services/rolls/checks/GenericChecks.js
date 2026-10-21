@@ -11,6 +11,7 @@ const FALLBACK_SKILLS = {
     prc: "Perception",
     inv: "Investigation",
     slt: "Sleight of Hand",
+    ste: "Stealth",
     arc: "Arcana",
     his: "History",
     rel: "Religion",
@@ -23,6 +24,9 @@ export class GenericChecks {
 
     /** Stat used for Search and Listen. */
     get perceptionKey() { return "prc"; }
+
+    /** Stat used for Avoid Notice / Move Stealthily. */
+    get stealthKey() { return "ste"; }
 
     /** Default skill for clues when the GM leaves it blank. */
     get investigateKey() { return "inv"; }
@@ -52,6 +56,7 @@ export class GenericChecks {
         const value = skill?.total ?? skill?.mod ?? skill?.value;
         if (Number.isFinite(Number(value))) return Number(value);
         if (stat === this.perceptionKey) return Number(actor?.system?.abilities?.wis?.mod ?? 0) || 0;
+        if (stat === this.stealthKey) return Number(actor?.system?.abilities?.dex?.mod ?? 0) || 0;
         const ability = actor?.system?.abilities?.[stat];
         if (Number.isFinite(Number(ability?.mod))) return Number(ability.mod);
         return 0;

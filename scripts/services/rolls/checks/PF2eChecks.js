@@ -24,6 +24,8 @@ export class PF2eChecks extends GenericChecks {
 
     get perceptionKey() { return "perception"; }
 
+    get stealthKey() { return "stealth"; }
+
     /** Investigate is a Recall Knowledge check with whatever skill fits. */
     get investigateKey() { return "society"; }
 
@@ -43,6 +45,7 @@ export class PF2eChecks extends GenericChecks {
 
     statistic(actor, stat) {
         if (stat === "perception" || stat === "prc") return actor?.perception ?? null;
+        if (stat === "ste") return actor?.skills?.stealth ?? actor?.skills?.ste ?? null;
         return actor?.skills?.[stat] ?? null;
     }
 
