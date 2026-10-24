@@ -33,7 +33,7 @@
         "$": "readonly"
     },
     "rules": {
-        "eqeqeq": "error",
+        "eqeqeq": ["error", "always", { "null": "ignore" }],
         "no-unused-vars": [
             "warn",
             {

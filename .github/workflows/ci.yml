@@ -38,6 +38,7 @@ jobs:
     with:
       testharness_repo: 'ionrift-gm/ionrift-testharness'
       testharness_config: 'vitest/library/vitest.config.js'
+      sibling_repos: 'ionrift-gm/ionrift-tests ionrift-gm/ionrift-tripwire ionrift-gm/ionrift-cloud ionrift-gm/ionrift-pack-registry ionrift-gm/ionrift-conduit'
     secrets:
       CI_PAT: ${{ secrets.IONRIFT_CI_PAT }}
 

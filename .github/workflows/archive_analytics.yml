@@ -55,11 +55,21 @@ jobs:
             | jq '{stars: .stargazers_count, forks: .forks_count, watchers: .watchers_count, open_issues: .open_issues_count, timestamp: now | todate}' \
             > "metrics_${TIMESTAMP}.json"
           
-          # Fetch release download counts (best proxy for active installs)
-          curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO_NAME/releases" \
-            | jq '[.[] | {tag: .tag_name, published: .published_at, assets: [.assets[] | {name: .name, downloads: .download_count}]}]' \
-            > "releases_${TIMESTAMP}.json"
+          # Fetch release download counts (best proxy for active installs).
+          # /releases is an array. An expired token comes back as an error object.
+          RELEASES_FILE="releases_raw_${TIMESTAMP}.json"
+          RELEASES_CODE=$(curl -sS -o "$RELEASES_FILE" -w "%{http_code}" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$REPO_NAME/releases")
+          RELEASES_TYPE=$(jq -r 'type' "$RELEASES_FILE" 2>/dev/null || echo "invalid")
+          if [ "$RELEASES_TYPE" != "array" ]; then
+            RELEASES_MSG=$(jq -r '.message // "unexpected response"' "$RELEASES_FILE" 2>/dev/null || echo "unexpected response")
+            echo "Releases archive failed: GitHub /releases returned HTTP ${RELEASES_CODE}: ${RELEASES_MSG}. Rotate ANALYTICS_TOKEN."
+            exit 1
+          fi
+          jq '[.[] | {tag: .tag_name, published: .published_at, assets: [.assets[] | {name: .name, downloads: .download_count}]}]' \
+            "$RELEASES_FILE" > "releases_${TIMESTAMP}.json"
+          rm -f "$RELEASES_FILE"
           
           # Fetch community health profile
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
