@@ -9,7 +9,7 @@ import { messageOptionsForMode, resolveRollMode } from "./RollModeResolver.js";
 
 export { armDiceSoNiceSettle, waitForDiceSoNice };
 
-export const SKILL_DISPLAY_NAMES = {
+const DEFAULT_SKILL_DISPLAY_NAMES = {
     acr: "Acrobatics", ani: "Animal Handling", arc: "Arcana",
     ath: "Athletics", dec: "Deception", his: "History",
     ins: "Insight", itm: "Intimidation", inv: "Investigation",
@@ -25,6 +25,60 @@ export const SKILL_DISPLAY_NAMES = {
     str: "Strength", dex: "Dexterity", con: "Constitution",
     int: "Intelligence", wis: "Wisdom", cha: "Charisma"
 };
+
+const SKILL_DISPLAY_NAME_KEYS = {
+    acr: "ionrift-library.rollRequest.skills.acr",
+    ani: "ionrift-library.rollRequest.skills.ani",
+    arc: "ionrift-library.rollRequest.skills.arc",
+    ath: "ionrift-library.rollRequest.skills.ath",
+    dec: "ionrift-library.rollRequest.skills.dec",
+    his: "ionrift-library.rollRequest.skills.his",
+    ins: "ionrift-library.rollRequest.skills.ins",
+    itm: "ionrift-library.rollRequest.skills.itm",
+    inv: "ionrift-library.rollRequest.skills.inv",
+    med: "ionrift-library.rollRequest.skills.med",
+    nat: "ionrift-library.rollRequest.skills.nat",
+    prc: "ionrift-library.rollRequest.skills.prc",
+    prf: "ionrift-library.rollRequest.skills.prf",
+    per: "ionrift-library.rollRequest.skills.per",
+    rel: "ionrift-library.rollRequest.skills.rel",
+    slt: "ionrift-library.rollRequest.skills.slt",
+    ste: "ionrift-library.rollRequest.skills.ste",
+    sur: "ionrift-library.rollRequest.skills.sur",
+    perception: "ionrift-library.rollRequest.skills.perception",
+    society: "ionrift-library.rollRequest.skills.society",
+    thievery: "ionrift-library.rollRequest.skills.thievery",
+    occultism: "ionrift-library.rollRequest.skills.occultism",
+    crafting: "ionrift-library.rollRequest.skills.crafting",
+    diplomacy: "ionrift-library.rollRequest.skills.diplomacy",
+    athletics: "ionrift-library.rollRequest.skills.athletics",
+    acrobatics: "ionrift-library.rollRequest.skills.acrobatics",
+    stealth: "ionrift-library.rollRequest.skills.stealth",
+    arcana: "ionrift-library.rollRequest.skills.arcana",
+    history: "ionrift-library.rollRequest.skills.history",
+    nature: "ionrift-library.rollRequest.skills.nature",
+    religion: "ionrift-library.rollRequest.skills.religion",
+    medicine: "ionrift-library.rollRequest.skills.medicine",
+    survival: "ionrift-library.rollRequest.skills.survival",
+    deception: "ionrift-library.rollRequest.skills.deception",
+    intimidation: "ionrift-library.rollRequest.skills.intimidation",
+    performance: "ionrift-library.rollRequest.skills.performance",
+    str: "ionrift-library.rollRequest.skills.str",
+    dex: "ionrift-library.rollRequest.skills.dex",
+    con: "ionrift-library.rollRequest.skills.con",
+    int: "ionrift-library.rollRequest.skills.int",
+    wis: "ionrift-library.rollRequest.skills.wis",
+    cha: "ionrift-library.rollRequest.skills.cha"
+};
+
+export const SKILL_DISPLAY_NAMES = new Proxy(DEFAULT_SKILL_DISPLAY_NAMES, {
+    get(target, prop, receiver) {
+        if (typeof prop === "string" && Object.prototype.hasOwnProperty.call(SKILL_DISPLAY_NAME_KEYS, prop)) {
+            return game.i18n.localize(SKILL_DISPLAY_NAME_KEYS[prop]);
+        }
+        return Reflect.get(target, prop, receiver);
+    }
+});
 
 /**
  * @param {Actor} actor
@@ -302,13 +356,19 @@ export async function executeFormulaRoll(actor, formula, {
  * @param {"client"|"public"|"gmroll"|"blind"|"self"|"halfblind"} [chatMode="client"]
  * @returns {Promise<{ total: number, passed: boolean|null, skill: string, natD20: number|null }>}
  */
-export async function rollForPlayer(actor, skills, dc, context = "Skill check", rollMode = "normal", chatMode = "client") {
+export async function rollForPlayer(actor, skills, dc, context = game.i18n.localize("ionrift-library.rollRequest.skillCheckDefaultContext"), rollMode = "normal", chatMode = "client") {
     const skillList = Array.isArray(skills) ? skills : [skills];
     const skill = pickBestSkill(actor, skillList);
     const skillName = SKILL_DISPLAY_NAMES[skill] ?? skill.toUpperCase();
-    const modeLabel = rollMode === "advantage" ? " [Advantage]"
-        : rollMode === "disadvantage" ? " [Disadvantage]" : "";
-    const flavor = `<strong>${actor.name}</strong> - ${context} (${skillName}, DC ${dc}) [GM roll]${modeLabel}`;
+    const modeLabel = rollMode === "advantage" ? ` [${game.i18n.localize("ionrift-library.rollRequest.tooltipAdvantage")}]`
+        : rollMode === "disadvantage" ? ` [${game.i18n.localize("ionrift-library.rollRequest.tooltipDisadvantage")}]` : "";
+    const flavor = game.i18n.format("ionrift-library.rollRequest.rollForPlayerFlavor", {
+        actor: actor.name,
+        context,
+        skill: skillName,
+        dc,
+        mode: modeLabel
+    });
     const result = await executeSkillRoll(actor, skill, dc, flavor, rollMode, chatMode);
     return {
         total: result.total,

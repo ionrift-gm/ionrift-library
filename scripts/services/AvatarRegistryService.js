@@ -969,7 +969,7 @@ export class AvatarRegistryService {
             count: 0,
             level: "red",
             color: "#f87171",
-            label: "Missing art (Using Foundry default)"
+            label: game.i18n.localize("ionrift-library.avatarManifest.missingArtLabel")
         };
     }
 

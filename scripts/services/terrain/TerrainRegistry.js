@@ -51,13 +51,21 @@ export function normalizeTerrainCategory(category) {
     return null;
 }
 
+const BASE_TERRAIN_LABEL_KEYS = {
+    forest: "ionrift-library.terrain.base.forest",
+    swamp: "ionrift-library.terrain.base.swamp",
+    desert: "ionrift-library.terrain.base.desert",
+    urban: "ionrift-library.terrain.base.urban",
+    dungeon: "ionrift-library.terrain.base.dungeon"
+};
+
 /** @type {TerrainDefinition[]} The canonical kernel base. */
 const BASE_TERRAINS = [
-    { id: "forest",  label: "Forest",  category: "wilderness" },
-    { id: "swamp",   label: "Swamp",   category: "wilderness" },
-    { id: "desert",  label: "Desert",  category: "wilderness" },
-    { id: "urban",   label: "Urban",   category: "built" },
-    { id: "dungeon", label: "Dungeon", category: "built" }
+    { id: "forest",  get label() { return game.i18n.localize(BASE_TERRAIN_LABEL_KEYS.forest); },  category: "wilderness" },
+    { id: "swamp",   get label() { return game.i18n.localize(BASE_TERRAIN_LABEL_KEYS.swamp); },   category: "wilderness" },
+    { id: "desert",  get label() { return game.i18n.localize(BASE_TERRAIN_LABEL_KEYS.desert); },  category: "wilderness" },
+    { id: "urban",   get label() { return game.i18n.localize(BASE_TERRAIN_LABEL_KEYS.urban); },   category: "built" },
+    { id: "dungeon", get label() { return game.i18n.localize(BASE_TERRAIN_LABEL_KEYS.dungeon); }, category: "built" }
 ];
 
 export class TerrainRegistry {
@@ -77,9 +85,10 @@ export class TerrainRegistry {
     }
 
     _seed(def) {
+        const labelKey = BASE_TERRAIN_LABEL_KEYS[def.id];
         this._terrains.set(def.id, {
             id: def.id,
-            label: def.label,
+            get label() { return labelKey ? game.i18n.localize(labelKey) : def.label; },
             category: def.category,
             flags: def.flags ?? {}
         });
@@ -127,7 +136,12 @@ export class TerrainRegistry {
      * @returns {TerrainDefinition[]}
      */
     getBase() {
-        return BASE_TERRAINS.map(t => ({ ...t, flags: {} }));
+        return BASE_TERRAINS.map(t => ({
+            id: t.id,
+            label: t.label,
+            category: t.category,
+            flags: {}
+        }));
     }
 
     /**

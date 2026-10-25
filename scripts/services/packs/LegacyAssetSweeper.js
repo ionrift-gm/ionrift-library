@@ -193,7 +193,7 @@ export class LegacyAssetSweeper {
 
     static async sweep(moduleId, entryId) {
         if (!game.user.isGM) {
-            ui.notifications.warn("Only the GM can run legacy cleanup.");
+            ui.notifications.warn(game.i18n.localize("ionrift-library.legacyAssetSweeper.gmOnly"));
             return { ok: false, reason: "not-gm", removed: 0, failed: 0, paths: [] };
         }
 
@@ -261,7 +261,7 @@ export class LegacyAssetSweeper {
         }
         if (!FORCE_MODE_OPTIONS.includes(mode)) {
             const list = FORCE_MODE_OPTIONS.join(", ");
-            ui.notifications.warn(`Unknown cleanup force mode "${mode}". Use one of: ${list}.`);
+            ui.notifications.warn(game.i18n.format("ionrift-library.legacyAssetSweeper.unknownForceMode", { mode, list }));
             return this.forceMode();
         }
         game.settings.set("ionrift-library", "legacyCleanupForceMode", mode);

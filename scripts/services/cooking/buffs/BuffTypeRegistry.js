@@ -25,11 +25,20 @@ export function activeAdapter() {
 export const TYPES = new Map();
 
 export function defineType(type, meta) {
-    TYPES.set(type, { type, immediate: false, ...meta });
+    const entry = { type, immediate: false, ...meta };
+    if (entry.labelKey && !("label" in meta)) {
+        // Resolve lazily so the label follows the active language.
+        Object.defineProperty(entry, "label", {
+            enumerable: true,
+            configurable: true,
+            get() { return game.i18n.localize(entry.labelKey); }
+        });
+    }
+    TYPES.set(type, entry);
 }
 
 defineType("temp_hp", {
-    label: "Temporary HP",
+    labelKey: "ionrift-library.cookingBuffTypes.tempHp",
     render(actor, buff) {
         const formula = buff.formula ?? "0";
         return {
@@ -39,8 +48,8 @@ defineType("temp_hp", {
                 value: String(formula),
                 priority: 20
             }],
-            description: `Temporary hit points (${formula}).`,
-            summaryLine: `temp HP (${formula})`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.tempHpDescription", { formula }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.tempHpSummary", { formula }),
             daeSpecialDuration: [],
             roll: String(formula)
         };
@@ -48,14 +57,14 @@ defineType("temp_hp", {
 });
 
 defineType("heal", {
-    label: "Healing",
+    labelKey: "ionrift-library.cookingBuffTypes.heal",
     immediate: true,
     render(actor, buff) {
         const formula = buff.formula ?? "0";
         return {
             changes: [],
-            description: `Healing (${formula}).`,
-            summaryLine: `healing (${formula})`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.healDescription", { formula }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.healSummary", { formula }),
             daeSpecialDuration: [],
             roll: String(formula)
         };
@@ -63,14 +72,14 @@ defineType("heal", {
 });
 
 defineType("exhaustion_save", {
-    label: "Exhaustion save",
+    labelKey: "ionrift-library.cookingBuffTypes.exhaustionSave",
     immediate: true,
     render(actor, buff) {
         const dc = buff.formula ?? "?";
         return {
             changes: [],
-            description: `Constitution save (DC ${dc}) to remove one exhaustion level.`,
-            summaryLine: `exhaustion save (DC ${dc})`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.exhaustionSaveDescription", { dc }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.exhaustionSaveSummary", { dc }),
             daeSpecialDuration: [],
             roll: null
         };
@@ -78,14 +87,14 @@ defineType("exhaustion_save", {
 });
 
 defineType("hit_die", {
-    label: "Hit die",
+    labelKey: "ionrift-library.cookingBuffTypes.hitDie",
     immediate: true,
     render(actor, buff) {
         const amount = buff.formula ?? "1";
         return {
             changes: [],
-            description: `Restores ${amount} spent hit die.`,
-            summaryLine: `restore ${amount} hit die`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.hitDieDescription", { amount }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.hitDieSummary", { amount }),
             daeSpecialDuration: [],
             roll: null
         };
@@ -93,7 +102,7 @@ defineType("hit_die", {
 });
 
 defineType("advantage", {
-    label: "Advantage on saves",
+    labelKey: "ionrift-library.cookingBuffTypes.advantage",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? buff.formula ?? "con").toLowerCase();
         const duration = buff.duration ?? "nextSave";
@@ -105,27 +114,26 @@ defineType("advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${ability.toUpperCase()} saving throws (${duration}).`,
-            summaryLine: `advantage on ${ability.toUpperCase()} saves`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.saveAdvantageDescription", { ability: ability.toUpperCase(), duration }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.saveAdvantageSummary", { ability: ability.toUpperCase() }),
             daeSpecialDuration
         };
     }
 });
 
 defineType("resistance", {
-    label: "Damage resistance",
+    labelKey: "ionrift-library.cookingBuffTypes.resistance",
     render(actor, buff) {
         const damageType = String(buff.damageType ?? buff.formula ?? "poison").toLowerCase();
         const uses = buff.uses ?? buff.charges;
-        const window = buff.duration === "untilShortRest"
-            ? "until short rest or 4 hours"
-            : "until long rest";
+        const shortWindow = buff.duration === "untilShortRest";
         if (uses) {
             const usesLabel = typeof uses === "string" ? uses : String(uses);
             const charges = Number(buff.chargesRemaining ?? uses);
-            const chargeNote = Number.isFinite(charges) && charges > 0
-                ? ` (${charges} poison hits remaining, ${window})`
-                : ` (next ${usesLabel} poison hits, ${window})`;
+            const hasCharges = Number.isFinite(charges) && charges > 0;
+            const descriptionKey = hasCharges
+                ? (shortWindow ? "ionrift-library.cookingBuffText.resistanceRemainingShortDescription" : "ionrift-library.cookingBuffText.resistanceRemainingLongDescription")
+                : (shortWindow ? "ionrift-library.cookingBuffText.resistanceNextShortDescription" : "ionrift-library.cookingBuffText.resistanceNextLongDescription");
             return {
                 changes: [{
                     key: "system.traits.dr.value",
@@ -133,8 +141,8 @@ defineType("resistance", {
                     value: damageType,
                     priority: 20
                 }],
-                description: `Damage resistance (${damageType})${chargeNote}.`,
-                summaryLine: `resistance (${damageType}, ${usesLabel} hits)`,
+                description: game.i18n.format(descriptionKey, { damageType, charges, uses: usesLabel }),
+                summaryLine: game.i18n.format("ionrift-library.cookingBuffText.resistanceChargesSummary", { damageType, uses: usesLabel }),
                 daeSpecialDuration: [],
                 chargesRemaining: Number.isFinite(charges) ? charges : null,
                 chargesMax: Number(buff.chargesMax ?? charges) || null
@@ -147,15 +155,15 @@ defineType("resistance", {
                 value: damageType,
                 priority: 20
             }],
-            description: `Damage resistance (${damageType}).`,
-            summaryLine: `resistance (${damageType})`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.resistanceDescription", { damageType }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.resistanceSummary", { damageType }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("sense_darkvision", {
-    label: "Darkvision",
+    labelKey: "ionrift-library.cookingBuffTypes.senseDarkvision",
     render(actor, buff) {
         const feet = Number(buff.feet ?? buff.formula ?? 60);
         return {
@@ -165,25 +173,26 @@ defineType("sense_darkvision", {
                 value: String(feet),
                 priority: 20
             }],
-            description: `Darkvision ${feet}ft.`,
-            summaryLine: `${feet}ft darkvision`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.darkvisionDescription", { feet }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.darkvisionSummary", { feet }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("check_advantage", {
-    label: "Advantage on ability checks",
+    labelKey: "ionrift-library.cookingBuffTypes.checkAdvantage",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.save?.ability ?? buff.formula ?? "str").toLowerCase();
         const uses = buff.uses ?? buff.charges;
-        const checkWindow = buff.duration === "untilShortRest" ? "until short rest" : "until long rest";
+        const shortCheckWindow = buff.duration === "untilShortRest";
         if (uses) {
             const usesLabel = typeof uses === "string" ? uses : String(uses);
             const charges = Number(buff.chargesRemaining ?? uses);
-            const chargeNote = Number.isFinite(charges) && charges > 0
-                ? ` (${charges} remaining, ${checkWindow})`
-                : ` (next ${usesLabel} checks, ${checkWindow})`;
+            const hasCharges = Number.isFinite(charges) && charges > 0;
+            const descriptionKey = hasCharges
+                ? (shortCheckWindow ? "ionrift-library.cookingBuffText.checkAdvantageRemainingShortDescription" : "ionrift-library.cookingBuffText.checkAdvantageRemainingLongDescription")
+                : (shortCheckWindow ? "ionrift-library.cookingBuffText.checkAdvantageNextShortDescription" : "ionrift-library.cookingBuffText.checkAdvantageNextLongDescription");
             return {
                 changes: [{
                     key: `system.abilities.${ability}.check.roll.mode`,
@@ -191,8 +200,8 @@ defineType("check_advantage", {
                     value: "1",
                     priority: 20
                 }],
-                description: `Advantage on ${ability.toUpperCase()} ability checks${chargeNote}.`,
-                summaryLine: `advantage on ${ability.toUpperCase()} checks (${usesLabel} uses)`,
+                description: game.i18n.format(descriptionKey, { ability: ability.toUpperCase(), charges, uses: usesLabel }),
+                summaryLine: game.i18n.format("ionrift-library.cookingBuffText.checkAdvantageChargesSummary", { ability: ability.toUpperCase(), uses: usesLabel }),
                 daeSpecialDuration: [`isCheck.${ability}`],
                 chargesRemaining: Number.isFinite(charges) ? charges : null,
                 chargesMax: Number(buff.chargesMax ?? charges) || null
@@ -205,19 +214,18 @@ defineType("check_advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${ability.toUpperCase()} ability checks (until long rest).`,
-            summaryLine: `advantage on ${ability.toUpperCase()} checks`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.checkAdvantageDescription", { ability: ability.toUpperCase() }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.checkAdvantageSummary", { ability: ability.toUpperCase() }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("skill_advantage", {
-    label: "Advantage on skill checks",
+    labelKey: "ionrift-library.cookingBuffTypes.skillAdvantage",
     render(actor, buff) {
         const skill = String(buff.skill ?? buff.formula ?? "prc").toLowerCase();
         const dim = buff.conditions?.dimLight === true;
-        const dimNote = dim ? " in dim light or darkness" : "";
         return {
             changes: [{
                 key: `system.skills.${skill}.roll.mode`,
@@ -225,15 +233,15 @@ defineType("skill_advantage", {
                 value: "1",
                 priority: 20
             }],
-            description: `Advantage on ${skill.toUpperCase()} checks${dimNote}.`,
-            summaryLine: `advantage on ${skill.toUpperCase()} checks${dim ? " (dim light)" : ""}`,
+            description: game.i18n.format(dim ? "ionrift-library.cookingBuffText.skillAdvantageDimDescription" : "ionrift-library.cookingBuffText.skillAdvantageDescription", { skill: skill.toUpperCase() }),
+            summaryLine: game.i18n.format(dim ? "ionrift-library.cookingBuffText.skillAdvantageDimSummary" : "ionrift-library.cookingBuffText.skillAdvantageSummary", { skill: skill.toUpperCase() }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("passive_perception", {
-    label: "Passive Perception bonus",
+    labelKey: "ionrift-library.cookingBuffTypes.passivePerception",
     render(actor, buff) {
         const bonus = Number(buff.bonus ?? buff.formula ?? 2);
         return {
@@ -243,15 +251,15 @@ defineType("passive_perception", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} passive Perception.`,
-            summaryLine: `+${bonus} passive Perception`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.passivePerceptionDescription", { bonus }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.passivePerceptionSummary", { bonus }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("ability_bonus", {
-    label: "Ability check bonus",
+    labelKey: "ionrift-library.cookingBuffTypes.abilityBonus",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.formula ?? "wis").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
@@ -262,25 +270,26 @@ defineType("ability_bonus", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} to ${ability.toUpperCase()} ability checks.`,
-            summaryLine: `+${bonus} ${ability.toUpperCase()} checks`,
+            description: game.i18n.format("ionrift-library.cookingBuffText.abilityBonusDescription", { bonus, ability: ability.toUpperCase() }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.abilityBonusSummary", { bonus, ability: ability.toUpperCase() }),
             daeSpecialDuration: []
         };
     }
 });
 
 defineType("save_bonus", {
-    label: "Saving throw bonus (limited uses)",
+    labelKey: "ionrift-library.cookingBuffTypes.saveBonus",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? "con").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
         const uses = buff.uses ?? buff.charges ?? 1;
         const usesLabel = typeof uses === "string" ? uses : String(uses);
         const charges = Number(buff.chargesRemaining ?? uses);
-        const saveWindow = buff.duration === "untilLongRest" ? "until long rest" : "until short rest";
-        const chargeNote = Number.isFinite(charges) && charges > 0
-            ? ` (${charges} remaining, ${saveWindow})`
-            : ` (next ${usesLabel} saves, ${saveWindow})`;
+        const longSaveWindow = buff.duration === "untilLongRest";
+        const hasCharges = Number.isFinite(charges) && charges > 0;
+        const descriptionKey = hasCharges
+            ? (longSaveWindow ? "ionrift-library.cookingBuffText.saveBonusRemainingLongDescription" : "ionrift-library.cookingBuffText.saveBonusRemainingShortDescription")
+            : (longSaveWindow ? "ionrift-library.cookingBuffText.saveBonusNextLongDescription" : "ionrift-library.cookingBuffText.saveBonusNextShortDescription");
         return {
             changes: [{
                 key: `system.abilities.${ability}.bonuses.save`,
@@ -288,8 +297,8 @@ defineType("save_bonus", {
                 value: String(bonus),
                 priority: 20
             }],
-            description: `+${bonus} to ${ability.toUpperCase()} saves${chargeNote}.`,
-            summaryLine: `+${bonus} ${ability.toUpperCase()} saves (${usesLabel} uses)`,
+            description: game.i18n.format(descriptionKey, { bonus, ability: ability.toUpperCase(), charges, uses: usesLabel }),
+            summaryLine: game.i18n.format("ionrift-library.cookingBuffText.saveBonusSummary", { bonus, ability: ability.toUpperCase(), uses: usesLabel }),
             daeSpecialDuration: [`isSave.${ability}`],
             chargesRemaining: Number.isFinite(charges) ? charges : null,
             chargesMax: Number(buff.chargesMax ?? charges) || null

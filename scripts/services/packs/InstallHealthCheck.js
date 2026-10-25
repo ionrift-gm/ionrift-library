@@ -194,7 +194,9 @@ export class InstallHealthCheck {
         const noun = count === 1 ? "module" : "modules";
         const verb = count === 1 ? "needs" : "need";
         ui.notifications.warn(
-            `${count} Ionrift ${noun} ${verb} a quick fix to finish installing. Open the console (F12) for steps.`,
+            count === 1
+                ? game.i18n.format("ionrift-library.installHealth.quickFixSingular", { count })
+                : game.i18n.format("ionrift-library.installHealth.quickFixPlural", { count }),
             { permanent: false }
         );
     }

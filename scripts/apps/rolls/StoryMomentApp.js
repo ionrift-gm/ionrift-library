@@ -32,13 +32,14 @@ export class StoryMomentApp {
             const overlay = document.createElement("div");
             overlay.classList.add("ionrift-armor-modal-overlay");
 
+            const doneLabel = game.i18n.localize("ionrift-library.storyMoment.done");
             const buttons = Array.isArray(actions) && actions.length > 0
                 ? actions
-                : [{ id: "done", label: "Done", icon: "fas fa-check" }];
+                : [{ id: "done", label: doneLabel, icon: "fas fa-check" }];
 
             const actionHtml = buttons.map((action) => {
                 const icon = action.icon ? `<i class="${action.icon}"></i> ` : "";
-                const label = String(action.label ?? action.id ?? "Done");
+                const label = String(action.label ?? action.id ?? doneLabel);
                 return `<button type="button" class="btn-armor-confirm story-moment-action" data-action-id="${action.id}">${icon}${label}</button>`;
             }).join("");
 

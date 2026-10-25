@@ -107,8 +107,8 @@ export class SettingsLayout {
      */
     static registerHeader(moduleId, setupApp, options = {}) {
         game.settings.registerMenu(moduleId, "setupWizard", {
-            name:       options.name  || "Attunement Protocol",
-            label:      options.label || "Begin Attunement",
+            name:       options.name  || "ionrift-library.settingsLayout.setupWizard.name",
+            label:      options.label || "ionrift-library.settingsLayout.setupWizard.label",
             hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-broadcast-tower",
             type:       setupApp,
@@ -137,8 +137,8 @@ export class SettingsLayout {
         const key = options.key || "contentPacks";
 
         game.settings.registerMenu(moduleId, key, {
-            name:       options.name  || "Content Packs",
-            label:      options.label || "Manage Packs",
+            name:       options.name  || "ionrift-library.settingsLayout.contentPacks.name",
+            label:      options.label || "ionrift-library.settingsLayout.contentPacks.label",
             hint:       options.hint  ?? "",
             icon:       options.icon  || "fas fa-box-open",
             type:       appClass,
@@ -171,8 +171,8 @@ export class SettingsLayout {
         // Discord
         if (discord) {
             game.settings.registerMenu(moduleId, "supportLink", {
-                name: "Get Support",
-                label: "Join Discord",
+                name: "ionrift-library.settingsLayout.supportLink.name",
+                label: "ionrift-library.settingsLayout.supportLink.label",
                 hint: "",
                 icon: "fab fa-discord",
                 type: class extends FormApplication {
@@ -184,8 +184,8 @@ export class SettingsLayout {
 
         // Bug report (all modules; context scoped per moduleId)
         game.settings.registerMenu(moduleId, "bugReportMenu", {
-            name: "Bug Report",
-            label: "Submit Report",
+            name: "ionrift-library.settingsLayout.bugReportMenu.name",
+            label: "ionrift-library.settingsLayout.bugReportMenu.label",
             hint: "",
             icon: "fas fa-bug",
             type: BugReportApp.forModule(moduleId),
@@ -195,8 +195,8 @@ export class SettingsLayout {
         // Wiki / Guides
         if (wiki) {
             game.settings.registerMenu(moduleId, "wikiLink", {
-                name: "Wiki / Guides",
-                label: "Open Wiki",
+                name: "ionrift-library.settingsLayout.wikiLink.name",
+                label: "ionrift-library.settingsLayout.wikiLink.label",
                 hint: "",
                 icon: "fas fa-book",
                 type: class extends FormApplication {
@@ -239,8 +239,12 @@ export class SettingsLayout {
 
             const packLines = lines.join("\n");
             const tooltip = packLines
-                ? `${count} pack update${count === 1 ? "" : "s"} available:\n${packLines}`
-                : `${count} pack update${count === 1 ? "" : "s"} available`;
+                ? (count === 1
+                    ? game.i18n.format("ionrift-library.settingsLayout.packUpdateTooltipSingularWithLines", { count, lines: packLines })
+                    : game.i18n.format("ionrift-library.settingsLayout.packUpdateTooltipPluralWithLines", { count, lines: packLines }))
+                : (count === 1
+                    ? game.i18n.format("ionrift-library.settingsLayout.packUpdateTooltipSingular", { count })
+                    : game.i18n.format("ionrift-library.settingsLayout.packUpdateTooltipPlural", { count }));
 
             const badge = document.createElement("span");
             badge.className = "ionrift-pack-update-badge";
@@ -474,7 +478,9 @@ export class SettingsLayout {
 
             const lead = document.createElement("span");
             lead.className = `ionrift-consumer-lead ${status.isActive ? "state-active" : "state-standby"}`;
-            lead.textContent = status.isActive ? "Used by" : "Available for";
+            lead.textContent = status.isActive
+                ? game.i18n.localize("ionrift-library.settingsLayout.consumerUsedBy")
+                : game.i18n.localize("ionrift-library.settingsLayout.consumerAvailableFor");
             strip.appendChild(lead);
 
             const iconsContainer = document.createElement("span");
@@ -484,7 +490,9 @@ export class SettingsLayout {
             for (const consumer of (consumers || [])) {
                 const chip = document.createElement("span");
                 chip.className = `ionrift-consumer-chip ${status.isActive ? "state-active" : "state-standby"}`;
-                const tip = status.isActive ? consumer.name : `${consumer.name} (Not active)`;
+                const tip = status.isActive
+                    ? consumer.name
+                    : game.i18n.format("ionrift-library.settingsLayout.consumerNotActive", { name: consumer.name });
                 chip.setAttribute("data-tooltip", tip);
                 chip.setAttribute("title", tip);
                 chip.setAttribute("aria-label", tip);

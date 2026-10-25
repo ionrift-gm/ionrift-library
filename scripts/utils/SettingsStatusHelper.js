@@ -34,12 +34,12 @@ export class SettingsStatusHelper {
                 let icon = '';
                 if (hasToken) {
                     if (isVerified) {
-                        icon = `<i class="fas fa-check-circle" style="color: #4ff; margin-left: 8px;" title="Connected & Verified"></i>`;
+                        icon = `<i class="fas fa-check-circle" style="color: #4ff; margin-left: 8px;" title="${game.i18n.localize("ionrift-library.settingsStatus.connectedVerified")}"></i>`;
                     } else {
-                        icon = `<i class="fas fa-exclamation-triangle" style="color: #facc15; margin-left: 8px;" title="Token Saved (Unverified)"></i>`;
+                        icon = `<i class="fas fa-exclamation-triangle" style="color: #facc15; margin-left: 8px;" title="${game.i18n.localize("ionrift-library.settingsStatus.tokenUnverified")}"></i>`;
                     }
                 } else {
-                    icon = `<i class="fas fa-exclamation-circle" style="color: #ef4444; margin-left: 8px;" title="Token Missing"></i>`;
+                    icon = `<i class="fas fa-exclamation-circle" style="color: #ef4444; margin-left: 8px;" title="${game.i18n.localize("ionrift-library.settingsStatus.tokenMissing")}"></i>`;
                 }
 
                 const target = label.find('.ionrift-consumer-title-row').length ? label.find('.ionrift-consumer-title-row') : label;

@@ -151,7 +151,7 @@ export class RollRequestPromptApp {
                     ?? body.querySelector("[data-action=\"ionriftRoll\"]");
                 if (button instanceof HTMLButtonElement) {
                     button.disabled = true;
-                    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Rolling...`;
+                    button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("ionrift-library.rollRequest.rollingButton")}`;
                 }
 
                 const hasTableLookup = Boolean(payload.tableLabel);
@@ -162,12 +162,12 @@ export class RollRequestPromptApp {
                 }
 
                 const type = payload.type ?? "skill";
-                const typeLabel = type === "save" ? "Saving Throw"
-                    : type === "skill" ? "Skill Check"
-                        : type === "formula" ? "Roll"
-                            : type === "ability" ? "Ability Check" : "Roll";
+                const typeLabel = type === "save" ? game.i18n.localize("ionrift-library.rollRequest.typeSavingThrow")
+                    : type === "skill" ? game.i18n.localize("ionrift-library.rollRequest.defaultTitle")
+                        : type === "formula" ? game.i18n.localize("ionrift-library.rollRequest.rollLabel")
+                            : type === "ability" ? game.i18n.localize("ionrift-library.rollRequest.typeAbilityCheck") : game.i18n.localize("ionrift-library.rollRequest.rollLabel");
                 const keyLabel = type === "formula"
-                    ? (payload.formula ?? "dice")
+                    ? (payload.formula ?? game.i18n.localize("ionrift-library.rollRequest.diceFallback"))
                     : (SKILL_DISPLAY_NAMES[payload.key] ?? String(payload.key ?? "").toUpperCase());
                 const chatMode = payload.chatMode ?? "client";
                 const rollMode = payload.rollMode ?? "normal";
@@ -180,7 +180,7 @@ export class RollRequestPromptApp {
                     : payload.flavor
                         ? `<strong>${actor.name}</strong> - ${payload.flavor}`
                         : type === "formula"
-                            ? `<strong>${actor.name}</strong> - ${payload.formula ?? "Roll"}`
+                            ? `<strong>${actor.name}</strong> - ${payload.formula ?? game.i18n.localize("ionrift-library.rollRequest.rollLabel")}`
                             : `<strong>${actor.name}</strong> - ${typeLabel} (${keyLabel}${Number.isFinite(dc) ? `, DC ${dc}` : ""})`;
 
                 try {
@@ -297,17 +297,17 @@ export class RollRequestPromptApp {
         try {
             if (typeof payload.describeOutcome === "function") {
                 const text = await payload.describeOutcome({ total });
-                return String(text || "Nothing on this row");
+                return String(text || game.i18n.localize("ionrift-library.rollRequest.nothingOnRow"));
             }
             if (typeof payload.requestOutcome === "function") {
                 const text = await payload.requestOutcome(total);
-                if (text == null) return `Rolled ${total}`;
-                return String(text || "Nothing on this row");
+                if (text == null) return game.i18n.format("ionrift-library.rollRequest.rolledTotalFallback", { total });
+                return String(text || game.i18n.localize("ionrift-library.rollRequest.nothingOnRow"));
             }
         } catch (err) {
             console.warn("Roll request outcome lookup failed", err);
         }
-        return `Rolled ${total}`;
+        return game.i18n.format("ionrift-library.rollRequest.rolledTotalFallback", { total });
     }
 
     /**
@@ -317,7 +317,8 @@ export class RollRequestPromptApp {
      * @param {string} outcomeText
      */
     static async #appendOutcomeToChat(message, flavorText, outcomeText) {
-        if (!outcomeText || outcomeText.startsWith("Rolled ")) return;
+        const rolledPrefix = game.i18n.format("ionrift-library.rollRequest.rolledTotalFallback", { total: "" });
+        if (!outcomeText || outcomeText.startsWith("Rolled ") || (rolledPrefix && outcomeText.startsWith(rolledPrefix))) return;
         if (typeof message?.update !== "function") return;
         const safe = String(outcomeText)
             .replace(/&/g, "&amp;")

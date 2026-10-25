@@ -15,7 +15,7 @@ export class IonriftSystemAdapter {
     isPlayerCharacter(actor) {
         if (!actor || !actor.hasPlayerOwner) return false;
         if (actor.type !== "character" && !actor.system?.isCharacter) return false;
-        if (actor.flags?.["item-piles"]?.data?.enabled) return false;
+        if (actor.flags?.["item-piles"]?.data?.enabled || actor.flags?.["ionrift-library"]?.isItemPile) return false;
         if (actor.type === "itempile") return false;
         if ((actor.name || "").toLowerCase().includes("item pile")) return false;
         return true;
@@ -90,9 +90,12 @@ export class IonriftSystemAdapter {
         const target = String(nameOrSlug).toLowerCase().trim();
         return (actor.items ?? []).some(item => {
             if (item.type !== "feat" && item.type !== "feature") return false;
+            const slug = String(item.system?.slug ?? item.system?.identifier ?? item.flags?.["ionrift-library"]?.featId ?? "").toLowerCase();
+            if (slug && slug === target) return true;
+            const coreSource = String(item._stats?.compendiumSource ?? item.flags?.core?.sourceId ?? "").toLowerCase();
+            if (coreSource && (coreSource === target || coreSource.endsWith("." + target) || coreSource.endsWith("/" + target))) return true;
             const name = String(item.name ?? "").toLowerCase();
-            const slug = String(item.system?.slug ?? item.system?.identifier ?? "").toLowerCase();
-            return name === target || name.includes(target) || slug === target;
+            return name === target || name.includes(target);
         });
     }
 

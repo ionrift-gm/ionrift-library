@@ -456,7 +456,14 @@ export class AvatarScanner {
         // D. Check actor compendium / world actors for low intelligence if running in Foundry
         if (!matchedCreatureType && typeof game !== "undefined" && game.actors) {
             try {
-                const actor = game.actors.find(a => a.name.toLowerCase() === nameWithoutExt.toLowerCase());
+                const normTarget = nameWithoutExt.toLowerCase();
+                const actor = game.actors.find(a => {
+                    const identifier = String(a.flags?.["ionrift-library"]?.identifier ?? a.system?.identifier ?? "").toLowerCase();
+                    if (identifier && identifier === normTarget) return true;
+                    const sourceId = String(a._stats?.compendiumSource ?? a.flags?.core?.sourceId ?? "").toLowerCase();
+                    if (sourceId && (sourceId.endsWith("." + normTarget) || sourceId.endsWith("/" + normTarget))) return true;
+                    return (a.name || "").toLowerCase() === normTarget;
+                });
                 if (actor) {
                     const intVal = actor.system?.abilities?.int?.value ?? 10;
                     const typeVal = actor.system?.details?.type?.value || actor.system?.details?.type;

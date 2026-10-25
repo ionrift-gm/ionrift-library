@@ -4,14 +4,14 @@
     {{/if}}
 
     <div class="scroll-forge-toolbar ionrift-source-toolbar">
-        <button type="button" class="cache-btn-accent ionrift-source-select-all" title="Select all compendiums">
-            <i class="fas fa-check-double"></i> Select all
+        <button type="button" class="cache-btn-accent ionrift-source-select-all" title="{{localize "ionrift-library.compendiumSource.selectAllTitle"}}">
+            <i class="fas fa-check-double"></i> {{localize "ionrift-library.compendiumSource.selectAll"}}
         </button>
-        <button type="button" class="cache-btn-accent ionrift-source-select-none" title="Deselect all compendiums">
-            <i class="fas fa-times"></i> Select none
+        <button type="button" class="cache-btn-accent ionrift-source-select-none" title="{{localize "ionrift-library.compendiumSource.selectNoneTitle"}}">
+            <i class="fas fa-times"></i> {{localize "ionrift-library.compendiumSource.selectNone"}}
         </button>
-        <button type="button" class="cache-btn-secondary ionrift-source-toggle-all" title="Invert selection">
-            <i class="fas fa-right-left"></i> Invert
+        <button type="button" class="cache-btn-secondary ionrift-source-toggle-all" title="{{localize "ionrift-library.compendiumSource.invertTitle"}}">
+            <i class="fas fa-right-left"></i> {{localize "ionrift-library.compendiumSource.invert"}}
         </button>
     </div>
 
@@ -26,7 +26,7 @@
                 <input type="checkbox" name="pack-{{this.id}}" {{#if this.enabled}}checked{{/if}} />
                 <span class="pool-pack-label">{{this.label}}</span>
                 {{#if this.recommended}}
-                <span class="pool-pack-badge badge-recommended">Recommended</span>
+                <span class="pool-pack-badge badge-recommended">{{localize "ionrift-library.compendiumSource.recommendedBadge"}}</span>
                 {{/if}}
                 {{#if this.countLabel}}
                 <span class="pool-pack-id">({{this.countLabel}})</span>
@@ -37,14 +37,14 @@
         </div>
         {{else}}
         <p class="ionrift-empty-note" style="padding: 16px; opacity: 0.7; text-align: center;">
-            <i class="fas fa-circle-info"></i> No matching compendiums found.
+            <i class="fas fa-circle-info"></i> {{localize "ionrift-library.compendiumSource.noMatchingPacks"}}
         </p>
         {{/each}}
     </div>
 
     <footer class="pool-footer">
         <button type="submit" class="cache-btn-accent">
-            <i class="fas fa-save"></i> {{#if saveLabel}}{{saveLabel}}{{else}}Save sources{{/if}}
+            <i class="fas fa-save"></i> {{#if saveLabel}}{{saveLabel}}{{else}}{{localize "ionrift-library.compendiumSource.saveSourcesDefault"}}{{/if}}
         </button>
     </footer>
 </form>

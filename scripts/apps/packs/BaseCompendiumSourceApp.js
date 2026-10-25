@@ -17,7 +17,7 @@ export class BaseCompendiumSourceApp extends FormApplication {
         const parentOpts = super.defaultOptions ?? {};
         const opts = {
             id: "ionrift-compendium-sources",
-            title: "Compendium Sources",
+            title: "ionrift-library.compendiumSource.windowTitle",
             template: `modules/${MODULE_ID}/templates/packs/compendium-source-dialog.hbs`,
             width: 520,
             height: 480,

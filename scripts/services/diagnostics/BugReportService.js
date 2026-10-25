@@ -70,7 +70,7 @@ export class BugReportService {
      */
     static async submit(opts = {}) {
         if (!game.user.isGM) {
-            return { ok: false, error: "Only the GM can send bug reports." };
+            return { ok: false, error: game.i18n.localize("ionrift-library.bugReport.gmOnlyError") };
         }
 
         let report = opts.report ?? await this.collect(opts);
@@ -85,7 +85,10 @@ export class BugReportService {
             });
 
             if (!initResult?.ok || !initResult.reportId) {
-                return { ok: false, error: initResult?.error ?? "Upload init failed." };
+                return {
+                    ok: false,
+                    error: initResult?.error ?? game.i18n.localize("ionrift-library.bugReport.uploadInitFailedError")
+                };
             }
 
             const reportId  = initResult.reportId;
@@ -98,7 +101,10 @@ export class BugReportService {
 
             const uploadResult = await CloudRelayService.uploadSupportReport(reportId, finalJson);
             if (!uploadResult?.ok) {
-                return { ok: false, error: uploadResult?.error ?? "Upload failed." };
+                return {
+                    ok: false,
+                    error: uploadResult?.error ?? game.i18n.localize("ionrift-library.bugReport.uploadFailedError")
+                };
             }
 
             const finalReference = uploadResult.reference ?? reference;
@@ -120,7 +126,7 @@ export class BugReportService {
         const discord   = this.getDiscordUrl();
 
         ui.notifications.info(
-            `Report received. Reference <strong>${reference}</strong>. Cite this in Discord if you follow up.`,
+            game.i18n.format("ionrift-library.bugReport.receivedToast", { reference }),
             { permanent: true }
         );
 
@@ -129,20 +135,18 @@ export class BugReportService {
             overlay.classList.add("ionrift-armor-modal-overlay");
             overlay.innerHTML = `
                 <div class="ionrift-armor-modal ionrift-bug-report-modal">
-                    <h3><i class="fas fa-check"></i> Report received</h3>
-                    <p>Save this reference for Discord follow-up:</p>
+                    <h3><i class="fas fa-check"></i> ${game.i18n.localize("ionrift-library.bugReport.modalTitle")}</h3>
+                    <p>${game.i18n.localize("ionrift-library.bugReport.modalSaveRef")}</p>
                     <p class="ionrift-bug-report-ref">${reference}</p>
                     <p class="ionrift-bug-report-hint">
-                        Paste <strong>${reference}</strong> in
-                        <a href="${discord}" target="_blank" rel="noopener">Discord</a>
-                        if you need more help.
+                        ${game.i18n.format("ionrift-library.bugReport.modalDiscordHint", { reference, discord })}
                     </p>
-                    ${reportId ? `<p class="ionrift-bug-report-id">Full id: <code>${reportId}</code></p>` : ""}
+                    ${reportId ? `<p class="ionrift-bug-report-id">${game.i18n.format("ionrift-library.bugReport.fullIdLabel", { reportId })}</p>` : ""}
                     <div class="ionrift-armor-modal-buttons">
                         <button type="button" class="btn-copy-ref cache-btn-secondary">
-                            <i class="fas fa-copy"></i> Copy reference
+                            <i class="fas fa-copy"></i> ${game.i18n.localize("ionrift-library.bugReport.copyReferenceButton")}
                         </button>
-                        <button type="button" class="btn-armor-confirm cache-btn-accent">Done</button>
+                        <button type="button" class="btn-armor-confirm cache-btn-accent">${game.i18n.localize("ionrift-library.bugReport.doneButton")}</button>
                     </div>
                 </div>`;
 
@@ -159,10 +163,14 @@ export class BugReportService {
                 try {
                     if (navigator.clipboard?.writeText) {
                         await navigator.clipboard.writeText(citeLine);
-                        ui.notifications.info(`Copied ${reference} to clipboard.`);
+                        ui.notifications.info(
+                            game.i18n.format("ionrift-library.bugReport.copiedRefToast", { reference })
+                        );
                     }
                 } catch {
-                    ui.notifications.warn("Could not copy automatically. Note the reference above.");
+                    ui.notifications.warn(
+                        game.i18n.localize("ionrift-library.bugReport.cannotCopyAutoWarn")
+                    );
                 }
             });
         });
@@ -183,14 +191,14 @@ export class BugReportService {
      * @returns {string}
      */
     static formatSubmitError(error) {
-        if (!error) return "Upload failed.";
+        if (!error) return game.i18n.localize("ionrift-library.bugReport.uploadFailedError");
         if (error === "not_connected") {
-            return "Could not reach report service. Copy the report and paste it in Discord.";
+            return game.i18n.localize("ionrift-library.bugReport.notConnectedError");
         }
         const text = String(error);
         const lower = text.toLowerCase();
         if (lower === "not found" || lower.includes("404")) {
-            return "Upload service is not available. Copy the report and paste it in Discord.";
+            return game.i18n.localize("ionrift-library.bugReport.uploadServiceUnavailableError");
         }
         return text;
     }

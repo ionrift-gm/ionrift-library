@@ -19,7 +19,7 @@ export class ClassifierValidatorApp extends FormApplication {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-classifier-validator",
-            title: "Entity Manifest",
+            title: game.i18n.localize("ionrift-library.classifierValidator.title"),
             template: "modules/ionrift-library/templates/classifier-validator.hbs",
             width: 800,
             height: 600,
@@ -123,16 +123,16 @@ export class ClassifierValidatorApp extends FormApplication {
 
             // Integrity Classification
             if (stats.mean >= 80) {
-                stats.integrityLabel = "Excellent";
+                stats.integrityLabel = game.i18n.localize("ionrift-library.classifierValidator.integrityExcellent");
                 stats.integrityClass = "success";
             } else if (stats.mean >= 60) {
-                stats.integrityLabel = "Good";
+                stats.integrityLabel = game.i18n.localize("ionrift-library.classifierValidator.integrityGood");
                 stats.integrityClass = "success"; // Still green-ish
             } else if (stats.mean >= 40) {
-                stats.integrityLabel = "Degraded";
+                stats.integrityLabel = game.i18n.localize("ionrift-library.classifierValidator.integrityDegraded");
                 stats.integrityClass = "warning";
             } else {
-                stats.integrityLabel = "Critical"; // < 40%
+                stats.integrityLabel = game.i18n.localize("ionrift-library.classifierValidator.integrityCritical"); // < 40%
                 stats.integrityClass = "error";
             }
         }
@@ -147,14 +147,18 @@ export class ClassifierValidatorApp extends FormApplication {
         let sourcesSummary = "";
         const packCount = selectedSet.size;
         if (this._includeWorld && packCount === 0) {
-            sourcesSummary = "World Actors";
+            sourcesSummary = game.i18n.localize("ionrift-library.classifierValidator.worldActors");
         } else if (!this._includeWorld && packCount === 1) {
             const pack = game.packs?.get?.(Array.from(selectedSet)[0]);
-            sourcesSummary = pack?.metadata?.label || "1 Compendium";
+            sourcesSummary = pack?.metadata?.label || game.i18n.localize("ionrift-library.classifierValidator.oneCompendium");
         } else if (this._includeWorld && packCount > 0) {
-            sourcesSummary = `World + ${packCount} Compendium${packCount > 1 ? "s" : ""}`;
+            sourcesSummary = packCount > 1
+                ? game.i18n.format("ionrift-library.classifierValidator.worldPlusCompendiumsPlural", { count: packCount })
+                : game.i18n.format("ionrift-library.classifierValidator.worldPlusCompendiumsSingular", { count: packCount });
         } else {
-            sourcesSummary = `${packCount} Compendium${packCount > 1 ? "s" : ""}`;
+            sourcesSummary = packCount > 1
+                ? game.i18n.format("ionrift-library.classifierValidator.compendiumsPlural", { count: packCount })
+                : game.i18n.format("ionrift-library.classifierValidator.compendiumsSingular", { count: packCount });
         }
 
         return {
@@ -187,7 +191,7 @@ export class ClassifierValidatorApp extends FormApplication {
     async _scanActors() {
         this._isScanning = true;
         this._results = [];
-        ui.notifications?.info("Ionrift | Scanning Entity Manifest...");
+        ui.notifications?.info(game.i18n.localize("ionrift-library.classifierValidator.scanningToast"));
 
         let actors = [];
 
@@ -197,7 +201,7 @@ export class ClassifierValidatorApp extends FormApplication {
                 .filter(a => a.type !== 'character')
                 .map(a => ({
                     ...this._classifyData(a),
-                    source: "World",
+                    source: game.i18n.localize("ionrift-library.classifierValidator.sourceWorld"),
                     uuid: a.uuid
                 }));
             actors = actors.concat(worldActors);
@@ -205,7 +209,7 @@ export class ClassifierValidatorApp extends FormApplication {
 
         // 2. Compendium Scan (Selected Packs)
         const selectedPackIds = this._getSelectedPacks();
-        const availablePacks = game.packs ? game.packs.filter(p => p.documentName === "Actor" && selectedPackIds.has(p.metadata.id)) : [];
+        const availablePacks = game.packs ? game.packs.filter(p => p.documentName === "Actor" && (selectedPackIds.has(p.collection) || selectedPackIds.has(p.metadata?.id))) : [];
 
         for (const pack of availablePacks) {
             try {
@@ -236,7 +240,7 @@ export class ClassifierValidatorApp extends FormApplication {
         }
 
         // Exclude Players/Characters
-        this._results = actors.filter(r => r.classId !== "player");
+        this._results = actors.filter(r => r.classId !== "player" && r.rawClassId !== "player");
         this._isScanning = false;
     }
 
@@ -250,11 +254,12 @@ export class ClassifierValidatorApp extends FormApplication {
 
         return {
             actorId: actorOrIndex.id || actorOrIndex._id,
-            name: actorOrIndex.name || "Unknown Entity",
+            name: actorOrIndex.name || game.i18n.localize("ionrift-library.classifierValidator.unknownEntity"),
             img: actorOrIndex.img || "icons/svg/mystery-man.svg",
             classId: this._formatClassId(classification.id),
             rawClassId: classification.id,
             soundKey: this._formatSoundKey(classification.sound),
+            rawSoundKey: classification.sound,
             confidence: score,
             confidencePct: Math.round(score * 100),
             scoreClass: scoreClass,
@@ -285,7 +290,7 @@ export class ClassifierValidatorApp extends FormApplication {
     async _openClassificationOverrideDialog({ actorId, uuid, currentId, isManual }) {
         const options = listClassifierOptions();
         const optionHtml = [
-            `<option value="">Auto (detected)</option>`,
+            `<option value="">${game.i18n.localize("ionrift-library.classifierValidator.autoDetectedOption")}</option>`,
             ...options.map(o =>
                 `<option value="${o.id}" ${o.id === currentId && isManual ? "selected" : ""}>${o.label}</option>`
             )
@@ -300,19 +305,19 @@ export class ClassifierValidatorApp extends FormApplication {
             };
 
             const dlg = new Dialog({
-                title: "Set Entity Classification",
+                title: game.i18n.localize("ionrift-library.classifierValidator.overrideDialogTitle"),
                 content: `
                     <form class="ionrift-classifier-override-form">
-                        <p class="notes">Manual overrides take priority over auto-detection. Compendium entries are stored on this world.</p>
+                        <p class="notes">${game.i18n.localize("ionrift-library.classifierValidator.overrideDialogNotes")}</p>
                         <div class="form-group">
-                            <label>Classification</label>
+                            <label>${game.i18n.localize("ionrift-library.classifierValidator.classificationLabel")}</label>
                             <select name="classId">${optionHtml}</select>
                         </div>
                     </form>`,
                 buttons: {
                     save: {
                         icon: '<i class="fas fa-save"></i>',
-                        label: "Save",
+                        label: game.i18n.localize("ionrift-library.classifierValidator.saveButton"),
                         callback: html => {
                             const classId = html.find('[name="classId"]').val() || null;
                             (async () => {
@@ -322,19 +327,24 @@ export class ClassifierValidatorApp extends FormApplication {
                                         try { actor = await fromUuid(uuid); } catch { /* ok */ }
                                     }
                                     if (!actor) {
-                                        ui.notifications.warn("Ionrift | Could not resolve actor for classification override.");
+                                        ui.notifications.warn(game.i18n.localize("ionrift-library.classifierValidator.couldNotResolveActorWarn"));
                                         finish(false);
                                         return;
                                     }
                                     await setActorClassification(actor, classId);
                                     ui.notifications.info(classId
-                                        ? `Classification set to ${this._formatClassId(classId)} for ${actor.name}.`
-                                        : `Auto classification restored for ${actor.name}.`);
+                                        ? game.i18n.format("ionrift-library.classifierValidator.classificationSetToast", {
+                                            classId: this._formatClassId(classId),
+                                            actor: actor.name
+                                        })
+                                        : game.i18n.format("ionrift-library.classifierValidator.autoClassificationRestoredToast", {
+                                            actor: actor.name
+                                        }));
                                     finish(true);
                                     dlg.close();
                                 } catch (err) {
                                     Logger.error("Classifier", "Could not save classification override:", err);
-                                    ui.notifications.error("Ionrift | Could not save classification override.");
+                                    ui.notifications.error(game.i18n.localize("ionrift-library.classifierValidator.couldNotSaveOverrideError"));
                                     finish(false);
                                 }
                             })();
@@ -343,7 +353,7 @@ export class ClassifierValidatorApp extends FormApplication {
                     },
                     cancel: {
                         icon: '<i class="fas fa-times"></i>',
-                        label: "Cancel",
+                        label: game.i18n.localize("ionrift-library.classifierValidator.cancelButton"),
                         callback: () => finish(false)
                     }
                 },
@@ -355,7 +365,7 @@ export class ClassifierValidatorApp extends FormApplication {
     }
 
     _formatClassId(id) {
-        if (!id || id === "unknown") return "Unknown";
+        if (!id || id === "unknown") return game.i18n.localize("ionrift-library.classifierValidator.classUnknown");
         // Convert "monstrosity_owlbear" -> "Monstrosity (Owlbear)"
         // or "beast_ursine" -> "Beast (Ursine)"
         // or just Title Case if simple
@@ -370,10 +380,10 @@ export class ClassifierValidatorApp extends FormApplication {
 
     _formatSoundKey(key) {
         if (!key) return "-";
-        if (key === "MONSTER_GENERIC") return "Generic Monster";
-        if (key === "NPC_GENERIC") return "Generic NPC";
+        if (key === "MONSTER_GENERIC") return game.i18n.localize("ionrift-library.classifierValidator.soundGenericMonster");
+        if (key === "NPC_GENERIC") return game.i18n.localize("ionrift-library.classifierValidator.soundGenericNpc");
         // "syrinscape:element:1234" -> "Syrinscape Element"
-        if (key.startsWith("syrinscape:")) return "Syrinscape Element";
+        if (key.startsWith("syrinscape:")) return game.i18n.localize("ionrift-library.classifierValidator.soundSyrinscapeElement");
         return key.replace(/_/g, " ");
     }
 
@@ -455,7 +465,7 @@ export class ClassifierValidatorApp extends FormApplication {
         html.find("#apply-sources-btn").click(async (ev) => {
             ev.preventDefault();
             const applyBtn = $(ev.currentTarget);
-            applyBtn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Indexing Sources...');
+            applyBtn.prop("disabled", true).html(`<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("ionrift-library.classifierValidator.indexingSourcesButton")}`);
 
             const includeWorld = html.find('input[name="source_world"]').is(":checked");
             const selectedPacks = new Set();
@@ -484,7 +494,7 @@ export class ClassifierValidatorApp extends FormApplication {
 
         // Export All (Low Confidence)
         const btn = html.find("#export-json");
-        btn.html(`<i class="fas fa-file-export"></i> Export All`);
+        btn.html(`<i class="fas fa-file-export"></i> ${game.i18n.localize("ionrift-library.classifierValidator.exportAllButton")}`);
 
         btn.click(async (ev) => {
             const btn = $(ev.currentTarget);
@@ -576,7 +586,7 @@ export class ClassifierValidatorApp extends FormApplication {
                 }
 
                 if (lowConf.length === 0) {
-                    ui.notifications.info("No low confidence actors found to export!");
+                    ui.notifications.info(game.i18n.localize("ionrift-library.classifierValidator.noLowConfidenceToast"));
                     return;
                 }
 
@@ -584,21 +594,21 @@ export class ClassifierValidatorApp extends FormApplication {
 
                 // Show Dialog to bypass async clipboard restriction
                 new Dialog({
-                    title: "Export Low Confidence Data",
-                    content: `<p>Copy this JSON to share with the developers:</p><textarea style="width:100%; height:300px; font-family:monospace;">${json}</textarea>`,
+                    title: game.i18n.localize("ionrift-library.classifierValidator.exportDialogTitle"),
+                    content: `<p>${game.i18n.localize("ionrift-library.classifierValidator.exportDialogNotes")}</p><textarea style="width:100%; height:300px; font-family:monospace;">${json}</textarea>`,
                     buttons: {
                         copy: {
                             icon: '<i class="fas fa-copy"></i>',
-                            label: "Copy to Clipboard",
+                            label: game.i18n.localize("ionrift-library.classifierValidator.copyToClipboardButton"),
                             callback: (html) => {
                                 const text = html.find("textarea").val();
                                 game.clipboard.copyPlainText(text);
-                                ui.notifications.info("Copied to clipboard!");
+                                ui.notifications.info(game.i18n.localize("ionrift-library.classifierValidator.copiedToClipboardToast"));
                             }
                         },
                         close: {
                             icon: '<i class="fas fa-check"></i>',
-                            label: "Close"
+                            label: game.i18n.localize("ionrift-library.classifierValidator.closeButton")
                         }
                     },
                     default: "close"
@@ -606,7 +616,7 @@ export class ClassifierValidatorApp extends FormApplication {
 
             } catch (err) {
                 Logger.error("Classifier", "Export generation failed:", err);
-                ui.notifications.error("Export generation failed. See Console.");
+                ui.notifications.error(game.i18n.localize("ionrift-library.classifierValidator.exportFailedError"));
             } finally {
                 btn.html(icon);
             }

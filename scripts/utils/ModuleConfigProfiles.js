@@ -163,7 +163,12 @@ export class ModuleConfigProfiles {
         if (typeof value === "string") {
             return { text: value, cssClass: "value" };
         }
-        return { text: value ? "On" : "Off", cssClass: value ? "on" : "off" };
+        return {
+            text: value
+                ? game.i18n.localize("ionrift-library.configProfiles.on")
+                : game.i18n.localize("ionrift-library.configProfiles.off"),
+            cssClass: value ? "on" : "off"
+        };
     }
 
     /**
@@ -213,18 +218,18 @@ export class ModuleConfigProfiles {
 
         const content = `
         <div class="ionrift-profile-confirm">
-            <p>Apply the <strong>${profile.label}</strong> setup for the whole world?</p>
+            <p>${game.i18n.format("ionrift-library.configProfiles.confirmPrompt", { label: profile.label })}</p>
             <table>${rows}</table>
             ${note}
         </div>`;
 
         const proceed = await foundry.applications.api.DialogV2.confirm({
-            window: { title: `Apply ${profile.label} setup`, icon: profile.icon },
+            window: { title: game.i18n.format("ionrift-library.configProfiles.confirmTitle", { label: profile.label }), icon: profile.icon },
             classes: ["ionrift-window", "dialog"],
             modal: true,
             content,
-            yes: { label: "Apply", default: false },
-            no: { label: "Cancel", default: true }
+            yes: { label: game.i18n.localize("ionrift-library.configProfiles.apply"), default: false },
+            no: { label: game.i18n.localize("ionrift-library.configProfiles.cancel"), default: true }
         });
         if (!proceed) return;
 
@@ -240,7 +245,7 @@ export class ModuleConfigProfiles {
         }
 
         const label = moduleLabel ?? moduleId;
-        ui.notifications?.info(`${label}: ${profile.label} setup applied.`);
+        ui.notifications?.info(game.i18n.format("ionrift-library.configProfiles.appliedToast", { module: label, profile: profile.label }));
     }
 
     /**
@@ -252,7 +257,7 @@ export class ModuleConfigProfiles {
                 <button type="button" class="ionrift-profile-btn respite-profile-btn" data-profile="${p.id}">
                     <span class="ionrift-profile-name rp-name"><i class="${p.icon}"></i> ${p.label}</span>
                     <span class="ionrift-profile-desc rp-desc">${p.desc}</span>
-                    <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> Active</span>
+                    <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> ${game.i18n.localize("ionrift-library.configProfiles.active")}</span>
                 </button>`;
     }
 
@@ -434,9 +439,9 @@ export class ModuleConfigProfiles {
 
         const guideBtn = quickSetup.onGuide
             ? `<button type="button" class="ionrift-quick-setup-guide-link respite-quick-setup-guide-link" data-action="openGuide"
-                    data-tooltip="${quickSetup.guideTooltip ?? "Open setup guide"}"
-                    aria-label="Open setup guide">
-                    <i class="fas fa-book-open" aria-hidden="true"></i> Open guide
+                    data-tooltip="${quickSetup.guideTooltip ?? game.i18n.localize("ionrift-library.configProfiles.openGuideTooltip")}"
+                    aria-label="${game.i18n.localize("ionrift-library.configProfiles.openGuideTooltip")}">
+                    <i class="fas fa-book-open" aria-hidden="true"></i> ${game.i18n.localize("ionrift-library.configProfiles.openGuide")}
                 </button>`
             : "";
 
@@ -457,9 +462,9 @@ export class ModuleConfigProfiles {
             </div>
             <div class="ionrift-quick-setup-row ionrift-quick-setup-row-secondary">
             <div class="ionrift-profile-btn respite-profile-btn ionrift-profile-custom respite-profile-custom" data-profile="custom">
-                <span class="ionrift-profile-name rp-name"><i class="fas fa-pen-to-square"></i> Custom</span>
-                <span class="ionrift-profile-desc rp-desc">Your own mix of the options below.</span>
-                <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> Active</span>
+                <span class="ionrift-profile-name rp-name"><i class="fas fa-pen-to-square"></i> ${game.i18n.localize("ionrift-library.configProfiles.customName")}</span>
+                <span class="ionrift-profile-desc rp-desc">${game.i18n.localize("ionrift-library.configProfiles.customDesc")}</span>
+                <span class="ionrift-profile-active rp-active"><i class="fas fa-circle-check"></i> ${game.i18n.localize("ionrift-library.configProfiles.active")}</span>
             </div>
             </div>
         </div>`;
