@@ -6,6 +6,7 @@
  */
 import { settleAfter } from "../DiceSettle.js";
 import { messageOptionsForMode, resolveRollMode } from "../RollModeResolver.js";
+import { getAbilityMod } from "../RollRequestMechanics.js";
 
 const FALLBACK_SKILLS = {
     prc: "Perception",
@@ -54,12 +55,10 @@ export class GenericChecks {
     modifier(actor, stat) {
         const skill = actor?.system?.skills?.[stat];
         const value = skill?.total ?? skill?.mod ?? skill?.value;
-        if (Number.isFinite(Number(value))) return Number(value);
-        if (stat === this.perceptionKey) return Number(actor?.system?.abilities?.wis?.mod ?? 0) || 0;
-        if (stat === this.stealthKey) return Number(actor?.system?.abilities?.dex?.mod ?? 0) || 0;
-        const ability = actor?.system?.abilities?.[stat];
-        if (Number.isFinite(Number(ability?.mod))) return Number(ability.mod);
-        return 0;
+        if (value !== null && value !== undefined && Number.isFinite(Number(value))) return Number(value);
+        if (stat === this.perceptionKey) return getAbilityMod(actor, "wis");
+        if (stat === this.stealthKey) return getAbilityMod(actor, "dex");
+        return getAbilityMod(actor, stat);
     }
 
     /**

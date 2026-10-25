@@ -310,8 +310,33 @@ const PF2E_DATA = {
     environment: DAGGERHEART_DATA.environment
 };
 
+const GENERIC_DATA = {
+    ...DND5E_DATA,
+    dragon: {
+        ...DND5E_DATA.dragon,
+        keywords: [...new Set([...(DND5E_DATA.dragon.keywords ?? []), ...(DAGGERHEART_DATA.dragon.keywords ?? [])])],
+        defaultTags: [...new Set([...(DND5E_DATA.dragon.defaultTags ?? []), ...(DAGGERHEART_DATA.dragon.defaultTags ?? [])])],
+        subtypes: [
+            ...(DAGGERHEART_DATA.dragon.subtypes ?? []),
+            ...(DND5E_DATA.dragon.subtypes ?? [])
+        ]
+    },
+    environment: DAGGERHEART_DATA.environment,
+    event: DAGGERHEART_DATA.event,
+    exceptions: {
+        ...DND5E_DATA.exceptions,
+        ...DAGGERHEART_DATA.exceptions
+    }
+};
+
+let _loggedGenericFallback = false;
+
+export function _resetClassifierFallbackLog() {
+    _loggedGenericFallback = false;
+}
+
 export function getClassifierData() {
-    if (typeof game === 'undefined' || !game.system) return DAGGERHEART_DATA; // Startup safety fallback
+    if (typeof game === "undefined" || !game.system) return GENERIC_DATA; // Startup safety fallback
 
     if (game.system.id === "dnd5e") {
         return DND5E_DATA;
@@ -325,8 +350,11 @@ export function getClassifierData() {
         return DAGGERHEART_DATA;
     }
 
-    Logger.warn("Classifier", `Unsupported system: '${game.system.id}'. Using generic classifier data.`);
-    return DAGGERHEART_DATA;
+    if (!_loggedGenericFallback) {
+        _loggedGenericFallback = true;
+        Logger.log("Classifier", `Unsupported system: '${game.system.id}'. Using generic classifier data.`);
+    }
+    return GENERIC_DATA;
 }
 
-export { DAGGERHEART_DATA, PF2E_DATA };
+export { DAGGERHEART_DATA, PF2E_DATA, GENERIC_DATA };
