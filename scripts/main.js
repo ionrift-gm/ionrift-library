@@ -41,8 +41,8 @@ Hooks.once("init", () => {
     createLibraryContext();
 
     game.settings.register(MODULE_ID, "debug", {
-        name: "Debug Mode",
-        hint: "Enable verbose logging for library functions.",
+        name: "ionrift-library.settings.debug.name",
+        hint: "ionrift-library.settings.debug.hint",
         scope: "client",
         config: false,
         type: Boolean,
@@ -99,7 +99,7 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "sigil", {
-        name: "Patreon Connection Token (legacy)",
+        name: "ionrift-library.settings.sigil.name",
         scope: "world",
         config: false,
         type: String,
@@ -223,8 +223,8 @@ Hooks.once("init", () => {
 
 
     game.settings.register(MODULE_ID, "enableTokenManifest", {
-        name: "Enable Token Manifest (Preview)",
-        hint: "Feature flag for Token Manifest and token curation diagnostics.",
+        name: "ionrift-library.settings.enableTokenManifest.name",
+        hint: "ionrift-library.settings.enableTokenManifest.hint",
         scope: "world",
         config: false,
         type: Boolean,
@@ -233,8 +233,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "manifestDiscountNonCurated", {
-        name: "Discount Non-Curated Tokens",
-        hint: "When enabled, the Token Manifest discounts auto-detected tokens and only counts GM-curated tokens.",
+        name: "ionrift-library.settings.manifestDiscountNonCurated.name",
+        hint: "ionrift-library.settings.manifestDiscountNonCurated.hint",
         scope: "client",
         config: false,
         type: Boolean,
@@ -250,7 +250,7 @@ Hooks.once("init", () => {
     };
 
     game.settings.register(MODULE_ID, "tokenReachDefaultSquares", {
-        name: "Default Reach Squares",
+        name: "ionrift-library.settings.tokenReachDefaultSquares.name",
         scope: "world",
         config: false,
         type: Number,
@@ -259,7 +259,7 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "tokenReachUseGrid", {
-        name: "Token Reach Use Grid",
+        name: "ionrift-library.settings.tokenReachUseGrid.name",
         scope: "world",
         config: false,
         type: Boolean,
@@ -268,7 +268,7 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "tokenReachBypassGM", {
-        name: "Token Reach Bypass GM",
+        name: "ionrift-library.settings.tokenReachBypassGM.name",
         scope: "world",
         config: false,
         type: Boolean,
@@ -277,8 +277,8 @@ Hooks.once("init", () => {
     });
 
     game.settings.register(MODULE_ID, "tokenArtRoot", {
-        name: "Token Art Directory",
-        hint: "Root directory path for Ionrift-managed resident and actor token art.",
+        name: "ionrift-library.settings.tokenArtRoot.name",
+        hint: "ionrift-library.settings.tokenArtRoot.hint",
         scope: "world",
         config: false,
         type: String,
@@ -294,9 +294,9 @@ Hooks.once("init", () => {
     const partyRosterStatus = getSubsystemStatus("partyRoster");
     if (partyRosterStatus.visible) {
         game.settings.registerMenu(MODULE_ID, "partyRosterMenu", {
-            name: "Party Roster",
-            label: "Edit Roster",
-            hint: "Choose which characters are in the active adventuring party.",
+            name: "ionrift-library.settings.partyRosterMenu.name",
+            label: "ionrift-library.settings.partyRosterMenu.label",
+            hint: "ionrift-library.settings.partyRosterMenu.hint",
             icon: "fas fa-users",
             type: PartyRosterApp,
             restricted: true
@@ -304,8 +304,8 @@ Hooks.once("init", () => {
     }
 
     game.settings.register(MODULE_ID, "avatarRegistry", {
-        name: "Token Registry",
-        hint: "Catalog of discovered and curated token assets and watch folders.",
+        name: "ionrift-library.settings.avatarRegistry.name",
+        hint: "ionrift-library.settings.avatarRegistry.hint",
         scope: "world",
         config: false,
         type: Object,
@@ -315,9 +315,9 @@ Hooks.once("init", () => {
     const tokenManifestVisible = isTokenManifestEnabled() && getSubsystemStatus("tokenManifest").visible;
     if (tokenManifestVisible) {
         game.settings.registerMenu(MODULE_ID, "avatarManifest", {
-            name: "Token Manifest",
-            label: "Manage Tokens",
-            hint: "Inspect token art coverage, curate population assets, and configure watch folders.",
+            name: "ionrift-library.settings.avatarManifest.name",
+            label: "ionrift-library.settings.avatarManifest.label",
+            hint: "ionrift-library.settings.avatarManifest.hint",
             icon: "fas fa-circle-user",
             type: AvatarManifestApp,
             restricted: true
@@ -327,9 +327,9 @@ Hooks.once("init", () => {
     const entityManifestStatus = getSubsystemStatus("entityManifest");
     if (entityManifestStatus.visible) {
         game.settings.registerMenu(MODULE_ID, "validatorMenu", {
-            name: "Entity Manifest",
-            label: "Inspect Entities",
-            hint: "Inspect creature classifications, taxonomy confidence, and monster tags.",
+            name: "ionrift-library.settings.validatorMenu.name",
+            label: "ionrift-library.settings.validatorMenu.label",
+            hint: "ionrift-library.settings.validatorMenu.hint",
             icon: "fas fa-list-check",
             type: ClassifierValidatorApp,
             restricted: true
@@ -339,9 +339,9 @@ Hooks.once("init", () => {
     const terrainStatus = getSubsystemStatus("customTerrains");
     if (terrainStatus.visible) {
         game.settings.registerMenu(MODULE_ID, "terrainManager", {
-            name: "Custom Terrains",
-            label: "Manage Terrains",
-            hint: "Import or remove custom terrain types.",
+            name: "ionrift-library.settings.terrainManager.name",
+            label: "ionrift-library.settings.terrainManager.label",
+            hint: "ionrift-library.settings.terrainManager.hint",
             icon: "fas fa-mountain-sun",
             type: TerrainManagerApp,
             restricted: true

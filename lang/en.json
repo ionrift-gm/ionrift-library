@@ -1,0 +1,110 @@
+{
+  "ionrift-library": {
+    "configProfiles": {
+      "active": "Active",
+      "appliedToast": "{module}: {profile} setup applied.",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "confirmPrompt": "Apply the <strong>{label}</strong> setup for the whole world?",
+      "confirmTitle": "Apply {label} setup",
+      "customDesc": "Your own mix of the options below.",
+      "customName": "Custom",
+      "off": "Off",
+      "on": "On",
+      "openGuide": "Open guide",
+      "openGuideTooltip": "Open setup guide"
+    },
+    "dialog": {
+      "no": "No",
+      "yes": "Yes"
+    },
+    "settings": {
+      "avatarManifest": {
+        "hint": "Inspect token art coverage, curate population assets, and configure watch folders.",
+        "label": "Manage Tokens",
+        "name": "Token Manifest"
+      },
+      "avatarRegistry": {
+        "hint": "Catalog of discovered and curated token assets and watch folders.",
+        "name": "Token Registry"
+      },
+      "debug": {
+        "hint": "Enable verbose logging for library functions.",
+        "name": "Debug Mode"
+      },
+      "enableTokenManifest": {
+        "hint": "Feature flag for Token Manifest and token curation diagnostics.",
+        "name": "Enable Token Manifest (Preview)"
+      },
+      "manifestDiscountNonCurated": {
+        "hint": "When enabled, the Token Manifest discounts auto-detected tokens and only counts GM-curated tokens.",
+        "name": "Discount Non-Curated Tokens"
+      },
+      "partyRosterMenu": {
+        "hint": "Choose which characters are in the active adventuring party.",
+        "label": "Edit Roster",
+        "name": "Party Roster"
+      },
+      "sigil": {
+        "name": "Patreon Connection Token (legacy)"
+      },
+      "terrainManager": {
+        "hint": "Import or remove custom terrain types.",
+        "label": "Manage Terrains",
+        "name": "Custom Terrains"
+      },
+      "tokenArtRoot": {
+        "hint": "Root directory path for Ionrift-managed resident and actor token art.",
+        "name": "Token Art Directory"
+      },
+      "tokenReachBypassGM": {
+        "name": "Token Reach Bypass GM"
+      },
+      "tokenReachDefaultSquares": {
+        "name": "Default Reach Squares"
+      },
+      "tokenReachUseGrid": {
+        "name": "Token Reach Use Grid"
+      },
+      "validatorMenu": {
+        "hint": "Inspect creature classifications, taxonomy confidence, and monster tags.",
+        "label": "Inspect Entities",
+        "name": "Entity Manifest"
+      }
+    },
+    "settingsLayout": {
+      "bugReportMenu": {
+        "label": "Submit Report",
+        "name": "Bug Report"
+      },
+      "consumerAvailableFor": "Available for",
+      "consumerNotActive": "{name} (Not active)",
+      "consumerUsedBy": "Used by",
+      "contentPacks": {
+        "label": "Manage Packs",
+        "name": "Content Packs"
+      },
+      "packUpdateTooltipPlural": "{count} pack updates available",
+      "packUpdateTooltipPluralWithLines": "{count} pack updates available:\n{lines}",
+      "packUpdateTooltipSingular": "{count} pack update available",
+      "packUpdateTooltipSingularWithLines": "{count} pack update available:\n{lines}",
+      "setupWizard": {
+        "label": "Begin Attunement",
+        "name": "Attunement Protocol"
+      },
+      "supportLink": {
+        "label": "Join Discord",
+        "name": "Get Support"
+      },
+      "wikiLink": {
+        "label": "Open Wiki",
+        "name": "Wiki / Guides"
+      }
+    },
+    "settingsStatus": {
+      "connectedVerified": "Connected & Verified",
+      "tokenMissing": "Token Missing",
+      "tokenUnverified": "Token Saved (Unverified)"
+    }
+  }
+}

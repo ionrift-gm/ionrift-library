@@ -16,7 +16,7 @@ export class DialogHelper {
      * @param {boolean} [options.defaultYes=true] Whether 'Yes' is the default button.
      * @returns {Promise<boolean>} Resolves to true if confirmed, false otherwise.
      */
-    static async confirm({ title, content, yesLabel = "Yes", noLabel = "No", yesIcon = "fas fa-check", noIcon = "fas fa-times", defaultYes = true } = {}) {
+    static async confirm({ title, content, yesLabel = game.i18n.localize("ionrift-library.dialog.yes"), noLabel = game.i18n.localize("ionrift-library.dialog.no"), yesIcon = "fas fa-check", noIcon = "fas fa-times", defaultYes = true } = {}) {
         const showCancel = noLabel != null && noLabel !== false;
         const cancelButtonHtml = showCancel
             ? `<button class="btn-armor-cancel"><i class="${noIcon}"></i> ${noLabel}</button>`
