@@ -15,7 +15,7 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS = {
         id: "ionrift-terrain-manager",
         window: {
-            title: "Custom Terrains",
+            title: "ionrift-library.terrainManager.title",
             icon: "fas fa-mountain-sun",
             resizable: true
         },
@@ -50,28 +50,36 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
         const el = document.createElement("div");
         el.classList.add("ionrift-terrain-manager");
 
+        const importBtnLabel = game.i18n.localize("ionrift-library.terrainManager.importButton");
+
         if (context.count === 0) {
             el.innerHTML = `
             <div class="terrain-empty-state">
                 <i class="fas fa-mountain-sun"></i>
-                <p>No custom terrains imported.</p>
-                <p class="terrain-empty-hint">Import a terrain JSON to add new locations.</p>
+                <p>${game.i18n.localize("ionrift-library.terrainManager.emptyTitle")}</p>
+                <p class="terrain-empty-hint">${game.i18n.localize("ionrift-library.terrainManager.emptyHint")}</p>
             </div>
             <div class="terrain-actions">
                 <button type="button" class="terrain-import-btn">
-                    <i class="fas fa-file-import"></i> Import Terrain
+                    <i class="fas fa-file-import"></i> ${importBtnLabel}
                 </button>
             </div>`;
         } else {
             let listHtml = `<div class="terrain-list">`;
+            const qmTooltip = game.i18n.localize("ionrift-library.terrainManager.badgeQmTooltip");
+            const qmBadge = game.i18n.localize("ionrift-library.terrainManager.badgeQm");
+            const respiteTooltip = game.i18n.localize("ionrift-library.terrainManager.badgeRespiteTooltip");
+            const respiteBadge = game.i18n.localize("ionrift-library.terrainManager.badgeRespite");
             for (const t of context.terrains) {
                 const badges = [];
-                if (t.hasQm) badges.push(`<span class="terrain-badge terrain-badge-qm" title="Has Quartermaster content">Cache</span>`);
-                if (t.hasRespite) badges.push(`<span class="terrain-badge terrain-badge-respite" title="Has Respite content">Rest</span>`);
+                if (t.hasQm) badges.push(`<span class="terrain-badge terrain-badge-qm" title="${qmTooltip}">${qmBadge}</span>`);
+                if (t.hasRespite) badges.push(`<span class="terrain-badge terrain-badge-respite" title="${respiteTooltip}">${respiteBadge}</span>`);
 
-                const categoryLabel = t.category === "built" ? "Built"
-                    : t.category === "safe-haven" ? "Safe Haven"
-                    : "Wilderness";
+                const categoryLabel = t.category === "built" ? game.i18n.localize("ionrift-library.terrain.category.built")
+                    : t.category === "safe-haven" ? game.i18n.localize("ionrift-library.terrain.category.safeHaven")
+                    : game.i18n.localize("ionrift-library.terrain.category.wilderness");
+
+                const removeTooltip = game.i18n.format("ionrift-library.terrainManager.removeTooltip", { label: t.label });
 
                 listHtml += `
                 <div class="terrain-row" data-terrain-id="${t.id}">
@@ -80,21 +88,25 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
                         <span class="terrain-category-badge terrain-category-${t.category}">${categoryLabel}</span>
                         ${badges.join("")}
                     </div>
-                    <button type="button" class="terrain-remove-btn" data-terrain-id="${t.id}" title="Remove ${t.label}">
+                    <button type="button" class="terrain-remove-btn" data-terrain-id="${t.id}" title="${removeTooltip}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>`;
             }
             listHtml += `</div>`;
 
+            const summaryText = context.count !== 1
+                ? game.i18n.format("ionrift-library.terrainManager.summaryPlural", { count: context.count })
+                : game.i18n.format("ionrift-library.terrainManager.summarySingular", { count: context.count });
+
             el.innerHTML = `
             <div class="terrain-summary">
-                <strong>${context.count}</strong> custom terrain${context.count !== 1 ? "s" : ""} imported
+                ${summaryText}
             </div>
             ${listHtml}
             <div class="terrain-actions">
                 <button type="button" class="terrain-import-btn">
-                    <i class="fas fa-file-import"></i> Import Terrain
+                    <i class="fas fa-file-import"></i> ${importBtnLabel}
                 </button>
             </div>`;
         }
@@ -130,24 +142,24 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
                 const text = await file.text();
                 data = JSON.parse(text);
             } catch (e) {
-                ui.notifications.error("Failed to parse terrain JSON. Check the file format.");
+                ui.notifications.error(game.i18n.localize("ionrift-library.terrainManager.parseError"));
                 Logger.warn("TerrainManager", "JSON parse failed:", e);
                 return;
             }
 
             if (!data.id || !data.label) {
-                ui.notifications.error("Terrain JSON must include 'id' and 'label' fields.");
+                ui.notifications.error(game.i18n.localize("ionrift-library.terrainManager.missingFieldsError"));
                 return;
             }
 
             const result = terrainRegistry.importTerrain(data);
 
             if (result.error === "base-terrain") {
-                ui.notifications.error(`Cannot override the base terrain "${data.id}".`);
+                ui.notifications.error(game.i18n.format("ionrift-library.terrainManager.baseOverrideError", { id: data.id }));
                 return;
             }
             if (result.error === "invalid") {
-                ui.notifications.error("Invalid terrain data. Check the JSON format.");
+                ui.notifications.error(game.i18n.localize("ionrift-library.terrainManager.invalidDataError"));
                 return;
             }
 
@@ -166,8 +178,10 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
             };
             await game.settings.set(MODULE_ID, "importedTerrains", stored);
 
-            const verb = result.isNew ? "Imported" : "Updated";
-            ui.notifications.info(`${verb} custom terrain: ${data.label}`);
+            const toastKey = result.isNew
+                ? "ionrift-library.terrainManager.importedToast"
+                : "ionrift-library.terrainManager.updatedToast";
+            ui.notifications.info(game.i18n.format(toastKey, { label: data.label }));
             this.render();
         });
 
@@ -183,10 +197,10 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
         const label = terrain?.label ?? id;
 
         const confirmed = await foundry.applications.api.DialogV2.confirm({
-            window: { title: "Remove Custom Terrain" },
-            content: `<p>Remove <strong>${label}</strong> from the imported terrains?</p><p>This will not affect existing caches or rest data that used this terrain.</p>`,
-            yes: { label: "Remove", icon: "fas fa-trash" },
-            no: { label: "Cancel" }
+            window: { title: game.i18n.localize("ionrift-library.terrainManager.removeConfirmTitle") },
+            content: game.i18n.format("ionrift-library.terrainManager.removeConfirmContent", { label }),
+            yes: { label: game.i18n.localize("ionrift-library.terrainManager.removeConfirmYes"), icon: "fas fa-trash" },
+            no: { label: game.i18n.localize("ionrift-library.configProfiles.cancel") }
         });
 
         if (!confirmed) return;
@@ -197,7 +211,7 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
         delete stored[id];
         await game.settings.set(MODULE_ID, "importedTerrains", stored);
 
-        ui.notifications.info(`Removed custom terrain: ${label}`);
+        ui.notifications.info(game.i18n.format("ionrift-library.terrainManager.removedToast", { label }));
         this.render();
     }
 }

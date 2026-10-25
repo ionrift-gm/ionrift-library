@@ -125,7 +125,7 @@ export class RollRequestService {
                 dc,
                 rollMode,
                 chatMode: opts.chatMode ?? "client",
-                title: opts.title ?? "Roll Request",
+                title: opts.title ?? game.i18n.localize("ionrift-library.rollRequest.rollRequestTitle"),
                 flavor: opts.flavor ?? "",
                 tableLabel: opts.tableLabel ?? "",
                 wantsOutcome: typeof opts.describeOutcome === "function",
@@ -489,7 +489,7 @@ export class RollRequestService {
         const policy = opts.offlinePolicy ?? "gm-fallback";
         const dc = Number.isFinite(opts.dc) ? opts.dc : null;
         const rollMode = opts.rollMode ?? "normal";
-        const context = opts.flavor ?? opts.title ?? "Roll request";
+        const context = opts.flavor ?? opts.title ?? game.i18n.localize("ionrift-library.rollRequest.rollRequestDefaultContext");
 
         if (policy === "cancel") {
             throw new Error("Roll request cancelled: target unavailable");
@@ -528,7 +528,10 @@ export class RollRequestService {
     static async _rollGmFallback(actor, opts, dc, context) {
         const chatMode = opts.chatMode ?? "client";
         const rollMode = opts.rollMode ?? "normal";
-        const flavor = `<strong>${actor.name}</strong> - ${context} [GM roll]`;
+        const flavor = game.i18n.format("ionrift-library.rollRequest.gmFallbackFlavor", {
+            actor: actor.name,
+            context
+        });
 
         if (opts.type === "save") {
             return executeSaveRoll(actor, opts.key ?? "wis", dc, flavor, rollMode, chatMode);
