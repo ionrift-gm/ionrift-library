@@ -1363,9 +1363,9 @@ export class AvatarManifestApp extends FormApplication {
             if (!path) return;
             const isNowBlacklisted = await AvatarRegistryService.toggleBlacklist(path);
             const filename = path.split("/").pop();
-            const action = isNowBlacklisted ? "Blacklisted" : "Restored";
+            const toastKey = isNowBlacklisted ? "ionrift-library.avatarManifest.tokenBlacklistedToast" : "ionrift-library.avatarManifest.tokenRestoredToast";
             if (typeof ui !== "undefined" && ui.notifications) {
-                ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.actionTokenToast", { action, filename }));
+                ui.notifications.info(game.i18n.format(toastKey, { filename }));
             }
             this.invalidateCache();
             this.render();
@@ -1614,7 +1614,7 @@ export class AvatarManifestApp extends FormApplication {
                         <i class="fas fa-info-circle"></i> ${game.i18n.localize("ionrift-library.avatarManifest.removeWatchedFolderNote")}
                     </p>
                 `,
-                yesLabel: game.i18n.localize("ionrift-library.avatarManifest.purgeButton"),
+                yesLabel: game.i18n.localize("ionrift-library.avatarManifest.removeWatchFolderYesButton"),
                 yesIcon: "fa-trash",
                 noLabel: game.i18n.localize("ionrift-library.avatarManifest.cancelButton"),
                 noIcon: "fa-times",
@@ -1768,7 +1768,7 @@ export class AvatarManifestApp extends FormApplication {
                         <span>${game.i18n.localize("ionrift-library.avatarManifest.scanCatalogAutoTag")}</span>
                     </label>
                     <div id="candidate-count-preview" style="font-size:0.78rem; color:#c084fc; padding-left:24px;">
-                        ${initialCandidates.length > 0 ? `<i class="fas fa-check-circle"></i> Found <strong>${initialCandidates.length}</strong> candidate token${initialCandidates.length > 1 ? 's' : ''} matching in catalog.` : `Type a name above to discover matching tokens.`}
+                        ${initialCandidates.length > 0 ? (initialCandidates.length > 1 ? game.i18n.format("ionrift-library.avatarManifest.initialCandidatesFoundPlural", { count: initialCandidates.length }) : game.i18n.format("ionrift-library.avatarManifest.initialCandidatesFoundSingular", { count: initialCandidates.length })) : game.i18n.localize("ionrift-library.avatarManifest.typeNameToDiscover")}
                     </div>
                 </div>
             </form>
@@ -2003,11 +2003,11 @@ export class AvatarManifestApp extends FormApplication {
                             </div>
                         </div>
                         <div class="curate-studio-actions">
-                            <button type="button" id="dialog-reset-auto-btn" class="ionrift-btn studio-btn-reparse" title="Re-evaluate metadata from path">
-                                <i class="fas fa-wand-magic-sparkles"></i> Re-parse
+                            <button type="button" id="dialog-reset-auto-btn" class="ionrift-btn studio-btn-reparse" title="${game.i18n.localize("ionrift-library.avatarManifest.reevaluateMetadataTooltip")}">
+                                <i class="fas fa-wand-magic-sparkles"></i> ${game.i18n.localize("ionrift-library.avatarManifest.reparseButton")}
                             </button>
-                            <button type="button" id="dialog-toggle-blacklist-btn" class="ionrift-btn studio-btn-blacklist ${token.isBlacklisted ? 'is-active' : ''}" title="Toggle Blacklist status">
-                                <i class="fas fa-ban"></i> <span id="blacklist-btn-text">${token.isBlacklisted ? 'Restore' : 'Blacklist'}</span>
+                            <button type="button" id="dialog-toggle-blacklist-btn" class="ionrift-btn studio-btn-blacklist ${token.isBlacklisted ? 'is-active' : ''}" title="${game.i18n.localize("ionrift-library.avatarManifest.toggleBlacklistTooltip")}">
+                                <i class="fas fa-ban"></i> <span id="blacklist-btn-text">${token.isBlacklisted ? game.i18n.localize("ionrift-library.avatarManifest.restoreWord") : game.i18n.localize("ionrift-library.avatarManifest.blacklistWord")}</span>
                             </button>
                         </div>
                     </div>
@@ -2041,16 +2041,16 @@ export class AvatarManifestApp extends FormApplication {
 
                         <div class="form-group-stacked">
                             <label>
-                                <span>Specific Role</span>
-                                <span class="label-hint">Optional</span>
+                                <span>${game.i18n.localize("ionrift-library.avatarManifest.specificRoleLabel")}</span>
+                                <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.optionalHint")}</span>
                             </label>
                             <input type="text" name="role" value="${token.role || ""}" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.rolePlaceholderSingle")}">
                         </div>
 
                         <div class="form-group-stacked">
                             <label>
-                                <span>Applied Tags</span>
-                                <span class="label-hint">Press Enter or Comma to add</span>
+                                <span>${game.i18n.localize("ionrift-library.avatarManifest.appliedTagsLabel")}</span>
+                                <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.appliedTagsHint")}</span>
                             </label>
                             <div class="interactive-tag-box" id="token-tag-box">
                                 ${tagChipsHtml}
@@ -2120,7 +2120,7 @@ export class AvatarManifestApp extends FormApplication {
                 },
                 cancel: {
                     icon: '<i class="fas fa-times"></i>',
-                    label: "Cancel"
+                    label: game.i18n.localize("ionrift-library.avatarManifest.cancelButton")
                 }
             },
             render: html => {
@@ -2208,7 +2208,7 @@ export class AvatarManifestApp extends FormApplication {
                         const $chip = $(`
                             <span class="editor-tag-chip" data-tag="${t}">
                                 #${t}
-                                <span class="delete-chip-btn" title="Remove tag">&times;</span>
+                                <span class="delete-chip-btn" title="${game.i18n.localize("ionrift-library.avatarManifest.removeTagTooltip")}">&times;</span>
                             </span>
                         `);
                         $chip.insertBefore($input);
@@ -2240,7 +2240,7 @@ export class AvatarManifestApp extends FormApplication {
                     const $chip = $(`
                         <span class="editor-tag-chip" data-tag="${tag}">
                             #${tag}
-                            <span class="delete-chip-btn" title="Remove tag">&times;</span>
+                            <span class="delete-chip-btn" title="${game.i18n.localize("ionrift-library.avatarManifest.removeTagTooltip")}">&times;</span>
                         </span>
                     `);
                     $chip.insertBefore($input);
@@ -2337,9 +2337,9 @@ export class AvatarManifestApp extends FormApplication {
             : `<span style="font-size:0.8em; color:rgba(200,190,240,0.5);">${game.i18n.localize("ionrift-library.avatarManifest.noTagsCurrentlyApplied")}</span>`;
 
         const allSpecies = AvatarRegistryService.getActiveSpeciesList ? AvatarRegistryService.getActiveSpeciesList() : CORE_SPECIES;
-        const speciesOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option><option value="generic">Unassigned Reservoir</option>` + allSpecies.map(s =>
-            `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " (Custom)" : ""}</option>`
-        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>`;
+        const speciesOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option><option value="generic">${game.i18n.localize("ionrift-library.avatarManifest.unassignedReservoirDropdownOption")}</option>` + allSpecies.map(s =>
+            `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " " + game.i18n.localize("ionrift-library.avatarManifest.customSuffix") : ""}</option>`
+        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">${game.i18n.localize("ionrift-library.avatarManifest.addNewSpeciesDropdownOption")}</option>`;
 
         const archetypeOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option>` + CANONICAL_ARCHETYPES.map(a =>
             `<option value="${a}">${a.charAt(0).toUpperCase() + a.slice(1)}</option>`
@@ -2368,7 +2368,7 @@ export class AvatarManifestApp extends FormApplication {
                 </div>
 
                 <div class="form-group-stacked">
-                    <label>Curation Provenance</label>
+                    <label>${game.i18n.localize("ionrift-library.avatarManifest.curationProvenanceLabel")}</label>
                     <select name="curationMode" class="manifest-glass-select">
                         <option value="preserve" selected>${game.i18n.localize("ionrift-library.avatarManifest.curationModePreserve")}</option>
                         <option value="manual">${game.i18n.localize("ionrift-library.avatarManifest.curationModeManual")}</option>
@@ -2377,7 +2377,7 @@ export class AvatarManifestApp extends FormApplication {
                 </div>
 
                 <div class="form-group-stacked">
-                    <label>Species / Culture</label>
+                    <label>${game.i18n.localize("ionrift-library.avatarManifest.speciesCultureLabel")}</label>
                     <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                 </div>
                 <div class="form-group-stacked" id="batch-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
@@ -2385,27 +2385,27 @@ export class AvatarManifestApp extends FormApplication {
                     <input type="text" name="newSpeciesName" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.newSpeciesPlaceholder")}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
                 </div>
                 <div class="form-group-stacked">
-                    <label>Canonical Archetype</label>
+                    <label>${game.i18n.localize("ionrift-library.avatarManifest.canonicalArchetypeLabel")}</label>
                     <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
                 </div>
                 <div class="form-group-stacked">
                     <label>
-                        <span>Specific Role</span>
-                        <span class="label-hint">Optional</span>
+                        <span>${game.i18n.localize("ionrift-library.avatarManifest.specificRoleLabel")}</span>
+                        <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.optionalHint")}</span>
                     </label>
                     <input type="text" name="role" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.rolePlaceholderBatch")}">
                 </div>
                 <div class="form-group-stacked">
                     <label>
-                        <span>Add Tags</span>
-                        <span class="label-hint">Comma separated</span>
+                        <span>${game.i18n.localize("ionrift-library.avatarManifest.addTagsLabel")}</span>
+                        <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.commaSeparatedHint")}</span>
                     </label>
                     <input type="text" name="addTags" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.addTagsPlaceholderBatch")}">
                 </div>
                 <div class="form-group-stacked">
                     <label>
-                        <span>Remove Tags</span>
-                        <span class="label-hint">Comma separated or click &times; above</span>
+                        <span>${game.i18n.localize("ionrift-library.avatarManifest.removeTagsLabel")}</span>
+                        <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.removeTagsSelectedHint")}</span>
                     </label>
                     <input type="text" name="removeTags" id="batch-remove-tags-input" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.removeTagsPlaceholder")}">
                 </div>
@@ -2469,7 +2469,7 @@ export class AvatarManifestApp extends FormApplication {
                 },
                 cancel: {
                     icon: '<i class="fas fa-times"></i>',
-                    label: "Cancel"
+                    label: game.i18n.localize("ionrift-library.avatarManifest.cancelButton")
                 }
             },
             default: "save",
@@ -2518,9 +2518,9 @@ export class AvatarManifestApp extends FormApplication {
         this._showBackdrop();
 
         const allSpecies = AvatarRegistryService.getActiveSpeciesList ? AvatarRegistryService.getActiveSpeciesList() : CORE_SPECIES;
-        const speciesOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option><option value="generic">Unassigned Reservoir</option>` + allSpecies.map(s =>
-            `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " (Custom)" : ""}</option>`
-        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>`;
+        const speciesOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option><option value="generic">${game.i18n.localize("ionrift-library.avatarManifest.unassignedReservoirDropdownOption")}</option>` + allSpecies.map(s =>
+            `<option value="${s}">${s.charAt(0).toUpperCase() + s.slice(1)}${!CORE_SPECIES.includes(s) ? " " + game.i18n.localize("ionrift-library.avatarManifest.customSuffix") : ""}</option>`
+        ).join("") + `<option value="__add_new__" style="color:#c084fc; font-weight:700;">${game.i18n.localize("ionrift-library.avatarManifest.addNewSpeciesDropdownOption")}</option>`;
 
         const archetypeOpts = `<option value="">${game.i18n.localize("ionrift-library.avatarManifest.leaveUnchangedOption")}</option>` + CANONICAL_ARCHETYPES.map(a =>
             `<option value="${a}">${a.charAt(0).toUpperCase() + a.slice(1)}</option>`
@@ -2535,7 +2535,7 @@ export class AvatarManifestApp extends FormApplication {
                         ${game.i18n.format("ionrift-library.avatarManifest.batchTagFolderDialogNotes", { folder: folderPath })}
                     </p>
                     <div class="form-group-stacked">
-                        <label>Species / Culture</label>
+                        <label>${game.i18n.localize("ionrift-library.avatarManifest.speciesCultureLabel")}</label>
                         <select name="species" class="manifest-glass-select">${speciesOpts}</select>
                     </div>
                     <div class="form-group-stacked" id="folder-new-species-row" style="display:none; background:rgba(168,85,247,0.12); border:1px solid rgba(168,85,247,0.35); border-radius:4px; padding:8px; margin-top:-4px;">
@@ -2543,27 +2543,27 @@ export class AvatarManifestApp extends FormApplication {
                         <input type="text" name="newSpeciesName" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.newSpeciesPlaceholder")}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(168,85,247,0.4); color:#fff; padding:4px 8px; border-radius:4px; font-size:0.85rem;" />
                     </div>
                     <div class="form-group-stacked">
-                        <label>Canonical Archetype</label>
+                        <label>${game.i18n.localize("ionrift-library.avatarManifest.canonicalArchetypeLabel")}</label>
                         <select name="archetype" class="manifest-glass-select">${archetypeOpts}</select>
                     </div>
                     <div class="form-group-stacked">
                         <label>
-                            <span>Specific Role</span>
-                            <span class="label-hint">Optional</span>
+                            <span>${game.i18n.localize("ionrift-library.avatarManifest.specificRoleLabel")}</span>
+                            <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.optionalHint")}</span>
                         </label>
                         <input type="text" name="role" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.rolePlaceholderFolder")}">
                     </div>
                     <div class="form-group-stacked">
                         <label>
-                            <span>Add Tags</span>
-                            <span class="label-hint">Comma separated</span>
+                            <span>${game.i18n.localize("ionrift-library.avatarManifest.addTagsLabel")}</span>
+                            <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.commaSeparatedHint")}</span>
                         </label>
                         <input type="text" name="addTags" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.addTagsPlaceholderFolder")}">
                     </div>
                     <div class="form-group-stacked">
                         <label>
-                            <span>Remove Tags</span>
-                            <span class="label-hint">Comma separated</span>
+                            <span>${game.i18n.localize("ionrift-library.avatarManifest.removeTagsLabel")}</span>
+                            <span class="label-hint">${game.i18n.localize("ionrift-library.avatarManifest.commaSeparatedHint")}</span>
                         </label>
                         <input type="text" name="removeTags" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.removeTagsPlaceholderFolder")}">
                     </div>
@@ -2633,7 +2633,7 @@ export class AvatarManifestApp extends FormApplication {
                 },
                 cancel: {
                     icon: '<i class="fas fa-times"></i>',
-                    label: "Cancel"
+                    label: game.i18n.localize("ionrift-library.avatarManifest.cancelButton")
                 }
             },
             render: html => {
@@ -2697,21 +2697,21 @@ export class AvatarManifestApp extends FormApplication {
                 </td>
                 <td style="padding:6px 10px; font-weight:600; font-size:0.84rem; color:${m.isRedundant ? '#fbbf24' : '#fff'};">
                     #${m.tag}
-                    ${m.isRedundant ? '<span style="margin-left:6px; font-size:0.68rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> ${game.i18n.localize("ionrift-library.avatarManifest.redundantTagBadge")}</span>' : ''}
+                    ${m.isRedundant ? `<span style="margin-left:6px; font-size:0.68rem; font-weight:700; background:rgba(245,158,11,0.25); border:1px solid rgba(245,158,11,0.5); color:#fbbf24; padding:1px 6px; border-radius:3px; text-transform:uppercase; letter-spacing:0.4px;"><i class="fas fa-triangle-exclamation"></i> ${game.i18n.localize("ionrift-library.avatarManifest.redundantTagBadge")}</span>` : ''}
                 </td>
                 <td style="padding:6px 10px; font-size:0.82rem; color:rgba(200,190,240,0.85); text-align:center; width:110px;">
                     <strong>${m.count}</strong> <span style="font-size:0.75em; opacity:0.7;">(${m.pct}%)</span>
                 </td>
                 <td style="padding:6px 10px; text-align:right; width:220px;">
                     <div style="display:inline-flex; align-items:center; gap:6px; justify-content:flex-end;">
-                        <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" draggable="false" title="Filter workspace to #${m.tag}">
-                            <i class="fas fa-filter"></i> Filter
+                        <button type="button" class="tag-action-btn tag-filter-btn" data-tag="${m.tag}" draggable="false" title="${game.i18n.format("ionrift-library.avatarManifest.filterTagTooltip", { tag: m.tag })}">
+                            <i class="fas fa-filter"></i> ${game.i18n.localize("ionrift-library.avatarManifest.filterButton")}
                         </button>
-                        <button type="button" class="tag-action-btn tag-purge-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="Purge #${m.tag} from all ${m.count} tokens">
-                            <i class="fas fa-trash-can"></i> Purge
+                        <button type="button" class="tag-action-btn tag-purge-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="${game.i18n.format("ionrift-library.avatarManifest.purgeTagRowTooltip", { tag: m.tag, count: m.count })}">
+                            <i class="fas fa-trash-can"></i> ${game.i18n.localize("ionrift-library.avatarManifest.purgeWord")}
                         </button>
-                        <button type="button" class="tag-action-btn tag-ignore-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="Purge #${m.tag} and permanently ignore in future scans">
-                            <i class="fas fa-ban"></i> Ignore
+                        <button type="button" class="tag-action-btn tag-ignore-btn" data-tag="${m.tag}" data-count="${m.count}" draggable="false" title="${game.i18n.format("ionrift-library.avatarManifest.ignoreTagRowTooltip", { tag: m.tag })}">
+                            <i class="fas fa-ban"></i> ${game.i18n.localize("ionrift-library.avatarManifest.ignoreWord")}
                         </button>
                     </div>
                 </td>
@@ -2731,8 +2731,8 @@ export class AvatarManifestApp extends FormApplication {
                             <i class="fas fa-triangle-exclamation"></i>
                             <span>${game.i18n.format("ionrift-library.avatarManifest.redundantTagsFlagged", { count: redundantTags.length })}</span>
                         </div>
-                        <button type="button" class="ionrift-btn purge-all-redundant-btn" draggable="false" title="Purge all redundant tags and add them to Ignored Tags">
-                            <i class="fas fa-trash-can"></i> Purge All Redundant
+                        <button type="button" class="ionrift-btn purge-all-redundant-btn" draggable="false" title="${game.i18n.localize("ionrift-library.avatarManifest.purgeAllRedundantTooltip")}">
+                            <i class="fas fa-trash-can"></i> ${game.i18n.localize("ionrift-library.avatarManifest.purgeAllRedundantButton")}
                         </button>
                     </div>
                     <div class="tag-redundancy-body-deck">
@@ -2770,7 +2770,7 @@ export class AvatarManifestApp extends FormApplication {
                             <span style="font-size:0.82rem; color:rgba(200,190,240,0.85);">${game.i18n.localize("ionrift-library.avatarManifest.uniqueTagsLabel")} <strong style="color:#d8b4fe;">${totalUniqueTags}</strong></span>
                         </div>
                         <span style="font-size:0.82rem; color:${redundantTags.length > 0 ? '#fbbf24' : '#4ade80'}; font-weight:600; display:flex; align-items:center; gap:5px;">
-                            ${redundantTags.length > 0 ? `<i class="fas fa-triangle-exclamation"></i> ${game.i18n.format("ionrift-library.avatarManifest.redundantCountLabel", { count: redundantTags.length })}` : '<i class="fas fa-check-circle"></i> ${game.i18n.localize("ionrift-library.avatarManifest.cleanTaxonomy")}'}
+                            ${redundantTags.length > 0 ? `<i class="fas fa-triangle-exclamation"></i> ${game.i18n.format("ionrift-library.avatarManifest.redundantCountLabel", { count: redundantTags.length })}` : `<i class="fas fa-check-circle"></i> ${game.i18n.localize("ionrift-library.avatarManifest.cleanTaxonomy")}`}
                         </span>
                     </div>
 
@@ -2784,8 +2784,8 @@ export class AvatarManifestApp extends FormApplication {
                             </label>
                             <div style="display:flex; align-items:center; gap:6px;">
                                 <input type="text" id="new-ignored-tag-input" placeholder="${game.i18n.localize("ionrift-library.avatarManifest.ignoredTagPlaceholder")}" style="height:24px; padding:2px 8px; font-size:0.78rem; background:rgba(0,0,0,0.4); border:1px solid rgba(140,110,240,0.3); border-radius:3px; color:#fff; width:160px;" />
-                                <button type="button" id="add-ignored-tag-btn" class="ionrift-btn" draggable="false" style="height:24px; line-height:22px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Add word to ignored tags">
-                                    <i class="fas fa-plus"></i> Ignore
+                                <button type="button" id="add-ignored-tag-btn" class="ionrift-btn" draggable="false" style="height:24px; line-height:22px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="${game.i18n.localize("ionrift-library.avatarManifest.addIgnoredTagTooltip")}">
+                                    <i class="fas fa-plus"></i> ${game.i18n.localize("ionrift-library.avatarManifest.ignoreWord")}
                                 </button>
                             </div>
                         </div>
@@ -2811,14 +2811,14 @@ export class AvatarManifestApp extends FormApplication {
                             <span><strong id="tag-selected-count">${selectedTags.size}</strong> ${game.i18n.format("ionrift-library.avatarManifest.tagsSelectedLabel", { count: selectedTags.size })}</span>
                         </span>
                         <div style="display:flex; align-items:center; gap:6px;">
-                            <button type="button" class="ionrift-btn batch-purge-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(239,68,68,0.28); border:1px solid rgba(239,68,68,0.55); color:#fca5a5; cursor:pointer;" title="Purge all selected tags from tokens">
-                                <i class="fas fa-trash-can"></i> Purge Selected (<span class="batch-count-val">${selectedTags.size}</span>)
+                            <button type="button" class="ionrift-btn batch-purge-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(239,68,68,0.28); border:1px solid rgba(239,68,68,0.55); color:#fca5a5; cursor:pointer;" title="${game.i18n.localize("ionrift-library.avatarManifest.purgeSelectedTooltip")}">
+                                <i class="fas fa-trash-can"></i> ${game.i18n.format("ionrift-library.avatarManifest.purgeSelectedToolbarButton", { count: selectedTags.size })}
                             </button>
-                            <button type="button" class="ionrift-btn batch-ignore-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="Purge and ignore all selected tags">
-                                <i class="fas fa-ban"></i> Ignore Selected
+                            <button type="button" class="ionrift-btn batch-ignore-selected-btn" draggable="false" style="height:26px; line-height:24px; padding:0 10px; font-size:0.75rem; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); color:#d8b4fe; cursor:pointer;" title="${game.i18n.localize("ionrift-library.avatarManifest.ignoreSelectedTooltip")}">
+                                <i class="fas fa-ban"></i> ${game.i18n.localize("ionrift-library.avatarManifest.ignoreSelectedButton")}
                             </button>
                             <button type="button" class="ionrift-btn batch-deselect-all-btn" draggable="false" style="height:26px; line-height:24px; padding:0 8px; font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:rgba(200,190,240,0.8); cursor:pointer;">
-                                Deselect All
+                                ${game.i18n.localize("ionrift-library.avatarManifest.deselectAllButton")}
                             </button>
                         </div>
                     </div>
@@ -2831,9 +2831,9 @@ export class AvatarManifestApp extends FormApplication {
                                     <th style="padding:7px 6px 7px 10px; text-align:center; width:36px;">
                                         <input type="checkbox" id="tag-select-all-visible" style="accent-color:#a855f7; cursor:pointer; width:15px; height:15px; margin:0; vertical-align:middle;" title="${game.i18n.localize('ionrift-library.avatarManifest.selectAllVisibleTagsTooltip')}" />
                                     </th>
-                                    <th style="padding:7px 10px;">Tag Name</th>
-                                    <th style="padding:7px 10px; text-align:center; width:110px;">Tokens Applied</th>
-                                    <th style="padding:7px 10px; text-align:right; width:220px;">Actions</th>
+                                    <th style="padding:7px 10px;">${game.i18n.localize("ionrift-library.avatarManifest.tagNameHeader")}</th>
+                                    <th style="padding:7px 10px; text-align:center; width:110px;">${game.i18n.localize("ionrift-library.avatarManifest.tokensAppliedHeader")}</th>
+                                    <th style="padding:7px 10px; text-align:right; width:220px;">${game.i18n.localize("ionrift-library.avatarManifest.actionsHeader")}</th>
                                 </tr>
                             </thead>
                             <tbody id="tag-manager-tbody">
@@ -2983,7 +2983,7 @@ export class AvatarManifestApp extends FormApplication {
                 const tagsToPurge = Array.from(selectedTags);
                 if (tagsToPurge.length === 0) return;
 
-                const tagsListHtml = tagsToPurge.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToPurge.length > 24 ? ` ... (+${tagsToPurge.length - 24} more)` : "");
+                const tagsListHtml = tagsToPurge.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToPurge.length > 24 ? " " + game.i18n.format("ionrift-library.avatarManifest.moreTagsSuffix", { count: tagsToPurge.length - 24 }) : "");
 
                 const confirmed = await this._confirmDialog({
                     title: game.i18n.format("ionrift-library.avatarManifest.purgeSelectedDialogTitle", { count: tagsToPurge.length }),
@@ -2994,7 +2994,7 @@ export class AvatarManifestApp extends FormApplication {
                         </div>
                         <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">${game.i18n.localize("ionrift-library.avatarManifest.purgeSelectedNote")}</p>
                     `,
-                    yesLabel: game.i18n.format("ionrift-library.avatarManifest.purgeSelectedButton", { count: tagsToPurge.length }),
+                    yesLabel: game.i18n.format("ionrift-library.avatarManifest.purgeSelectedYesButton", { count: tagsToPurge.length }),
                     yesIcon: "fa-trash-can",
                     isDestructive: true,
                     keepParent: true
@@ -3014,18 +3014,18 @@ export class AvatarManifestApp extends FormApplication {
                 const tagsToIgnore = Array.from(selectedTags);
                 if (tagsToIgnore.length === 0) return;
 
-                const tagsListHtml = tagsToIgnore.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToIgnore.length > 24 ? ` ... (+${tagsToIgnore.length - 24} more)` : "");
+                const tagsListHtml = tagsToIgnore.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToIgnore.length > 24 ? " " + game.i18n.format("ionrift-library.avatarManifest.moreTagsSuffix", { count: tagsToIgnore.length - 24 }) : "");
 
                 const confirmed = await this._confirmDialog({
-                    title: `Purge & Ignore ${tagsToIgnore.length} Selected Tags`,
+                    title: game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreSelectedTitle", { count: tagsToIgnore.length }),
                     content: `
-                        <p>Are you sure you want to remove <strong>${tagsToIgnore.length}</strong> tag(s) from all tokens AND permanently ignore them?</p>
+                        <p>${game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreSelectedPrompt", { count: tagsToIgnore.length })}</p>
                         <div style="max-height:80px; overflow-y:auto; margin:8px 0; padding:6px 8px; background:rgba(0,0,0,0.45); border:1px solid rgba(239,68,68,0.25); border-radius:4px; font-size:0.78rem; color:#fca5a5; line-height:1.4;">
                             ${tagsListHtml}
                         </div>
-                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> Future folder re-scans will completely skip these tags.</p>
+                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> ${game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreSelectedNote")}</p>
                     `,
-                    yesLabel: `Purge & Ignore ${tagsToIgnore.length}`,
+                    yesLabel: game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreSelectedYesButton", { count: tagsToIgnore.length }),
                     yesIcon: "fa-ban",
                     isDestructive: true,
                     keepParent: true
@@ -3137,12 +3137,12 @@ export class AvatarManifestApp extends FormApplication {
                 if (!redundant || redundant.length === 0) return;
 
                 const confirmed = await this._confirmDialog({
-                    title: `Purge & Ignore All Redundant Tags`,
+                    title: game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreAllTitle"),
                     content: `
-                        <p>Purge <strong>${redundant.length}</strong> redundant tag(s) (<code>${redundant.map(t => '#' + t).join(', ')}</code>) and permanently add them to Ignored Tags?</p>
-                        <p style="font-size:0.85em; color:#86efac; margin-top:4px;"><i class="fas fa-wand-magic-sparkles"></i> This will immediately clean root folder pollution from your token catalog.</p>
+                        <p>${game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreAllPrompt", { count: redundant.length, tags: redundant.map(t => '#' + t).join(', ') })}</p>
+                        <p style="font-size:0.85em; color:#86efac; margin-top:4px;"><i class="fas fa-wand-magic-sparkles"></i> ${game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreAllNote")}</p>
                     `,
-                    yesLabel: "Purge & Ignore All",
+                    yesLabel: game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreAllYesButton"),
                     yesIcon: "fa-trash-can",
                     isDestructive: true,
                     keepParent: true

@@ -25,11 +25,20 @@ export function activeAdapter() {
 export const TYPES = new Map();
 
 export function defineType(type, meta) {
-    TYPES.set(type, { type, immediate: false, ...meta });
+    const entry = { type, immediate: false, ...meta };
+    if (entry.labelKey && !("label" in meta)) {
+        // Resolve lazily so the label follows the active language.
+        Object.defineProperty(entry, "label", {
+            enumerable: true,
+            configurable: true,
+            get() { return game.i18n.localize(entry.labelKey); }
+        });
+    }
+    TYPES.set(type, entry);
 }
 
 defineType("temp_hp", {
-    label: "Temporary HP",
+    labelKey: "ionrift-library.cookingBuffTypes.tempHp",
     render(actor, buff) {
         const formula = buff.formula ?? "0";
         return {
@@ -48,7 +57,7 @@ defineType("temp_hp", {
 });
 
 defineType("heal", {
-    label: "Healing",
+    labelKey: "ionrift-library.cookingBuffTypes.heal",
     immediate: true,
     render(actor, buff) {
         const formula = buff.formula ?? "0";
@@ -63,7 +72,7 @@ defineType("heal", {
 });
 
 defineType("exhaustion_save", {
-    label: "Exhaustion save",
+    labelKey: "ionrift-library.cookingBuffTypes.exhaustionSave",
     immediate: true,
     render(actor, buff) {
         const dc = buff.formula ?? "?";
@@ -78,7 +87,7 @@ defineType("exhaustion_save", {
 });
 
 defineType("hit_die", {
-    label: "Hit die",
+    labelKey: "ionrift-library.cookingBuffTypes.hitDie",
     immediate: true,
     render(actor, buff) {
         const amount = buff.formula ?? "1";
@@ -93,7 +102,7 @@ defineType("hit_die", {
 });
 
 defineType("advantage", {
-    label: "Advantage on saves",
+    labelKey: "ionrift-library.cookingBuffTypes.advantage",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? buff.formula ?? "con").toLowerCase();
         const duration = buff.duration ?? "nextSave";
@@ -113,7 +122,7 @@ defineType("advantage", {
 });
 
 defineType("resistance", {
-    label: "Damage resistance",
+    labelKey: "ionrift-library.cookingBuffTypes.resistance",
     render(actor, buff) {
         const damageType = String(buff.damageType ?? buff.formula ?? "poison").toLowerCase();
         const uses = buff.uses ?? buff.charges;
@@ -155,7 +164,7 @@ defineType("resistance", {
 });
 
 defineType("sense_darkvision", {
-    label: "Darkvision",
+    labelKey: "ionrift-library.cookingBuffTypes.senseDarkvision",
     render(actor, buff) {
         const feet = Number(buff.feet ?? buff.formula ?? 60);
         return {
@@ -173,7 +182,7 @@ defineType("sense_darkvision", {
 });
 
 defineType("check_advantage", {
-    label: "Advantage on ability checks",
+    labelKey: "ionrift-library.cookingBuffTypes.checkAdvantage",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.save?.ability ?? buff.formula ?? "str").toLowerCase();
         const uses = buff.uses ?? buff.charges;
@@ -213,7 +222,7 @@ defineType("check_advantage", {
 });
 
 defineType("skill_advantage", {
-    label: "Advantage on skill checks",
+    labelKey: "ionrift-library.cookingBuffTypes.skillAdvantage",
     render(actor, buff) {
         const skill = String(buff.skill ?? buff.formula ?? "prc").toLowerCase();
         const dim = buff.conditions?.dimLight === true;
@@ -233,7 +242,7 @@ defineType("skill_advantage", {
 });
 
 defineType("passive_perception", {
-    label: "Passive Perception bonus",
+    labelKey: "ionrift-library.cookingBuffTypes.passivePerception",
     render(actor, buff) {
         const bonus = Number(buff.bonus ?? buff.formula ?? 2);
         return {
@@ -251,7 +260,7 @@ defineType("passive_perception", {
 });
 
 defineType("ability_bonus", {
-    label: "Ability check bonus",
+    labelKey: "ionrift-library.cookingBuffTypes.abilityBonus",
     render(actor, buff) {
         const ability = String(buff.ability ?? buff.formula ?? "wis").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
@@ -270,7 +279,7 @@ defineType("ability_bonus", {
 });
 
 defineType("save_bonus", {
-    label: "Saving throw bonus (limited uses)",
+    labelKey: "ionrift-library.cookingBuffTypes.saveBonus",
     render(actor, buff) {
         const ability = String(buff.save?.ability ?? buff.ability ?? "con").toLowerCase();
         const bonus = Number(buff.bonus ?? 1);
