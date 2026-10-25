@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.1] - 2026-10-25
+
+### Added
+- Stealth modifier lookup for D&D 5e and Pathfinder 2e roll requests.
+
+### Fixed
+- Roll cards no longer hang waiting on 3D dice when the dice tray is already idle.
+
 ## [3.2.0] - 2026-10-18
 
 ### Added
