@@ -3,7 +3,7 @@ import { MODULE_ID } from "./moduleId.js";
 export const SUBSYSTEM_DEFINITIONS = {
     entityManifest: {
         key: "validatorMenu",
-        name: "Entity Manifest",
+        get name() { return game.i18n.localize("ionrift-library.settings.validatorMenu.name"); },
         consumers: ["ionrift-resonance", "ionrift-monstrous-feast", "ionrift-qol"],
         consumerLabels: {
             "ionrift-resonance": "Resonance",
@@ -18,7 +18,7 @@ export const SUBSYSTEM_DEFINITIONS = {
     },
     tokenManifest: {
         key: "avatarManifest",
-        name: "Token Manifest",
+        get name() { return game.i18n.localize("ionrift-library.settings.avatarManifest.name"); },
         consumers: ["ionrift-civics", "ionrift-cloud"],
         consumerLabels: {
             "ionrift-civics": "Civics",
@@ -31,7 +31,7 @@ export const SUBSYSTEM_DEFINITIONS = {
     },
     customTerrains: {
         key: "terrainManager",
-        name: "Custom Terrains",
+        get name() { return game.i18n.localize("ionrift-library.settings.terrainManager.name"); },
         consumers: ["ionrift-respite", "ionrift-quartermaster"],
         consumerLabels: {
             "ionrift-respite": "Respite",
@@ -44,7 +44,7 @@ export const SUBSYSTEM_DEFINITIONS = {
     },
     partyRoster: {
         key: "partyRosterMenu",
-        name: "Party Roster",
+        get name() { return game.i18n.localize("ionrift-library.settings.partyRosterMenu.name"); },
         consumers: ["ionrift-respite", "ionrift-quartermaster", "ionrift-qol"],
         consumerLabels: {
             "ionrift-respite": "Respite",

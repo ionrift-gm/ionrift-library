@@ -35,7 +35,7 @@
                 </div>
                 {{#if rollRequest.ownerOutcome}}
                 <span class="ionrift-dc-outcome ionrift-dc-outcome--{{rollRequest.ownerOutcome}}"
-                    data-tooltip="{{#if (eq rollRequest.ownerOutcome 'pass')}}{{localize "ionrift-library.rollRequest.youPassed"}}{{else}}{{localize "ionrift-library.rollRequest.youFailed"}}{{/if}}{{#if rollRequest.ownerTotal}} · {{localize "ionrift-library.rollRequest.rolledWord"}} {{rollRequest.ownerTotal}}{{/if}}">
+                    data-tooltip="{{#if rollRequest.ownerTotal}}{{#if (eq rollRequest.ownerOutcome 'pass')}}{{localize "ionrift-library.rollRequest.youPassedRolled" total=rollRequest.ownerTotal}}{{else}}{{localize "ionrift-library.rollRequest.youFailedRolled" total=rollRequest.ownerTotal}}{{/if}}{{else}}{{#if (eq rollRequest.ownerOutcome 'pass')}}{{localize "ionrift-library.rollRequest.youPassed"}}{{else}}{{localize "ionrift-library.rollRequest.youFailed"}}{{/if}}{{/if}}">
                     <i class="fas {{#if (eq rollRequest.ownerOutcome 'pass')}}fa-check{{else}}fa-times{{/if}}"></i>
                 </span>
                 {{/if}}
@@ -43,9 +43,9 @@
             {{#if rollRequest.ownerOutcome}}
             <div class="ionrift-roll-request__outcome ionrift-roll-request__outcome--{{rollRequest.ownerOutcome}}">
                 {{#if (eq rollRequest.ownerOutcome 'pass')}}
-                <i class="fas fa-circle-check"></i> {{localize "ionrift-library.rollRequest.youPassed"}}{{#if rollRequest.ownerTotal}} {{localize "ionrift-library.rollRequest.withWord"}} {{rollRequest.ownerTotal}}{{/if}}
+                <i class="fas fa-circle-check"></i> {{#if rollRequest.ownerTotal}}{{localize "ionrift-library.rollRequest.youPassedWith" total=rollRequest.ownerTotal}}{{else}}{{localize "ionrift-library.rollRequest.youPassed"}}{{/if}}
                 {{else}}
-                <i class="fas fa-circle-xmark"></i> {{localize "ionrift-library.rollRequest.youFailed"}}{{#if rollRequest.ownerTotal}} {{localize "ionrift-library.rollRequest.withWord"}} {{rollRequest.ownerTotal}}{{/if}}
+                <i class="fas fa-circle-xmark"></i> {{#if rollRequest.ownerTotal}}{{localize "ionrift-library.rollRequest.youFailedWith" total=rollRequest.ownerTotal}}{{else}}{{localize "ionrift-library.rollRequest.youFailed"}}{{/if}}
                 {{/if}}
             </div>
             {{/if}}
