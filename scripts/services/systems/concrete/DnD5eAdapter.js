@@ -226,7 +226,7 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
             return true;
         }
         ui.notifications?.warn(
-            "No primary party is set. Right-click a party group actor in the Actors sidebar and choose Make Primary Party."
+            game.i18n.localize("ionrift-library.systems.dnd5e.noPrimaryPartyWarn")
         );
         return true;
     }

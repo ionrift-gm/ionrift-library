@@ -23,7 +23,7 @@ export class JsonPackService {
      */
     static async importJsonPack(options = {}) {
         if (!game.user.isGM) {
-            ui.notifications.warn("Only the GM can import packs.");
+            ui.notifications.warn(game.i18n.localize("ionrift-library.jsonPack.gmOnly"));
             return null;
         }
 
@@ -60,7 +60,7 @@ export class JsonPackService {
             const text = await file.text();
             parsedData = JSON.parse(text);
         } catch (error) {
-            const msg = `Failed to parse JSON file: ${error.message}`;
+            const msg = game.i18n.format("ionrift-library.jsonPack.parseError", { error: error.message });
             Logger.warn(MODULE_LABEL, "Failed to parse file:", error);
             ui.notifications.error(msg);
             return { success: false, packId: null, version: null, errors: [msg] };

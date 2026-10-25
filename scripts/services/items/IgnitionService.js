@@ -136,14 +136,14 @@ export class IgnitionService {
                                Boolean(doc.flags?.["ionrift-respite"]?.campfire);
 
             if (isCampfire) {
-                return { hasNearbyFire: true, source: other, name: doc.name || "Campfire" };
+                return { hasNearbyFire: true, source: other, name: doc.name || game.i18n.localize("ionrift-library.ignition.campfire") };
             }
 
             // Check if other token is actively emitting light
             const light = doc.light;
             const isLit = (light?.bright ?? 0) > 0 || (light?.dim ?? 0) > 0;
             if (isLit) {
-                return { hasNearbyFire: true, source: other, name: `${doc.name}'s Light` };
+                return { hasNearbyFire: true, source: other, name: game.i18n.format("ionrift-library.ignition.actorsLight", { name: doc.name }) };
             }
         }
 
@@ -174,7 +174,7 @@ export class IgnitionService {
                                     (cfg.color && cfg.color.toLowerCase().startsWith("#ff"));
 
                     if (isFlame) {
-                        return { hasNearbyFire: true, source: ambient, name: "Open Flame" };
+                        return { hasNearbyFire: true, source: ambient, name: game.i18n.localize("ionrift-library.ignition.openFlame") };
                     }
                 }
             }
@@ -351,7 +351,7 @@ export class IgnitionService {
                         helperActor: null,
                         helperToken: null,
                         helperMethod: null,
-                        failureReason: "Striking a flame with a tinderbox takes 1 minute and cannot be performed in combat without fire magic."
+                        failureReason: game.i18n.localize("ionrift-library.ignition.strictCombatFailure")
                     };
                 }
 
@@ -397,7 +397,7 @@ export class IgnitionService {
             helperActor: null,
             helperToken: null,
             helperMethod: null,
-            failureReason: "You have no means to light your torch or lantern, and no one nearby can kindle a flame for you."
+            failureReason: game.i18n.localize("ionrift-library.ignition.noMeansFailure")
         };
     }
 

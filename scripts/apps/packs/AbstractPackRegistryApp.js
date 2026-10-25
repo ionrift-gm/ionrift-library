@@ -141,7 +141,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
             </label>` : "";
 
         const deleteHtml = deletable ? `
-            <button type="button" class="pack-delete-btn" data-pack-id="${pack.id}" title="Remove this pack">
+            <button type="button" class="pack-delete-btn" data-pack-id="${pack.id}" title="${game.i18n.localize("ionrift-library.packRegistry.removePackTitle")}">
                 <i class="fas fa-trash-alt"></i>
             </button>` : "";
 

@@ -403,7 +403,19 @@
             "watchFolderInputPlaceholder": "Paste path and press Enter, or browse server...",
             "watchedAssetFoldersTitle": "Watched Asset Folders",
             "windowTitle": "Token Manifest & Coverage",
-            "worldSpecificWatchFoldersCallout": "<strong>World-Specific Watch Folders:</strong> Watched directories are configured separately for this world so different campaigns can monitor distinct token collections. Token tags, custom species, and manual assignments are automatically shared across all your worlds."
+            "worldSpecificWatchFoldersCallout": "<strong>World-Specific Watch Folders:</strong> Watched directories are configured separately for this world so different campaigns can monitor distinct token collections. Token tags, custom species, and manual assignments are automatically shared across all your worlds.",
+            "folderBannedToast": "Folder '{folder}' banned ({count} tokens blacklisted).",
+            "folderUnbannedToast": "Folder '{folder}' unbanned ({count} tokens restored).",
+            "actionTokenToast": "Ionrift | {action} token: {filename}",
+            "resetAutoToast": "Ionrift | Reset {count} tokens to Auto-detected status.",
+            "structureVerifiedToast": "Ionrift | Folder structure verified and scaffolded.",
+            "primaryArtRootToast": "Ionrift | Primary Art Root set to '{path}'.",
+            "removedWatchToast": "Ionrift | Removed '{folder}' from watch list.",
+            "purgedTagsToast": "Ionrift | Purged {tagsCount} tags across {tokensCount} token instances.",
+            "purgedIgnoredTagsToast": "Ionrift | Purged {tagsCount} tags from {tokensCount} tokens and added to Ignored Tags.",
+            "purgedSingleTagToast": "Ionrift | Purged '#{tag}' from {count} tokens.",
+            "purgedSingleTagIgnoredToast": "Ionrift | Purged '#{tag}' from {count} tokens and added to Ignored Tags.",
+            "cleanedRedundantTagsToast": "Ionrift | Cleaned {tagsCount} redundant tags from {tokensCount} token instances."
         },
         "bugReport": {
             "activeModules": "Active Modules",
@@ -932,6 +944,55 @@
             "stepCompleteToast": "{this.moduleTitle} | Step Complete: {stepId}",
             "title": "Welcome to Ionrift",
             "windowTitle": "{title} - Welcome"
+        },
+        "compendiumSource": {
+            "selectAllTitle": "Select all compendiums",
+            "selectAll": "Select all",
+            "selectNoneTitle": "Deselect all compendiums",
+            "selectNone": "Select none",
+            "invertTitle": "Invert selection",
+            "invert": "Invert",
+            "recommendedBadge": "Recommended",
+            "noMatchingPacks": "No matching compendiums found.",
+            "saveSourcesDefault": "Save sources",
+            "windowTitle": "Compendium Sources"
+        },
+        "packRegistry": {
+            "updatesAvailableSingular": "{count} update available",
+            "updatesAvailablePlural": "{count} updates available",
+            "disastersCount": "{count} disasters",
+            "removePackTitle": "Remove this pack"
+        },
+        "installHealth": {
+            "quickFixSingular": "{count} Ionrift module needs a quick fix to finish installing. Open the console (F12) for steps.",
+            "quickFixPlural": "{count} Ionrift modules need a quick fix to finish installing. Open the console (F12) for steps."
+        },
+        "jsonPack": {
+            "gmOnly": "Only the GM can import packs.",
+            "parseError": "Failed to parse JSON file: {error}"
+        },
+        "legacyAssetSweeper": {
+            "gmOnly": "Only the GM can run legacy cleanup.",
+            "unknownForceMode": "Unknown cleanup force mode \"{mode}\". Use one of: {list}."
+        },
+        "overlayMaterialiser": {
+            "materialisedToast": "{label}: {overlayId} materialised: {count} items in {collection}."
+        },
+        "cooking": {
+            "wellFed": "Well Fed",
+            "wellFedNamed": "Well Fed: {item}"
+        },
+        "ignition": {
+            "campfire": "Campfire",
+            "actorsLight": "{name}'s Light",
+            "openFlame": "Open Flame",
+            "strictCombatFailure": "Striking a flame with a tinderbox takes 1 minute and cannot be performed in combat without fire magic.",
+            "noMeansFailure": "You have no means to light your torch or lantern, and no one nearby can kindle a flame for you."
+        },
+        "systems": {
+            "dnd5e": {
+                "noPrimaryPartyWarn": "No primary party is set. Right-click a party group actor in the Actors sidebar and choose Make Primary Party."
+            }
         }
     }
 }

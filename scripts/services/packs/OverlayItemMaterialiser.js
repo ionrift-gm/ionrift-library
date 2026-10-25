@@ -144,9 +144,12 @@ export class OverlayItemMaterialiser {
         }
 
         if (result.changed && config.notify !== false) {
-            ui.notifications.info(
-                `${config.notifyLabel ?? moduleId}: ${manifest.overlayId} materialised: ${result.itemCount} items in ${result.collection}.`
-            );
+            ui.notifications.info(game.i18n.format("ionrift-library.overlayMaterialiser.materialisedToast", {
+                label: config.notifyLabel ?? moduleId,
+                overlayId: manifest.overlayId,
+                count: result.itemCount,
+                collection: result.collection
+            }));
         }
     }
 

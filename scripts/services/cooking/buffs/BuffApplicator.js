@@ -109,7 +109,7 @@ export const BuffApplicator = {
         const seconds = shortRestWindow ? SHORT_REST_FALLBACK_SECONDS : LONG_REST_FALLBACK_SECONDS;
 
         return {
-            name: title ?? (item?.name ? `Well Fed: ${item.name}` : "Well Fed"),
+            name: title ?? (item?.name ? game.i18n.format("ionrift-library.cooking.wellFedNamed", { item: item.name }) : game.i18n.localize("ionrift-library.cooking.wellFed")),
             img: item?.img ?? "icons/consumables/food/bowl-stew-brown.webp",
             origin: actor?.uuid,
             disabled: false,

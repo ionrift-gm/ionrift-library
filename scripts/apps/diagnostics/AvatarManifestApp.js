@@ -1065,9 +1065,9 @@ export class AvatarManifestApp extends FormApplication {
 
             const result = await AvatarRegistryService.toggleBanFolder(folder);
             if (result.isBanned) {
-                ui.notifications.warn(`Folder '${folder}' banned (${result.count} tokens blacklisted).`);
+                ui.notifications.warn(game.i18n.format("ionrift-library.avatarManifest.folderBannedToast", { folder, count: result.count }));
             } else {
-                ui.notifications.info(`Folder '${folder}' unbanned (${result.count} tokens restored).`);
+                ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.folderUnbannedToast", { folder, count: result.count }));
             }
             this.invalidateCache();
             this.render();
@@ -1356,7 +1356,7 @@ export class AvatarManifestApp extends FormApplication {
             const filename = path.split("/").pop();
             const action = isNowBlacklisted ? "Blacklisted" : "Restored";
             if (typeof ui !== "undefined" && ui.notifications) {
-                ui.notifications.info(`Ionrift | ${action} token: ${filename}`);
+                ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.actionTokenToast", { action, filename }));
             }
             this.invalidateCache();
             this.render();
@@ -1383,7 +1383,7 @@ export class AvatarManifestApp extends FormApplication {
                 const count = await AvatarRegistryService.resetTokensToAuto(selectedList);
                 this.selectedPaths.clear();
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Reset ${count} tokens to Auto-detected status.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.resetAutoToast", { count }));
                 }
                 this.invalidateCache();
                 this.render();
@@ -1544,7 +1544,7 @@ export class AvatarManifestApp extends FormApplication {
                         try {
                             await TokenArtResolver.scaffoldFolders();
                             if (typeof ui !== "undefined" && ui.notifications) {
-                                ui.notifications.info("Ionrift | Folder structure verified and scaffolded.");
+                                ui.notifications.info(game.i18n.localize("ionrift-library.avatarManifest.structureVerifiedToast"));
                             }
                         } catch (err) {
                             console.error("Ionrift | Failed to scaffold folders:", err);
@@ -1552,7 +1552,7 @@ export class AvatarManifestApp extends FormApplication {
                     }
 
                     if (typeof ui !== "undefined" && ui.notifications) {
-                        ui.notifications.info(`Ionrift | Primary Art Root set to '${cleanPath}'.`);
+                        ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.primaryArtRootToast", { path: cleanPath }));
                     }
                     this.invalidateCache();
                     this.render();
@@ -1615,7 +1615,7 @@ export class AvatarManifestApp extends FormApplication {
 
             await AvatarRegistryService.removeWatchFolder(folder);
             if (typeof ui !== "undefined" && ui.notifications) {
-                ui.notifications.info(`Ionrift | Removed '${folder}' from watch list.`);
+                ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.removedWatchToast", { folder }));
             }
             this.invalidateCache();
             this.render();
@@ -2995,7 +2995,7 @@ export class AvatarManifestApp extends FormApplication {
                 const result = await AvatarRegistryService.removeTagsGlobally(tagsToPurge);
                 selectedTags.clear();
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Purged ${result.tags.length} tags across ${result.tokensModified} token instances.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.purgedTagsToast", { tagsCount: result.tags.length, tokensCount: result.tokensModified }));
                 }
                 refreshAll();
             });
@@ -3026,7 +3026,7 @@ export class AvatarManifestApp extends FormApplication {
                 const result = await AvatarRegistryService.addIgnoredTags(tagsToIgnore, true);
                 selectedTags.clear();
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Purged ${result.tags.length} tags from ${result.tokensModified} tokens and added to Ignored Tags.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.purgedIgnoredTagsToast", { tagsCount: result.tags.length, tokensCount: result.tokensModified }));
                 }
                 refreshAll();
             });
@@ -3093,7 +3093,7 @@ export class AvatarManifestApp extends FormApplication {
 
                 const purged = await AvatarRegistryService.removeTagGlobally(tag);
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Purged '#${tag}' from ${purged} tokens.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.purgedSingleTagToast", { tag, count: purged }));
                 }
                 refreshAll();
             });
@@ -3117,7 +3117,7 @@ export class AvatarManifestApp extends FormApplication {
 
                 const result = await AvatarRegistryService.addIgnoredTag(tag, true);
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Purged '#${tag}' from ${result.purgedCount} tokens and added to Ignored Tags.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.purgedSingleTagIgnoredToast", { tag, count: result.purgedCount }));
                 }
                 refreshAll();
             });
@@ -3142,7 +3142,7 @@ export class AvatarManifestApp extends FormApplication {
 
                 const res = await AvatarRegistryService.addIgnoredTags(redundant, true);
                 if (typeof ui !== "undefined" && ui.notifications) {
-                    ui.notifications.info(`Ionrift | Cleaned ${res.tags.length} redundant tags from ${res.tokensModified} token instances.`);
+                    ui.notifications.info(game.i18n.format("ionrift-library.avatarManifest.cleanedRedundantTagsToast", { tagsCount: res.tags.length, tokensCount: res.tokensModified }));
                 }
                 refreshAll();
             });

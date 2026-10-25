@@ -135,7 +135,7 @@ export const CookingFeed = {
     buildSlotEffect(actor, buffs, { item = null, slot, title } = {}) {
         return BuffApplicator.buildDnd5eSlotEffect(actor, buffs, { item, slot, title })
             ?? {
-                name: title ?? (item?.name ? `Well Fed: ${item.name}` : "Well Fed"),
+                name: title ?? (item?.name ? game.i18n.format("ionrift-library.cooking.wellFedNamed", { item: item.name }) : game.i18n.localize("ionrift-library.cooking.wellFed")),
                 img: item?.img ?? "icons/consumables/food/bowl-stew-brown.webp",
                 origin: actor?.uuid,
                 disabled: false,
