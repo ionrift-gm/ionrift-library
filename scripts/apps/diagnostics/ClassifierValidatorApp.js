@@ -209,7 +209,7 @@ export class ClassifierValidatorApp extends FormApplication {
 
         // 2. Compendium Scan (Selected Packs)
         const selectedPackIds = this._getSelectedPacks();
-        const availablePacks = game.packs ? game.packs.filter(p => p.documentName === "Actor" && selectedPackIds.has(p.metadata.id)) : [];
+        const availablePacks = game.packs ? game.packs.filter(p => p.documentName === "Actor" && (selectedPackIds.has(p.collection) || selectedPackIds.has(p.metadata?.id))) : [];
 
         for (const pack of availablePacks) {
             try {

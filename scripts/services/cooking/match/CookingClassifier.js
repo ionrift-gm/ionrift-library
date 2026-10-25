@@ -39,6 +39,8 @@ export function isWater(item) {
     if (resourceType(item) === "water") return true;
     const drinkType = readResourceFlag(item, "drinkType");
     if (drinkType === "water") return true;
+    const identifier = String(item.system?.identifier ?? item.system?.slug ?? item.flags?.["ionrift-library"]?.identifier ?? "").toLowerCase();
+    if (identifier && WATER_NAMES.has(identifier)) return true;
     const name = item.name?.toLowerCase().trim() ?? "";
     return name.length > 0 && WATER_NAMES.has(name);
 }
