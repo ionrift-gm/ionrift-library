@@ -6,11 +6,12 @@ import { Cascade } from "../../utils/Cascade.js";
  */
 export class IonriftSystemAdapter {
     /** @returns {string} The Foundry system ID this adapter handles. */
-    get systemId() { throw new Error("IonriftSystemAdapter: systemId not implemented"); }
+    get systemId() { return globalThis.game?.system?.id ?? "generic"; }
 
     getLevel(actor) { return 1; }
     getKnownSpells(actor) { return new Set(); }
     getClassNames(actor) { return []; }
+    getTraits(actor) { return []; }
     isPlayerCharacter(actor) {
         if (!actor || !actor.hasPlayerOwner) return false;
         if (actor.type !== "character" && !actor.system?.isCharacter) return false;
@@ -66,13 +67,17 @@ export class IonriftSystemAdapter {
     }
     getItemCategory(item) { return item?.type ?? "other"; }
     getHP(actor) {
+        const hp = actor?.system?.attributes?.hp ?? actor?.system?.hp;
         return {
-            value: actor?.system?.attributes?.hp?.value ?? 0,
-            max: actor?.system?.attributes?.hp?.max ?? 1,
-            temp: 0
+            value: hp?.value ?? 0,
+            max: hp?.max ?? 1,
+            temp: hp?.temp ?? 0
         };
     }
-    getAbilityScore(actor, abbr) { return 10; }
+    getAbilityScore(actor, abbr) {
+        const value = actor?.system?.abilities?.[abbr]?.value ?? actor?.system?.scores?.[abbr]?.value;
+        return Number.isFinite(value) ? value : null;
+    }
 
     /**
      * Whether the actor has a feat or feature matching the given name or slug.

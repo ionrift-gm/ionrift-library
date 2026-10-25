@@ -33,10 +33,12 @@ export const SKILL_DISPLAY_NAMES = {
  */
 export function getAbilityMod(actor, key) {
     const abbr = String(key ?? "").slice(0, 3).toLowerCase();
+    const ability = actor?.system?.abilities?.[abbr] ?? actor?.system?.scores?.[abbr];
+    if (ability && ability.mod !== null && ability.mod !== undefined && Number.isFinite(Number(ability.mod))) {
+        return Number(ability.mod);
+    }
     const score = adapterRegistry.getAbilityScore(actor, abbr);
     if (Number.isFinite(score)) return Math.floor((score - 10) / 2);
-    const ability = actor?.system?.abilities?.[abbr];
-    if (ability && Number.isFinite(ability.mod)) return ability.mod;
     return 0;
 }
 
@@ -53,6 +55,7 @@ export function getSkillMod(actor, key) {
     if (key === "perception" || key === "prc") {
         const perc = actor?.perception?.mod ?? actor?.system?.perception?.mod ?? actor?.system?.attributes?.perception?.totalModifier;
         if (Number.isFinite(perc)) return Number(perc);
+        return getAbilityMod(actor, "wis");
     }
     if (key === "stealth" || key === "ste") {
         const alt = actor?.skills?.stealth ?? actor?.system?.skills?.ste ?? actor?.system?.skills?.stealth;
