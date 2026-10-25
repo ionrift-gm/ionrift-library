@@ -82,7 +82,19 @@ export class PF2eAdapter extends IonriftSystemAdapter {
         const spells = new Set();
         if (!actor) return spells;
         for (const item of actor.items) {
-            if (item.type === "spell") spells.add(item.name.toLowerCase());
+            if (item.type === "spell") {
+                if (item.name) spells.add(item.name.toLowerCase());
+                const slug = item.system?.slug ?? item.flags?.["ionrift-library"]?.spellId;
+                if (slug) {
+                    spells.add(String(slug).toLowerCase());
+                    spells.add(String(slug).toLowerCase().replace(/-/g, " "));
+                }
+                const sourceId = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
+                if (sourceId) {
+                    const clean = String(sourceId).toLowerCase().split(".").pop();
+                    if (clean) spells.add(clean);
+                }
+            }
         }
         return spells;
     }
@@ -173,24 +185,39 @@ export class PF2eAdapter extends IonriftSystemAdapter {
         }
         for (const item of actor?.items ?? []) {
             if (item.type === "lore") {
-                profKeys.push(item.name?.toLowerCase().replace(/\s+lore$/i, "") ?? "");
+                const slug = item.system?.slug ? String(item.system.slug).toLowerCase().replace(/-lore$/i, "") : null;
+                if (slug) profKeys.push(slug);
+                const name = item.name ? item.name.toLowerCase().replace(/\s+lore$/i, "") : null;
+                if (name) profKeys.push(name);
             }
         }
         return profKeys.filter(Boolean);
     }
 
     isToolProficient(actor, toolKey) {
-        if (toolKey === "cook" || toolKey === "cook's utensils") {
+        const lowerKey = String(toolKey).toLowerCase();
+        if (lowerKey === "cook" || lowerKey === "cook's utensils") {
             return this.isSkillProficient(actor, "crafting");
         }
-        return (actor?.items ?? []).some(item =>
-            item.type === "lore" && item.name?.toLowerCase().includes(String(toolKey).toLowerCase())
-        );
+        const slugKey = lowerKey.replace(/\s+/g, "-");
+        return (actor?.items ?? []).some(item => {
+            if (item.type !== "lore") return false;
+            const slug = String(item.system?.slug ?? "").toLowerCase();
+            if (slug && (slug.includes(lowerKey) || slug.includes(slugKey))) return true;
+            return item.name?.toLowerCase().includes(lowerKey);
+        });
     }
 
     findItemByName(actor, name) {
         const lower = String(name ?? "").toLowerCase();
-        return (actor?.items ?? []).find(item => item.name?.toLowerCase().includes(lower)) ?? null;
+        const slugTarget = lower.replace(/\s+/g, "-");
+        return (actor?.items ?? []).find(item => {
+            const slug = String(item.system?.slug ?? item.flags?.["ionrift-library"]?.identifier ?? "").toLowerCase();
+            if (slug && (slug === lower || slug === slugTarget || slug.replace(/-/g, " ") === lower)) return true;
+            const sourceId = String(item._stats?.compendiumSource ?? item.flags?.core?.sourceId ?? "").toLowerCase();
+            if (sourceId && (sourceId.endsWith("." + slugTarget) || sourceId.endsWith("/" + slugTarget))) return true;
+            return item.name?.toLowerCase().includes(lower);
+        }) ?? null;
     }
 
     hasItemByName(actor, name) {

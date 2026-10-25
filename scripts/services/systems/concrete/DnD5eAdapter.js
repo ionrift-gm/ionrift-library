@@ -39,7 +39,19 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
         const spells = new Set();
         if (!actor) return spells;
         for (const item of actor.items) {
-            if (item.type === "spell") spells.add(item.name.toLowerCase());
+            if (item.type === "spell") {
+                if (item.name) spells.add(item.name.toLowerCase());
+                const id = item.system?.identifier ?? item.system?.slug ?? item.flags?.["ionrift-library"]?.spellId;
+                if (id) {
+                    spells.add(String(id).toLowerCase());
+                    spells.add(String(id).toLowerCase().replace(/-/g, " "));
+                }
+                const sourceId = item._stats?.compendiumSource ?? item.flags?.core?.sourceId;
+                if (sourceId) {
+                    const clean = String(sourceId).toLowerCase().split(".").pop();
+                    if (clean) spells.add(clean);
+                }
+            }
         }
         return spells;
     }
@@ -166,7 +178,14 @@ export class DnD5eAdapter extends IonriftSystemAdapter {
 
     findItemByName(actor, name) {
         const lower = String(name ?? "").toLowerCase();
-        return (actor?.items ?? []).find(item => item.name?.toLowerCase().includes(lower)) ?? null;
+        const slugTarget = lower.replace(/\s+/g, "-");
+        return (actor?.items ?? []).find(item => {
+            const id = String(item.system?.identifier ?? item.system?.slug ?? item.flags?.["ionrift-library"]?.identifier ?? "").toLowerCase();
+            if (id && (id === lower || id === slugTarget || id.replace(/-/g, " ") === lower)) return true;
+            const sourceId = String(item._stats?.compendiumSource ?? item.flags?.core?.sourceId ?? "").toLowerCase();
+            if (sourceId && (sourceId.endsWith("." + slugTarget) || sourceId.endsWith("/" + slugTarget))) return true;
+            return item.name?.toLowerCase().includes(lower);
+        }) ?? null;
     }
 
     hasItemByName(actor, name) {
