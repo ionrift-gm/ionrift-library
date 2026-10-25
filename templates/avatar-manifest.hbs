@@ -540,6 +540,11 @@
                         <button type="button" id="manage-tags-btn" class="ionrift-btn batch-actions-btn" title="Inspect all tags, purge redundant folder tags, and manage ignored tags">
                             <i class="fas fa-tags"></i> Manage Tags
                         </button>
+                        {{#if hasTokenCompositor}}
+                        <button type="button" id="batch-ring-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} title="Composite Role-Tiered &amp; Pop-Out Rings onto selected unringed tokens">
+                            <i class="fas fa-ring"></i> Composite Role Rings ({{selectedCount}})
+                        </button>
+                        {{/if}}
                         <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
                             <i class="fas fa-wand-magic-sparkles"></i> Reset to Auto ({{selectedCount}})
                         </button>

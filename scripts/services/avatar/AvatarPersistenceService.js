@@ -115,7 +115,7 @@ export class AvatarPersistenceService {
             // 3. Has custom tags
             // 4. Has caste assigned
             const hasCustomTags = Array.isArray(token.tags) && token.tags.length > 0;
-            if (token.isManual || token.isBlacklisted || hasCustomTags || token.caste) {
+            if (token.isManual || token.isBlacklisted || hasCustomTags || token.caste || token.isRinged || token.masterPortraitPath) {
                 curated[path] = {
                     path: token.path || path,
                     species: token.species || "generic",
@@ -124,7 +124,12 @@ export class AvatarPersistenceService {
                     caste: token.caste || null,
                     tags: Array.isArray(token.tags) ? [...token.tags] : [],
                     isManual: !!token.isManual,
-                    isBlacklisted: !!token.isBlacklisted
+                    isBlacklisted: !!token.isBlacklisted,
+                    ...(token.isRinged !== undefined ? { isRinged: !!token.isRinged } : {}),
+                    ...(token.ringTier ? { ringTier: token.ringTier } : {}),
+                    ...(token.tokenScale ? { tokenScale: Number(token.tokenScale) } : {}),
+                    ...(token.masterPortraitPath ? { masterPortraitPath: token.masterPortraitPath } : {}),
+                    ...(token.framing ? { framing: token.framing } : {})
                 };
             }
         }
