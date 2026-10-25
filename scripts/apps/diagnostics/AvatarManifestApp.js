@@ -1050,12 +1050,21 @@ export class AvatarManifestApp extends FormApplication {
             if (!folder) return;
 
             const isCurrentlyBanned = $(ev.currentTarget).hasClass("is-active") || AvatarRegistryService.isFolderBanned?.(folder);
-            const action = isCurrentlyBanned ? "Unban" : "Ban";
+            const action = isCurrentlyBanned ? game.i18n.localize("ionrift-library.avatarManifest.unbanButton") : game.i18n.localize("ionrift-library.avatarManifest.banButton");
+            const title = isCurrentlyBanned
+                ? game.i18n.format("ionrift-library.avatarManifest.unbanFolderDialogTitle", { folder })
+                : game.i18n.format("ionrift-library.avatarManifest.banFolderDialogTitle", { folder });
+            const prompt = isCurrentlyBanned
+                ? game.i18n.format("ionrift-library.avatarManifest.unbanFolderConfirmPrompt", { folder })
+                : game.i18n.format("ionrift-library.avatarManifest.banFolderConfirmPrompt", { folder });
+            const note = isCurrentlyBanned
+                ? game.i18n.localize("ionrift-library.avatarManifest.unbanFolderConfirmNote")
+                : game.i18n.localize("ionrift-library.avatarManifest.banFolderConfirmNote");
             const confirmed = await this._confirmDialog({
-                title: `${action} Folder: ${folder}`,
+                title,
                 content: `
-                    <p>Are you sure you want to <strong>${action.toLowerCase()}</strong> the folder <code>${folder}</code> and all its tokens?</p>
-                    ${!isCurrentlyBanned ? '<p style="font-size:0.85em; color:#fca5a5; margin-top:6px;"><i class="fas fa-exclamation-triangle"></i> All tokens in this folder will be blacklisted and excluded from NPC/resident generation.</p>' : '<p style="font-size:0.85em; color:#86efac; margin-top:6px;"><i class="fas fa-check-circle"></i> Tokens in this folder will be restored for resident selection.</p>'}
+                    <p>${prompt}</p>
+                    ${!isCurrentlyBanned ? `<p style="font-size:0.85em; color:#fca5a5; margin-top:6px;"><i class="fas fa-exclamation-triangle"></i> ${note}</p>` : `<p style="font-size:0.85em; color:#86efac; margin-top:6px;"><i class="fas fa-check-circle"></i> ${note}</p>`}
                 `,
                 yesLabel: action,
                 yesIcon: isCurrentlyBanned ? "fa-undo" : "fa-ban",
@@ -1375,8 +1384,8 @@ export class AvatarManifestApp extends FormApplication {
             const selectedList = Array.from(this.selectedPaths);
             if (selectedList.length === 0) return;
             const confirmed = await Dialog.confirm({
-                title: "Reset Curation to Auto",
-                content: `<p>Reset <strong>${selectedList.length}</strong> selected tokens back to <strong>Auto-detected</strong> status?</p><p style="font-size:0.85em; opacity:0.8;">This clears the "Curated by GM" lock and re-evaluates taxonomy from file paths and folders.</p>`,
+                title: game.i18n.localize("ionrift-library.avatarManifest.resetAutoDialogTitle"),
+                content: `<p>${game.i18n.format("ionrift-library.avatarManifest.resetAutoDialogPrompt", { count: selectedList.length })}</p><p style="font-size:0.85em; opacity:0.8;">${game.i18n.localize("ionrift-library.avatarManifest.resetAutoDialogNote")}</p>`,
                 defaultYes: true
             });
             if (confirmed) {
@@ -1527,16 +1536,16 @@ export class AvatarManifestApp extends FormApplication {
                     await AvatarRegistryService.addWatchFolder(cleanPath);
 
                     const confirmScaffold = await this._confirmDialog({
-                        title: "Initialize Folder Structure?",
+                        title: game.i18n.localize("ionrift-library.avatarManifest.initFolderStructureTitle"),
                         content: `
-                            <p>Primary Art Root set to <code>${cleanPath}</code>.</p>
+                            <p>${game.i18n.format("ionrift-library.avatarManifest.initFolderStructurePrompt", { path: cleanPath })}</p>
                             <p class="notes" style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">
-                                Would you like to scaffold the standard species/archetype directory structure in this folder now?
+                                ${game.i18n.localize("ionrift-library.avatarManifest.initFolderStructureNote")}
                             </p>
                         `,
-                        yesLabel: "Scaffold Structure",
+                        yesLabel: game.i18n.localize("ionrift-library.avatarManifest.scaffoldStructureButton"),
                         yesIcon: "fa-folder-plus",
-                        noLabel: "Skip",
+                        noLabel: game.i18n.localize("ionrift-library.avatarManifest.skipButton"),
                         noIcon: "fa-forward"
                     });
 
@@ -1598,16 +1607,16 @@ export class AvatarManifestApp extends FormApplication {
             }
 
             const confirmed = await this._confirmDialog({
-                title: "Remove Watched Folder",
+                title: game.i18n.localize("ionrift-library.avatarManifest.removeWatchFolderDialogTitle"),
                 content: `
-                    <p>Are you sure you want to stop watching <code>${folder}</code>?</p>
+                    <p>${game.i18n.format("ionrift-library.avatarManifest.removeWatchedFolderPrompt", { folder })}</p>
                     <p class="notes" style="font-size:0.8rem; color:#f87171; margin-top:6px;">
-                        <i class="fas fa-info-circle"></i> This will remove it from the watch list. It will not delete files from your disk.
+                        <i class="fas fa-info-circle"></i> ${game.i18n.localize("ionrift-library.avatarManifest.removeWatchedFolderNote")}
                     </p>
                 `,
-                yesLabel: "Remove",
+                yesLabel: game.i18n.localize("ionrift-library.avatarManifest.purgeButton"),
                 yesIcon: "fa-trash",
-                noLabel: "Cancel",
+                noLabel: game.i18n.localize("ionrift-library.avatarManifest.cancelButton"),
                 noIcon: "fa-times",
                 isDestructive: true
             });
@@ -2977,15 +2986,15 @@ export class AvatarManifestApp extends FormApplication {
                 const tagsListHtml = tagsToPurge.slice(0, 24).map(t => `<code>#${t}</code>`).join(", ") + (tagsToPurge.length > 24 ? ` ... (+${tagsToPurge.length - 24} more)` : "");
 
                 const confirmed = await this._confirmDialog({
-                    title: `Purge ${tagsToPurge.length} Selected Tags`,
+                    title: game.i18n.format("ionrift-library.avatarManifest.purgeSelectedDialogTitle", { count: tagsToPurge.length }),
                     content: `
-                        <p>Are you sure you want to remove <strong>${tagsToPurge.length}</strong> selected tag(s) across all tokens in your catalog?</p>
+                        <p>${game.i18n.format("ionrift-library.avatarManifest.purgeSelectedPrompt", { count: tagsToPurge.length })}</p>
                         <div style="max-height:80px; overflow-y:auto; margin:8px 0; padding:6px 8px; background:rgba(0,0,0,0.45); border:1px solid rgba(239,68,68,0.25); border-radius:4px; font-size:0.78rem; color:#fca5a5; line-height:1.4;">
                             ${tagsListHtml}
                         </div>
-                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">This immediately strips these tags across all tokens. They are not added to the Ignored list.</p>
+                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">${game.i18n.localize("ionrift-library.avatarManifest.purgeSelectedNote")}</p>
                     `,
-                    yesLabel: `Purge ${tagsToPurge.length} Tags`,
+                    yesLabel: game.i18n.format("ionrift-library.avatarManifest.purgeSelectedButton", { count: tagsToPurge.length }),
                     yesIcon: "fa-trash-can",
                     isDestructive: true,
                     keepParent: true
@@ -3079,12 +3088,12 @@ export class AvatarManifestApp extends FormApplication {
                 const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
                 const count = $(ev.currentTarget).attr("data-count") ?? $(ev.currentTarget).data("count");
                 const confirmed = await this._confirmDialog({
-                    title: `Purge Tag: #${tag}`,
+                    title: game.i18n.format("ionrift-library.avatarManifest.purgeTagDialogTitle", { tag }),
                     content: `
-                        <p>Are you sure you want to remove the tag <code>#${tag}</code> from all <strong>${count}</strong> tokens in your catalog?</p>
-                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">This strips the tag immediately across all tokens. It does not add the tag to the Ignored list.</p>
+                        <p>${game.i18n.format("ionrift-library.avatarManifest.purgeTagPrompt", { tag, count })}</p>
+                        <p style="font-size:0.85em; color:rgba(200,190,240,0.7); margin-top:4px;">${game.i18n.localize("ionrift-library.avatarManifest.purgeSingleTagNote")}</p>
                     `,
-                    yesLabel: "Purge Tag",
+                    yesLabel: game.i18n.localize("ionrift-library.avatarManifest.purgeTagYesButton"),
                     yesIcon: "fa-trash-can",
                     isDestructive: true,
                     keepParent: true
@@ -3103,12 +3112,12 @@ export class AvatarManifestApp extends FormApplication {
                 const tag = String($(ev.currentTarget).attr("data-tag") ?? $(ev.currentTarget).data("tag") ?? "").trim();
                 const count = $(ev.currentTarget).attr("data-count") ?? $(ev.currentTarget).data("count");
                 const confirmed = await this._confirmDialog({
-                    title: `Purge & Ignore: #${tag}`,
+                    title: game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreSingleDialogTitle", { tag }),
                     content: `
-                        <p>Are you sure you want to remove <code>#${tag}</code> from all <strong>${count}</strong> tokens AND permanently ignore it?</p>
-                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> Future folder re-scans will completely skip this tag.</p>
+                        <p>${game.i18n.format("ionrift-library.avatarManifest.purgeIgnoreSinglePrompt", { tag, count })}</p>
+                        <p style="font-size:0.85em; color:#fca5a5; margin-top:4px;"><i class="fas fa-ban"></i> ${game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreNoteSingle")}</p>
                     `,
-                    yesLabel: "Purge & Ignore",
+                    yesLabel: game.i18n.localize("ionrift-library.avatarManifest.purgeIgnoreSingleYesButton"),
                     yesIcon: "fa-ban",
                     isDestructive: true,
                     keepParent: true
