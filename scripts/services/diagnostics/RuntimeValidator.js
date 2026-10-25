@@ -65,7 +65,14 @@ export class RuntimeValidator {
         for (const dep of this.checks.dependencies) {
             const mod = game.modules.get(dep.id);
             if (!mod?.active) {
-                const msg = `${dep.id} is missing or inactive.${dep.reason ? ` (${dep.reason})` : ""}`;
+                const msg = dep.reason
+                    ? game.i18n.format("ionrift-library.runtimeValidator.dependencyMissingWithReason", {
+                        id: dep.id,
+                        reason: dep.reason
+                    })
+                    : game.i18n.format("ionrift-library.runtimeValidator.dependencyMissing", {
+                        id: dep.id
+                    });
                 if (dep.optional) {
                     this.warn("dependencies", msg);
                 } else {
@@ -80,16 +87,29 @@ export class RuntimeValidator {
 
             if (set.validator) {
                 if (!set.validator(val)) {
-                    this.fail("settings", set.message || `Setting '${set.key}' failed validation.`);
+                    this.fail(
+                        "settings",
+                        set.message || game.i18n.format("ionrift-library.runtimeValidator.settingFailedValidation", { key: set.key })
+                    );
                 }
             } else if (set.type) {
                 if (typeof val !== set.type) {
-                    this.fail("settings", `Setting '${set.key}' expected ${set.type}, got ${typeof val}.`);
+                    this.fail(
+                        "settings",
+                        game.i18n.format("ionrift-library.runtimeValidator.settingExpectedType", {
+                            key: set.key,
+                            expected: set.type,
+                            actual: typeof val
+                        })
+                    );
                 }
             } else {
                 // Default truthy check
                 if (!val) {
-                    this.fail("settings", set.message || `Setting '${set.key}' is not configured.`);
+                    this.fail(
+                        "settings",
+                        set.message || game.i18n.format("ionrift-library.runtimeValidator.settingNotConfigured", { key: set.key })
+                    );
                 }
             }
         }
@@ -98,14 +118,19 @@ export class RuntimeValidator {
         try {
             await this.customTests(); // User implementation
         } catch (e) {
-            this.fail("logic", `Custom Logic Test threw an error: ${e.message}`);
+            this.fail(
+                "logic",
+                game.i18n.format("ionrift-library.runtimeValidator.customLogicError", { message: e.message })
+            );
         }
 
         this.report();
     }
 
     report() {
-        const title = `${game.modules.get(this.moduleId)?.title || this.moduleId} | Runtime Health`;
+        const title = game.i18n.format("ionrift-library.runtimeValidator.runtimeHealthTitle", {
+            module: game.modules.get(this.moduleId)?.title || this.moduleId
+        });
 
         if (this.hasIssues) {
             console.group(`${title} ⚠️ ISSUES FOUND`);
@@ -126,7 +151,9 @@ export class RuntimeValidator {
             // UI Notification for Errors (Optional warnings don't nag)
             const hasErrors = Object.values(this.results).flat().some(i => i.type === "error");
             if (hasErrors && game.user.isGM) {
-                ui.notifications.warn(`${title}: Issues found. Check console (F12).`);
+                ui.notifications.warn(
+                    game.i18n.format("ionrift-library.runtimeValidator.issuesFoundToast", { title })
+                );
             }
         } else {
             Logger.log("Library", `${title} ✅ Passed`);

@@ -4,7 +4,7 @@
     <div class="ionrift-subsystem-banner state-standby" style="margin: 0; padding: 7px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
         <div class="banner-summary" style="display:flex; align-items:center; gap:8px;">
             <i class="fas fa-pause-circle" style="color:rgba(255,255,255,0.5);"></i>
-            <span class="banner-message"><strong>Standby Mode:</strong> No active modules (such as Civic Architect or Cloud) are currently using this token manifest. Custom curation changes will be saved to your world.</span>
+            <span class="banner-message">{{{localize "ionrift-library.avatarManifest.standbyBanner"}}}</span>
         </div>
     </div>
     {{/if}}
@@ -18,14 +18,14 @@
             </div>
             <div class="dashboard-text">
                 <span class="label">
-                    Coverage {{#if discountNonCurated}}<span style="color:#c084fc; font-weight:700;">(Curated Only)</span>{{/if}}
+                    {{localize "ionrift-library.avatarManifest.coverageLabel"}} {{#if discountNonCurated}}<span style="color:#c084fc; font-weight:700;">{{localize "ionrift-library.avatarManifest.curatedOnlyParen"}}</span>{{/if}}
                 </span>
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span class="value">
-                        {{coverage.totalTokens}} {{#if discountNonCurated}}Curated{{else}}Tokens{{/if}}
+                        {{coverage.totalTokens}} {{#if discountNonCurated}}{{localize "ionrift-library.avatarManifest.curatedWord"}}{{else}}{{localize "ionrift-library.avatarManifest.tokensWord"}}{{/if}}
                     </span>
-                    <span class="manifest-sync-chip" title="Token tags, assignments, and custom species persist across all worlds in ionrift-data/library">
-                        <i class="fas fa-globe-americas"></i> Cross-World
+                    <span class="manifest-sync-chip" title="{{localize "ionrift-library.avatarManifest.crossWorldTooltip"}}">
+                        <i class="fas fa-globe-americas"></i> {{localize "ionrift-library.avatarManifest.crossWorld"}}
                     </span>
                 </div>
             </div>
@@ -34,23 +34,23 @@
         <!-- Zone 2: Centered Nav Tabs (Segmented Track) -->
         <nav class="manifest-nav-tabs sheet-tabs tabs">
             <a class="nav-tab item {{#if isTabCoverage}}active{{/if}}" data-tab="coverage">
-                <i class="fas fa-chart-pie"></i> Coverage
+                <i class="fas fa-chart-pie"></i> {{localize "ionrift-library.avatarManifest.tabCoverage"}}
             </a>
             <a class="nav-tab item {{#if isTabCuration}}active{{/if}}" data-tab="curation">
-                <i class="fas fa-tags"></i> Curation
+                <i class="fas fa-tags"></i> {{localize "ionrift-library.avatarManifest.tabCuration"}}
             </a>
             <a class="nav-tab item {{#if isTabFolders}}active{{/if}}" data-tab="folders">
-                <i class="fas fa-folder-tree"></i> Watch Folders ({{watchFolders.length}})
+                <i class="fas fa-folder-tree"></i> {{localize "ionrift-library.avatarManifest.tabWatchFolders" count=watchFolders.length}}
             </a>
         </nav>
 
         <!-- Zone 3: Global Action Buttons -->
         <div class="dashboard-header-actions">
-            <button type="button" id="add-species-btn" class="ionrift-btn header-action-btn" title="Add a custom or homebrew species to the manifest and coverage matrix">
-                <i class="fas fa-plus"></i> Add Species
+            <button type="button" id="add-species-btn" class="ionrift-btn header-action-btn" title="{{localize "ionrift-library.avatarManifest.addSpeciesTooltip"}}">
+                <i class="fas fa-plus"></i> {{localize "ionrift-library.avatarManifest.addSpeciesButton"}}
             </button>
-            <button type="button" id="rescan-assets-btn" class="ionrift-btn header-action-btn" title="Re-scan all watch folders for new images">
-                <i class="fas fa-sync-alt"></i> Re-scan
+            <button type="button" id="rescan-assets-btn" class="ionrift-btn header-action-btn" title="{{localize "ionrift-library.avatarManifest.rescanTooltip"}}">
+                <i class="fas fa-sync-alt"></i> {{localize "ionrift-library.avatarManifest.rescanButton"}}
             </button>
         </div>
     </div>
@@ -67,32 +67,32 @@
                 <div class="guidance-deck-top">
                     <div class="guidance-hint">
                         <i class="fas fa-info-circle text-violet-400" style="color:#a78bfa; font-size:1.05rem;"></i>
-                        <span>Click any matrix cell to filter Curation. Target depth: 10 tokens per role for 100% variety.</span>
+                        <span>{{localize "ionrift-library.avatarManifest.guidanceHint"}}</span>
                     </div>
-                    <label class="discount-checkbox-pill" title="Discount auto-detected tokens: only GM-curated tokens count toward species depth targets and coverage percentage">
+                    <label class="discount-checkbox-pill" title="{{localize "ionrift-library.avatarManifest.discountNonCuratedTooltip"}}">
                         <input type="checkbox" id="chk-discount-noncurated" class="ionrift-checkbox" {{#if discountNonCurated}}checked{{/if}} />
-                        <span>Discount Non-Curated</span>
+                        <span>{{localize "ionrift-library.avatarManifest.discountNonCuratedLabel"}}</span>
                     </label>
                 </div>
                 <div class="guidance-deck-legend">
-                    <span class="manifest-legend-badge" style="color:#86efac;" title="Target met: 10 or more tokens for this role">
-                        <span style="width:8px; height:8px; border-radius:2px; background:#22c55e;"></span> Target Met (10+)
+                    <span class="manifest-legend-badge" style="color:#86efac;" title="{{localize "ionrift-library.avatarManifest.legendTargetMetTooltip"}}">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#22c55e;"></span> {{localize "ionrift-library.avatarManifest.legendTargetMet"}}
                     </span>
-                    <span class="manifest-legend-badge" style="color:#6ee7b7;" title="Healthy variety: 5 to 9 tokens">
-                        <span style="width:8px; height:8px; border-radius:2px; background:#10b981;"></span> Healthy (5-9)
+                    <span class="manifest-legend-badge" style="color:#6ee7b7;" title="{{localize "ionrift-library.avatarManifest.legendHealthyTooltip"}}">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#10b981;"></span> {{localize "ionrift-library.avatarManifest.legendHealthy"}}
                     </span>
-                    <span class="manifest-legend-badge" style="color:#fde047;" title="Thin variety warning: 1 to 4 tokens">
-                        <span style="width:8px; height:8px; border-radius:2px; background:#eab308;"></span> Thin (1-4)
+                    <span class="manifest-legend-badge" style="color:#fde047;" title="{{localize "ionrift-library.avatarManifest.legendThinTooltip"}}">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#eab308;"></span> {{localize "ionrift-library.avatarManifest.legendThin"}}
                     </span>
-                    <span class="manifest-legend-badge" style="color:#fda4af;" title="No specific role art: falls back to species commoner art">
-                        <span style="width:8px; height:8px; border-radius:2px; background:#f43f5e; border:1px dashed #fff;"></span> Fallback (0)
+                    <span class="manifest-legend-badge" style="color:#fda4af;" title="{{localize "ionrift-library.avatarManifest.legendFallbackTooltip"}}">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#f43f5e; border:1px dashed #fff;"></span> {{localize "ionrift-library.avatarManifest.legendFallback"}}
                     </span>
-                    <span class="manifest-legend-badge" style="color:#fca5a5;" title="No art: falls back to default token art">
-                        <span style="width:8px; height:8px; border-radius:2px; background:#ef4444;"></span> Missing (0)
+                    <span class="manifest-legend-badge" style="color:#fca5a5;" title="{{localize "ionrift-library.avatarManifest.legendMissingTooltip"}}">
+                        <span style="width:8px; height:8px; border-radius:2px; background:#ef4444;"></span> {{localize "ionrift-library.avatarManifest.legendMissing"}}
                     </span>
                     {{#if coverage.reservoirTokens}}
-                    <span class="manifest-legend-badge" style="color:#d8b4fe;" title="{{coverage.reservoirTokens}} unassigned art tokens awaiting curation">
-                        <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
+                    <span class="manifest-legend-badge" style="color:#d8b4fe;" title="{{localize "ionrift-library.avatarManifest.legendReservoirTooltip" count=coverage.reservoirTokens}}">
+                        <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{localize "ionrift-library.avatarManifest.legendReservoir" count=coverage.reservoirTokens}}
                     </span>
                     {{/if}}
                 </div>
@@ -103,8 +103,8 @@
                 <table class="manifest-matrix-table">
                     <thead>
                         <tr>
-                            <th class="species-name-cell" style="text-align:left; padding-left:12px;">Species</th>
-                            <th class="coverage-pct-cell" style="text-align:center;">Coverage</th>
+                            <th class="species-name-cell" style="text-align:left; padding-left:12px;">{{localize "ionrift-library.avatarManifest.colSpecies"}}</th>
+                            <th class="coverage-pct-cell" style="text-align:center;">{{localize "ionrift-library.avatarManifest.colCoverage"}}</th>
                             {{#each coverage.archetypes as |arch|}}
                             <th class="archetype-col" style="text-align:center;" title="{{arch}}"><span class="col-title" style="text-align:center;" title="{{arch}}">{{arch}}</span></th>
                             {{/each}}
@@ -119,37 +119,37 @@
                                     <span>{{species}}</span>
                                     <div style="display:flex; align-items:center; gap:4px;">
                                         {{#if stats.isCustom}}
-                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">Homebrew</span>
-                                        <button type="button" class="ionrift-btn demote-species-btn" data-species="{{species}}" title="Demote to Exotic / Minor species bucket" style="height:20px; line-height:18px; padding:0 6px; font-size:0.7em; background:rgba(234,179,8,0.2); border:1px solid rgba(234,179,8,0.4); color:#fde047; border-radius:3px; cursor:pointer;">
-                                            <i class="fas fa-arrow-down"></i> Demote
+                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.2); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">{{localize "ionrift-library.avatarManifest.badgeHomebrew"}}</span>
+                                        <button type="button" class="ionrift-btn demote-species-btn" data-species="{{species}}" title="{{localize "ionrift-library.avatarManifest.demoteSpeciesTooltip"}}" style="height:20px; line-height:18px; padding:0 6px; font-size:0.7em; background:rgba(234,179,8,0.2); border:1px solid rgba(234,179,8,0.4); color:#fde047; border-radius:3px; cursor:pointer;">
+                                            <i class="fas fa-arrow-down"></i> {{localize "ionrift-library.avatarManifest.demoteButton"}}
                                         </button>
                                         {{/if}}
                                         {{#if stats.hasCastes}}
-                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">Castes</span>
+                                        <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(59,130,246,0.2); color:#60a5fa; border:1px solid rgba(59,130,246,0.4); border-radius:3px; padding:1px 5px; vertical-align:middle;">{{localize "ionrift-library.avatarManifest.badgeCastes"}}</span>
                                         {{/if}}
                                     </div>
                                 </div>
                                 <span style="font-size:0.8em; font-weight:400; color:rgba(160,140,210,0.6); display:block;">
-                                    {{stats.totalTokens}} tokens
+                                    {{localize "ionrift-library.avatarManifest.tokensCountLower" count=stats.totalTokens}}
                                 </span>
                             </td>
                             <td style="padding:6px 6px; text-align:center;">
                                 {{#if stats.hasCastes}}
                                 <div style="font-weight:700; font-size:1.05em; color:{{#if (gte stats.castePercentage 70)}}#4ade80{{else if (gte stats.castePercentage 35)}}#facc15{{else}}#f87171{{/if}};"
-                                    title="Caste Coverage: {{stats.castePercentage}}% (Adaptive functional castes)">
+                                    title="{{localize "ionrift-library.avatarManifest.casteCoverageTooltip" pct=stats.castePercentage}}">
                                     {{stats.castePercentage}}%
                                 </div>
-                                <div style="font-size:0.73em; color:#60a5fa;" title="Adaptive Caste System active">
-                                    Caste Model
+                                <div style="font-size:0.73em; color:#60a5fa;" title="{{localize "ionrift-library.avatarManifest.casteModelTooltip"}}">
+                                    {{localize "ionrift-library.avatarManifest.casteModelLabel"}}
                                 </div>
                                 {{else}}
                                 <div style="font-weight:700; font-size:1.05em; color:{{#if (gte stats.percentage 70)}}#4ade80{{else if (gte stats.percentage 35)}}#facc15{{else}}#f87171{{/if}};"
-                                    title="{{stats.credited}} / {{stats.maxPoints}} depth points (Target: {{stats.targetPerArchetype}} per role)">
+                                    title="{{localize "ionrift-library.avatarManifest.depthPointsTooltip" credited=stats.credited max=stats.maxPoints target=stats.targetPerArchetype}}">
                                     {{stats.percentage}}%
                                 </div>
                                 <div style="font-size:0.73em; color:rgba(180,165,220,0.6);"
-                                    title="{{stats.filled}}/{{stats.total}} roles filled with at least 1 token · {{stats.credited}}/{{stats.maxPoints}} depth">
-                                    {{stats.filled}}/{{stats.total}} roles
+                                    title="{{localize "ionrift-library.avatarManifest.rolesFilledTooltip" filled=stats.filled total=stats.total credited=stats.credited max=stats.maxPoints}}">
+                                    {{localize "ionrift-library.avatarManifest.rolesRatio" filled=stats.filled total=stats.total}}
                                 </div>
                                 {{/if}}
                             </td>
@@ -157,7 +157,7 @@
                             {{#with (lookup (lookup ../../../coverage.matrix species) arch) as |cell|}}
                             <td style="padding:4px; text-align:center;">
                                 <div class="matrix-cell status-{{cell.status}}" data-species="{{species}}" data-archetype="{{arch}}"
-                                    title="{{species}} {{arch}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited). Click to filter curation, Alt-click to mint in Avatar Studio.">
+                                    title="{{localize "ionrift-library.avatarManifest.matrixCellTooltip" species=species archetype=arch count=cell.count credited=cell.credited target=cell.target}}">
                                     {{cell.count}}
                                 </div>
                             </td>
@@ -172,25 +172,25 @@
                             <td style="text-align:left; padding:8px 12px; font-weight:700; color:#fff;">
                                 <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <button type="button" class="other-species-toggle-btn" style="background:none; border:none; color:#c084fc; cursor:pointer; padding:0; font-size:0.9em; display:flex; align-items:center;" title="Expand / collapse exotic species and reservoir drawer">
+                                        <button type="button" class="other-species-toggle-btn" style="background:none; border:none; color:#c084fc; cursor:pointer; padding:0; font-size:0.9em; display:flex; align-items:center;" title="{{localize "ionrift-library.avatarManifest.otherSpeciesToggleTooltip"}}">
                                             <i class="fas {{#if isOtherSpeciesExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
                                         </button>
-                                        <span style="color:#e9d5ff;">Other / Exotic Species</span>
+                                        <span style="color:#e9d5ff;">{{localize "ionrift-library.avatarManifest.otherExoticSpecies"}}</span>
                                     </div>
-                                    <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(192,132,252,0.25); color:#d8b4fe; border:1px solid rgba(192,132,252,0.45); border-radius:3px; padding:1px 5px;">Pool</span>
+                                    <span style="font-size:0.68em; font-weight:700; text-transform:uppercase; background:rgba(192,132,252,0.25); color:#d8b4fe; border:1px solid rgba(192,132,252,0.45); border-radius:3px; padding:1px 5px;">{{localize "ionrift-library.avatarManifest.badgePool"}}</span>
                                 </div>
                                 <span style="font-size:0.78em; font-weight:400; color:rgba(216,180,254,0.7); display:block; padding-left:18px;">
-                                    {{coverage.otherRow.stats.totalTokens}} tokens{{#if coverage.exoticSpecies.length}} ({{coverage.exoticSpecies.length}} exotic species){{/if}}
+                                    {{localize "ionrift-library.avatarManifest.tokensCountLower" count=coverage.otherRow.stats.totalTokens}}{{#if coverage.exoticSpecies.length}} {{localize "ionrift-library.avatarManifest.exoticSpeciesParen" count=coverage.exoticSpecies.length}}{{/if}}
                                 </span>
                             </td>
                             <td style="padding:6px 6px; text-align:center;">
                                 <div style="font-weight:700; font-size:1.05em; color:{{#if (gte coverage.otherRow.stats.percentage 70)}}#4ade80{{else if (gte coverage.otherRow.stats.percentage 35)}}#facc15{{else}}#f87171{{/if}};"
-                                    title="General Variety Pool Health: {{coverage.otherRow.stats.percentage}}%">
+                                    title="{{localize "ionrift-library.avatarManifest.generalVarietyPoolHealthTooltip" pct=coverage.otherRow.stats.percentage}}">
                                     {{coverage.otherRow.stats.percentage}}%
                                 </div>
                                 <div style="font-size:0.73em; color:rgba(216,180,254,0.7);"
-                                    title="Exotic species evaluated against 10-token general target">
-                                    {{#if (gte coverage.otherRow.stats.percentage 70)}}Optimal Pool{{else if (gte coverage.otherRow.stats.percentage 35)}}Good Pool{{else}}Thin Pool{{/if}}
+                                    title="{{localize "ionrift-library.avatarManifest.exoticTargetTooltip"}}">
+                                    {{#if (gte coverage.otherRow.stats.percentage 70)}}{{localize "ionrift-library.avatarManifest.optimalPool"}}{{else if (gte coverage.otherRow.stats.percentage 35)}}{{localize "ionrift-library.avatarManifest.goodPool"}}{{else}}{{localize "ionrift-library.avatarManifest.thinPool"}}{{/if}}
                                 </div>
                             </td>
                             <td colspan="{{coverage.archetypes.length}}" style="padding:8px 14px; text-align:left; vertical-align:middle;">
@@ -198,23 +198,23 @@
                                     <div style="display:flex; align-items:center; gap:10px;">
                                         <span style="display:inline-flex; align-items:center; gap:6px; color:#d8b4fe; font-weight:700; font-size:0.88em; letter-spacing:0.3px;">
                                             <i class="fas fa-layer-group" style="color:#c084fc;"></i>
-                                            General Variety Pool
+                                            {{localize "ionrift-library.avatarManifest.generalVarietyPool"}}
                                         </span>
                                         <span style="font-size:0.78em; color:rgba(200,190,240,0.7);">
-                                            Exotic & minor cultures resolve directly to species tokens without feudal trade divisions.
+                                            {{{localize "ionrift-library.avatarManifest.exoticCultureDesc"}}}
                                         </span>
                                     </div>
                                     <div style="display:flex; align-items:center; gap:12px; flex-shrink:0;">
-                                        <span class="manifest-legend-badge" style="color:{{#if coverage.otherRow.stats.exoticTokenCount}}#34d399{{else}}rgba(180,165,220,0.65){{/if}}; font-size:0.8em; font-weight:600;" title="{{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} exotic species registered with {{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} total tokens">
+                                        <span class="manifest-legend-badge" style="color:{{#if coverage.otherRow.stats.exoticTokenCount}}#34d399{{else}}rgba(180,165,220,0.65){{/if}}; font-size:0.8em; font-weight:600;" title="{{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} {{localize "ionrift-library.avatarManifest.exoticRegisteredWith"}} {{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} {{localize "ionrift-library.avatarManifest.totalTokensLower"}}">
                                             <span style="width:8px; height:8px; border-radius:50%; background:{{#if coverage.otherRow.stats.exoticTokenCount}}#10b981{{else}}rgba(180,165,220,0.4){{/if}}; {{#if coverage.otherRow.stats.exoticTokenCount}}box-shadow:0 0 6px rgba(52,211,153,0.5);{{/if}}"></span>
-                                            {{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} Exotic Species ({{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} tokens)
+                                            {{#if coverage.exoticSpecies.length}}{{coverage.exoticSpecies.length}}{{else}}0{{/if}} {{localize "ionrift-library.avatarManifest.exoticSpeciesTitle"}} ({{#if coverage.otherRow.stats.exoticTokenCount}}{{coverage.otherRow.stats.exoticTokenCount}}{{else}}0{{/if}} {{localize "ionrift-library.avatarManifest.tokensLowerWord"}})
                                         </span>
-                                        <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{coverage.reservoirTokens}} unassigned tokens awaiting species curation">
-                                            <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{coverage.reservoirTokens}} Reservoir
+                                        <span class="manifest-legend-badge" style="color:#c084fc; font-size:0.8em; font-weight:600; border-left:1px solid rgba(140,110,240,0.3); padding-left:12px;" title="{{localize "ionrift-library.avatarManifest.reservoirSpeciesTooltip" count=coverage.reservoirTokens}}">
+                                            <i class="fas fa-boxes-stacked" style="color:#c084fc;"></i> {{localize "ionrift-library.avatarManifest.legendReservoir" count=coverage.reservoirTokens}}
                                         </span>
                                         <span style="color:#c084fc; font-size:0.78em; font-weight:600; margin-left:4px; display:inline-flex; align-items:center; gap:4px;">
                                             <i class="fas {{#if isOtherSpeciesExpanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i>
-                                            {{#if isOtherSpeciesExpanded}}Collapse{{else}}View Roster{{/if}}
+                                            {{#if isOtherSpeciesExpanded}}{{localize "ionrift-library.avatarManifest.collapse"}}{{else}}{{localize "ionrift-library.avatarManifest.viewRoster"}}{{/if}}
                                         </span>
                                     </div>
                                 </div>
@@ -230,15 +230,15 @@
                                         <div>
                                             <div style="font-size:0.88em; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px;">
                                                 <i class="fas fa-layer-group" style="color:#c084fc;"></i>
-                                                <span>Exotic & Minor Species Roster</span>
-                                                <span style="font-size:0.75em; font-weight:600; color:rgba(180,165,220,0.7);">(Target: 10 tokens per species for 100% General Variety)</span>
+                                                <span>{{{localize "ionrift-library.avatarManifest.exoticMinorRosterTitle"}}}</span>
+                                                <span style="font-size:0.75em; font-weight:600; color:rgba(180,165,220,0.7);">{{localize "ionrift-library.avatarManifest.exoticMinorRosterTarget"}}</span>
                                             </div>
                                             <div style="font-size:0.78em; color:rgba(200,190,240,0.75); margin-top:2px;">
-                                                Minor cultures blur into the demographic pool. Promote any species to grant it a dedicated 11-role campaign matrix.
+                                                {{localize "ionrift-library.avatarManifest.exoticMinorRosterDesc"}}
                                             </div>
                                         </div>
                                         <div style="font-size:0.8em; color:rgba(192,132,252,0.9); background:rgba(168,85,247,0.15); border:1px solid rgba(168,85,247,0.3); border-radius:4px; padding:4px 10px;">
-                                            <i class="fas fa-boxes-stacked"></i> <strong>{{coverage.reservoirTokens}}</strong> Unassigned Reservoir Tokens
+                                            <i class="fas fa-boxes-stacked"></i> {{{localize "ionrift-library.avatarManifest.unassignedReservoirTokens" count=coverage.reservoirTokens}}}
                                         </div>
                                     </div>
 
@@ -262,13 +262,13 @@
                                                 <div style="flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
                                                     <div style="height:100%; width:{{exo.percentage}}%; background:{{#if (gte exo.percentage 70)}}#4ade80{{else if (gte exo.percentage 35)}}#facc15{{else}}#f87171{{/if}}; border-radius:3px;"></div>
                                                 </div>
-                                                <span style="font-size:0.75em; color:rgba(200,190,240,0.8); white-space:nowrap;">{{exo.tokens}} / {{exo.target}} tokens</span>
+                                                <span style="font-size:0.75em; color:rgba(200,190,240,0.8); white-space:nowrap;">{{localize "ionrift-library.avatarManifest.tokensRatioLower" tokens=exo.tokens target=exo.target}}</span>
                                             </div>
 
                                             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px; padding-top:6px; border-top:1px solid rgba(140,110,240,0.15);">
-                                                <span style="font-size:0.73em; color:rgba(180,165,220,0.6);">Exotic Variety</span>
-                                                <button type="button" class="ionrift-btn promote-species-btn" data-species="{{exo.id}}" title="Promote to Primary Culture (adds full 11-role row to main matrix)" style="height:22px; line-height:20px; padding:0 8px; font-size:0.74em; display:inline-flex; align-items:center; gap:4px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:3px; color:#d8b4fe; cursor:pointer;">
-                                                    <i class="fas fa-arrow-up"></i> Promote to Primary
+                                                <span style="font-size:0.73em; color:rgba(180,165,220,0.6);">{{localize "ionrift-library.avatarManifest.exoticVariety"}}</span>
+                                                <button type="button" class="ionrift-btn promote-species-btn" data-species="{{exo.id}}" title="{{localize "ionrift-library.avatarManifest.promoteSpeciesTooltip"}}" style="height:22px; line-height:20px; padding:0 8px; font-size:0.74em; display:inline-flex; align-items:center; gap:4px; background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.45); border-radius:3px; color:#d8b4fe; cursor:pointer;">
+                                                    <i class="fas fa-arrow-up"></i> {{localize "ionrift-library.avatarManifest.promoteToPrimary"}}
                                                 </button>
                                             </div>
                                         </div>
@@ -277,7 +277,7 @@
                                     {{else}}
                                     <div style="text-align:center; padding:16px 12px; color:rgba(180,165,220,0.65); font-size:0.84em; background:rgba(0,0,0,0.2); border-radius:6px; border:1px dashed rgba(140,110,240,0.2);">
                                         <i class="fas fa-feather" style="margin-right:6px; color:#a78bfa;"></i>
-                                        No exotic species registered yet. Use <strong>[+ Add Species]</strong> above to catalog minor species (e.g. Aarakocra, Goliath, Kobold), or classify tokens in Curation.
+                                        {{{localize "ionrift-library.avatarManifest.noExoticSpeciesEmpty"}}}
                                     </div>
                                     {{/if}}
                                 </div>
@@ -294,16 +294,16 @@
             <div class="caste-matrix-block" style="background:rgba(15,12,28,0.85); border:1px solid rgba(168,85,247,0.3); border-radius:8px; padding:12px; margin-top:4px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span style="font-weight:700; color:#fff; text-transform:capitalize; font-size:0.95em;">{{cSpecies}} Caste Ontology</span>
-                        <span style="font-size:0.7em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.25); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 6px;">Adaptive Castes</span>
-                        <span style="font-size:0.8em; color:rgba(180,165,220,0.7);">{{cStats.totalTokens}} total tokens</span>
+                        <span style="font-weight:700; color:#fff; text-transform:capitalize; font-size:0.95em;">{{localize "ionrift-library.avatarManifest.casteOntologyTitle" species=cSpecies}}</span>
+                        <span style="font-size:0.7em; font-weight:700; text-transform:uppercase; background:rgba(168,85,247,0.25); color:#c084fc; border:1px solid rgba(168,85,247,0.4); border-radius:3px; padding:1px 6px;">{{localize "ionrift-library.avatarManifest.adaptiveCastesBadge"}}</span>
+                        <span style="font-size:0.8em; color:rgba(180,165,220,0.7);">{{localize "ionrift-library.avatarManifest.totalTokensCount" count=cStats.totalTokens}}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:0.8em; color:rgba(200,190,240,0.8);">Caste Coverage:</span>
+                        <span style="font-size:0.8em; color:rgba(200,190,240,0.8);">{{localize "ionrift-library.avatarManifest.casteCoverageLabel"}}</span>
                         <span style="font-weight:700; font-size:1.1em; color:{{#if (gte cStats.percentage 70)}}#4ade80{{else if (gte cStats.percentage 35)}}#facc15{{else}}#f87171{{/if}};">
                             {{cStats.percentage}}%
                         </span>
-                        <span style="font-size:0.75em; color:rgba(180,165,220,0.6);">({{cStats.filled}}/{{cStats.total}} castes active)</span>
+                        <span style="font-size:0.75em; color:rgba(180,165,220,0.6);">{{localize "ionrift-library.avatarManifest.castesActiveRatio" filled=cStats.filled total=cStats.total}}</span>
                     </div>
                 </div>
 
@@ -311,12 +311,12 @@
                     <table class="manifest-matrix-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:0.82em;">
                         <thead>
                             <tr style="border-bottom:1px solid rgba(140,110,240,0.3); color:rgba(200,190,240,0.7); text-transform:uppercase; font-size:0.75em; letter-spacing:0.5px;">
-                                <th style="text-align:left; padding:6px 10px; width:150px;">Caste Title</th>
-                                <th style="padding:6px 4px; width:90px;">Pillar</th>
-                                <th style="padding:6px 4px; width:60px;">Tier</th>
-                                <th style="padding:6px 4px; width:110px;">Art Bridge</th>
-                                <th style="padding:6px 6px; width:100px;">Status</th>
-                                <th style="padding:6px 6px; width:70px;">Tokens</th>
+                                <th style="text-align:left; padding:6px 10px; width:150px;">{{localize "ionrift-library.avatarManifest.colCasteTitle"}}</th>
+                                <th style="padding:6px 4px; width:90px;">{{localize "ionrift-library.avatarManifest.colPillar"}}</th>
+                                <th style="padding:6px 4px; width:60px;">{{localize "ionrift-library.avatarManifest.colTier"}}</th>
+                                <th style="padding:6px 4px; width:110px;">{{localize "ionrift-library.avatarManifest.colArtBridge"}}</th>
+                                <th style="padding:6px 6px; width:100px;">{{localize "ionrift-library.avatarManifest.colStatus"}}</th>
+                                <th style="padding:6px 6px; width:70px;">{{localize "ionrift-library.avatarManifest.colTokens"}}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -332,17 +332,17 @@
                                     T{{cell.tier}}
                                 </td>
                                 <td style="padding:4px; font-style:italic; color:{{#if cell.bridgeTo}}#a78bfa{{else}}rgba(160,150,190,0.5){{/if}};">
-                                    {{#if cell.bridgeTo}}{{cell.bridgeTo}}{{else}}Direct{{/if}}
+                                    {{#if cell.bridgeTo}}{{cell.bridgeTo}}{{else}}{{localize "ionrift-library.avatarManifest.directBridge"}}{{/if}}
                                 </td>
                                 <td style="padding:4px;">
                                     <span class="manifest-legend-badge status-badge-{{cell.status}}" style="font-size:0.72em; padding:2px 6px; border-radius:3px; text-transform:uppercase; font-weight:700;">
                                         {{cell.status}}
-                                        {{#if cell.isBridged}}<span style="opacity:0.75; font-size:0.85em;">(bridged)</span>{{/if}}
+                                        {{#if cell.isBridged}}<span style="opacity:0.75; font-size:0.85em;">{{localize "ionrift-library.avatarManifest.bridgedParen"}}</span>{{/if}}
                                     </span>
                                 </td>
                                 <td style="padding:4px;">
                                     <div class="matrix-cell status-{{cell.status}}" data-species="{{cSpecies}}" data-caste="{{cell.id}}" data-archetype="{{#if cell.bridgeTo}}{{cell.bridgeTo}}{{else}}{{cell.id}}{{/if}}"
-                                        title="{{cSpecies}} {{cell.label}}: {{cell.count}} token(s) ({{cell.credited}}/{{cell.target}} credited). Click to filter curation, Alt-click to mint in Avatar Studio.">
+                                        title="{{localize "ionrift-library.avatarManifest.matrixCellTooltip" species=cSpecies archetype=cell.label count=cell.count credited=cell.credited target=cell.target}}">
                                         {{cell.count}}
                                     </div>
                                 </td>
@@ -368,23 +368,23 @@
                 {{#if isFolderSidebarCollapsed}}
                 <!-- Collapsed Sidebar Rail -->
                 <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
-                    <button type="button" class="curation-sidebar-toggle-btn" title="Expand Folder Filter">
+                    <button type="button" class="curation-sidebar-toggle-btn" title="{{localize "ionrift-library.avatarManifest.expandFolderFilterTooltip"}}">
                         <i class="fas fa-chevron-right"></i>
                     </button>
-                    <i class="fas fa-folder-tree" style="color:rgba(180,165,220,0.5); font-size:1.1em;" title="Folder Tree Collapsed"></i>
+                    <i class="fas fa-folder-tree" style="color:rgba(180,165,220,0.5); font-size:1.1em;" title="{{localize "ionrift-library.avatarManifest.folderTreeCollapsedTooltip"}}"></i>
                 </div>
                 {{else}}
                 <!-- Expanded Sidebar Header -->
                 <div style="font-size:0.75em; text-transform:uppercase; font-weight:700; color:rgba(180,165,220,0.6); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; padding:0 4px;">
                     <div style="display:flex; align-items:center; gap:6px;">
                         <i class="fas fa-folder-tree" style="color:#a78bfa;"></i>
-                        <span>Folder Tree</span>
+                        <span>{{localize "ionrift-library.avatarManifest.folderTreeTitle"}}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         {{#if selectedFolder}}
-                        <a class="clear-folder-filter-btn" style="cursor:pointer; font-size:0.75em; text-transform:none; padding:1px 5px;" title="Clear folder filter">Clear</a>
+                        <a class="clear-folder-filter-btn" style="cursor:pointer; font-size:0.75em; text-transform:none; padding:1px 5px;" title="{{localize "ionrift-library.avatarManifest.clearFolderFilterTooltip"}}">{{localize "ionrift-library.avatarManifest.clearButton"}}</a>
                         {{/if}}
-                        <button type="button" class="curation-sidebar-toggle-btn" title="Collapse Folder Sidebar">
+                        <button type="button" class="curation-sidebar-toggle-btn" title="{{localize "ionrift-library.avatarManifest.collapseFolderSidebarTooltip"}}">
                             <i class="fas fa-chevron-left"></i>
                         </button>
                     </div>
@@ -393,7 +393,7 @@
                 {{#if scopedFolder}}
                 <!-- Tree Scope Breadcrumbs Header -->
                 <div class="tree-scope-bar">
-                    <button type="button" class="tree-scope-up-btn" title="Go up one folder level">
+                    <button type="button" class="tree-scope-up-btn" title="{{localize "ionrift-library.avatarManifest.goUpFolderTooltip"}}">
                         <i class="fas fa-arrow-up"></i>
                     </button>
                     <div class="tree-scope-crumbs">
@@ -401,12 +401,12 @@
                         {{#if crumb.isCurrent}}
                         <span class="tree-crumb-current" title="{{crumb.path}}">{{crumb.name}}</span>
                         {{else}}
-                        <a class="tree-crumb-item" data-folder="{{crumb.path}}" title="Jump to {{crumb.name}}">{{crumb.name}}</a>
+                        <a class="tree-crumb-item" data-folder="{{crumb.path}}" title="{{localize "ionrift-library.avatarManifest.jumpToFolderTooltip" name=crumb.name}}">{{crumb.name}}</a>
                         <span class="tree-crumb-sep">/</span>
                         {{/if}}
                         {{/each}}
                     </div>
-                    <button type="button" class="tree-scope-clear-btn" title="Clear folder focus (show all watch folders)">
+                    <button type="button" class="tree-scope-clear-btn" title="{{localize "ionrift-library.avatarManifest.clearFolderFocusTooltip"}}">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -415,23 +415,23 @@
                 <!-- Hierarchical Folder Tree -->
                 <div class="curation-folder-tree-scroll" style="flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:2px; padding-right:2px;">
                     <!-- All Watched Tokens Root Node -->
-                    <div class="folder-tree-node all-tokens-node {{#if isAllTokensActive}}is-active{{/if}}" data-folder="" title="View all scanned tokens across all watch folders">
+                    <div class="folder-tree-node all-tokens-node {{#if isAllTokensActive}}is-active{{/if}}" data-folder="" title="{{localize "ionrift-library.avatarManifest.viewAllTokensTooltip"}}">
                         <i class="fas fa-layer-group folder-icon" style="color:#a78bfa;"></i>
-                        <span class="folder-name" style="font-weight:600;">All Watched Tokens</span>
-                        <span class="folder-badge {{#if filters.hasActiveFilters}}is-filtered-match{{/if}}" title="{{#if filters.hasActiveFilters}}{{pagination.totalItems}} tokens match active filters out of {{coverage.totalTokens}} total{{else}}{{coverage.totalTokens}} total tokens{{/if}}">{{#if filters.hasActiveFilters}}{{pagination.totalItems}} / {{coverage.totalTokens}}{{else}}{{coverage.totalTokens}}{{/if}}</span>
+                        <span class="folder-name" style="font-weight:600;">{{localize "ionrift-library.avatarManifest.allWatchedTokens"}}</span>
+                        <span class="folder-badge {{#if filters.hasActiveFilters}}is-filtered-match{{/if}}" title="{{#if filters.hasActiveFilters}}{{localize "ionrift-library.avatarManifest.allTokensFilteredMatchTooltip" matched=pagination.totalItems total=coverage.totalTokens}}{{else}}{{localize "ionrift-library.avatarManifest.totalTokensCount" count=coverage.totalTokens}}{{/if}}">{{#if filters.hasActiveFilters}}{{pagination.totalItems}} / {{coverage.totalTokens}}{{else}}{{coverage.totalTokens}}{{/if}}</span>
                     </div>
 
                     <!-- Blacklisted Tokens Quick-Filter Node -->
-                    <div class="folder-tree-node is-blacklisted-node quick-status-node {{#if isBlacklistedFilter}}is-active{{/if}}" data-status="blacklisted" title="View all blacklisted tokens (excluded from resident generation)">
+                    <div class="folder-tree-node is-blacklisted-node quick-status-node {{#if isBlacklistedFilter}}is-active{{/if}}" data-status="blacklisted" title="{{localize "ionrift-library.avatarManifest.viewBlacklistedTooltip"}}">
                         <i class="fas fa-ban folder-icon" style="color:#ef4444;"></i>
-                        <span class="folder-name" style="font-weight:600; color:#fca5a5;">Blacklisted</span>
+                        <span class="folder-name" style="font-weight:600; color:#fca5a5;">{{localize "ionrift-library.avatarManifest.blacklistedLabel"}}</span>
                         <span class="folder-badge" style="background:rgba(239,68,68,0.25); color:#fca5a5; border-color:rgba(239,68,68,0.4);">{{blacklistedCount}}</span>
                     </div>
 
                     {{#each folderTree as |f|}}
-                    <div class="folder-tree-node {{#if f.isSelected}}is-active{{/if}} {{#if f.isBanned}}is-banned-folder{{/if}} {{#if f.isFilteredOut}}is-filtered-out{{/if}}" data-folder="{{f.path}}" style="padding-left:{{f.indentPx}}px;" title="{{f.path}} ({{#if f.hasFilterContext}}{{f.matchCount}} of {{f.count}} tokens match active filters{{else}}{{f.count}} tokens{{/if}}){{#if f.isBanned}} [BANNED: Excluded from generation]{{/if}}">
+                    <div class="folder-tree-node {{#if f.isSelected}}is-active{{/if}} {{#if f.isBanned}}is-banned-folder{{/if}} {{#if f.isFilteredOut}}is-filtered-out{{/if}}" data-folder="{{f.path}}" style="padding-left:{{f.indentPx}}px;" title="{{f.path}} ({{#if f.hasFilterContext}}{{localize "ionrift-library.avatarManifest.folderFilteredMatchTooltip" matched=f.matchCount total=f.count}}{{else}}{{localize "ionrift-library.avatarManifest.tokensCountLower" count=f.count}}{{/if}}){{#if f.isBanned}} {{localize "ionrift-library.avatarManifest.bannedFolderSuffix"}}{{/if}}">
                         {{#if f.hasChildren}}
-                        <span class="folder-tree-caret" title="{{#if f.isExpanded}}Collapse{{else}}Expand{{/if}}">
+                        <span class="folder-tree-caret" title="{{#if f.isExpanded}}{{localize "ionrift-library.avatarManifest.collapse"}}{{else}}{{localize "ionrift-library.avatarManifest.expand"}}{{/if}}">
                             <i class="fas {{#if f.isExpanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
                         </span>
                         {{else}}
@@ -442,18 +442,18 @@
                         <span class="folder-name">{{f.name}}</span>
                         <div class="folder-actions-wrapper">
                             {{#if f.hasChildren}}
-                            <button type="button" class="folder-action-btn folder-scope-btn" data-folder="{{f.path}}" title="Focus into folder '{{f.name}}' (or double-click row)">
+                            <button type="button" class="folder-action-btn folder-scope-btn" data-folder="{{f.path}}" title="{{{localize "ionrift-library.avatarManifest.focusFolderTooltip" name=f.name}}}">
                                 <i class="fas fa-crosshairs"></i>
                             </button>
                             {{/if}}
-                            <button type="button" class="folder-action-btn folder-tag-btn" data-folder="{{f.path}}" title="Batch tag folder '{{f.name}}'">
+                            <button type="button" class="folder-action-btn folder-tag-btn" data-folder="{{f.path}}" title="{{{localize "ionrift-library.avatarManifest.batchTagFolderTooltip" name=f.name}}}">
                                 <i class="fas fa-tags"></i>
                             </button>
-                            <button type="button" class="folder-action-btn folder-ban-btn {{#if f.isBanned}}is-active{{/if}}" data-folder="{{f.path}}" title="{{#if f.isBanned}}Unban folder '{{f.name}}' (restore for generation){{else}}Ban entire folder '{{f.name}}' (exclude all tokens from generation){{/if}}">
+                            <button type="button" class="folder-action-btn folder-ban-btn {{#if f.isBanned}}is-active{{/if}}" data-folder="{{f.path}}" title="{{#if f.isBanned}}{{{localize "ionrift-library.avatarManifest.unbanFolderTooltip" name=f.name}}}{{else}}{{{localize "ionrift-library.avatarManifest.banFolderTooltip" name=f.name}}}{{/if}}">
                                 <i class="fas fa-ban"></i>
                             </button>
                         </div>
-                        <span class="folder-badge {{#if f.isFilteredOut}}is-filtered-empty{{else if f.isFilteredMatched}}is-filtered-match{{/if}}" title="{{#if f.hasFilterContext}}{{f.matchCount}} of {{f.count}} tokens match active filters{{else}}{{f.count}} tokens{{/if}}">
+                        <span class="folder-badge {{#if f.isFilteredOut}}is-filtered-empty{{else if f.isFilteredMatched}}is-filtered-match{{/if}}" title="{{#if f.hasFilterContext}}{{localize "ionrift-library.avatarManifest.folderFilteredMatchTooltip" matched=f.matchCount total=f.count}}{{else}}{{localize "ionrift-library.avatarManifest.tokensCountLower" count=f.count}}{{/if}}">
                             {{#if f.hasFilterContext}}
                                 {{#if f.isFilteredOut}}
                                 0 / {{f.count}}
@@ -466,7 +466,7 @@
                         </span>
                     </div>
                     {{else}}
-                    <div style="font-size:0.8em; color:#666; font-style:italic; padding:8px 4px;">No folders scanned yet.</div>
+                    <div style="font-size:0.8em; color:#666; font-style:italic; padding:8px 4px;">{{localize "ionrift-library.avatarManifest.noFoldersScanned"}}</div>
                     {{/each}}
                 </div>
                 {{/if}}
@@ -474,7 +474,7 @@
 
             <!-- Draggable Splitter Resizer Handle -->
             {{#unless isFolderSidebarCollapsed}}
-            <div class="curation-sidebar-resizer" title="Drag to resize folder sidebar"></div>
+            <div class="curation-sidebar-resizer" title="{{localize "ionrift-library.avatarManifest.resizeSidebarTooltip"}}"></div>
             {{/unless}}
 
             <!-- Right Curation Workspace -->
@@ -484,36 +484,36 @@
                 <div class="curation-filter-bar {{#if filters.hasActiveFilters}}has-active-filters{{/if}}" style="display:flex; align-items:center; gap:8px; flex-wrap:nowrap; overflow-x:auto; background:rgba(18,14,32,0.65); padding:6px 10px; border-radius:6px; border:1px solid {{#if filters.hasActiveFilters}}rgba(245,158,11,0.35){{else}}rgba(140,110,240,0.18){{/if}}; flex-shrink:0;">
                     <div style="display:flex; align-items:center; gap:6px; flex:2 1 140px; min-width:120px;">
                         <i class="fas fa-search" style="color:{{#if filters.hasQuery}}#f59e0b{{else}}rgba(180,165,220,0.5){{/if}};"></i>
-                        <input type="text" id="manifest-search" placeholder="Search tokens or tags..." value="{{filters.query}}" class="{{#if filters.hasQuery}}is-filtering{{/if}}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; padding:4px 8px; font-size:0.82rem; width:100%; height:28px;">
+                        <input type="text" id="manifest-search" placeholder="{{localize "ionrift-library.avatarManifest.searchPlaceholder"}}" value="{{filters.query}}" class="{{#if filters.hasQuery}}is-filtering{{/if}}" style="background:rgba(0,0,0,0.3); border:1px solid rgba(140,110,240,0.3); border-radius:4px; color:#fff; padding:4px 8px; font-size:0.82rem; width:100%; height:28px;">
                     </div>
 
                     <select id="species-filter" class="manifest-glass-select {{#if filters.hasSpecies}}is-filtering{{/if}}" style="flex:1 1 105px; min-width:95px; height:28px;">
-                        <option value="all">All Species</option>
-                        <option value="generic" {{#if (eq filters.species 'generic')}}selected{{/if}}>Unassigned Reservoir ({{coverage.reservoirTokens}})</option>
+                        <option value="all">{{localize "ionrift-library.avatarManifest.allSpeciesOption"}}</option>
+                        <option value="generic" {{#if (eq filters.species 'generic')}}selected{{/if}}>{{localize "ionrift-library.avatarManifest.unassignedReservoirOption" count=coverage.reservoirTokens}}</option>
                         {{#each speciesOptions as |sp|}}
                         <option value="{{sp}}" {{#if (eq ../filters.species sp)}}selected{{/if}}>{{sp}}</option>
                         {{/each}}
-                        <option value="__add_new__" style="color:#c084fc; font-weight:700;">+ Add New Species...</option>
+                        <option value="__add_new__" style="color:#c084fc; font-weight:700;">{{localize "ionrift-library.avatarManifest.addNewSpeciesOption"}}</option>
                     </select>
 
                     <select id="archetype-filter" class="manifest-glass-select {{#if filters.hasArchetype}}is-filtering{{/if}}" style="flex:1 1 105px; min-width:95px; height:28px;">
-                        <option value="all">All Archetypes</option>
+                        <option value="all">{{localize "ionrift-library.avatarManifest.allArchetypesOption"}}</option>
                         {{#each archetypeOptions as |arch|}}
                         <option value="{{arch}}" {{#if (eq ../filters.archetype arch)}}selected{{/if}}>{{arch}}</option>
                         {{/each}}
                     </select>
 
                     <select id="status-filter" class="manifest-glass-select {{#if filters.hasStatus}}is-filtering{{/if}}" style="flex:1 1 105px; min-width:95px; height:28px;">
-                        <option value="all">All Statuses</option>
-                        <option value="thin" {{#if (eq filters.status 'thin')}}selected{{/if}}>Thin Variety (1-4)</option>
-                        <option value="manual" {{#if (eq filters.status 'manual')}}selected{{/if}}>Curated by GM</option>
-                        <option value="auto" {{#if (eq filters.status 'auto')}}selected{{/if}}>Auto-detected</option>
-                        <option value="blacklisted" {{#if (eq filters.status 'blacklisted')}}selected{{/if}}>Blacklisted</option>
+                        <option value="all">{{localize "ionrift-library.avatarManifest.allStatusesOption"}}</option>
+                        <option value="thin" {{#if (eq filters.status 'thin')}}selected{{/if}}>{{localize "ionrift-library.avatarManifest.statusThinVariety"}}</option>
+                        <option value="manual" {{#if (eq filters.status 'manual')}}selected{{/if}}>{{localize "ionrift-library.avatarManifest.statusCuratedByGm"}}</option>
+                        <option value="auto" {{#if (eq filters.status 'auto')}}selected{{/if}}>{{localize "ionrift-library.avatarManifest.statusAutoDetected"}}</option>
+                        <option value="blacklisted" {{#if (eq filters.status 'blacklisted')}}selected{{/if}}>{{localize "ionrift-library.avatarManifest.blacklistedLabel"}}</option>
                     </select>
 
                     {{#if filters.hasActiveFilters}}
-                    <button type="button" class="reset-curation-filters-btn manifest-clear-filters-btn" title="Reset all active search and dropdown filters ({{filters.activeFilterCount}} active)" style="width:auto !important; max-width:max-content !important; min-width:auto !important; flex:0 0 auto !important; height:28px !important; padding:0 8px !important; margin:0 !important;">
-                        <i class="fas fa-rotate-left"></i> Reset
+                    <button type="button" class="reset-curation-filters-btn manifest-clear-filters-btn" title="{{localize "ionrift-library.avatarManifest.resetFiltersTooltip" count=filters.activeFilterCount}}" style="width:auto !important; max-width:max-content !important; min-width:auto !important; flex:0 0 auto !important; height:28px !important; padding:0 8px !important; margin:0 !important;">
+                        <i class="fas fa-rotate-left"></i> {{localize "ionrift-library.avatarManifest.resetButton"}}
                     </button>
                     {{/if}}
                 </div>
@@ -523,28 +523,28 @@
                     <div style="display:flex; align-items:center; gap:8px; flex:0 0 auto;">
                         <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                             <input type="checkbox" id="select-all-visible" class="ionrift-checkbox" />
-                            <span>Select Visible</span>
+                            <span>{{localize "ionrift-library.avatarManifest.selectVisible"}}</span>
                         </label>
-                        <span style="color:rgba(180,165,220,0.6);">Selected: <strong class="selected-count-badge" style="color:#a78bfa;">{{selectedCount}}</strong></span>
+                        <span style="color:rgba(180,165,220,0.6);">{{localize "ionrift-library.avatarManifest.selectedLabel"}} <strong class="selected-count-badge" style="color:#a78bfa;">{{selectedCount}}</strong></span>
                         {{#if selectedCount}}
-                        <a id="clear-selected-btn" style="color:#f87171; cursor:pointer; font-size:0.85em; text-decoration:underline; margin-left:4px;" title="Deselect all tokens across all pages">Clear Selection</a>
+                        <a id="clear-selected-btn" style="color:#f87171; cursor:pointer; font-size:0.85em; text-decoration:underline; margin-left:4px;" title="{{localize "ionrift-library.avatarManifest.clearSelectionTooltip"}}">{{localize "ionrift-library.avatarManifest.clearSelection"}}</a>
                         {{/if}}
                         {{#if isFilteredSubset}}
-                        <span class="active-filter-subset-tag" title="{{pagination.totalItems}} matching tokens displayed out of {{rawFolderCount}} in this view">
-                            <i class="fas fa-filter" style="color:#f59e0b;"></i> Filtered: {{pagination.totalItems}} of {{rawFolderCount}}
+                        <span class="active-filter-subset-tag" title="{{localize "ionrift-library.avatarManifest.filteredSubsetTooltip" matched=pagination.totalItems total=rawFolderCount}}">
+                            <i class="fas fa-filter" style="color:#f59e0b;"></i> {{localize "ionrift-library.avatarManifest.filteredSubsetLabel" matched=pagination.totalItems total=rawFolderCount}}
                         </span>
                         {{/if}}
                     </div>
 
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <button type="button" id="manage-tags-btn" class="ionrift-btn batch-actions-btn" title="Inspect all tags, purge redundant folder tags, and manage ignored tags">
-                            <i class="fas fa-tags"></i> Manage Tags
+                        <button type="button" id="manage-tags-btn" class="ionrift-btn batch-actions-btn" title="{{localize "ionrift-library.avatarManifest.manageTagsTooltip"}}">
+                            <i class="fas fa-tags"></i> {{localize "ionrift-library.avatarManifest.manageTagsButton"}}
                         </button>
-                        <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} title="Reset selected tokens to Auto-detected status and re-parse taxonomy">
-                            <i class="fas fa-wand-magic-sparkles"></i> Reset to Auto ({{selectedCount}})
+                        <button type="button" id="batch-reset-auto-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}} title="{{localize "ionrift-library.avatarManifest.batchResetAutoTooltip"}}">
+                            <i class="fas fa-wand-magic-sparkles"></i> {{localize "ionrift-library.avatarManifest.batchResetAutoButton" count=selectedCount}}
                         </button>
                         <button type="button" id="batch-tag-selected-btn" class="batch-actions-btn ionrift-btn" {{#unless selectedCount}}disabled{{/unless}}>
-                            <i class="fas fa-check-double"></i> Tag Selected ({{selectedCount}})
+                            <i class="fas fa-check-double"></i> {{localize "ionrift-library.avatarManifest.batchTagSelectedButton" count=selectedCount}}
                         </button>
                     </div>
                 </div>
@@ -565,11 +565,11 @@
                                     {{#if t.cleanName}}{{t.cleanName}}{{else}}{{t.filename}}{{/if}}
                                 </span>
                                 {{#if t.isBlacklisted}}
-                                <span class="provenance-pill is-blacklisted" title="Blacklisted: Excluded from resident & token generation"><i class="fas fa-ban"></i> Blacklisted</span>
+                                <span class="provenance-pill is-blacklisted" title="{{{localize "ionrift-library.avatarManifest.provenanceBlacklistedTooltip"}}}"><i class="fas fa-ban"></i> {{localize "ionrift-library.avatarManifest.blacklistedLabel"}}</span>
                                 {{else if t.isManual}}
-                                <span class="provenance-pill is-curated" title="Manually Curated by GM"><i class="fas fa-lock"></i> Curated</span>
+                                <span class="provenance-pill is-curated" title="{{localize "ionrift-library.avatarManifest.provenanceCuratedTooltip"}}"><i class="fas fa-lock"></i> {{localize "ionrift-library.avatarManifest.curatedWord"}}</span>
                                 {{else}}
-                                <span class="provenance-pill is-auto" title="Auto-detected from file path & folders"><i class="fas fa-wand-magic-sparkles"></i> Auto</span>
+                                <span class="provenance-pill is-auto" title="{{{localize "ionrift-library.avatarManifest.provenanceAutoTooltip"}}}"><i class="fas fa-wand-magic-sparkles"></i> {{localize "ionrift-library.avatarManifest.autoWord"}}</span>
                                 {{/if}}
                             </div>
 
@@ -577,21 +577,21 @@
                             <div class="token-metadata-strip">
                                 <div class="token-tags-row">
                                     <!-- Structural Taxonomy: Species & Archetype -->
-                                    <span class="taxonomy-pill is-species" title="Species: {{t.species}}">
+                                    <span class="taxonomy-pill is-species" title="{{localize "ionrift-library.avatarManifest.pillSpeciesTooltip" species=t.species}}">
                                         <i class="fas fa-user"></i> {{t.species}}
                                     </span>
-                                    <span class="taxonomy-pill is-archetype" title="Archetype: {{t.archetype}}">
+                                    <span class="taxonomy-pill is-archetype" title="{{localize "ionrift-library.avatarManifest.pillArchetypeTooltip" archetype=t.archetype}}">
                                         <i class="fas fa-shield-halved"></i> {{t.archetype}}
                                     </span>
                                     {{#if t.displayRole}}
-                                    <span class="taxonomy-pill is-role" title="Specific Role: {{t.displayRole}}">
+                                    <span class="taxonomy-pill is-role" title="{{localize "ionrift-library.avatarManifest.pillRoleTooltip" role=t.displayRole}}">
                                         <i class="fas fa-briefcase"></i> {{t.displayRole}}
                                     </span>
                                     {{/if}}
 
                                     <!-- Freeform Descriptors -->
                                     {{#each t.displayTags as |tag|}}
-                                    <span class="token-tag-pill clickable" data-tag="{{tag}}" title="Tag: #{{tag}} (Click to filter, right-click to manage)">#{{tag}}</span>
+                                    <span class="token-tag-pill clickable" data-tag="{{tag}}" title="{{localize "ionrift-library.avatarManifest.pillTagTooltip" tag=tag}}">#{{tag}}</span>
                                     {{/each}}
                                 </div>
                             </div>
@@ -599,8 +599,8 @@
 
                         <!-- Clickable Actions -->
                         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-                            <button type="button" class="token-action-icon-btn token-edit-badge-btn" data-path="{{t.path}}" title="Curate Species, Archetype, Role & Tags"><i class="fas fa-wrench"></i></button>
-                            <button type="button" class="token-action-icon-btn toggle-blacklist-btn {{#if t.isBlacklisted}}is-active{{/if}}" data-path="{{t.path}}" title="{{#if t.isBlacklisted}}Un-blacklist (allow use){{else}}Blacklist (exclude from generation){{/if}}"><i class="fas fa-ban"></i></button>
+                            <button type="button" class="token-action-icon-btn token-edit-badge-btn" data-path="{{t.path}}" title="{{{localize "ionrift-library.avatarManifest.curateTokenTooltip"}}}"><i class="fas fa-wrench"></i></button>
+                            <button type="button" class="token-action-icon-btn toggle-blacklist-btn {{#if t.isBlacklisted}}is-active{{/if}}" data-path="{{t.path}}" title="{{#if t.isBlacklisted}}{{localize "ionrift-library.avatarManifest.unblacklistTokenTooltip"}}{{else}}{{localize "ionrift-library.avatarManifest.blacklistTokenTooltip"}}{{/if}}"><i class="fas fa-ban"></i></button>
                         </div>
                     </div>
                     {{else}}
@@ -613,59 +613,59 @@
                         <div class="curation-filter-alert-body">
                             <h3 class="curation-filter-alert-title">
                                 {{#if selectedFolder}}
-                                All Tokens in Selected Folder Filtered Out
+                                {{localize "ionrift-library.avatarManifest.allTokensInFolderFilteredOut"}}
                                 {{else}}
-                                No Tokens Match Active Filters
+                                {{localize "ionrift-library.avatarManifest.noTokensMatchActiveFilters"}}
                                 {{/if}}
                             </h3>
                             <p class="curation-filter-alert-desc">
                                 {{#if selectedFolder}}
-                                Folder <span class="folder-path-highlight">{{selectedFolder}}</span> contains <strong>{{rawFolderCount}}</strong> token(s), but none match your active filters:
+                                {{{localize "ionrift-library.avatarManifest.folderFilteredEmptyDesc" folder=selectedFolder count=rawFolderCount}}}
                                 {{else}}
-                                Your library contains <strong>{{rawFolderCount}}</strong> token(s), but none match your active filters:
+                                {{{localize "ionrift-library.avatarManifest.libraryFilteredEmptyDesc" count=rawFolderCount}}}
                                 {{/if}}
                             </p>
 
                             <div class="curation-filter-pills-row">
                                 {{#if filters.hasQuery}}
-                                <span class="active-filter-badge" title="Search query filter">
+                                <span class="active-filter-badge" title="{{localize "ionrift-library.avatarManifest.searchQueryFilterTooltip"}}">
                                     <i class="fas fa-magnifying-glass"></i> "{{filters.query}}"
-                                    <a class="clear-single-filter-btn" data-filter="query" title="Remove search filter">&times;</a>
+                                    <a class="clear-single-filter-btn" data-filter="query" title="{{localize "ionrift-library.avatarManifest.removeSearchFilterTooltip"}}">&times;</a>
                                 </span>
                                 {{/if}}
                                 {{#if filters.hasSpecies}}
-                                <span class="active-filter-badge" title="Species filter">
-                                    <i class="fas fa-user"></i> Species: {{filters.species}}
-                                    <a class="clear-single-filter-btn" data-filter="species" title="Remove species filter">&times;</a>
+                                <span class="active-filter-badge" title="{{localize "ionrift-library.avatarManifest.speciesFilterTooltip"}}">
+                                    <i class="fas fa-user"></i> {{localize "ionrift-library.avatarManifest.pillSpeciesTooltip" species=filters.species}}
+                                    <a class="clear-single-filter-btn" data-filter="species" title="{{localize "ionrift-library.avatarManifest.removeSpeciesFilterTooltip"}}">&times;</a>
                                 </span>
                                 {{/if}}
                                 {{#if filters.hasArchetype}}
-                                <span class="active-filter-badge" title="Archetype filter">
-                                    <i class="fas fa-shield-halved"></i> Archetype: {{filters.archetype}}
-                                    <a class="clear-single-filter-btn" data-filter="archetype" title="Remove archetype filter">&times;</a>
+                                <span class="active-filter-badge" title="{{localize "ionrift-library.avatarManifest.archetypeFilterTooltip"}}">
+                                    <i class="fas fa-shield-halved"></i> {{localize "ionrift-library.avatarManifest.pillArchetypeTooltip" archetype=filters.archetype}}
+                                    <a class="clear-single-filter-btn" data-filter="archetype" title="{{localize "ionrift-library.avatarManifest.removeArchetypeFilterTooltip"}}">&times;</a>
                                 </span>
                                 {{/if}}
                                 {{#if filters.hasStatus}}
-                                <span class="active-filter-badge" title="Status filter">
-                                    <i class="fas fa-tag"></i> Status: {{filters.statusLabel}}
-                                    <a class="clear-single-filter-btn" data-filter="status" title="Remove status filter">&times;</a>
+                                <span class="active-filter-badge" title="{{localize "ionrift-library.avatarManifest.statusFilterTooltip"}}">
+                                    <i class="fas fa-tag"></i> {{localize "ionrift-library.avatarManifest.pillStatusLabel" status=filters.statusLabel}}
+                                    <a class="clear-single-filter-btn" data-filter="status" title="{{localize "ionrift-library.avatarManifest.removeStatusFilterTooltip"}}">&times;</a>
                                 </span>
                                 {{/if}}
                             </div>
 
                             <div class="curation-filter-alert-actions">
                                 <button type="button" class="reset-curation-filters-btn ionrift-btn is-primary">
-                                    <i class="fas fa-filter-circle-xmark"></i> Clear Filters to Show {{rawFolderCount}} Token(s)
+                                    <i class="fas fa-filter-circle-xmark"></i> {{localize "ionrift-library.avatarManifest.clearFiltersShowCount" count=rawFolderCount}}
                                 </button>
                                 {{#if selectedFolder}}
                                 <button type="button" class="clear-folder-filter-btn ionrift-btn">
-                                    <i class="fas fa-layer-group"></i> View All Watched Folders
+                                    <i class="fas fa-layer-group"></i> {{localize "ionrift-library.avatarManifest.viewAllWatchedFolders"}}
                                 </button>
                                 {{/if}}
                                 {{#if filters.hasSpecies}}
                                 {{#if filters.hasArchetype}}
-                                <button type="button" class="mint-matrix-token-btn ionrift-btn" style="background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.5); color:#d8b4fe;" title="Mint a single {{filters.species}} {{filters.archetype}} in Avatar Studio to fill this deficit">
-                                    <i class="fas fa-palette"></i> Mint {{filters.species}} {{filters.archetype}} in Avatar Studio
+                                <button type="button" class="mint-matrix-token-btn ionrift-btn" style="background:rgba(168,85,247,0.25); border:1px solid rgba(168,85,247,0.5); color:#d8b4fe;" title="{{localize "ionrift-library.avatarManifest.mintDeficitTooltip" species=filters.species archetype=filters.archetype}}">
+                                    <i class="fas fa-palette"></i> {{localize "ionrift-library.avatarManifest.mintDeficitButton" species=filters.species archetype=filters.archetype}}
                                 </button>
                                 {{/if}}
                                 {{/if}}
@@ -675,7 +675,7 @@
                     {{else}}
                     <div style="text-align:center; padding:32px 16px; color:#888;">
                         <i class="fas fa-images" style="font-size:2em; margin-bottom:10px; opacity:0.4;"></i>
-                        <p>{{#if selectedFolder}}This folder contains no image assets.{{else}}No tokens found matching criteria.{{/if}}</p>
+                        <p>{{#if selectedFolder}}{{localize "ionrift-library.avatarManifest.folderNoImageAssets"}}{{else}}{{localize "ionrift-library.avatarManifest.noTokensFoundMatching"}}{{/if}}</p>
                     </div>
                     {{/if}}
                     {{/each}}
@@ -683,23 +683,23 @@
 
                 <!-- Pagination Footer -->
                 <div class="curation-pagination-footer">
-                    <div class="pagination-summary" title="Showing tokens {{pagination.startItem}} through {{pagination.endItem}} of {{pagination.totalItems}}">
-                        Showing {{pagination.startItem}} to {{pagination.endItem}} of {{pagination.totalItems}}
+                    <div class="pagination-summary" title="{{localize "ionrift-library.avatarManifest.paginationShowingTooltip" start=pagination.startItem end=pagination.endItem total=pagination.totalItems}}">
+                        {{localize "ionrift-library.avatarManifest.paginationShowingLabel" start=pagination.startItem end=pagination.endItem total=pagination.totalItems}}
                     </div>
                     <div class="pagination-controls-group">
-                        <button type="button" class="page-first ionrift-btn manifest-page-btn" {{#unless pagination.hasPrev}}disabled{{/unless}} title="First Page">
+                        <button type="button" class="page-first ionrift-btn manifest-page-btn" {{#unless pagination.hasPrev}}disabled{{/unless}} title="{{localize "ionrift-library.avatarManifest.firstPageTooltip"}}">
                             <i class="fas fa-angles-left"></i>
                         </button>
-                        <button type="button" class="page-prev ionrift-btn manifest-page-btn" {{#unless pagination.hasPrev}}disabled{{/unless}} title="Previous Page">
+                        <button type="button" class="page-prev ionrift-btn manifest-page-btn" {{#unless pagination.hasPrev}}disabled{{/unless}} title="{{localize "ionrift-library.avatarManifest.previousPageTooltip"}}">
                             <i class="fas fa-chevron-left"></i>
                         </button>
                         <span class="pagination-page-indicator">
-                            Page <input type="number" class="pagination-page-input" value="{{pagination.current}}" min="1" max="{{pagination.total}}" title="Type page number and press Enter" /> of {{pagination.total}}
+                            {{localize "ionrift-library.avatarManifest.pageWord"}} <input type="number" class="pagination-page-input" value="{{pagination.current}}" min="1" max="{{pagination.total}}" title="{{localize "ionrift-library.avatarManifest.pageInputTooltip"}}" /> {{localize "ionrift-library.avatarManifest.ofWord"}} {{pagination.total}}
                         </span>
-                        <button type="button" class="page-next ionrift-btn manifest-page-btn" {{#unless pagination.hasNext}}disabled{{/unless}} title="Next Page">
+                        <button type="button" class="page-next ionrift-btn manifest-page-btn" {{#unless pagination.hasNext}}disabled{{/unless}} title="{{localize "ionrift-library.avatarManifest.nextPageTooltip"}}">
                             <i class="fas fa-chevron-right"></i>
                         </button>
-                        <button type="button" class="page-last ionrift-btn manifest-page-btn" {{#unless pagination.hasNext}}disabled{{/unless}} title="Last Page">
+                        <button type="button" class="page-last ionrift-btn manifest-page-btn" {{#unless pagination.hasNext}}disabled{{/unless}} title="{{localize "ionrift-library.avatarManifest.lastPageTooltip"}}">
                             <i class="fas fa-angles-right"></i>
                         </button>
                     </div>
@@ -720,9 +720,9 @@
                         <i class="fas fa-layer-group"></i>
                     </div>
                     <div class="telemetry-body">
-                        <span class="telemetry-label">Indexed Assets</span>
-                        <span class="telemetry-value">{{coverage.rawTotalTokens}} Tokens</span>
-                        <span class="telemetry-sub">{{coverage.totalTokens}} Cataloged • {{coverage.reservoirTokens}} Reservoir</span>
+                        <span class="telemetry-label">{{localize "ionrift-library.avatarManifest.indexedAssetsLabel"}}</span>
+                        <span class="telemetry-value">{{localize "ionrift-library.avatarManifest.tokensCountTitle" count=coverage.rawTotalTokens}}</span>
+                        <span class="telemetry-sub">{{localize "ionrift-library.avatarManifest.catalogedReservoirSub" cataloged=coverage.totalTokens reservoir=coverage.reservoirTokens}}</span>
                     </div>
                 </div>
 
@@ -731,9 +731,9 @@
                         <i class="fas fa-chart-pie"></i>
                     </div>
                     <div class="telemetry-body">
-                        <span class="telemetry-label">Coverage Readiness</span>
-                        <span class="telemetry-value">{{coverage.overallCoveragePct}}% Depth</span>
-                        <span class="telemetry-sub">{{#if discountNonCurated}}Curated Only{{else}}Standard Library{{/if}}</span>
+                        <span class="telemetry-label">{{localize "ionrift-library.avatarManifest.coverageReadinessLabel"}}</span>
+                        <span class="telemetry-value">{{localize "ionrift-library.avatarManifest.depthPctValue" pct=coverage.overallCoveragePct}}</span>
+                        <span class="telemetry-sub">{{#if discountNonCurated}}{{localize "ionrift-library.avatarManifest.curatedOnlyLabel"}}{{else}}{{localize "ionrift-library.avatarManifest.standardLibraryLabel"}}{{/if}}</span>
                     </div>
                 </div>
 
@@ -742,9 +742,9 @@
                         <i class="fas fa-globe-americas"></i>
                     </div>
                     <div class="telemetry-body">
-                        <span class="telemetry-label">Library Persistence</span>
-                        <span class="telemetry-value">Cross-World</span>
-                        <span class="telemetry-sub">Shared across all campaigns</span>
+                        <span class="telemetry-label">{{localize "ionrift-library.avatarManifest.libraryPersistenceLabel"}}</span>
+                        <span class="telemetry-value">{{localize "ionrift-library.avatarManifest.crossWorld"}}</span>
+                        <span class="telemetry-sub">{{localize "ionrift-library.avatarManifest.sharedAcrossCampaignsSub"}}</span>
                     </div>
                 </div>
             </div>
@@ -753,26 +753,26 @@
             <div class="watch-folders-card">
                 <div class="watch-folders-card-header">
                     <h3>
-                        <i class="fas fa-folder-tree" style="color:#a78bfa;"></i> Watched Asset Folders
+                        <i class="fas fa-folder-tree" style="color:#a78bfa;"></i> {{localize "ionrift-library.avatarManifest.watchedAssetFoldersTitle"}}
                     </h3>
-                    <span class="active-count-badge">{{watchFolders.length}} Active {{#if (eq watchFolders.length 1)}}Directory{{else}}Directories{{/if}}</span>
+                    <span class="active-count-badge">{{#if (eq watchFolders.length 1)}}{{localize "ionrift-library.avatarManifest.activeDirectoriesSingular" count=watchFolders.length}}{{else}}{{localize "ionrift-library.avatarManifest.activeDirectoriesPlural" count=watchFolders.length}}{{/if}}</span>
                 </div>
 
                 <div class="watch-folder-scope-callout">
                     <i class="fas fa-globe"></i>
                     <div>
-                        <strong>World-Specific Watch Folders:</strong> Watched directories are configured separately for this world so different campaigns can monitor distinct token collections. Token tags, custom species, and manual assignments are automatically shared across all your worlds.
+                        {{{localize "ionrift-library.avatarManifest.worldSpecificWatchFoldersCallout"}}}
                     </div>
                 </div>
 
                 <!-- Add / Browse Folder Row -->
                 <div class="watch-folder-input-group">
-                    <input type="text" id="new-watch-folder-input" placeholder="Paste path and press Enter, or browse server..." autocomplete="off" spellcheck="false">
-                    <button type="button" id="browse-watch-folder-btn" class="ionrift-btn" title="Browse Server Folders">
-                        <i class="fas fa-folder-open"></i> Browse Folders...
+                    <input type="text" id="new-watch-folder-input" placeholder="{{localize "ionrift-library.avatarManifest.watchFolderInputPlaceholder"}}" autocomplete="off" spellcheck="false">
+                    <button type="button" id="browse-watch-folder-btn" class="ionrift-btn" title="{{localize "ionrift-library.avatarManifest.browseServerFoldersTooltip"}}">
+                        <i class="fas fa-folder-open"></i> {{localize "ionrift-library.avatarManifest.browseFoldersButton"}}
                     </button>
-                    <button type="button" id="add-watch-folder-btn" class="ionrift-btn" disabled title="Enter a folder path to add to watched directories">
-                        <i class="fas fa-plus"></i> Add
+                    <button type="button" id="add-watch-folder-btn" class="ionrift-btn" disabled title="{{localize "ionrift-library.avatarManifest.addWatchFolderDisabledTooltip"}}">
+                        <i class="fas fa-plus"></i> {{localize "ionrift-library.avatarManifest.addButton"}}
                     </button>
                 </div>
 
@@ -784,28 +784,28 @@
                             <i class="fas fa-folder folder-icon"></i>
                             <span class="folder-path" title="{{entry.folder}}">{{entry.folder}}</span>
                             {{#if entry.isPrimary}}
-                            <span class="folder-badge-primary" title="Primary token art repository">
-                                Primary Root
+                            <span class="folder-badge-primary" title="{{localize "ionrift-library.avatarManifest.primaryRootTooltip"}}">
+                                {{localize "ionrift-library.avatarManifest.primaryRootBadge"}}
                             </span>
                             {{/if}}
                         </div>
                         <div class="folder-actions">
-                            <span class="folder-token-count" title="{{entry.tokenCount}} cataloged tokens in this directory">
-                                {{entry.tokenCount}} Tokens
+                            <span class="folder-token-count" title="{{localize "ionrift-library.avatarManifest.catalogedTokensInDirTooltip" count=entry.tokenCount}}">
+                                {{localize "ionrift-library.avatarManifest.tokensCountTitle" count=entry.tokenCount}}
                             </span>
                             {{#if entry.isPrimary}}
-                            <button type="button" id="change-primary-root-btn" class="folder-action-btn primary-action-btn" title="Choose a different primary folder via FilePicker">
-                                <i class="fas fa-folder-tree"></i> Change Root...
+                            <button type="button" id="change-primary-root-btn" class="folder-action-btn primary-action-btn" title="{{localize "ionrift-library.avatarManifest.changePrimaryRootTooltip"}}">
+                                <i class="fas fa-folder-tree"></i> {{localize "ionrift-library.avatarManifest.changeRootButton"}}
                             </button>
-                            <button type="button" id="scaffold-primary-root-btn" class="folder-action-btn primary-action-btn" title="Create or verify the standard species/archetype folder tree and README">
-                                <i class="fas fa-folder-plus"></i> Scaffold
+                            <button type="button" id="scaffold-primary-root-btn" class="folder-action-btn primary-action-btn" title="{{localize "ionrift-library.avatarManifest.scaffoldPrimaryRootTooltip"}}">
+                                <i class="fas fa-folder-plus"></i> {{localize "ionrift-library.avatarManifest.scaffoldButton"}}
                             </button>
                             {{else}}
-                            <span class="folder-badge-recursive" title="Subdirectories are recursively indexed">
-                                Recursive
+                            <span class="folder-badge-recursive" title="{{localize "ionrift-library.avatarManifest.recursiveTooltip"}}">
+                                {{localize "ionrift-library.avatarManifest.recursiveBadge"}}
                             </span>
-                            <button type="button" class="remove-watch-folder-btn" data-folder="{{entry.folder}}" title="Remove this watch folder">
-                                <i class="fas fa-trash-alt"></i> Remove
+                            <button type="button" class="remove-watch-folder-btn" data-folder="{{entry.folder}}" title="{{localize "ionrift-library.avatarManifest.removeWatchFolderTooltip"}}">
+                                <i class="fas fa-trash-alt"></i> {{localize "ionrift-library.avatarManifest.removeButton"}}
                             </button>
                             {{/if}}
                         </div>
@@ -818,18 +818,18 @@
                                 <span class="folder-path" title="{{folder}}">{{folder}}</span>
                             </div>
                             <div class="folder-actions">
-                                <span class="folder-badge-recursive" title="Subdirectories are recursively indexed">
-                                    Recursive
+                                <span class="folder-badge-recursive" title="{{localize "ionrift-library.avatarManifest.recursiveTooltip"}}">
+                                    {{localize "ionrift-library.avatarManifest.recursiveBadge"}}
                                 </span>
-                                <button type="button" class="remove-watch-folder-btn" data-folder="{{folder}}" title="Remove this watch folder">
-                                    <i class="fas fa-trash-alt"></i> Remove
+                                <button type="button" class="remove-watch-folder-btn" data-folder="{{folder}}" title="{{localize "ionrift-library.avatarManifest.removeWatchFolderTooltip"}}">
+                                    <i class="fas fa-trash-alt"></i> {{localize "ionrift-library.avatarManifest.removeButton"}}
                                 </button>
                             </div>
                         </div>
                         {{else}}
                         <div class="empty-watch-folders">
                             <i class="fas fa-folder-open" style="font-size:2rem; color:rgba(168,85,247,0.4); margin-bottom:8px;"></i>
-                            <p>No watch folders configured. Enter a directory path or click Browse Folders to monitor token art.</p>
+                            <p>{{localize "ionrift-library.avatarManifest.noWatchFoldersConfigured"}}</p>
                         </div>
                         {{/each}}
                     {{/each}}

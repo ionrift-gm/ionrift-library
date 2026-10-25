@@ -31,7 +31,7 @@ export class BugReportApp extends FormApplication {
     static get defaultOptions() {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: "ionrift-bug-report",
-            title: "Bug Report",
+            title: game.i18n.localize("ionrift-library.bugReport.title"),
             template: "modules/ionrift-library/templates/apps/bug-report.hbs",
             width: 440,
             height: "auto",
@@ -158,7 +158,7 @@ export class BugReportApp extends FormApplication {
 
     async _onCopy() {
         this._setFormBusy(true);
-        this._setStatus("copying", "Preparing debug report");
+        this._setStatus("copying", game.i18n.localize("ionrift-library.bugReport.preparingStatus"));
 
         try {
             const note = this._note();
@@ -167,14 +167,18 @@ export class BugReportApp extends FormApplication {
                 note: note || undefined,
             });
             const detail = copied
-                ? "Report copied to clipboard."
-                : "Report downloaded as JSON.";
-            this._setStatus("success", "Ready to paste", detail);
+                ? game.i18n.localize("ionrift-library.bugReport.reportCopiedDetail")
+                : game.i18n.localize("ionrift-library.bugReport.downloadedJson");
+            this._setStatus("success", game.i18n.localize("ionrift-library.bugReport.readyToPasteStatus"), detail);
             ui.notifications.info(detail);
         } catch (err) {
             Logger.error("BugReport", "Copy bug report failed:", err);
-            this._setStatus("error", "Copy failed", "Check the browser console for details.");
-            ui.notifications.error("Could not copy debug report. Check the browser console.");
+            this._setStatus(
+                "error",
+                game.i18n.localize("ionrift-library.bugReport.copyErrorStatus"),
+                game.i18n.localize("ionrift-library.bugReport.copyErrorDetail")
+            );
+            ui.notifications.error(game.i18n.localize("ionrift-library.bugReport.copyErrorToast"));
         } finally {
             this._setFormBusy(false);
         }
@@ -184,18 +188,22 @@ export class BugReportApp extends FormApplication {
         if (!BugReportService.canSubmit()) {
             this._setStatus(
                 "error",
-                "Direct reports unavailable",
-                "Copy the report and paste it in Discord."
+                game.i18n.localize("ionrift-library.bugReport.directUnavailableStatus"),
+                game.i18n.localize("ionrift-library.bugReport.directUnavailableDetail")
             );
             ui.notifications.warn(
-                "Copy the report and paste it in Discord.",
+                game.i18n.localize("ionrift-library.bugReport.directUnavailableDetail"),
                 { permanent: true }
             );
             return;
         }
 
         this._setFormBusy(true);
-        this._setStatus("submitting", "Submitting report", "Collecting diagnostics and uploading.");
+        this._setStatus(
+            "submitting",
+            game.i18n.localize("ionrift-library.bugReport.submittingStatus"),
+            game.i18n.localize("ionrift-library.bugReport.submittingDetail")
+        );
 
         try {
             const note = this._note();
@@ -206,7 +214,7 @@ export class BugReportApp extends FormApplication {
 
             if (!result?.ok) {
                 const msg = BugReportService.formatSubmitError(result?.error);
-                this._setStatus("error", "Send failed", msg);
+                this._setStatus("error", game.i18n.localize("ionrift-library.bugReport.sendErrorStatus"), msg);
                 ui.notifications.error(msg, { permanent: true });
                 return;
             }
@@ -214,18 +222,18 @@ export class BugReportApp extends FormApplication {
             const reference = result.reference ?? "";
             this._setStatus(
                 "success",
-                "Report received",
+                game.i18n.localize("ionrift-library.bugReport.receivedStatus"),
                 reference
-                    ? `Reference ${reference}. Cite this in Discord if you follow up.`
-                    : "Report uploaded successfully."
+                    ? game.i18n.format("ionrift-library.bugReport.receivedRefDetail", { reference })
+                    : game.i18n.localize("ionrift-library.bugReport.receivedNoRefDetail")
             );
 
             await BugReportService.showSubmitSuccess(result);
         } catch (err) {
             Logger.error("BugReport", "Send bug report failed:", err);
             const msg = BugReportService.formatSubmitError(err?.message ?? String(err));
-            this._setStatus("error", "Send failed", msg);
-            ui.notifications.error("Could not send bug report. Try copy and Discord instead.");
+            this._setStatus("error", game.i18n.localize("ionrift-library.bugReport.sendErrorStatus"), msg);
+            ui.notifications.error(game.i18n.localize("ionrift-library.bugReport.sendErrorToast"));
         } finally {
             this._setFormBusy(false);
         }

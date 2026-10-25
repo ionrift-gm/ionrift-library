@@ -7,7 +7,7 @@
                 <span>{{stats.mean}}%</span>
             </div>
             <div class="dashboard-text">
-                <span class="label">Manifest Integrity</span>
+                <span class="label">{{localize "ionrift-library.classifierValidator.manifestIntegrity"}}</span>
                 <span class="value">{{stats.identified}} / {{stats.total}}</span>
                 <span class="label" style="margin-top:2px;">
                     <span class="ionrift-status {{stats.integrityClass}}">{{stats.integrityLabel}}</span>
@@ -18,19 +18,19 @@
         <div class="ionrift-search-container">
             <i class="fas fa-search"></i>
             <input type="text" id="validator-search" class="ionrift-search-input"
-                placeholder="Search entity manifest..." value="{{filters.query}}">
+                placeholder="{{localize "ionrift-library.classifierValidator.searchPlaceholder"}}" value="{{filters.query}}">
         </div>
 
         <div style="display:flex; gap: 8px; align-items: center;">
             <select id="confidence-filter" class="manifest-glass-select" style="width: 140px;">
-                <option value="all">All Entities</option>
-                <option value="low">Needs Review</option>
-                <option value="med">Uncertain</option>
+                <option value="all">{{localize "ionrift-library.classifierValidator.filterAllEntities"}}</option>
+                <option value="low">{{localize "ionrift-library.classifierValidator.filterNeedsReview"}}</option>
+                <option value="med">{{localize "ionrift-library.classifierValidator.filterUncertain"}}</option>
             </select>
-            <button type="button" id="toggle-sources-drawer" class="sources-toggle-btn ionrift-btn-subtle {{#if sources.showDrawer}}active{{/if}}" title="Configure Indexed Sources">
-                <i class="fas fa-layer-group"></i> <span class="btn-text">Sources ({{sources.activeCount}})</span>
+            <button type="button" id="toggle-sources-drawer" class="sources-toggle-btn ionrift-btn-subtle {{#if sources.showDrawer}}active{{/if}}" title="{{localize "ionrift-library.classifierValidator.configureSourcesTooltip"}}">
+                <i class="fas fa-layer-group"></i> <span class="btn-text">{{localize "ionrift-library.classifierValidator.sourcesButton" count=sources.activeCount}}</span>
             </button>
-            <button type="button" id="refresh-validator" title="Re-scan Manifest"><i class="fas fa-sync {{#if isScanning}}fa-spin{{/if}}"></i></button>
+            <button type="button" id="refresh-validator" title="{{localize "ionrift-library.classifierValidator.rescanTooltip"}}"><i class="fas fa-sync {{#if isScanning}}fa-spin{{/if}}"></i></button>
         </div>
     </div>
 
@@ -38,13 +38,13 @@
     {{#if sources.showDrawer}}
     <div class="entity-sources-drawer">
         <div class="drawer-header">
-            <span><i class="fas fa-layer-group"></i> Indexed Sources</span>
-            <span class="drawer-hint">Select compendiums and world actors to scan for creature classification</span>
+            <span><i class="fas fa-layer-group"></i> {{localize "ionrift-library.classifierValidator.indexedSources"}}</span>
+            <span class="drawer-hint">{{localize "ionrift-library.classifierValidator.indexedSourcesHint"}}</span>
         </div>
         <div class="sources-list">
             <label class="source-item">
                 <input type="checkbox" name="source_world" {{#if sources.includeWorld}}checked{{/if}}>
-                <span class="source-name"><i class="fas fa-globe"></i> World Actors</span>
+                <span class="source-name"><i class="fas fa-globe"></i> {{localize "ionrift-library.classifierValidator.worldActors"}}</span>
             </label>
             {{#each sources.packs}}
             <label class="source-item">
@@ -56,7 +56,7 @@
         </div>
         <div class="drawer-footer">
             <button type="button" id="apply-sources-btn" class="ionrift-save-btn">
-                <i class="fas fa-arrows-rotate"></i> Re-index Selected Sources
+                <i class="fas fa-arrows-rotate"></i> {{localize "ionrift-library.classifierValidator.reindexSourcesButton"}}
             </button>
         </div>
     </div>
@@ -81,8 +81,8 @@
             <div class="badges">
                 <!-- Class Badge (click to override) -->
                 <button type="button"
-                    class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (eq this.classId 'Unknown')}}error{{else}}success{{/if}}{{/if}}"
-                    title="{{#if this.isManual}}Manual classification{{else}}Detected class (click to override){{/if}}"
+                    class="ionrift-badge classifier-override-btn {{#if this.isManual}}manual{{else}}{{#if (or (eq this.rawClassId 'unknown') (eq this.classId 'Unknown'))}}error{{else}}success{{/if}}{{/if}}"
+                    title="{{#if this.isManual}}{{localize "ionrift-library.classifierValidator.manualClassificationTooltip"}}{{else}}{{localize "ionrift-library.classifierValidator.detectedClassTooltip"}}{{/if}}"
                     data-actor-id="{{this.actorId}}"
                     data-uuid="{{this.uuid}}"
                     data-class-id="{{this.rawClassId}}"
@@ -91,13 +91,13 @@
                 </button>
 
                 <!-- Sound Badge -->
-                <span class="ionrift-badge {{#if (eq this.soundKey 'Generic Monster')}}warning{{else}}success{{/if}}"
-                    title="Assigned Sound">
+                <span class="ionrift-badge {{#if (or (eq this.rawSoundKey 'MONSTER_GENERIC') (eq this.soundKey 'Generic Monster'))}}warning{{else}}success{{/if}}"
+                    title="{{localize "ionrift-library.classifierValidator.assignedSoundTooltip"}}">
                     <i class="fas fa-music"></i> {{this.soundKey}}
                 </span>
 
                 <!-- Score Pill -->
-                <span class="score-pill {{this.scoreClass}}" title="Confidence: {{this.confidencePct}}%">
+                <span class="score-pill {{this.scoreClass}}" title="{{localize "ionrift-library.classifierValidator.confidenceTooltip" pct=this.confidencePct}}">
                     {{this.confidencePct}}%
                 </span>
             </div>
@@ -105,7 +105,7 @@
         {{else}}
         <div class="no-results" style="padding: 40px; text-align: center; color: #888;">
             <i class="fas fa-search" style="font-size: 3em; margin-bottom: 20px; opacity: 0.5;"></i>
-            <p>No entities found matching your criteria.</p>
+            <p>{{localize "ionrift-library.classifierValidator.noResults"}}</p>
         </div>
         {{/each}}
     </div>
@@ -121,14 +121,14 @@
 
         <!-- Center: Pagination (Flex 1 to take varied space) -->
         <div style="display:flex; align-items:center; justify-content: center; gap: 15px; flex: 1;">
-            <button class="page-prev icon-only" title="Previous Page" {{#unless pagination.hasPrev}}disabled{{/unless}}
+            <button class="page-prev icon-only" title="{{localize "ionrift-library.classifierValidator.previousPageTooltip"}}" {{#unless pagination.hasPrev}}disabled{{/unless}}
                 style="width: 32px;">
                 <i class="fas fa-chevron-left"></i>
             </button>
             <span style="color:#aaa; font-size: 0.9em; min-width: 100px; text-align: center;">
-                {{pagination.startItem}} - {{pagination.endItem}} of {{pagination.totalItems}}
+                {{localize "ionrift-library.classifierValidator.paginationRange" start=pagination.startItem end=pagination.endItem total=pagination.totalItems}}
             </span>
-            <button class="page-next icon-only" title="Next Page" {{#unless pagination.hasNext}}disabled{{/unless}}
+            <button class="page-next icon-only" title="{{localize "ionrift-library.classifierValidator.nextPageTooltip"}}" {{#unless pagination.hasNext}}disabled{{/unless}}
                 style="width: 32px;">
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -137,7 +137,7 @@
         <!-- Right: Actions -->
         <div style="flex: 0 0 auto;">
             <button id="export-json" class="export-btn ionrift-save-btn">
-                <i class="fas fa-file-export"></i> Export Report
+                <i class="fas fa-file-export"></i> {{localize "ionrift-library.classifierValidator.exportReportButton"}}
             </button>
         </div>
     </div>
