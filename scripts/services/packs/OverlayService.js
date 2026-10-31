@@ -10,6 +10,7 @@
 import { PlatformHelper } from "../platform/PlatformHelper.js";
 import { Logger } from "../platform/Logger.js";
 import { getWorldSetting, setWorldSetting } from "../platform/overlaySettings.js";
+import { OverlayIndexService } from "./OverlayIndexService.js";
 
 const MODULE_LABEL = "OverlayService";
 const LEGACY_PREMIUM_SUBLAYER = "premium";
@@ -91,6 +92,8 @@ export class OverlayService {
     }
 
     static async listInstalledSublayers(moduleId) {
+        if (!PlatformHelper.canBrowse) return OverlayIndexService.sublayers(moduleId);
+
         const moduleRoot = `${this.OVERLAY_ROOT}/${moduleId}`;
         const filePicker = PlatformHelper.FP;
         if (!filePicker) return [];
@@ -122,6 +125,11 @@ export class OverlayService {
     }
 
     static async listOverlayDir(moduleId, sublayer, subDir) {
+        if (!PlatformHelper.canBrowse) {
+            const files = await this.readFileIndex(moduleId, sublayer);
+            return OverlayIndexService.listDir(files ?? [], subDir);
+        }
+
         const dirPath = `${this.getOverlayPath(moduleId, sublayer)}/${subDir}`;
         const filePicker = PlatformHelper.FP;
         if (!filePicker) return { dirs: [], files: [] };
@@ -137,7 +145,16 @@ export class OverlayService {
         }
     }
 
+    /**
+     * Flat file list for a sublayer. Browsing users get the pack-shipped
+     * overlay-files.json only. Other clients get the GM-published index first,
+     * which already folds in the shipped list.
+     */
     static async readFileIndex(moduleId, sublayer = LEGACY_PREMIUM_SUBLAYER) {
+        if (!PlatformHelper.canBrowse) {
+            const published = await OverlayIndexService.files(moduleId, sublayer);
+            if (published) return published;
+        }
         const path = `${this.getOverlayPath(moduleId, sublayer)}/${this.FILE_INDEX_NAME}`;
         const data = await PlatformHelper.readDataJson(path);
         return data && Array.isArray(data.files) ? data.files : null;
@@ -146,6 +163,12 @@ export class OverlayService {
     static refresh() {
         this._manifestCache.clear();
         this._contentsCache.clear();
+        OverlayIndexService.invalidate();
+    }
+
+    /** GM: rebuild the browse-free index that non-browsing clients read. */
+    static async publishIndex() {
+        return OverlayIndexService.publish(this);
     }
 
     static isDistributionActive() {

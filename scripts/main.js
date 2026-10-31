@@ -22,6 +22,8 @@ import { RollRequestService } from "./services/rolls/RollRequestService.js";
 import { TokenArtResolver } from "./services/TokenArtResolver.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "./data/subsystemDefinitions.js";
 import { IgnitionService } from "./services/items/IgnitionService.js";
+import { OverlayService } from "./services/packs/OverlayService.js";
+import { OVERLAY_INDEX_REVISION_KEY } from "./services/packs/OverlayIndexService.js";
 
 export { SUBSYSTEM_DEFINITIONS, getSubsystemStatus, CompendiumSourceService, BaseCompendiumSourceApp, IgnitionService };
 
@@ -165,6 +167,17 @@ Hooks.once("init", () => {
         type: Object,
         default: {},
         restricted: true
+    });
+
+    game.settings.register(MODULE_ID, OVERLAY_INDEX_REVISION_KEY, {
+        scope: "world",
+        config: false,
+        type: String,
+        default: "",
+        onChange: (revision) => {
+            OverlayService.refresh();
+            Hooks.callAll("ionrift.overlayIndexChanged", { revision });
+        }
     });
 
     game.settings.register(MODULE_ID, "showPreviewContent", {
@@ -398,5 +411,9 @@ Hooks.once("ready", async () => {
         );
 
         InstallHealthCheck.run().catch(e => Logger.warn("Library", "Install health check failed:", e));
+
+        OverlayService.publishIndex().catch(e =>
+            Logger.warn("Library", "Overlay index publish failed:", e)
+        );
     }
 });

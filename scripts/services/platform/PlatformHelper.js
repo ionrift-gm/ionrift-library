@@ -24,6 +24,18 @@ export class PlatformHelper {
         return fileSource();
     }
 
+    /**
+     * Whether this user may list directories. Foundry grants FILES_BROWSE to
+     * Trusted Player and above by default, so a plain Player cannot browse
+     * but can still fetch any file under Data by its path.
+     * @returns {boolean}
+     */
+    static get canBrowse() {
+        const user = globalThis.game?.user;
+        if (!user || user.isGM) return true;
+        return typeof user.can === "function" && user.can("FILES_BROWSE") === true;
+    }
+
     static async ensureDirectory(dirPath, source) {
         const FP = this.FP;
         if (!FP) return;
@@ -126,8 +138,9 @@ export class PlatformHelper {
         const fileName = normalized.substring(slash + 1);
         const FP = this.FP;
 
-        // Skip browse-exists on Sqyre: browse omits fresh uploads.
-        if (FP && !this.isSqyre) {
+        // Skip browse-exists on Sqyre (browse omits fresh uploads) and for users
+        // without FILES_BROWSE (browse throws; fetch still works).
+        if (FP && !this.isSqyre && this.canBrowse) {
             try {
                 const browse = await FP.browse(this.fileSource, dir);
                 const files = browse.files ?? [];
