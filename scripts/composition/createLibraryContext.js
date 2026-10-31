@@ -83,6 +83,15 @@ import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
 import { ModuleSocket } from "../services/sockets/ModuleSocket.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "../data/subsystemDefinitions.js";
 import { ChatSurface } from "../services/chat/ChatSurface.js";
+import {
+    TokenReach,
+    canReachToken,
+    canReachTarget,
+    resolveUserToken,
+    watchTokenReach,
+    reachFailureMessage,
+    shouldBypassReach
+} from "../services/tokenReach/index.js";
 
 export function createLibraryContext() {
     observeDiceSoNice();
@@ -208,7 +217,15 @@ export function createLibraryContext() {
         subsystems: SUBSYSTEM_DEFINITIONS,
         getSubsystemStatus,
         chat: ChatSurface,
-        ChatSurface
+        ChatSurface,
+        reach: TokenReach,
+        tokenReach: TokenReach,
+        canReachToken,
+        canReachTarget,
+        resolveUserToken,
+        watchTokenReach,
+        reachFailureMessage,
+        shouldBypassReach
     };
 
     exposeLibraryApi(ctx);

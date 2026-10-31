@@ -68,7 +68,7 @@ export class RollRequestService {
         const actor = await RollRequestService._resolveActor(opts.actorId, opts.actorUuid);
         if (!actor) throw new Error("RollRequestService.request: actor not found");
 
-        const requestId = foundry.utils.randomID();
+        const requestId = opts.requestId || foundry.utils.randomID();
         const rollMode = opts.rollMode ?? "normal";
         const dc = Number.isFinite(opts.dc) ? opts.dc : null;
 

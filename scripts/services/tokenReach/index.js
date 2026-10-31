@@ -4,8 +4,24 @@
  * Exposed on `game.ionrift.library.reach`.
  */
 
-import { TokenReach, canReachToken, reachFailureMessage, shouldBypassReach } from "./TokenReach.js";
+import {
+    TokenReach,
+    canReachToken,
+    canReachTarget,
+    resolveUserToken,
+    watchTokenReach,
+    reachFailureMessage,
+    shouldBypassReach
+} from "./TokenReach.js";
 
 export const reach = TokenReach;
 
-export { TokenReach, canReachToken, reachFailureMessage, shouldBypassReach };
+export {
+    TokenReach,
+    canReachToken,
+    canReachTarget,
+    resolveUserToken,
+    watchTokenReach,
+    reachFailureMessage,
+    shouldBypassReach
+};

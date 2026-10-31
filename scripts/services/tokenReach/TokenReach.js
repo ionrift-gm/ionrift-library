@@ -58,6 +58,49 @@ function tokenCenterPoint(token) {
             };
         }
     }
+    if (doc.documentName === "Region" || Array.isArray(doc.shapes)) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const grow = (x, y) => {
+            if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+        };
+        for (const shape of doc.shapes ?? []) {
+            if (shape.hole) continue;
+            if (shape.type === "rectangle") {
+                grow(shape.x, shape.y);
+                grow(shape.x + shape.width, shape.y + shape.height);
+            } else if (shape.type === "circle") {
+                grow(shape.x - shape.radius, shape.y - shape.radius);
+                grow(shape.x + shape.radius, shape.y + shape.radius);
+            } else if (shape.type === "ellipse") {
+                grow(shape.x - shape.radiusX, shape.y - shape.radiusY);
+                grow(shape.x + shape.radiusX, shape.y + shape.radiusY);
+            } else if (Array.isArray(shape.points)) {
+                for (let i = 0; i < shape.points.length; i += 2) {
+                    grow(shape.points[i], shape.points[i + 1]);
+                }
+            }
+        }
+        if (Number.isFinite(minX)) {
+            return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+        }
+        const bounds = doc.bounds ?? token.bounds;
+        if (bounds && Number.isFinite(bounds.x) && Number.isFinite(bounds.width)) {
+            return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        }
+    }
+    if (
+        typeof doc.x === "number"
+        && typeof doc.y === "number"
+        && doc.width === undefined
+        && doc.height === undefined
+        && !doc.documentName
+    ) {
+        return { x: doc.x, y: doc.y };
+    }
     const gridSize = canvas?.grid?.size ?? 100;
     const width = Number(doc.width ?? 1);
     const height = Number(doc.height ?? 1);
@@ -68,7 +111,7 @@ function tokenCenterPoint(token) {
 }
 
 /**
- * Rough allowance so adjacent squares on large tokens still count as in reach
+ * Rough allowance so adjacent squares on large tokens or regions still count as in reach
  * when measuring center-to-center on the grid.
  * @param {Token|object} sourceToken
  * @param {Token|object} targetToken
@@ -77,8 +120,17 @@ function tokenCenterPoint(token) {
 function footprintAllowance(sourceToken, targetToken) {
     const sourceDoc = sourceToken?.document ?? sourceToken;
     const targetDoc = targetToken?.document ?? targetToken;
+    const gridSize = Math.max(1, Number(canvas?.grid?.size ?? 100));
     const sourceSpan = Math.max(Number(sourceDoc?.width ?? 1), Number(sourceDoc?.height ?? 1));
-    const targetSpan = Math.max(Number(targetDoc?.width ?? 1), Number(targetDoc?.height ?? 1));
+    let targetSpan = Math.max(Number(targetDoc?.width ?? 1), Number(targetDoc?.height ?? 1));
+    if (targetDoc?.documentName === "Region" || Array.isArray(targetDoc?.shapes)) {
+        const b = targetDoc.bounds ?? targetToken?.bounds;
+        if (b && Number.isFinite(b.width)) {
+            targetSpan = Math.max(1, Math.max(b.width, b.height) / gridSize);
+        }
+    } else if (targetDoc?.widthPx && targetDoc?.heightPx) {
+        targetSpan = Math.max(1, Math.max(Number(targetDoc.widthPx), Number(targetDoc.heightPx)) / gridSize);
+    }
     return Math.max(0, (sourceSpan + targetSpan) / 2 - 0.5);
 }
 
@@ -325,12 +377,133 @@ export function canReachToken(sourceToken, targetToken, options = {}) {
     return measureFallbackReach(sourceToken, targetToken, { ...options, squares: maxSquares, useGrid, maxDistance });
 }
 
+/**
+ * Check whether a token can reach any target (Token, Wall, Region, Tile, or `{ x, y }` world coordinate).
+ * @param {Token|object|null|undefined} sourceToken
+ * @param {Token|object|null|undefined} targetOrPoint
+ * @param {object} [options]
+ * @returns {TokenReachResult}
+ */
+export function canReachTarget(sourceToken, targetOrPoint, options = {}) {
+    return canReachToken(sourceToken, targetOrPoint, options);
+}
+
+/**
+ * Resolves the active user's primary avatar token on the current scene.
+ * Prioritizes controlled character tokens, then the user's assigned character token,
+ * then any character token owned by the user on the scene.
+ *
+ * @param {User} [user]
+ * @param {Scene} [scene]
+ * @returns {Token|TokenDocument|null}
+ */
+export function resolveUserToken(user = globalThis.game?.user, scene = globalThis.canvas?.scene) {
+    if (!user || !scene) return null;
+    const placeables = globalThis.canvas?.tokens?.placeables || [];
+    const controlled = globalThis.canvas?.tokens?.controlled || [];
+
+    if (controlled.length > 0) {
+        const charControlled = controlled.find(t => t?.actor?.type === "character" && (t.actor?.isOwner || user.isGM));
+        if (charControlled) return charControlled;
+        if (!user.isGM && controlled[0]) return controlled[0];
+    }
+
+    const assignedActorId = user.character?.id || null;
+    if (assignedActorId) {
+        const assignedPlaceable = placeables.find(t => t?.actor?.id === assignedActorId);
+        if (assignedPlaceable) return assignedPlaceable;
+        const assignedDoc = scene.tokens?.find?.(t => t?.actorId === assignedActorId || t?.actor?.id === assignedActorId);
+        if (assignedDoc) return assignedDoc.object || assignedDoc;
+    }
+
+    if (!user.isGM) {
+        const ownedPlaceable = placeables.find(t => {
+            const a = t?.actor;
+            if (!a || a.type !== "character") return false;
+            const perm = a.ownership?.[user.id] ?? t.document?.ownership?.[user.id] ?? 0;
+            return perm >= 3 || Boolean(a.isOwner);
+        });
+        if (ownedPlaceable) return ownedPlaceable;
+    }
+
+    return null;
+}
+
+/**
+ * Watches for token movement on the active scene and invokes `onOutOfReach(result, tokenDoc)`
+ * whenever the watched source token moves beyond reach of the target.
+ * Designed as a shared library offering so open interaction UIs (puzzles, locks, mechanisms)
+ * automatically dismiss if a player's avatar wanders beyond reach.
+ *
+ * @param {object} config
+ * @param {() => (Token|TokenDocument|null)} [config.getSourceToken]
+ * @param {() => (Token|object|null)} config.getTarget
+ * @param {object} [config.options] Reach options passed to `canReachTarget` (e.g. `{ squares: 2 }`).
+ * @param {(result: TokenReachResult, tokenDoc: TokenDocument) => void} config.onOutOfReach
+ * @returns {() => void} Cleanup function (`unwatch()`) to remove the hook listener.
+ */
+export function watchTokenReach({
+    getSourceToken = () => resolveUserToken(),
+    getTarget,
+    options = {},
+    onOutOfReach
+} = {}) {
+    if (typeof getTarget !== "function" || typeof onOutOfReach !== "function") {
+        return () => {};
+    }
+
+    let fired = false;
+    const onUpdateToken = (tokenDoc, change) => {
+        if (fired) return;
+        if (change?.x === undefined && change?.y === undefined && change?.elevation === undefined) {
+            return;
+        }
+        if (shouldBypassReach(options)) return;
+
+        const source = getSourceToken();
+        if (!source) return;
+        const sourceId = source.id ?? source.document?.id ?? null;
+        const movedId = tokenDoc?.id ?? null;
+        if (!sourceId || !movedId || sourceId !== movedId) return;
+
+        const target = getTarget();
+        if (!target) return;
+
+        // Build a synthetic source snapshot with the newly committed coordinates so reach is evaluated
+        // against the destination immediately even while the canvas placeable is still animating.
+        const doc = tokenDoc;
+        const updatedSource = {
+            id: doc.id,
+            document: doc,
+            x: Number(change.x ?? doc.x ?? source.x ?? 0),
+            y: Number(change.y ?? doc.y ?? source.y ?? 0),
+            width: Number(doc.width ?? source.document?.width ?? source.width ?? 1),
+            height: Number(doc.height ?? source.document?.height ?? source.height ?? 1),
+            elevation: Number(change.elevation ?? doc.elevation ?? source.document?.elevation ?? 0)
+        };
+
+        const res = canReachTarget(updatedSource, target, options);
+        if (!res.ok) {
+            fired = true;
+            onOutOfReach(res, tokenDoc);
+        }
+    };
+
+    globalThis.Hooks?.on?.("updateToken", onUpdateToken);
+    return () => {
+        globalThis.Hooks?.off?.("updateToken", onUpdateToken);
+    };
+}
+
 export const TokenReach = {
     ARMS_REACH_MODULE_ID: ARMS_REACH_ID,
     SETTING_DEFAULT_SQUARES,
     SETTING_BYPASS_GM,
     SETTING_USE_GRID,
     canReachToken,
+    canReachTarget,
+    resolveUserToken,
+    watchTokenReach,
     shouldBypassReach,
     reachFailureMessage,
     _measureFallbackReach: measureFallbackReach

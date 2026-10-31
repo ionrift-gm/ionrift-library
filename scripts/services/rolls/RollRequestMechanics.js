@@ -23,7 +23,8 @@ const DEFAULT_SKILL_DISPLAY_NAMES = {
     religion: "Religion", medicine: "Medicine", survival: "Survival",
     deception: "Deception", intimidation: "Intimidation", performance: "Performance",
     str: "Strength", dex: "Dexterity", con: "Constitution",
-    int: "Intelligence", wis: "Wisdom", cha: "Charisma"
+    int: "Intelligence", wis: "Wisdom", cha: "Charisma",
+    reflex: "Reflex", fortitude: "Fortitude", will: "Will"
 };
 
 const SKILL_DISPLAY_NAME_KEYS = {
@@ -86,7 +87,21 @@ export const SKILL_DISPLAY_NAMES = new Proxy(DEFAULT_SKILL_DISPLAY_NAMES, {
  * @returns {number}
  */
 export function getAbilityMod(actor, key) {
-    const abbr = String(key ?? "").slice(0, 3).toLowerCase();
+    const rawKey = String(key ?? "").toLowerCase().trim();
+    const saveAliasMap = {
+        reflex: "reflex", ref: "reflex", dex: "reflex",
+        fortitude: "fortitude", fort: "fortitude", con: "fortitude",
+        will: "will", wis: "will"
+    };
+    const pf2eSaveKey = saveAliasMap[rawKey];
+    if (pf2eSaveKey) {
+        const pf2eSave = actor?.saves?.[pf2eSaveKey] ?? actor?.system?.saves?.[pf2eSaveKey];
+        const pf2eMod = pf2eSave?.mod ?? pf2eSave?.check?.mod ?? pf2eSave?.totalModifier ?? pf2eSave?.value;
+        if (pf2eMod !== null && pf2eMod !== undefined && Number.isFinite(Number(pf2eMod))) {
+            return Number(pf2eMod);
+        }
+    }
+    const abbr = rawKey.slice(0, 3);
     const ability = actor?.system?.abilities?.[abbr] ?? actor?.system?.scores?.[abbr];
     if (ability && ability.mod !== null && ability.mod !== undefined && Number.isFinite(Number(ability.mod))) {
         return Number(ability.mod);
@@ -102,9 +117,13 @@ export function getAbilityMod(actor, key) {
  * @returns {number}
  */
 export function getSkillMod(actor, key) {
-    const skill = actor?.system?.skills?.[key] ?? actor?.skills?.[key];
-    if (skill && Number.isFinite(skill.total ?? skill.mod ?? skill.value)) {
-        return Number(skill.total ?? skill.mod ?? skill.value);
+    const sysSkill = actor?.system?.skills?.[key];
+    if (sysSkill && Number.isFinite(sysSkill.total ?? sysSkill.mod ?? sysSkill.value ?? sysSkill.totalModifier)) {
+        return Number(sysSkill.total ?? sysSkill.mod ?? sysSkill.value ?? sysSkill.totalModifier);
+    }
+    const statSkill = actor?.skills?.[key];
+    if (statSkill && Number.isFinite(statSkill.mod ?? statSkill.check?.mod ?? statSkill.total ?? statSkill.value ?? statSkill.totalModifier)) {
+        return Number(statSkill.mod ?? statSkill.check?.mod ?? statSkill.total ?? statSkill.value ?? statSkill.totalModifier);
     }
     if (key === "perception" || key === "prc") {
         const perc = actor?.perception?.mod ?? actor?.system?.perception?.mod ?? actor?.system?.attributes?.perception?.totalModifier;
