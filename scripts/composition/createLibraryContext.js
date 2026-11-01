@@ -83,6 +83,7 @@ import { SpeciesRegistry } from "../services/species/SpeciesRegistry.js";
 import { ModuleSocket } from "../services/sockets/ModuleSocket.js";
 import { SUBSYSTEM_DEFINITIONS, getSubsystemStatus } from "../data/subsystemDefinitions.js";
 import { ChatSurface } from "../services/chat/ChatSurface.js";
+import { ViewportService } from "../services/viewport/ViewportService.js";
 import {
     TokenReach,
     canReachToken,
@@ -95,6 +96,7 @@ import {
 
 export function createLibraryContext() {
     observeDiceSoNice();
+    ViewportService.init();
     const ctx = {
         MODULE_ID,
         MODULE_LABEL,
@@ -218,6 +220,8 @@ export function createLibraryContext() {
         getSubsystemStatus,
         chat: ChatSurface,
         ChatSurface,
+        viewport: ViewportService,
+        ViewportService,
         reach: TokenReach,
         tokenReach: TokenReach,
         canReachToken,
