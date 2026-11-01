@@ -141,8 +141,37 @@ function footprintAllowance(sourceToken, targetToken) {
  * @returns {boolean}
  */
 function elevationWithinTolerance(sourceToken, targetToken, tolerance = 5) {
-    const sourceElevation = Number(sourceToken?.document?.elevation ?? sourceToken?.elevation ?? 0);
-    const targetElevation = Number(targetToken?.document?.elevation ?? targetToken?.elevation ?? 0);
+    const sourceDoc = sourceToken?.document ?? sourceToken;
+    const targetDoc = targetToken?.document ?? targetToken;
+    const sourceLevel = sourceDoc?.level ?? sourceDoc?._source?.level ?? null;
+
+    if (sourceLevel && targetDoc) {
+        const targetIsRegion = targetDoc.documentName === "Region" || Array.isArray(targetDoc.shapes);
+        if (targetIsRegion) {
+            const targetLevels = targetDoc.levels instanceof Set
+                ? targetDoc.levels
+                : (Array.isArray(targetDoc._source?.levels) ? new Set(targetDoc._source.levels) : null);
+            if (targetLevels && targetLevels.size > 0 && !targetLevels.has(sourceLevel)) {
+                return false;
+            }
+        } else {
+            const targetLevel = targetDoc.level ?? targetDoc._source?.level ?? null;
+            if (targetLevel && targetLevel !== sourceLevel) {
+                return false;
+            }
+        }
+    }
+
+    const sourceElevation = Number(sourceDoc?.elevation ?? 0);
+    const rawTargetElev = targetDoc?.elevation ?? 0;
+    if (typeof rawTargetElev === "object" && rawTargetElev !== null) {
+        const bottom = Number.isFinite(rawTargetElev.bottom) ? rawTargetElev.bottom : -Infinity;
+        const top = Number.isFinite(rawTargetElev.top) ? rawTargetElev.top : Infinity;
+        return sourceElevation >= (bottom - tolerance) && sourceElevation <= (top + tolerance);
+    }
+
+    const targetElevation = Number(rawTargetElev);
+    if (!Number.isFinite(targetElevation)) return true;
     return Math.abs(sourceElevation - targetElevation) <= tolerance;
 }
 
