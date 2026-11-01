@@ -5,7 +5,6 @@
 ### Added
 - Localized interface labels, settings, and dialogs for translation support.
 - Players can now adjust their own client-side module settings from the Foundry Settings window.
-- Patreon account linking to unlock subscriber content packs in the Ionrift Shelf.
 
 ### Fixed
 - Players without file-browsing permissions now see scene and camp banner overlays from installed packs (such as Arctic and underground terrains).
