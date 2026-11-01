@@ -4,10 +4,11 @@
 
 ### Added
 - Localized interface labels, settings, and dialogs for translation support.
-- Players can now adjust their own client-side module settings from the Foundry Settings window.
+- Fallback item, creature, and check modifier lookups for generic game systems.
 
 ### Fixed
 - Players without file-browsing permissions now see scene and camp banner overlays from installed packs (such as Arctic and underground terrains).
+- Token reach checks now account for level elevation on Foundry V14.
 
 ## [3.2.1] - 2026-10-25
 
@@ -400,11 +401,11 @@
 ## [1.8.0] - 2026-04-17
 
 ### Added
-- **Pathfinder 2e support.** The creature classifier now reads PF2e trait data (`system.traits.value`) â€” so when Resonance's Adaptive Sounds activates on a PF2e creature, it has real trait signal to work with rather than falling back to name-only guessing. A zombie tagged `["undead", "mindless"]` will now be identified as undead even if the name alone wouldn't tip it off.
+- **Pathfinder 2e support.** The creature classifier now reads PF2e trait data (`system.traits.value`) Ã¢â‚¬â€ so when Resonance's Adaptive Sounds activates on a PF2e creature, it has real trait signal to work with rather than falling back to name-only guessing. A zombie tagged `["undead", "mindless"]` will now be identified as undead even if the name alone wouldn't tip it off.
 
 ### Changed
 - The Creature Index setup wizard no longer pops automatically on first install. It's still a click away in the Ionrift Library settings, but it won't interrupt you the moment you enable the library. Modules that need the index (like Resonance's Adaptive Sounds) will let you know when it matters.
-- PF2e worlds no longer see all 25+ bundled Pathfinder compendiums in the Creature Index scan list. The system's own adventure paths and bestiaries are filtered out â€” only world-specific and third-party packs appear.
+- PF2e worlds no longer see all 25+ bundled Pathfinder compendiums in the Creature Index scan list. The system's own adventure paths and bestiaries are filtered out Ã¢â‚¬â€ only world-specific and third-party packs appear.
 
 ### Fixed
 - The **Calibration Warning** shown at the end of Creature Index setup was firing incorrectly on PF2e worlds. The self-test suite had no PF2e entries and was falling through to a DnD5e-specific test that was never going to pass. PF2e installs now correctly show all-clear after the integrity check.
@@ -444,7 +445,7 @@
 ### Added
 - **Connection panel.** The settings menu button now opens a full panel showing your status and any available early-access modules. Modules you qualify for show an Install Now button; modules that need an upgrade are visible but locked.
 - **Early-access badge** on the connection settings button. Appears when an early-access offer was snoozed and is still waiting. Clicking it opens the panel directly.
-- `PackRegistryService.clearSnooze()` â€” internal utility for resetting a snoozed offer when the GM acts on it.
+- `PackRegistryService.clearSnooze()` Ã¢â‚¬â€ internal utility for resetting a snoozed offer when the GM acts on it.
 
 ### Changed
 - Disconnect button now styled in amber for clarity.
