@@ -16,6 +16,14 @@ export class ViewportService {
         rotation: 0
     };
 
+    static _sway = {
+        active: false,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        scale: 1
+    };
+
     static _shake = {
         active: false,
         startTime: 0,
@@ -81,7 +89,7 @@ export class ViewportService {
     position: fixed;
     inset: 0;
     pointer-events: none;
-    z-index: 999;
+    z-index: 5;
     opacity: 0;
     background: radial-gradient(
         circle at center,
@@ -129,6 +137,44 @@ export class ViewportService {
     }
 
     /**
+     * Update the disorientation sway channel offsets (used by Near-Death / Knockout sensory state)
+     * and compose cleanly with ambient drift and impact shake.
+     *
+     * @param {object} [offsets]
+     * @param {number} [offsets.x=0]
+     * @param {number} [offsets.y=0]
+     * @param {number} [offsets.rotation=0]
+     * @param {number} [offsets.scale=1]
+     */
+    static setSway({ x = 0, y = 0, rotation = 0, scale = 1 } = {}) {
+        const nx = Number.isFinite(x) ? x : 0;
+        const ny = Number.isFinite(y) ? y : 0;
+        const nr = Number.isFinite(rotation) ? rotation : 0;
+        const ns = Number.isFinite(scale) && scale > 0.5 ? scale : 1;
+        this._sway.x = nx;
+        this._sway.y = ny;
+        this._sway.rotation = nr;
+        this._sway.scale = ns;
+        this._sway.active = Math.abs(nx) >= 0.001
+            || Math.abs(ny) >= 0.001
+            || Math.abs(nr) >= 0.0001
+            || Math.abs(ns - 1) >= 0.0005;
+        this._applyComposedTransform();
+    }
+
+    /**
+     * Clear the disorientation sway channel while preserving ambient drift and impact shake.
+     */
+    static resetSway() {
+        this._sway.active = false;
+        this._sway.x = 0;
+        this._sway.y = 0;
+        this._sway.rotation = 0;
+        this._sway.scale = 1;
+        this._applyComposedTransform();
+    }
+
+    /**
      * Stop any active screen shake immediately while preserving ambient drift.
      */
     static stopShake() {
@@ -144,7 +190,7 @@ export class ViewportService {
     }
 
     /**
-     * Reset both drift and shake channels and clear `#board` transform.
+     * Reset drift, sway, and shake channels and clear `#board` transform.
      */
     static resetTransform() {
         if (this._shakeRafId !== null && typeof cancelAnimationFrame === "function") {
@@ -155,6 +201,11 @@ export class ViewportService {
         this._drift.x = 0;
         this._drift.y = 0;
         this._drift.rotation = 0;
+        this._sway.active = false;
+        this._sway.x = 0;
+        this._sway.y = 0;
+        this._sway.rotation = 0;
+        this._sway.scale = 1;
         this._shake.active = false;
         this._shake.x = 0;
         this._shake.y = 0;
@@ -170,24 +221,27 @@ export class ViewportService {
     }
 
     static _applyComposedTransform() {
-        if (typeof document === "undefined") return;
+        if (typeof document === "undefined" || typeof document.getElementById !== "function") return;
         const board = document.getElementById("board");
         if (!board) return;
 
-        const totalX = (this._drift.x || 0) + (this._shake.x || 0);
-        const totalY = (this._drift.y || 0) + (this._shake.y || 0);
-        const totalRot = (this._drift.rotation || 0) + (this._shake.rotation || 0);
+        const totalX = (this._drift.x || 0) + (this._sway.x || 0) + (this._shake.x || 0);
+        const totalY = (this._drift.y || 0) + (this._sway.y || 0) + (this._shake.y || 0);
+        const totalRot = (this._drift.rotation || 0) + (this._sway.rotation || 0) + (this._shake.rotation || 0);
+        const scale = Number.isFinite(this._sway.scale) ? this._sway.scale : 1;
+        const hasScale = Math.abs(scale - 1) >= 0.0005;
 
-        if (Math.abs(totalX) < 0.001 && Math.abs(totalY) < 0.001 && Math.abs(totalRot) < 0.0001) {
+        if (Math.abs(totalX) < 0.001 && Math.abs(totalY) < 0.001 && Math.abs(totalRot) < 0.0001 && !hasScale) {
             board.style.transform = "";
-            if (!this._drift.active && !this._shake.active) {
+            if (!this._drift.active && !this._sway.active && !this._shake.active) {
                 board.style.willChange = "";
             }
             return;
         }
 
         board.style.willChange = "transform";
-        board.style.transform = `translate3d(${totalX.toFixed(2)}px, ${totalY.toFixed(2)}px, 0) rotate(${totalRot.toFixed(3)}deg)`;
+        const scaleSuffix = hasScale ? ` scale(${scale.toFixed(4)})` : "";
+        board.style.transform = `translate3d(${totalX.toFixed(2)}px, ${totalY.toFixed(2)}px, 0) rotate(${totalRot.toFixed(3)}deg)${scaleSuffix}`;
     }
 
     /**
