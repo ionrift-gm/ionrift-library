@@ -11,7 +11,7 @@ import { TokenArtResolver } from "../../services/TokenArtResolver.js";
 import { AvatarPersistenceService } from "../../services/avatar/AvatarPersistenceService.js";
 import { getSortedCatalogTokens, getBaseFolderTree, renderFolderTree, buildManifestData } from "./AvatarManifestRenderer.js";
 import { bindManifestListeners } from "./AvatarManifestActions.js";
-import { openAddSpeciesDialog, openTokenEditDialog, openBatchEditDialog } from "./AvatarManifestDialogs.js";
+import { openAddSpeciesDialog, openTokenEditDialog, openBatchEditDialog, openBatchRingDialog } from "./AvatarManifestDialogs.js";
 import { openBatchFolderDialog, openTagManagerDialog } from "./AvatarManifestTagManager.js";
 
 export class AvatarManifestApp extends FormApplication {
@@ -266,6 +266,10 @@ export class AvatarManifestApp extends FormApplication {
 
     async _openBatchEditDialog(paths) {
         return openBatchEditDialog.call(this, paths);
+    }
+
+    async _openBatchRingDialog(paths) {
+        return openBatchRingDialog.call(this, paths);
     }
 
     async _openBatchFolderDialog(folderPath) {

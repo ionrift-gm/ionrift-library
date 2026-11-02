@@ -841,3 +841,149 @@ export async function openBatchEditDialog(paths) {
         this._activeDialog = dlg;
         dlg.render(true);
     }
+
+export async function openBatchRingDialog(selectedPaths) {
+        const compositor = typeof game !== "undefined" ? game.ionrift?.incubator?.tokenCompositor : null;
+        if (!compositor || typeof compositor.compositeToken !== "function") {
+            ui?.notifications?.warn?.("Ionrift Incubator (Token Ring Compositor) is not active.");
+            return;
+        }
+
+        const unringedPaths = selectedPaths.filter(p => {
+            const rec = AvatarRegistryService.getToken(p);
+            if (rec?.isRinged) return false;
+            if (/_ring-[a-z-]+_pop\d+/i.test(p)) return false;
+            return true;
+        });
+
+        const skippedCount = selectedPaths.length - unringedPaths.length;
+        if (unringedPaths.length === 0) {
+            ui?.notifications?.info?.("All selected tokens already have role rings applied.");
+            return;
+        }
+
+        this._showBackdrop();
+        const content = `
+            <div style="display:flex; flex-direction:column; gap:12px; padding:4px 0;">
+                <p style="margin:0; font-size:0.9em; color:#e2e8f0;">
+                    Composite 4-layer Role Rings &amp; Pop-Out overhangs onto <strong>${unringedPaths.length}</strong> unringed token(s)?
+                    ${skippedCount > 0 ? `<br><span style="font-size:0.85em; color:#facc15;"><i class="fas fa-info-circle"></i> Skipping ${skippedCount} token(s) that are already ringed.</span>` : ""}
+                </p>
+                <div class="form-group" style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-size:0.8em; font-weight:700; text-transform:uppercase; color:#cbd5e1;">Role Ring Palette Tier</label>
+                    <select id="batch-ring-tier" class="manifest-glass-select" style="width:100%; height:32px;">
+                        <option value="auto" selected>Auto (Derive from Archetype &amp; Role)</option>
+                        <option value="npc">NPC (Bronze &amp; Umber)</option>
+                        <option value="major-npc">Major NPC (Silver &amp; Sapphire)</option>
+                        <option value="enemy">Enemy (Brass &amp; Crimson)</option>
+                        <option value="boss">Boss (Gold &amp; Amethyst)</option>
+                        <option value="player">Player (Gold &amp; Emerald)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex; flex-direction:column; gap:4px;">
+                    <label style="font-size:0.8em; font-weight:700; text-transform:uppercase; color:#cbd5e1;">Overhang Margin</label>
+                    <select id="batch-ring-scale" class="manifest-glass-select" style="width:100%; height:32px;">
+                        <option value="auto" selected>Auto Margin (Detect Cutout Overhang)</option>
+                        <option value="1.0">1.0x (Contained Portrait)</option>
+                        <option value="1.5">1.5x (Standard Pop-Out)</option>
+                        <option value="2.0">2.0x (Wide Weapon Overhang)</option>
+                    </select>
+                </div>
+            </div>
+        `;
+
+        let dlg = new Dialog({
+            title: "Composite Role Rings",
+            content,
+            buttons: {
+                composite: {
+                    icon: '<i class="fas fa-ring"></i>',
+                    label: `Composite (${unringedPaths.length})`,
+                    callback: async (html) => {
+                        const tierChoice = html.find("#batch-ring-tier").val() || "auto";
+                        const scaleChoice = html.find("#batch-ring-scale").val() || "auto";
+
+                        ui?.notifications?.info?.(`Ionrift | Compositing role rings for ${unringedPaths.length} token(s)...`);
+                        let successCount = 0;
+
+                        for (const srcPath of unringedPaths) {
+                            try {
+                                const rec = AvatarRegistryService.getToken(srcPath) || {};
+                                const cleanSpecies = (rec.species || "human").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+                                const cleanRole = (rec.role || rec.archetype || "commoner").toLowerCase().replace(/[^a-z0-9_-]/g, "");
+                                const cleanArchetype = (rec.archetype || cleanRole).toLowerCase();
+
+                                const comp = await compositor.compositeToken(srcPath, {
+                                    tier: tierChoice === "auto" ? null : tierChoice,
+                                    descriptor: {
+                                        species: cleanSpecies,
+                                        role: cleanRole,
+                                        archetype: cleanArchetype,
+                                        caste: rec.caste || null
+                                    },
+                                    popOutScale: scaleChoice
+                                });
+
+                                if (comp?.dataUri) {
+                                    const baseName = (srcPath.split("/").pop() || "token").replace(/\.[^/.]+$/, "");
+                                    const targetPath = `tokens/ionrift/${cleanSpecies}/${cleanRole}/${baseName}${comp.filenameSuffix || ""}.webp`;
+                                    const savedPath = await compositor.saveDataUriToPath(comp.dataUri, targetPath);
+
+                                    const tags = Array.from(new Set([
+                                        ...(rec.tags || []),
+                                        cleanSpecies,
+                                        cleanArchetype,
+                                        ...(comp.ringTier ? [`ring:${comp.ringTier}`] : [])
+                                    ]));
+
+                                    await AvatarRegistryService.setTokenClassification(savedPath, {
+                                        species: rec.species || cleanSpecies,
+                                        archetype: rec.archetype || cleanArchetype,
+                                        role: rec.role || cleanRole,
+                                        caste: rec.caste || null,
+                                        tags,
+                                        isManual: true,
+                                        isRinged: true,
+                                        ringTier: comp.ringTier,
+                                        tokenScale: comp.tokenScale,
+                                        masterPortraitPath: srcPath,
+                                        framing: comp.framing || "popout-bust",
+                                        source: "batch-ring-compositor"
+                                    });
+                                    successCount++;
+                                }
+                            } catch (err) {
+                                console.warn("AvatarManifestApp | Batch ring failed for", srcPath, err);
+                            }
+                        }
+
+                        try {
+                            const resolver = game.ionrift?.library?.tokenArt;
+                            if (resolver && typeof resolver.warmCache === "function") {
+                                await resolver.warmCache({ force: true });
+                            }
+                        } catch {}
+
+                        this.selectedPaths.clear();
+                        this.invalidateCache();
+                        this.render();
+                        ui?.notifications?.info?.(`Ionrift | Composited and indexed ${successCount} ringed token(s).`);
+                    }
+                },
+                cancel: {
+                    icon: '<i class="fas fa-times"></i>',
+                    label: "Cancel"
+                }
+            },
+            close: () => {
+                if (this._activeDialog === dlg) {
+                    this._activeDialog = null;
+                    this._hideBackdrop();
+                }
+            },
+            default: "composite"
+        }, { classes: ["ionrift-window", "glass-ui", "dialog", "curation-modal"], width: 440 });
+
+        this._activeDialog = dlg;
+        dlg.render(true);
+    }

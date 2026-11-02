@@ -547,6 +547,7 @@ export async function buildManifestData() {
             speciesOptions: coverage.speciesList || CORE_SPECIES,
             archetypeOptions: CANONICAL_ARCHETYPES,
             tokens: paginatedTokens,
+            hasTokenCompositor: Boolean(typeof game !== "undefined" && game.ionrift?.incubator?.tokenCompositor),
             selectedCount: this.selectedPaths.size,
             blacklistedCount: coverage.blacklistedTokens || 0,
             curatedCount: coverage.manualTokens || 0,

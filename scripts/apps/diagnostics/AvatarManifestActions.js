@@ -582,6 +582,13 @@ export function bindManifestListeners(html) {
             await this._openBatchEditDialog(Array.from(this.selectedPaths));
         });
 
+        // 9a. Batch Composite Role Rings
+        html.find("#batch-ring-selected-btn").click(async ev => {
+            ev.preventDefault();
+            if (this.selectedPaths.size === 0) return;
+            await this._openBatchRingDialog(Array.from(this.selectedPaths));
+        });
+
         // 9b. Batch Reset Selected to Auto
         html.find("#batch-reset-auto-btn").click(async ev => {
             ev.preventDefault();
