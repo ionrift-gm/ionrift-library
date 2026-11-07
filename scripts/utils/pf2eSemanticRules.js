@@ -329,7 +329,11 @@ const GROUP_KEYWORDS = ["swarm", "pack", "legion", "horde", "squad", "troop", "a
  */
 export function classifyPf2eCreature(actorOrName, classifierData) {
     const isObject = typeof actorOrName === "object" && actorOrName !== null;
-    const name = isObject ? (actorOrName.name || "") : String(actorOrName || "");
+    const rawName = isObject ? (actorOrName.name || "") : String(actorOrName || "");
+    const creatureDetail = isObject ? String(actorOrName.system?.details?.creature?.value || "").trim() : "";
+    const name = creatureDetail && !rawName.toLowerCase().includes(creatureDetail.toLowerCase())
+        ? `${rawName} ${creatureDetail}`.trim()
+        : rawName;
     if (!name) {
         return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), cascade: ["unknown", "generic"], confidence: 0 };
     }

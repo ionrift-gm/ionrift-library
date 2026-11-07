@@ -22,7 +22,8 @@
  *   - Hash-based idempotency: re-running with the same overlay version and file
  *     count is a no-op. A version change rebuilds the compendium.
  *   - Compendiums are GM-owned and placed under the module's sidebar folder
- *     when the config supplies a resolver.
+ *     when the config supplies a resolver, with provenance metadata stamped
+ *     onto both the compendium label and materialised items.
  *
  * Config shape:
  *   {
@@ -31,9 +32,9 @@
  *     logLabel?:           string,   // logger scope, defaults to moduleId
  *     notifyLabel?:        string,   // toast prefix, defaults to moduleId
  *     notify?:             boolean,  // suppress the change toast when false
- *     labelForSublayer?:   (sublayer) => string,
+ *     labelForSublayer?:   (sublayer, manifest) => string,
  *     sectionWrapperName?: (packDir) => string | null,
- *     sidebarFolderResolver?: async (pack) => string | null,
+ *     sidebarFolderResolver?: async (pack, context) => string | null,
  *     onActiveChange?:     async (collectionIds, active) => void,
  *     onRemove?:           async (collectionIds) => void
  *   }
@@ -78,6 +79,23 @@ export class OverlayItemMaterialiser {
      */
     static prepareOverlayItemsForSystem(items) {
         return prepareOverlayItems(items);
+    }
+
+    /**
+     * Determine whether an overlay sublayer is an unreleased/incubating pack.
+     * @param {object|null} manifest
+     * @param {string} sublayer
+     * @returns {boolean}
+     */
+    static isIncubating(manifest, sublayer) {
+        if (manifest) {
+            if (manifest.incubation === true) return true;
+            if (manifest.releaseStatus === "incubating") return true;
+            if (String(manifest.tier ?? "").toLowerCase() === "incubation") return true;
+            if (String(manifest.classification ?? "").toLowerCase() === "incubation") return true;
+        }
+        if (String(sublayer ?? "").startsWith("incuba")) return true;
+        return false;
     }
 
     /**
@@ -129,7 +147,7 @@ export class OverlayItemMaterialiser {
 
         let result;
         try {
-            result = await this._materialiseSublayerContent(sublayer, manifest.overlayId, overlayVersion, config);
+            result = await this._materialiseSublayerContent(sublayer, manifest.overlayId, overlayVersion, config, manifest);
         } catch (err) {
             Logger.error(this._label(config),
                 `OverlayItemMaterialiser | "${manifest.overlayId}" failed:`, err
@@ -227,7 +245,7 @@ export class OverlayItemMaterialiser {
      * @returns {Promise<{ collection: string, itemCount: number, changed: boolean }|null>}
      * @private
      */
-    static async _materialiseSublayerContent(sublayer, overlayId, overlayVersion, config) {
+    static async _materialiseSublayerContent(sublayer, overlayId, overlayVersion, config, manifest = null) {
         const { moduleId, compendiumPrefix } = config;
 
         // Prefer the browse-independent file index. It is the only reliable
@@ -250,7 +268,9 @@ export class OverlayItemMaterialiser {
         }
 
         const collection = `world.${compendiumPrefix}-${sublayer}`;
-        const label = config.labelForSublayer?.(sublayer) ?? this._defaultLabel(config, sublayer);
+        const isIncubating = this.isIncubating(manifest, sublayer);
+        const label = config.labelForSublayer?.(sublayer, manifest) ?? this._defaultLabel(config, sublayer, manifest);
+        const folderContext = { sublayer, manifest, incubating: isIncubating };
 
         const sectionPlans = [];
         let totalFileCount = 0;
@@ -277,12 +297,14 @@ export class OverlayItemMaterialiser {
             return null;
         }
 
-        const hashKey = `${overlayId}:${sublayer}:${overlayVersion}:${totalFileCount}:coerce=${OVERLAY_ITEM_COERCE_REV}`;
+        const hashKey = `${overlayId}:${sublayer}:${overlayVersion}:${totalFileCount}:coerce=${OVERLAY_ITEM_COERCE_REV}:label=${label}:inc=${isIncubating ? 1 : 0}`;
         const state = this._getState(moduleId);
         const existingHash = state[overlayId]?.packHashes?.[sublayer];
 
         const existing = game.packs.get(collection);
         if (existing && existingHash === hashKey) {
+            await this._assignSidebarFolder(existing, config, folderContext);
+            this._enforceOwnership(existing);
             Logger.log(this._label(config),
                 `OverlayItemMaterialiser | "${collection}" already at hash ${hashKey}; skipping.`
             );
@@ -304,6 +326,14 @@ export class OverlayItemMaterialiser {
 
         const folderIdMap = new Map();
         const preparedItems = [];
+        const provenanceMeta = {
+            overlayId,
+            sublayer,
+            version: overlayVersion,
+            releaseStatus: isIncubating ? "incubating" : "public",
+            tier: manifest?.tier ?? (isIncubating ? "Incubation" : "Free"),
+            packLabel: label
+        };
 
         let sectionSort = 100;
         for (const section of sectionPlans) {
@@ -336,6 +366,7 @@ export class OverlayItemMaterialiser {
                     item.folder = parentId ?? null;
                 }
                 delete item._id;
+                this._applyItemProvenance(item, moduleId, provenanceMeta);
                 preparedItems.push(item);
             }
         }
@@ -374,21 +405,48 @@ export class OverlayItemMaterialiser {
             }
         }
 
-        await this._assignSidebarFolder(fresh, config);
+        await this._assignSidebarFolder(fresh, config, folderContext);
         this._enforceOwnership(fresh);
 
         const newState = this._getState(moduleId);
         newState[overlayId] = newState[overlayId] ?? { version: overlayVersion, packs: [], packHashes: {} };
         newState[overlayId].version = overlayVersion;
+        newState[overlayId].releaseStatus = provenanceMeta.releaseStatus;
+        newState[overlayId].tier = provenanceMeta.tier;
+        newState[overlayId].label = label;
         newState[overlayId].packs = [collection];
         newState[overlayId].packHashes = { [sublayer]: hashKey };
         await this._setState(moduleId, newState);
 
         Logger.info(this._label(config),
-            `OverlayItemMaterialiser | Built "${collection}": ${prepared.length} items across ${sectionPlans.length} section(s).`
+            `OverlayItemMaterialiser | Built "${collection}" (${label}): ${prepared.length} items across ${sectionPlans.length} section(s).`
         );
 
         return { collection, itemCount: prepared.length, changed: true };
+    }
+
+    /**
+     * Stamp provenance metadata onto each materialised item.
+     * @param {object} item
+     * @param {string} moduleId
+     * @param {object} meta
+     * @private
+     */
+    static _applyItemProvenance(item, moduleId, meta) {
+        if (!item || !meta || !moduleId) return;
+        item.flags = item.flags ?? {};
+        item.flags[moduleId] = item.flags[moduleId] ?? {};
+        item.flags[moduleId].overlayProvenance = {
+            overlayId: meta.overlayId,
+            sublayer: meta.sublayer,
+            version: meta.version,
+            releaseStatus: meta.releaseStatus,
+            tier: meta.tier,
+            packLabel: meta.packLabel
+        };
+        if (item.system?.source && typeof item.system.source === "object" && !item.system.source.book) {
+            item.system.source.book = meta.packLabel;
+        }
     }
 
     /**
@@ -516,11 +574,20 @@ export class OverlayItemMaterialiser {
         return collected;
     }
 
-    static _defaultLabel(config, sublayer) {
-        const titled = sublayer.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    static _defaultLabel(config, sublayer, manifest = null) {
+        const titled = manifest?.packLabel || sublayer.replace(/[-_]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
         const prefix = (config.notifyLabel ?? config.compendiumPrefix ?? "")
             .replace(/\b\w/g, c => c.toUpperCase());
-        return prefix ? `${prefix}: ${titled}` : titled;
+        const base = prefix ? `${prefix}: ${titled}` : titled;
+        if (!manifest) return base;
+
+        const version = manifest.version ?? "0.0.0";
+        if (this.isIncubating(manifest, sublayer)) {
+            return `${base} [v${version} · Incubating]`;
+        }
+        const tier = manifest.tier ? ` ${manifest.tier}` : "";
+        const preview = manifest.preview ? " Preview" : "";
+        return `${base} [v${version} · Public${tier}${preview}]`;
     }
 
     static async _createWorldCompendium(name, label, config) {
@@ -582,10 +649,10 @@ export class OverlayItemMaterialiser {
         }
     }
 
-    static async _assignSidebarFolder(pack, config) {
+    static async _assignSidebarFolder(pack, config, context = {}) {
         if (typeof config.sidebarFolderResolver !== "function") return;
         let folderId = null;
-        try { folderId = await config.sidebarFolderResolver(pack); }
+        try { folderId = await config.sidebarFolderResolver(pack, context); }
         catch (err) {
             Logger.warn(this._label(config),
                 `OverlayItemMaterialiser | Sidebar folder resolver failed:`, err.message
@@ -597,6 +664,7 @@ export class OverlayItemMaterialiser {
         const cfg = foundry.utils.duplicate(
             game.settings.get("core", "compendiumConfiguration") ?? {}
         );
+        if (cfg[pack.collection]?.folder === folderId) return;
         cfg[pack.collection] = foundry.utils.mergeObject(cfg[pack.collection] ?? {}, { folder: folderId });
         await game.settings.set("core", "compendiumConfiguration", cfg);
     }

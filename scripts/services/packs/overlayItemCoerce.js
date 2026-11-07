@@ -9,7 +9,7 @@
  * so materialisers rebuild existing world compendiums.
  */
 
-export const OVERLAY_ITEM_COERCE_REV = 1;
+export const OVERLAY_ITEM_COERCE_REV = 2;
 
 const PF2E_FALLBACK_TYPES = Object.freeze([
     "weapon", "armor", "shield", "equipment", "consumable",
@@ -115,7 +115,7 @@ function _pf2eStub(src, type) {
     const stub = {
         description: { value: description },
         quantity: _quantity(src),
-        price: { value: { gp: _priceToGp(src.price), sp: 0, cp: 0, pp: 0 } },
+        price: { value: _priceToCoins(src.price) },
         bulk: { value: _weightToBulk(src.weight ?? src.bulk) },
         traits: {
             value: Array.isArray(src.traits?.value) ? [...src.traits.value] : [],
@@ -127,7 +127,8 @@ function _pf2eStub(src, type) {
 
     if (type === "backpack" || type === "container") {
         const lbs = src.capacity?.value ?? src.capacity;
-        stub.bulkCapacity = { value: _weightToBulk(lbs) || 1 };
+        const capBulk = _weightToBulk(lbs);
+        stub.bulkCapacity = { value: capBulk >= 1 ? capBulk : 1 };
         stub.collapsed = false;
         stub.stowing = true;
     }
@@ -155,35 +156,45 @@ function _rarity(src) {
     return "common";
 }
 
-function _priceToGp(price) {
-    if (price == null) return 0;
-    if (typeof price === "number") return price;
+function _priceToCoins(price) {
+    const coins = { pp: 0, gp: 0, sp: 0, cp: 0 };
+    if (price == null) return coins;
+    if (typeof price === "number") {
+        coins.gp = Math.max(0, Math.round(price));
+        return coins;
+    }
     if (typeof price.value === "number") {
-        const n = price.value;
-        const den = price.denomination ?? "gp";
-        if (den === "pp") return n * 10;
-        if (den === "sp") return n / 10;
-        if (den === "cp") return n / 100;
-        if (den === "ep") return n / 2;
-        return n;
+        const n = Math.max(0, price.value);
+        const den = String(price.denomination ?? "gp").toLowerCase();
+        if (den === "pp") coins.pp = Math.round(n);
+        else if (den === "sp") coins.sp = Math.round(n);
+        else if (den === "cp") coins.cp = Math.round(n);
+        else if (den === "ep") coins.sp = Math.round(n * 5);
+        else coins.gp = Math.round(n);
+        return coins;
     }
     if (price.value && typeof price.value === "object") {
         const v = price.value;
-        return (Number(v.pp) || 0) * 10
-            + (Number(v.gp) || 0)
-            + (Number(v.sp) || 0) / 10
-            + (Number(v.cp) || 0) / 100;
+        coins.pp = Math.max(0, Math.round(Number(v.pp) || 0));
+        coins.gp = Math.max(0, Math.round(Number(v.gp) || 0));
+        coins.sp = Math.max(0, Math.round(Number(v.sp) || 0));
+        coins.cp = Math.max(0, Math.round(Number(v.cp) || 0));
     }
-    return 0;
+    return coins;
 }
 
 function _weightToBulk(weight) {
     if (weight && typeof weight === "object" && weight.value != null) {
-        return weight.value;
+        const v = weight.value;
+        if (v === "L" || v === "l") return 0.1;
+        const num = Number(v);
+        return Number.isFinite(num) && num >= 0 ? num : 0;
     }
+    if (weight === "L" || weight === "l") return 0.1;
     const n = Number(weight);
     if (!Number.isFinite(n) || n <= 0) return 0;
-    if (n < 1) return "L";
+    // PF2e v8 numeric bulk: 0.1 represents Light ("L") bulk; 1+ is standard bulk.
+    if (n < 1) return 0.1;
     return Math.max(1, Math.round(n / 10));
 }
 
