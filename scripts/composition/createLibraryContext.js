@@ -1,5 +1,5 @@
 import { MODULE_ID, MODULE_LABEL } from "../data/moduleId.js";
-import { classifyCreature, listClassifierOptions, runSelfTests, setActorClassification } from "../utils/creatureClassifier.js";
+import { classifyCreature, hasActorFlySpeed, isFlyingCreature, listClassifierOptions, runSelfTests, setActorClassification } from "../utils/creatureClassifier.js";
 import { Cascade } from "../utils/Cascade.js";
 import { normalizeSpellSchool, SPELL_SCHOOL_MAP } from "../data/spellSchools.js";
 import { SidebarHelper } from "../utils/SidebarHelper.js";
@@ -110,6 +110,8 @@ export function createLibraryContext() {
         HudHelper,
         hud: HudHelper,
         classifyCreature,
+        isFlyingCreature,
+        hasActorFlySpeed,
         listClassifierOptions,
         setActorClassification,
         runSelfTests,
