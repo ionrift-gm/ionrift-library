@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.3.1] - 2026-11-08
+
+### Added
+- Flying creature detection for water and terrain effects across companion modules.
+- Shared viewport camera shake and sway handling so board effects from multiple modules compose cleanly.
+
+### Fixed
+- Overlay pack items now validate item types and Pathfinder 2e rules more reliably during import.
+
 ## [3.3.0] - 2026-11-01
 
 ### Added
