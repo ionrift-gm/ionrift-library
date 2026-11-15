@@ -131,32 +131,144 @@ export async function setActorClassification(actor, classId) {
     await actor.setFlag(LIB_MODULE, "classification", { id: classId });
 }
 
+/** @type {WeakMap<object, { sig: string, result: object }>} */
+const _actorClassCache = new WeakMap();
+
+/** @type {Map<string, object>} */
+const _stringClassCache = new Map();
+const MAX_STRING_CLASS_CACHE = 512;
+
+let _lastFrameTime = -1;
+let _frameUncachedCalls = 0;
+let _lastHotPathWarnAt = 0;
+const HOT_PATH_FRAME_CALL_LIMIT = 20;
+const HOT_PATH_WARN_COOLDOWN_MS = 30000;
+
+function _cloneClassificationResult(res) {
+    if (!res || typeof res !== "object") return res;
+    return {
+        ...res,
+        tags: res.tags instanceof Set ? new Set(res.tags) : new Set(res.tags ?? []),
+        cascade: Array.isArray(res.cascade) ? [...res.cascade] : res.cascade
+    };
+}
+
+function _buildActorCacheSignature(actor, sysId) {
+    const flagId = actor.flags?.[LIB_MODULE]?.classification?.id ?? "";
+    const uuid = actor.uuid ?? "";
+    const worldOverrideId = uuid ? (_getWorldClassificationOverrides()[uuid]?.id ?? "") : "";
+    const traitsVal = actor.system?.traits?.value;
+    const traitsSig = Array.isArray(traitsVal)
+        ? traitsVal.join(",")
+        : (traitsVal instanceof Set ? Array.from(traitsVal).join(",") : "");
+    const typeVal = typeof actor.system?.details?.type?.value === "string"
+        ? actor.system.details.type.value
+        : "";
+    const subtypeVal = typeof actor.system?.details?.type?.subtype === "string"
+        ? actor.system.details.type.subtype
+        : "";
+    const raceVal = String(actor.system?.details?.race ?? actor.system?.ancestry ?? "");
+    const rarityVal = String(actor.system?.traits?.rarity ?? "");
+    const items = actor.items?.contents ?? (Array.isArray(actor.items) ? actor.items : null);
+    const itemCount = items ? items.length : (actor.items?.size ?? 0);
+    const firstItemName = items && items.length > 0 ? String(items[0]?.name ?? "") : "";
+    const modTime = actor._stats?.modifiedTime ?? 0;
+    const descLen = (actor.system?.description?.value?.length ?? 0)
+        + (actor.system?.details?.publicNotes?.length ?? 0)
+        + (actor.system?.details?.blurb?.length ?? 0);
+    return `${sysId ?? ""}|${actor.name ?? ""}|${actor.type ?? ""}|${flagId}|${worldOverrideId}|${traitsSig}|${typeVal}|${subtypeVal}|${raceVal}|${rarityVal}|${itemCount}:${firstItemName}|${modTime}|${descLen}`;
+}
+
+function _recordUncachedClassificationCall() {
+    const tickerTime = globalThis.canvas?.app?.ticker?.lastTime;
+    if (typeof tickerTime !== "number" || tickerTime <= 0) return;
+    if (tickerTime !== _lastFrameTime) {
+        _lastFrameTime = tickerTime;
+        _frameUncachedCalls = 1;
+        return;
+    }
+    _frameUncachedCalls++;
+    if (_frameUncachedCalls === HOT_PATH_FRAME_CALL_LIMIT) {
+        const now = Date.now();
+        if (now - _lastHotPathWarnAt >= HOT_PATH_WARN_COOLDOWN_MS) {
+            _lastHotPathWarnAt = now;
+            const stack = new Error().stack?.split("\n").slice(2, 6).join(" <- ") ?? "";
+            Logger.warn(
+                "Library",
+                `Hot-path tripwire: classifyCreature executed ${_frameUncachedCalls}+ uncached times in a single render frame. Caller: ${stack}`
+            );
+        }
+    }
+}
+
+/**
+ * Clear in-memory creature classification caches.
+ */
+export function clearClassifierCache() {
+    _stringClassCache.clear();
+}
+
 /**
  * Analyzes an actor to determine its concept (Visuals/Sound).
  * @param {Actor|string} actorOrName - The Foundry Actor or just a name string.
  * @returns {object} - { id, sound, tags: Set, confidence: number }
  */
 export function classifyCreature(actorOrName) {
-    const name = (typeof actorOrName === 'string') ? actorOrName : (actorOrName?.name || "");
-    const isPlayer = (typeof actorOrName === 'object' && actorOrName.type === "character");
-    const CLASSIFIER_DATA = getClassifierData();
-
-    // Quick return for Players if we want to separate them
-    if (isPlayer) {
-        return {
-            id: "player",
-            sound: "MONSTER_HUMANOID",
-            tags: new Set(["player", "character", "adventurer"]),
-            cascade: ["player"],
-            confidence: 1.0
-        };
+    if (!actorOrName) {
+        return { id: "unknown", sound: "MONSTER_GENERIC", tags: new Set(), cascade: ["unknown", "generic"], confidence: 0 };
     }
 
-    const manual = _resolveActorClassificationOverride(actorOrName);
-    if (manual) return manual;
+    const sysId = typeof game !== "undefined" ? game?.system?.id : null;
+    const isObj = typeof actorOrName === "object";
+    let cacheSig = null;
+
+    if (isObj) {
+        if (actorOrName.type === "character") {
+            return {
+                id: "player",
+                sound: "MONSTER_HUMANOID",
+                tags: new Set(["player", "character", "adventurer"]),
+                cascade: ["player"],
+                confidence: 1.0
+            };
+        }
+        const manual = _resolveActorClassificationOverride(actorOrName);
+        if (manual) return manual;
+
+        cacheSig = _buildActorCacheSignature(actorOrName, sysId);
+        const cached = _actorClassCache.get(actorOrName);
+        if (cached && cached.sig === cacheSig) {
+            return _cloneClassificationResult(cached.result);
+        }
+    } else if (typeof actorOrName === "string") {
+        cacheSig = `${sysId ?? ""}|${actorOrName}`;
+        const cached = _stringClassCache.get(cacheSig);
+        if (cached) {
+            return _cloneClassificationResult(cached);
+        }
+    }
+
+    _recordUncachedClassificationCall();
+    const result = _computeCreatureClassification(actorOrName, sysId);
+
+    if (isObj && cacheSig) {
+        _actorClassCache.set(actorOrName, { sig: cacheSig, result });
+    } else if (typeof actorOrName === "string" && cacheSig) {
+        if (_stringClassCache.size >= MAX_STRING_CLASS_CACHE) {
+            const oldestKey = _stringClassCache.keys().next().value;
+            if (oldestKey !== undefined) _stringClassCache.delete(oldestKey);
+        }
+        _stringClassCache.set(cacheSig, result);
+    }
+
+    return _cloneClassificationResult(result);
+}
+
+function _computeCreatureClassification(actorOrName, sysId) {
+    const name = (typeof actorOrName === 'string') ? actorOrName : (actorOrName?.name || "");
+    const CLASSIFIER_DATA = getClassifierData();
 
     // PF2e / SF2e: Abstract morphological rules, system trait composition, and description verb/noun inference
-    const sysId = typeof game !== "undefined" ? game?.system?.id : null;
     if (sysId === "pf2e" || sysId === "sf2e") {
         return classifyPf2eCreature(actorOrName, CLASSIFIER_DATA);
     }
@@ -595,6 +707,7 @@ export function isFlyingCreature(tokenOrActor, options = {}) {
 
     return AIRBORNE_ENTITY_IDS.has(c.id)
         || c.type === "dragon"
+        || String(c.id ?? "").startsWith("dragon")
         || tags.has("flying")
         || tags.has("flight")
         || tags.has("floating")
