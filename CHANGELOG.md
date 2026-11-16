@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.3.2] - 2026-11-16
+
+### Fixed
+- Improved performance of creature classification lookups.
+
 ## [3.3.1] - 2026-11-08
 
 ### Added
