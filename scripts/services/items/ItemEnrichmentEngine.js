@@ -114,7 +114,7 @@ export class ItemEnrichmentEngine {
      * @param {Application} app
      * @param {jQuery|HTMLElement} html
      */
-    static onRenderItemSheet(app, html, ...rest) {
+    static onRenderItemSheet(app, html, ..._rest) {
         const item = app.document ?? app.object ?? app.item;
         if (!item?.name) return;
         // Only process Item documents

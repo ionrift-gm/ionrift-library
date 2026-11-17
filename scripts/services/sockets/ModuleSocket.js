@@ -90,7 +90,7 @@ export class ModuleSocket {
             this._boundListener = null;
         }
 
-        for (const [id, req] of this._pendingRequests.entries()) {
+        for (const req of this._pendingRequests.values()) {
             clearTimeout(req.timer);
             req.reject(new Error(`Socket destroyed while waiting for response to "${req.type}".`));
         }

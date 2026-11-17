@@ -56,7 +56,7 @@ export class AvatarRegistryService {
             } else if (this._inMemoryState) {
                 return shouldClone ? foundry.utils.deepClone(this._inMemoryState) : this._inMemoryState;
             }
-        } catch (e) {
+        } catch {
             if (this._inMemoryState) return shouldClone ? foundry.utils.deepClone(this._inMemoryState) : this._inMemoryState;
         }
         return this._inMemoryState

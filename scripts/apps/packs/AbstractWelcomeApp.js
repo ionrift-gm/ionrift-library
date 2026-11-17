@@ -161,7 +161,7 @@ export class AbstractWelcomeApp extends Parent {
      * Virtual method to execute logic for a step.
      * @param {string} stepId 
      */
-    async executeStep(stepId) {
+    async executeStep(_stepId) {
         throw new Error("executeStep must be implemented by subclass.");
     }
 
@@ -188,7 +188,7 @@ export class AbstractWelcomeApp extends Parent {
      * Default FormApplication submission handler.
      * @inheritdoc
      */
-    async _updateObject(event, formData) {
+    async _updateObject(_event, _formData) {
         // Welcome App typically doesn't submit form data, but we must implement this.
         return;
     }

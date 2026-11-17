@@ -76,7 +76,7 @@ export class DiagnosticApp extends FormApplication {
         });
     }
 
-    async _updateObject(event, formData) {
+    async _updateObject(_event, _formData) {
         // Read-only app
     }
 }

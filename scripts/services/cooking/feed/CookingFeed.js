@@ -1,5 +1,5 @@
 import { Logger } from "../../platform/Logger.js";
-import { CookingBuffs, DEFAULT_COOKING_SLOT } from "../buffs/CookingBuffs.js";
+import { CookingBuffs } from "../buffs/CookingBuffs.js";
 import { BuffApplicator } from "../buffs/BuffApplicator.js";
 import { CookingGMExec } from "./CookingGMExec.js";
 

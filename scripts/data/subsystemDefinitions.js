@@ -1,5 +1,3 @@
-import { MODULE_ID } from "./moduleId.js";
-
 export const SUBSYSTEM_DEFINITIONS = {
     entityManifest: {
         key: "validatorMenu",

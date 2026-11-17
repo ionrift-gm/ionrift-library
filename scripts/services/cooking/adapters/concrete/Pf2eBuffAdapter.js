@@ -103,7 +103,7 @@ export class Pf2eBuffAdapter extends IonriftBuffAdapter {
         return "manual";
     }
 
-    resolve(actor, buff, ctx = {}) {
+    resolve(actor, buff, _ctx = {}) {
         if (!buff?.type) return emptyResolvedEffect();
         const meta = TYPES.get(buff.type);
         if (!meta) {

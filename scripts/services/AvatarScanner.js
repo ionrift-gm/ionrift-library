@@ -621,7 +621,7 @@ export class AvatarScanner {
                     collectedFiles.push(...subFiles);
                 }
             }
-        } catch (err) {
+        } catch {
             // Folder might not exist yet, safe to ignore
         }
 

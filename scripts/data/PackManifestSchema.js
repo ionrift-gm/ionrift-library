@@ -160,14 +160,12 @@ export class PackManifestSchema {
    * @returns {{ valid: boolean, manifest: Record<string, unknown> | null, errors: string[], legacy?: boolean }}
    */
   static extractFromJson(jsonData) {
-    /** @type {string[]} */
-    const errors = [];
     let root = jsonData;
 
     if (typeof root === "string") {
       try {
         root = JSON.parse(root);
-      } catch (_error) {
+      } catch {
         return { valid: false, manifest: null, errors: ["jsonData is not valid JSON."] };
       }
     }

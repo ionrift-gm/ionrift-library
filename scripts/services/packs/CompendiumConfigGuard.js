@@ -73,7 +73,8 @@ export class CompendiumConfigGuard {
             const danglingFolder = hasFolder && !folderIds.has(entry.folder);
 
             if (danglingFolder) {
-                const { folder, ...rest } = entry;
+                const rest = { ...entry };
+                delete rest.folder;
                 if (Object.keys(rest).length > 0) {
                     // Keep the entry for its other props (e.g. ownership),
                     // just detach the dead folder reference.

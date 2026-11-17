@@ -13,8 +13,6 @@
  *  5. Form & State Normalization: standardizes extraction of checked pack IDs from FormApplications.
  */
 
-import { Logger } from "../platform/Logger.js";
-
 /**
  * Standard compiled products across Ionrift modules that must not be fed
  * back as input sources into loot compilers or discovery crawlers.
@@ -25,20 +23,6 @@ const DEFAULT_PIPELINE_OUTPUTS = new Set([
     "world.ionrift-srd-cursed",
     "world.ionrift-cursewright-forged",
     "world.ionrift-forged-cursed"
-]);
-
-/**
- * Common pack suffixes that do not represent physical loot or gear.
- */
-const DEFAULT_NON_EQUIPMENT_SUFFIXES = new Set([
-    "spells", "spells24",
-    "classfeatures", "classfeatures24",
-    "classes", "classes24",
-    "subclasses", "subclasses24",
-    "monsterfeatures", "monsterfeatures24",
-    "backgrounds", "backgrounds24",
-    "races", "races24",
-    "rules"
 ]);
 
 export class CompendiumSourceService {

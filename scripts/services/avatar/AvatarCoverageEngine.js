@@ -709,13 +709,11 @@ export function buildCoverageReport(targetPerArchetype = TARGET_PER_ARCHETYPE, o
     const otherMatrix = {};
     let otherFilled = 0;
     let otherOptimal = 0;
-    let otherCreditedTokens = 0;
 
     for (const archetype of CANONICAL_ARCHETYPES) {
         const matching = otherArchetypeMap.get(archetype) || [];
         const count = matching.length;
         const credited = Math.min(count, targetPerArchetype);
-        otherCreditedTokens += credited;
 
         let status = "unprovided";
         if (count >= targetPerArchetype) {

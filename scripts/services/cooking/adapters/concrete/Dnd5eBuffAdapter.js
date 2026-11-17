@@ -17,7 +17,7 @@ export class Dnd5eBuffAdapter extends IonriftBuffAdapter {
         return NATIVE_TYPES.has(buff.type) ? "native" : "manual";
     }
 
-    resolve(actor, buff, ctx = {}) {
+    resolve(actor, buff, _ctx = {}) {
         if (!buff?.type) return emptyResolvedEffect();
         const meta = TYPES.get(buff.type);
         if (!meta) {

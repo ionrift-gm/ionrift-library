@@ -357,7 +357,7 @@ export class IntegrationStatus {
         $html.attr('data-ionrift-ready', 'true');
 
         // 1. Initial Render
-        for (const [appId, config] of this.apps.entries()) {
+        for (const appId of this.apps.keys()) {
             this._updateSettingsIcon($html, appId);
         }
 
@@ -375,7 +375,7 @@ export class IntegrationStatus {
             // Register new hooks for all tracked apps
             for (const appId of this.apps.keys()) {
                 const hookName = `ionrift.integration.${appId}`;
-                const hookId = Hooks.on(hookName, (state) => {
+                const hookId = Hooks.on(hookName, (_state) => {
                     this._updateSettingsIcon($html, appId);
                 });
                 app._ionriftHooks.push({ name: hookName, id: hookId });
