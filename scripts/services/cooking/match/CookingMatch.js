@@ -34,7 +34,7 @@ function readMatchFlag(item, key, scope) {
 }
 
 export const CookingMatch = {
-    itemMatches(item, spec, ctx = {}) {
+    itemMatches(item, spec, _ctx = {}) {
         if (!item || !spec) return false;
 
         if (spec.name && nameEquals(item, spec.name)) return true;

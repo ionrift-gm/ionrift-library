@@ -2,12 +2,9 @@
  * AvatarManifestTagManager.js
  * Folder batch-tagging and catalog-wide Tag Manager / Redundancy Purge modals for AvatarManifestApp.
  */
-import { Logger } from "../../services/platform/Logger.js";
 import { AvatarRegistryService, CANONICAL_ARCHETYPES, CORE_SPECIES } from "../../services/AvatarRegistryService.js";
 import { SpeciesRegistry } from "../../services/species/SpeciesRegistry.js";
 import { AvatarScanner } from "../../services/AvatarScanner.js";
-import { TokenArtResolver } from "../../services/TokenArtResolver.js";
-import { AvatarPersistenceService } from "../../services/avatar/AvatarPersistenceService.js";
 
 export async function openBatchFolderDialog(folderPath) {
         if (this._activeDialog) {

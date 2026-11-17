@@ -4,7 +4,6 @@ import {
     executeSkillRoll,
     executeAbilityRoll,
     executeFormulaRoll,
-    rollForPlayer,
     evaluatePassed,
     SKILL_DISPLAY_NAMES
 } from "./RollRequestMechanics.js";
@@ -488,7 +487,6 @@ export class RollRequestService {
     static async _applyOfflinePolicy(actor, opts, requestId) {
         const policy = opts.offlinePolicy ?? "gm-fallback";
         const dc = Number.isFinite(opts.dc) ? opts.dc : null;
-        const rollMode = opts.rollMode ?? "normal";
         const context = opts.flavor ?? opts.title ?? game.i18n.localize("ionrift-library.rollRequest.rollRequestDefaultContext");
 
         if (policy === "cancel") {

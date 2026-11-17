@@ -126,7 +126,7 @@ export class TokenArtResolver {
      * @param {string} [archetype] 
      * @returns {string} Path to fallback art
      */
-    static getNeutralGlyph(archetype) {
+    static getNeutralGlyph(_archetype) {
         return this.FALLBACK;
     }
 
@@ -467,7 +467,7 @@ export class TokenArtResolver {
             banned = AvatarRegistryService.getBannedFolders({ clone: false }) || [];
         } catch {}
 
-        for (const [folder, files] of this._overlayCache.entries()) {
+        for (const files of this._overlayCache.values()) {
             const matching = files.filter(f => {
                 if (banned.length > 0 && AvatarRegistryService.isFolderBanned(f, banned)) return false;
                 const lower = f.toLowerCase();

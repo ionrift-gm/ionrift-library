@@ -276,7 +276,7 @@ export class AbstractPackRegistryApp extends foundry.applications.api.Applicatio
      * @param {Object} context - Full context from _prepareContext
      * @param {HTMLElement} panel - The panel element to populate
      */
-    async _renderTabPanel(tabId, context, panel) {
+    async _renderTabPanel(_tabId, _context, _panel) {
         throw new Error("AbstractPackRegistryApp._renderTabPanel() must be overridden.");
     }
 

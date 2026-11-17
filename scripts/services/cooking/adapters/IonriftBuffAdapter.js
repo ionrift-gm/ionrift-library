@@ -18,11 +18,11 @@ export class IonriftBuffAdapter {
         throw new Error("IonriftBuffAdapter: systemId not implemented");
     }
 
-    fidelity(buff) {
+    fidelity(_buff) {
         return "manual";
     }
 
-    resolve(actor, buff, ctx = {}) {
+    resolve(actor, buff, _ctx = {}) {
         const summary = buff?.type ? TYPES.get(buff.type)?.label ?? buff.type : "";
         return emptyResolvedEffect({
             summaryLine: summary,

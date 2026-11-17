@@ -12,7 +12,7 @@ import { reclaimOverlaySettings } from "./services/platform/overlaySettings.js";
 import { ConsoleCapture } from "./services/diagnostics/ConsoleCapture.js";
 import { PartyRoster } from "./services/party/PartyRoster.js";
 import { terrainRegistry } from "./services/terrain/TerrainRegistry.js";
-import { LegacyAssetSweeper, FORCE_MODE_OPTIONS } from "./services/packs/LegacyAssetSweeper.js";
+import { FORCE_MODE_OPTIONS } from "./services/packs/LegacyAssetSweeper.js";
 import { CompendiumConfigGuard } from "./services/packs/CompendiumConfigGuard.js";
 import { CompendiumSourceService } from "./services/packs/CompendiumSourceService.js";
 import { BaseCompendiumSourceApp } from "./apps/packs/BaseCompendiumSourceApp.js";

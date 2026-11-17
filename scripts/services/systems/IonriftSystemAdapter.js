@@ -8,10 +8,10 @@ export class IonriftSystemAdapter {
     /** @returns {string} The Foundry system ID this adapter handles. */
     get systemId() { return globalThis.game?.system?.id ?? "generic"; }
 
-    getLevel(actor) { return 1; }
-    getKnownSpells(actor) { return new Set(); }
-    getClassNames(actor) { return []; }
-    getTraits(actor) { return []; }
+    getLevel(_actor) { return 1; }
+    getKnownSpells(_actor) { return new Set(); }
+    getClassNames(_actor) { return []; }
+    getTraits(_actor) { return []; }
     isPlayerCharacter(actor) {
         if (!actor || !actor.hasPlayerOwner) return false;
         if (actor.type !== "character" && !actor.system?.isCharacter) return false;
@@ -49,7 +49,7 @@ export class IonriftSystemAdapter {
      * so downstream UIs refresh. Base class has no native source, so no-op.
      * @param {() => void} callback
      */
-    watchNativeParty(callback) {}
+    watchNativeParty(_callback) {}
     getRarity(item) { return item?.system?.rarity ?? "common"; }
     getPrice(item) {
         const raw = item?.system?.price?.value ?? item?.system?.price;
@@ -106,58 +106,58 @@ export class IonriftSystemAdapter {
     normalizeSkillKey(skillKey) { return skillKey; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} skillKey
+     * @param {Actor} _actor
+     * @param {string} _skillKey
      * @returns {number}
      */
-    getSkillTotal(actor, skillKey) { return 0; }
+    getSkillTotal(_actor, _skillKey) { return 0; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} skillKey
+     * @param {Actor} _actor
+     * @param {string} _skillKey
      * @returns {boolean}
      */
-    isSkillProficient(actor, skillKey) { return false; }
+    isSkillProficient(_actor, _skillKey) { return false; }
 
     /**
-     * @param {Actor} actor
+     * @param {Actor} _actor
      * @returns {number}
      */
-    getProficiencyBonus(actor) { return 2; }
+    getProficiencyBonus(_actor) { return 2; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} saveKey
+     * @param {Actor} _actor
+     * @param {string} _saveKey
      * @returns {number}
      */
-    getSaveBonus(actor, saveKey) { return 0; }
+    getSaveBonus(_actor, _saveKey) { return 0; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} toolKey
+     * @param {Actor} _actor
+     * @param {string} _toolKey
      * @returns {boolean}
      */
-    isToolProficient(actor, toolKey) { return false; }
+    isToolProficient(_actor, _toolKey) { return false; }
 
     /**
-     * @param {Actor} actor
+     * @param {Actor} _actor
      * @returns {string[]}
      */
-    getToolProficiencies(actor) { return []; }
+    getToolProficiencies(_actor) { return []; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} name
+     * @param {Actor} _actor
+     * @param {string} _name
      * @returns {Item|null}
      */
-    findItemByName(actor, name) { return null; }
+    findItemByName(_actor, _name) { return null; }
 
     /**
-     * @param {Actor} actor
-     * @param {string} name
+     * @param {Actor} _actor
+     * @param {string} _name
      * @returns {boolean}
      */
-    hasItemByName(actor, name) { return false; }
+    hasItemByName(_actor, _name) { return false; }
 
     /**
      * Returns a Set of lowercase item names that should receive reduced draw
@@ -178,10 +178,10 @@ export class IonriftSystemAdapter {
      * can meaningfully support them. Feature IDs are string constants owned by
      * each consuming module. Base class returns false (opt-in model).
      *
-     * @param {string} featureId
+     * @param {string} _featureId
      * @returns {boolean}
      */
-    isSupported(featureId) { return false; }
+    isSupported(_featureId) { return false; }
 
     /**
      * Whether an item counts as magical for power-score and loot classification.
@@ -224,19 +224,19 @@ export class IonriftSystemAdapter {
 
     /**
      * Classify the attack delivery of an item.
-     * @param {Item|object} item
+     * @param {Item|object} _item
      * @returns {"melee"|"ranged"|"magic"|"utility"|"heal"}
      */
-    getAttackCategory(item) {
+    getAttackCategory(_item) {
         return "utility";
     }
 
     /**
      * Get all damage types dealt by an item.
-     * @param {Item|object} item
+     * @param {Item|object} _item
      * @returns {string[]}  e.g. ["slashing", "fire"]
      */
-    getDamageTypes(item) {
+    getDamageTypes(_item) {
         return [];
     }
 
@@ -252,28 +252,28 @@ export class IonriftSystemAdapter {
 
     /**
      * Get the normalized spell school name.
-     * @param {Item|object} item
+     * @param {Item|object} _item
      * @returns {string|null}  e.g. "evocation", "necromancy"
      */
-    getSpellSchool(item) {
+    getSpellSchool(_item) {
         return null;
     }
 
     /**
      * Get the weapon family from system data or name heuristics.
-     * @param {Item|object} item
+     * @param {Item|object} _item
      * @returns {string|null}  e.g. "sword", "bow", "axe", "claw"
      */
-    getWeaponFamily(item) {
+    getWeaponFamily(_item) {
         return null;
     }
 
     /**
      * Whether this is a natural/monster weapon (claw, bite, etc).
-     * @param {Item|object} item
+     * @param {Item|object} _item
      * @returns {boolean}
      */
-    isNaturalWeapon(item) {
+    isNaturalWeapon(_item) {
         return false;
     }
 

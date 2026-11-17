@@ -512,7 +512,7 @@ export class SettingsLayout {
 
 }
 
-Hooks.on("renderSettingsConfig", (app, html, data) => {
+Hooks.on("renderSettingsConfig", (_app, html, _data) => {
     SettingsLayout.injectLibraryShortcuts(html);
 
     for (const moduleId of SettingsLayout._registeredModules) {

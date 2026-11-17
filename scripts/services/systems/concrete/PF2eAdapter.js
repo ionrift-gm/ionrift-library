@@ -133,7 +133,7 @@ export class PF2eAdapter extends IonriftSystemAdapter {
         return Number(bulk) * 10;
     }
 
-    requiresAttunement(item) {
+    requiresAttunement(_item) {
         return false;
     }
 

@@ -191,8 +191,6 @@ export class InstallHealthCheck {
         console.groupEnd();
 
         const count = problems.length;
-        const noun = count === 1 ? "module" : "modules";
-        const verb = count === 1 ? "needs" : "need";
         ui.notifications.warn(
             count === 1
                 ? game.i18n.format("ionrift-library.installHealth.quickFixSingular", { count })

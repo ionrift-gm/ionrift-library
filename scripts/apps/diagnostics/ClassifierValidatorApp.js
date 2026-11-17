@@ -28,7 +28,7 @@ export class ClassifierValidatorApp extends FormApplication {
         });
     }
 
-    async _updateObject(event, formData) {
+    async _updateObject(_event, _formData) {
         // No settings to save
     }
 

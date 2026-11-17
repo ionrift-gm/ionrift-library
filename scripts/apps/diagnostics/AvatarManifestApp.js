@@ -4,10 +4,6 @@
  * Modeled after the Entity Manifest (ClassifierValidatorApp) with the Ionrift Glass UI theme.
  */
 import { Logger } from "../../services/platform/Logger.js";
-import { AvatarRegistryService, CANONICAL_ARCHETYPES, CORE_SPECIES } from "../../services/AvatarRegistryService.js";
-import { SpeciesRegistry } from "../../services/species/SpeciesRegistry.js";
-import { AvatarScanner } from "../../services/AvatarScanner.js";
-import { TokenArtResolver } from "../../services/TokenArtResolver.js";
 import { AvatarPersistenceService } from "../../services/avatar/AvatarPersistenceService.js";
 import { getSortedCatalogTokens, getBaseFolderTree, renderFolderTree, buildManifestData } from "./AvatarManifestRenderer.js";
 import { bindManifestListeners } from "./AvatarManifestActions.js";
@@ -44,7 +40,7 @@ export class AvatarManifestApp extends FormApplication {
         this._cachedFolderTreeStructure = null;
 
         // Reactive listener for live token minting from Avatar Studio
-        this._onAvatarRegistryUpdated = (data) => {
+        this._onAvatarRegistryUpdated = (_data) => {
             this.invalidateCache();
             if (this.rendered) this.render();
         };
@@ -82,7 +78,7 @@ export class AvatarManifestApp extends FormApplication {
         });
     }
 
-    async _updateObject(event, formData) {
+    async _updateObject(_event, _formData) {
         // No auto-save on form submit
     }
 

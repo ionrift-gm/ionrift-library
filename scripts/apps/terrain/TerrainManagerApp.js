@@ -121,7 +121,7 @@ export class TerrainManagerApp extends foundry.applications.api.ApplicationV2 {
     }
 
     /** @override */
-    _replaceHTML(result, content, options) {
+    _replaceHTML(result, content, _options) {
         content.replaceChildren(result);
     }
 
